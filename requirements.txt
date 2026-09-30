@@ -1,0 +1,10 @@
+torch>=2.3
+transformers>=4.44
+lightgbm>=4.0
+scikit-learn>=1.3
+numpy
+pyyaml
+sentencepiece
+tiktoken
+protobuf
+huggingface_hub

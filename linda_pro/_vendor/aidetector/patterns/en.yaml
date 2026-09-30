@@ -1,0 +1,69 @@
+# Маркеры риторических тиков LLM для английского.
+# Регулярки регистронезависимые, ищутся внутри отдельного предложения (antithesis, conclusive)
+# либо по всему тексту (simile, dash).
+
+antithesis:
+  - '\bnot\b[^.!?]{0,40}\bbut\b'
+  - "\\bisn't\\b[^.!?]{0,40}\\bit'?s\\b"
+  - "\\baren't\\b[^.!?]{0,40}\\bthey'?re\\b"
+  - '\bno\b[^.!?]{0,30}\bjust\b'
+
+simile_markers:
+  - '\blike\b'
+  - '\bas if\b'
+  - '\bas though\b'
+  - '\bresembles?\b'
+  - '\breminds? (?:me|us|one) of\b'
+  - '\bakin to\b'
+
+conclusive_markers:
+  - '\bmeans?\b'
+  - '\bsymboli[sz]es?\b'
+  - '\brepresents?\b'
+  - '\bin other words\b'
+  - '\bultimately\b'
+  - "\\bthat'?s the point\\b"
+
+# Слова, статистически перепредставленные в текстах LLM — источник:
+# корпусный анализ 14.2 млн научных аннотаций (частота "delve" выросла
+# примерно в 25 раз после релиза ChatGPT) и несколько независимых списков
+# "AI overused words" 2024-2026 гг. Список консервативный (только слова с
+# сильной, воспроизводимой корреляцией), не 900+ вариант из готовых
+# "AI word cleaner" сервисов — единичное слово ничего не доказывает, важна
+# именно плотность (см. _rule_tell_words).
+tell_words:
+  - '\bdelves?\b'
+  - '\bdelving\b'
+  - '\btapestr(?:y|ies)\b'
+  - '\bunderscores?\b'
+  - '\bunderscoring\b'
+  - '\bmeticulous(?:ly)?\b'
+  - '\bpivotal\b'
+  - '\brealm\b'
+  - '\bresonates?\b'
+  - '\bresonating\b'
+  - '\bshowcas(?:e|es|ing)\b'
+  - '\bparamount\b'
+  - '\bfoster(?:s|ing)?\b'
+  - '\belevate[sd]?\b'
+  - '\bsurpass(?:es|ing)?\b'
+  - '\bintricate(?:ly)?\b'
+  - '\bnavigat(?:e|es|ing)\b'
+  - '\blandscape\b'
+  - '\bcompelling\b'
+  - '\btestament\b'
+  - '\bboasts?\b'
+  - '\bseamless(?:ly)?\b'
+  - '\bharness(?:es|ing)?\b'
+  - '\bunleash(?:es|ing)?\b'
+  - '\bcutting-edge\b'
+  - '\bgame[- ]chang(?:er|ing)\b'
+  - "\\bin today'?s (?:fast-paced )?world\\b"
+  - "\\bit'?s (?:important|worth) to note\\b"
+  - '\bholistic\b'
+  - '\bmultifaceted\b'
+  - '\bever-evolving\b'
+
+dash_char: "—"
+short_clause_max_words: 4
+triad_min_run: 3
