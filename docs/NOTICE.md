@@ -4,3 +4,8 @@
 * LightGBM (MIT), scikit-learn (BSD-3), NumPy (BSD), PyTorch (BSD-3), Hugging Face Transformers (Apache-2.0), PyYAML (MIT), SentencePiece (Apache-2.0).
 * Open-weight generators used to create training texts: gpt-oss-20b (Apache-2.0), Gemma-4-12b (Gemma terms), and others listed in DATA_BOM.md.
 * Evaluation-only data (NOT used for training; licences apply to their own use): Chicago Booth DetectionAI (MIT), ELLIPSE (CC BY-NC-SA), PELIC (CC BY-NC-ND), W&I+LOCNESS (CC BY-NC-SA), FineWeb / FineWeb-2 (ODC-By), Yelp, cc_news. Calibration thresholds are statistics computed from them.
+
+## Bundled code and licences
+* `linda_pro/_vendor/aidetector/` (stylometry, text canonicalisation, pattern lists) is the Licensor's own code, not a third-party library.
+* Microsoft DeBERTa-v3 / mDeBERTa-v3 (base models of the fine-tuned weights) are distributed under the MIT License. MIT License, Copyright (c) Microsoft Corporation. Permission is granted, free of charge, to use, copy, modify, merge, publish, distribute, sublicense and/or sell copies of the software, provided that the copyright notice and this permission notice are included; the software is provided "as is", without warranty of any kind. Full text: https://opensource.org/license/mit
+* Third-party Python libraries are not bundled; they are installed from `requirements.txt` under their own licences.
