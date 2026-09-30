@@ -26,5 +26,7 @@ Short version: on the public Chicago Booth benchmark plain AI 99.7% (Pangram 99.
 we are **not** better than Pangram. English only. Weak spot: exam-style essays by non-native writers (TOEFL 8.8% false `ai` in `sensitive` mode, 1.1% in `precise`).
 Never use a verdict as the sole basis for decisions about people.
 
+Deployment (hardware, measured speed, offline install, local HTTP service `python -m linda_pro.server`): [DEPLOYMENT.md](docs/DEPLOYMENT.md). Data flow, integrity check, dependencies: [SECURITY.md](docs/SECURITY.md).
+
 ## Commercial licence, custom calibration on your texts, integration
 ninjagovlad@gmail.com — describe the use case, volume and languages.
