@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Тесты HTTP-сервиса без реальных моделей: авторизация, лимиты, форма ответа, адрес по умолчанию."""
+"""HTTP service tests without real models: authorization, limits, response format, default address."""
 import json
 import sys
 import threading
@@ -65,7 +65,7 @@ def test_bad_requests(url, body):
 def test_not_json_and_unknown_path(url):
     assert call(url, "/v1/detect", raw=b"not json")[0] == 400
     assert call(url, "/etc/passwd")[0] == 404
-    assert call(url, "/v1/detect")[0] == 404  # GET на POST-маршруте не поддерживается
+    assert call(url, "/v1/detect")[0] == 404  # GET on POST route is not supported
 
 
 def test_default_bind_is_localhost():

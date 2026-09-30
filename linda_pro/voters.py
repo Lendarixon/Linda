@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Голоса Linda-Pro: классификатор-трансформер (окна по токенам) и стилометрия (LightGBM + n-граммы, CPU).
+"""Linda-Pro voices: transformer classifier (token windows) and stylometry (LightGBM + n-grams, CPU).
 
-Самодостаточно: ничего из исходного репозитория проекта не нужно. Стилометрия и очистка текста — во вложенной копии `_vendor/aidetector`.
+Self-contained: nothing from the original project repository is needed. Stylometry and text cleaning are in the nested copy `_vendor/aidetector`.
 """
 from __future__ import annotations
 
@@ -13,15 +13,15 @@ import numpy as np
 
 
 def clean_text(text: str) -> str:
-    """Та же очистка от атак (гомоглифы, невидимые символы и т.п.), что использовалась при калибровке."""
+    """The same attack cleaning (homoglyphs, invisible characters, etc.) that was used during calibration."""
     from ._vendor.aidetector.canonical import prepare_for_voter
 
     return prepare_for_voter("compare", text, "en")
 
 
 class FastSeqCls:
-    """Классификатор-трансформер (DeBERTa). Длинный текст режется на окна `max_len` токенов с полным покрытием, оценка текста —
-    средняя логит-разность «ИИ минус человек» по окнам. Тело модели в bf16 (на GPU), голова в fp32."""
+    """Transformer classifier (DeBERTa). Long text is sliced into windows of `max_len` tokens with full coverage, text score is
+    the average logit difference "AI minus human" across windows. Model body in bf16 (on GPU), head in fp32."""
 
     def __init__(self, model_dir: str | Path, batch: int = 32, device: str | None = None):
         self.model_dir = Path(model_dir)
@@ -101,7 +101,7 @@ class FastSeqCls:
 
 
 class StyloVoter:
-    """Стилометрия (~250 признаков + n-граммы -> LightGBM), только CPU, миллисекунды на текст."""
+    """Stylometry (~250 features + n-grams -> LightGBM), CPU only, milliseconds per text."""
 
     def __init__(self, model_dir: str | Path):
         self.model_dir = str(model_dir)

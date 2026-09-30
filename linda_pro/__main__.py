@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""python -m linda_pro файл.txt [--mode precise] [--windows] [--json]"""
+"""python -m linda_pro file.txt [--mode precise] [--windows] [--json]"""
 import argparse
 import json
 import sys

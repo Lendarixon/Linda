@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Тесты без реальных моделей (поддельные голоса)."""
+"""Tests without real models (fake votes)."""
 import json
 import sys
 from pathlib import Path
@@ -43,7 +43,7 @@ def test_verdict_modes():
     assert verdict(9.0, 0.0, 0.0, RULES) == "ai"
     assert verdict(6.0, 0.0, 0.0, RULES) == "uncertain"
     assert verdict(1.0, 0.0, 0.0, RULES) == "human"
-    assert verdict(8.0, 0.0, 0.0, RULES, "precise") == "uncertain"      # нет согласия стилометрии
+    assert verdict(8.0, 0.0, 0.0, RULES, "precise") == "uncertain"      # no stylometry agreement
     assert verdict(8.0, 0.0, 1.5, RULES, "precise") == "ai"
 
 

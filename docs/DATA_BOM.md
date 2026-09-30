@@ -4,9 +4,9 @@ Tier A = open licence permitting commercial use; B = licence not stated / NC / s
 
 ## Voter 1 — stylo7e (Tier A, strict-clean)
 
-Обучающих текстов: 54008 (ИИ 21211). Фильтры чистоты: `scripts/stylo_strict.py` (аудит: запрещённых источников и генераторов 0).
+Training texts: 54008 (AI 21211). Cleanliness filters: `scripts/stylo_strict.py` (audit: prohibited sources and generators 0).
 
-| источник:класс | текстов |
+| source:class | texts |
 |---|---:|
 | llmtrace_cls:human | 6400 |
 | llmtrace_cls:ai | 6158 |
@@ -34,9 +34,9 @@ Tier A = open licence permitting commercial use; B = licence not stated / NC / s
 | en_fiction:ai | 41 |
 | en_thinktank:ai | 22 |
 
-Генераторы ИИ-текстов (только открытые веса с разрешающими лицензиями: gpt-oss-20b Apache-2.0, Gemma-4-12b, и др.):
+AI text generators (only open weights with permissive licences: gpt-oss-20b Apache-2.0, Gemma-4-12b, and others):
 
-| генератор | текстов |
+| generator | texts |
 |---|---:|
 | Qwen/Qwen3-32B | 1515 |
 | zai-org/GLM-4-32B-0414 | 1480 |
@@ -68,7 +68,7 @@ Base: DeBERTa-v3-large fine-tuned on RAID train (MIT), then continued training o
 
 Fine-tune set v3 (`data/linda/essay_v3_extra.jsonl`):
 
-| источник | класс | генератор | текстов |
+| source | class | generator | texts |
 |---|---|---|---:|
 | clean_long_windows | human | human | 2032 |
 | fanfic_translate_en_gemma-4-12b | ai | gemma-4-12b | 1289 |

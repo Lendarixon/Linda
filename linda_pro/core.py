@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-"""Linda-Pro 1.0 — детектор ИИ-текста (английский), локальный, без облака и API.
+"""Linda-Pro 1.0 — AI text detector (English), local, without cloud or API.
 
-Три голоса: стилометрия (stylo7e, CPU), Linda-Essay v3 и Linda-Multi v2 (трансформеры). Текст режется на окна ~300 слов (до 12);
-стилометрия читает весь текст, Essay и Multi — каждое окно, агрегат по окнам — top25 (среднее верхней четверти окон).
+Three voters: stylometry (stylo7e, CPU), Linda-Essay v3 and Linda-Multi v2 (transformers). Text is split into windows of ~300 words (up to 12);
+stylometry reads the entire text, Essay and Multi — each window, aggregate across windows — top25 (average of the top quarter of windows).
 
-Вердикт:
-  mode='sensitive' (по умолчанию): ai — Essay ИЛИ ансамбль (z-среднее трёх голосов) выше порога 0,5% ложных;
-                                   uncertain — выше порога 5%; иначе human.
-  mode='precise' (школы, вузы; минимум ложных обвинений): ai — Essay выше порога 1% И стилометрия выше порога 5%;
-                                   uncertain — один сильный сигнал; иначе human. На эссе современных моделей ловит заметно меньше.
-Доля ИИ (`ai_share`) — доля слов в окнах Essay выше оконного порога 1% (грубая оценка смешанного авторства, разрешение ~300 слов).
-Пороги — в calibration/*.json (по людям: эссе, книги, arXiv, веб, новости, отзывы, ESL; см. docs). Не единственное основание для решений о нечестности.
+Verdict:
+  mode='sensitive' (default): ai — Essay OR ensemble (z-mean of three voters) above 0.5% false positive threshold;
+                                   uncertain — above 5% threshold; otherwise human.
+  mode='precise' (schools, universities; minimum false accusations): ai — Essay above 1% threshold AND stylometry above 5% threshold;
+                                   uncertain — one strong signal; otherwise human. Catches noticeably less on essays from modern models.
+AI share (`ai_share`) — share of words in Essay windows above the 1% window threshold (rough estimate of mixed authorship, resolution ~300 words).
+Thresholds — in calibration/*.json (on humans: essays, books, arXiv, web, news, reviews, ESL; see docs). Not the sole basis for decisions about dishonesty.
 """
 from __future__ import annotations
 
@@ -22,12 +22,12 @@ from .voters import FastSeqCls, StyloVoter, clean_text
 PKG_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CALIBRATION = PKG_ROOT / "calibration" / "calibration_windowed_v5.json"
 DEFAULT_MODELS = PKG_ROOT / "models"
-MODEL_SUBDIRS = {"stylo7c": "stylo7e", "linda_essay": "linda_essay_v3", "linda_multi_v2": "linda_multi_v2"}  # ключи калибровки -> папки
+MODEL_SUBDIRS = {"stylo7c": "stylo7e", "linda_essay": "linda_essay_v3", "linda_multi_v2": "linda_multi_v2"}  # calibration keys -> folders
 WINDOW_WORDS, MAX_WINDOWS = 300, 12
 
 
 def split_windows(text: str, words: int = WINDOW_WORDS, maxw: int = MAX_WINDOWS) -> list[tuple[str, int, int]]:
-    """Окна ~`words` слов (до `maxw`): [(текст окна, первое слово, слово после последнего)]."""
+    """Windows of ~`words` words (up to `maxw`): [(window text, first word, word after last)]."""
     w = text.split()
     if len(w) <= words * 1.3:
         return [(text, 0, len(w))]
@@ -86,14 +86,14 @@ class LindaPro:
         return StyloVoter(d) if key == "stylo7c" else FastSeqCls(d, batch=self.batch_size, device=self.device)
 
     def detect(self, texts: list[str] | str) -> list[dict]:
-        """-> [{verdict, mode, essay, ens_z, ai_share, windows:[{first_word,last_word,essay,flag}], voters, n_windows}] в порядке входа."""
+        """-> [{verdict, mode, essay, ens_z, ai_share, windows:[{first_word,last_word,essay,flag}], voters, n_windows}] in input order."""
         if isinstance(texts, str):
             texts = [texts]
         if not texts:
             return []
         wins = [split_windows(t, self.window_words, self.max_windows) for t in texts]
         raw: dict[str, list] = {}
-        for key in self.voters:  # строго по очереди: один голос в памяти
+        for key in self.voters:  # strictly one by one: one voter in memory
             voter = self._factory(key)
             if key == "stylo7c":
                 vals = [float(voter.margins([clean_text(t)])[0]) for t in texts]

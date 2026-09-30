@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-"""Локальный HTTP-сервис Linda-Pro (только стандартная библиотека): для встраивания в ваш продукт ВНУТРИ вашей инфраструктуры.
-Модели загружаются один раз и остаются в памяти. Тексты не пишутся в журнал и не отправляются наружу.
+"""Linda-Pro local HTTP service (standard library only): for embedding into your product INSIDE your infrastructure.
+Models are loaded once and stay in memory. Texts are not logged and not sent outside.
 
     python -m linda_pro.server --port 8080 [--host 127.0.0.1] [--mode sensitive|precise] [--token SECRET] [--device cuda|cpu]
 
-Запросы (JSON):
+Requests (JSON):
     GET  /health                       -> {"status": "ok", "mode": ...}
     POST /v1/detect  {"texts": ["..."], "mode": "sensitive"|"precise", "windows": true|false}
                      -> {"results": [{"verdict", "essay", "ens_z", "ai_share", "n_windows", "windows": [...]}]}
-Если задан --token, нужен заголовок  Authorization: Bearer SECRET. По умолчанию слушает только 127.0.0.1.
-Это локальная обёртка для интеграции (например, шлюз для LTI-инструмента), а не облачный API; модели одни на процесс,
-запросы обрабатываются строго по очереди.
+If --token is specified, the header  Authorization: Bearer SECRET is required. By default listens only on 127.0.0.1.
+This is a local wrapper for integration (e.g., gateway for an LTI tool), not a cloud API; models are shared per process,
+requests are processed strictly in sequence.
 """
 from __future__ import annotations
 
@@ -21,13 +21,13 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .core import LindaPro
 
-MAX_BODY = 20 * 1024 * 1024  # 20 МБ на запрос
+MAX_BODY = 20 * 1024 * 1024  # 20 MB per request
 MAX_TEXTS = 64
-LOCK = threading.Lock()  # голоса строго последовательно
+LOCK = threading.Lock()  # voters strictly sequentially
 
 
 class _Resident:
-    """Обёртка голоса: close() ничего не выгружает, модель остаётся в памяти между запросами."""
+    """Voter wrapper: close() does not unload anything, the model remains in memory between requests."""
 
     def __init__(self, voter):
         self._v = voter
@@ -57,7 +57,7 @@ def make_handler(detectors: dict, token: str | None, default_mode: str):
     class H(BaseHTTPRequestHandler):
         server_version = "LindaPro"
 
-        def log_message(self, *a):  # ничего не пишем: в запросах чужие тексты
+        def log_message(self, *a):  # log nothing: requests contain third-party texts
             return
 
         def _send(self, code: int, obj: dict) -> None:

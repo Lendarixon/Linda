@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Чтение текста из файлов: .txt/.md (UTF-8), .docx (python-docx, если установлен), .pdf (pypdf, если установлен). Всё локально."""
+"""Reading text from files: .txt/.md (UTF-8), .docx (python-docx, if installed), .pdf (pypdf, if installed). All local."""
 from __future__ import annotations
 
 from pathlib import Path
