@@ -33,7 +33,7 @@ ninjagovlad@gmail.com — describe the use case, volume and languages.
 
 ## Citation
 
-If you use Linda-Pro, please cite the technical report (Zenodo, DOI [10.5281/zenodo.23072412](https://doi.org/10.5281/zenodo.23072412)):
+If you use Linda-Pro, please cite the technical report (Zenodo, DOI [10.5281/zenodo.23072494](https://doi.org/10.5281/zenodo.23072494)):
 
 ```bibtex
 @techreport{manzyuk2026lindapro,
@@ -41,6 +41,6 @@ If you use Linda-Pro, please cite the technical report (Zenodo, DOI [10.5281/zen
   author    = {Manzyuk, Vladyslav},
   year      = {2026},
   publisher = {Zenodo},
-  doi       = {10.5281/zenodo.23072412}
+  doi       = {10.5281/zenodo.23072494}
 }
 ```
