@@ -690,9 +690,11 @@ a{color:var(--accent)}
 <div class="lp-overlay" id="lpSet"><div class="lp-card">
   <h2>Settings</h2>
   <p>Sentence highlighting</p>
-  <select class="lp-input" id="lpSent"><option value="auto">Automatic (per sentence on a GPU, per ~300-word window on a CPU)</option><option value="windows">Fast: colour by ~300-word window</option><option value="full">Detailed: score every sentence (slow on a CPU)</option></select>
+  <select class="lp-input" id="lpSent"><option value="auto">Automatic: sliding windows, fast blocks for long texts on a CPU (recommended)</option><option value="smooth">Sliding windows of ~300 words: accurate boundaries, a few seconds more on a CPU</option><option value="windows">Fast: one colour per ~300-word block</option><option value="full">Single sentences (experimental, less reliable)</option></select>
   <p>Processor</p>
   <select class="lp-input" id="lpDev"><option value="auto">Automatic</option><option value="cpu">CPU</option><option value="cuda">GPU (NVIDIA CUDA)</option></select>
+  <label style="display:flex;gap:12px;align-items:flex-start;margin:16px 0 4px;cursor:pointer"><input type="checkbox" id="lpPreload" style="margin-top:6px;width:18px;height:18px"><span><b>Load the models when the app starts</b> (recommended)<br><span class="note" style="color:var(--text-muted)">The models are put into memory in the background right after start, while updates are checked, so the first analysis is fast.</span></span></label>
+  <div class="lp-msg" id="lpPreloadWarn" style="display:none;color:#fa6800;border-left:6px solid #fa6800;padding:8px 12px;background:rgba(250,104,0,.12)">Warning: with this off, the first analysis will take noticeably longer (roughly 5&ndash;15 s on a fast CPU, more on an older one), because the models are loaded at that moment. Later analyses are fast.</div>
   <p id="lpAbout" style="font-size:.82rem"></p>
   <div class="lp-row"><button class="lp-btn" id="lpSetSave">Save</button><button class="lp-btn sec" id="lpSetClose">Close</button><button class="lp-btn sec" id="lpCheckUpd">Check for updates</button></div>
   <div class="lp-msg" id="lpSetMsg"></div>
@@ -1485,7 +1487,8 @@ Free for personal non-commercial use; commercial use needs a licence key (<a hre
     S = s;
     $('licBadge').textContent = s.license.licensed ? 'Licensed · ' + (tierName[s.license.tier] || 'Commercial') : 'Free · personal use';
     $('licBadge').style.background = s.license.licensed ? 'rgba(52,211,153,.18)' : '';
-    $('devInfo').textContent = s.engine.phase === 'ready' || s.engine.device !== 'cpu' || s.models_ready ? ('Running on ' + (s.engine.device === 'cuda' ? 'GPU' : 'CPU') + ' · models ' + (s.installed_version || '—')) : '';
+    const eng = s.engine.phase;
+    $('devInfo').textContent = !s.models_ready ? '' : eng === 'loading' ? 'Loading models…' : eng === 'error' ? 'Model loading failed' : ((eng === 'ready' ? 'Ready on ' : 'Models load on first use · ') + (s.engine.device === 'cuda' ? 'GPU' : 'CPU') + ' · models ' + (s.installed_version || '—'));
     // first-run / download screen
     const d = s.download, setup = $('lpSetup');
     const busy = ['checking', 'downloading', 'finishing'].includes(d.phase);
@@ -1536,10 +1539,28 @@ Free for personal non-commercial use; commercial use needs a licence key (<a hre
   $('lpLicClose').onclick = () => show('lpLic', false);
   $('lpKeyGo').onclick = async () => { const m = $('lpLicMsg'); m.className = 'lp-msg'; m.textContent = 'Checking…'; try { await post('/api/license/activate', { key: $('lpKey').value }); m.className = 'lp-msg ok'; m.textContent = 'Activated. Thank you!'; $('lpKey').value = ''; } catch (e) { m.className = 'lp-msg bad'; m.textContent = e.message; } };
   $('lpKeyRemove').onclick = async () => { await post('/api/license/remove'); $('lpLicMsg').textContent = 'Key removed from this computer.'; };
-  $('btnSettings').onclick = () => { if (S) { $('lpSent').value = S.settings.sentences || 'auto'; $('lpDev').value = S.settings.device || 'auto'; } show('lpSet', true); };
+  const warnPre = () => { $('lpPreloadWarn').style.display = $('lpPreload').checked ? 'none' : 'block'; };
+  $('lpPreload').onchange = warnPre;
+  $('btnSettings').onclick = () => { if (S) { $('lpSent').value = S.settings.sentences || 'auto'; $('lpDev').value = S.settings.device || 'auto'; $('lpPreload').checked = S.settings.preload !== false; } warnPre(); show('lpSet', true); };
   $('lpSetClose').onclick = () => show('lpSet', false);
-  $('lpSetSave').onclick = async () => { await post('/api/settings', { sentences: $('lpSent').value, device: $('lpDev').value }); $('lpSetMsg').className = 'lp-msg ok'; $('lpSetMsg').textContent = 'Saved.'; };
+  $('lpSetSave').onclick = async () => { await post('/api/settings', { sentences: $('lpSent').value, device: $('lpDev').value, preload: $('lpPreload').checked }); $('lpSetMsg').className = 'lp-msg ok'; $('lpSetMsg').textContent = 'Saved.'; };
   $('lpCheckUpd').onclick = async () => { const m = $('lpSetMsg'); m.className = 'lp-msg'; m.textContent = 'Checking…'; const r = await post('/api/update/check'); m.className = 'lp-msg ' + (r.error ? 'bad' : 'ok'); m.textContent = r.error ? r.error : (r.update && (r.update.weights_update || r.update.app_new) ? 'An update is available (see the banner on top).' : 'Everything is up to date.'); };
+})();
+(function () {
+  /* explain coarse colouring: in fast mode every sentence of a ~300-word block shares the block's score */
+  const rr = window.renderResults;
+  if (typeof rr !== 'function') return;
+  window.renderResults = function (r) {
+    rr.apply(this, arguments);
+    try {
+      const card = document.getElementById('heatmapCard');
+      let h = document.getElementById('lpGranHint');
+      if (!h) { h = document.createElement('div'); h.id = 'lpGranHint'; h.style.cssText = 'padding:8px 20px;color:var(--text-muted);font-size:.78rem;border-bottom:1px solid var(--border)'; card.querySelector('.heatmap-header').insertAdjacentElement('afterend', h); }
+      const g = r && r.sentence_stats && r.sentence_stats.granularity;
+      h.textContent = g === 'window' ? 'Fast mode: colours show blocks of about 300 words (every sentence in a block gets the score of the block). Choose sliding windows in Settings for finer boundaries.' : g === 'smooth' ? 'Colours follow sliding windows of about 300 words, so boundaries are accurate to roughly 100 words; a single sentence is not scored on its own.' : g === 'sentence' ? 'Experimental: each sentence is scored on its own, which is much less reliable than a window of text.' : '';
+      h.style.display = g ? '' : 'none';
+    } catch (e) { /* cosmetic only */ }
+  };
 })();
 </script>
 </body>

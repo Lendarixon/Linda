@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 import threading
 from pathlib import Path
 
@@ -77,9 +78,24 @@ class Engine:
     def info(self) -> dict:
         return {"device": self.device, "phase": self.state["phase"], "error": self.state["error"]}
 
-    def sentence_mode(self) -> str:
+    CPU_SMOOTH_MAX_WORDS = 700  # automatic mode on a CPU: sliding windows up to this length (about 10 s), longer texts use the fast block colouring
+    SMOOTH_WINDOW, SMOOTH_MIN_STEP, SMOOTH_MAX_WINDOWS = 300, 75, 16
+
+    def sentence_mode(self, nwords: int = 0) -> str:
+        """smooth = sliding ~300-word windows (the scale the models are calibrated on; boundaries accurate to ~100 words); windows = fast, one score per ~300-word block;
+        full = every single sentence on its own (experimental: one sentence is much less reliable than a window)."""
         s = load_settings().get("sentences", "auto")
-        return ("full" if self.device == "cuda" else "windows") if s == "auto" else ("full" if s == "full" else "windows")
+        if s == "auto":
+            return "windows" if self.device != "cuda" and nwords > self.CPU_SMOOTH_MAX_WORDS else "smooth"
+        return s if s in ("smooth", "windows", "full") else "smooth"
+
+    def _smooth_windows(self, nwords: int) -> list[tuple[int, int]]:
+        W = self.SMOOTH_WINDOW
+        if nwords <= W * 1.3:
+            return [(0, nwords)]
+        step = max(self.SMOOTH_MIN_STEP, -(-(nwords - W) // (self.SMOOTH_MAX_WINDOWS - 1)))
+        starts = list(range(0, nwords - W, step)) + [nwords - W]
+        return [(s, s + W) for s in starts]
 
     def run(self, text: str, mode: str = "sensitive", models: list | None = None) -> dict:
         with self.lock:
@@ -95,14 +111,30 @@ class Engine:
             pe_c, pe_s, pm_c, pm_s, ps_c, ps_s = (*par("essay", 6.5, 2.8), *par("multi", 2.5, 2.5), *par("stylo", 1.5, 1.5))
             spans = split_sentences_with_offsets(text)
             selected = set(models) if models else set(ALL_MODELS)
-            full = self.sentence_mode() == "full"
+            nwords = len(text.split())
+            gran = self.sentence_mode(nwords)
+            full = gran == "full"
+            m_essay = m_multi = None
+            wspans = []  # (first word, after last word, essay margin, multi margin) of the windows used for colouring
             if full and spans:
                 s_texts = [s.text for s in spans]
                 m_essay = det._factory("linda_essay").margins(s_texts)
                 m_multi = det._factory("linda_multi_v2").margins(s_texts)
-            else:  # CPU: sentences inherit the score of their ~300-word window (the scale the models were calibrated on)
-                m_essay = m_multi = None
-                bounds = [(w["first_word"], w["last_word"], w["essay"]) for w in res["windows"]]
+            elif gran == "smooth" and spans:
+                wins = self._smooth_windows(nwords)
+                if len(wins) == 1:  # one window: detect() has already scored it
+                    w = res["windows"][0]
+                    wspans = [(0, nwords, w["essay"], w.get("multi", w["essay"]))]
+                else:
+                    from linda_pro.voters import clean_text
+
+                    pos = [(m.start(), m.end()) for m in re.finditer(r"\S+", text)]
+                    wt = [clean_text(text[pos[a][0]: pos[b - 1][1]]) for a, b in wins]
+                    ce = det._factory("linda_essay").margins(wt)
+                    cm = det._factory("linda_multi_v2").margins(wt)
+                    wspans = [(a, b, float(e), float(m)) for (a, b), e, m in zip(wins, ce, cm)]
+            else:  # fast: sentences inherit the score of their ~300-word block
+                wspans = [(w["first_word"], w["last_word"], w["essay"], w.get("multi", w["essay"])) for w in res["windows"]]
             sentences, cnt = [], {"ai": 0, "uncertain": 0, "human": 0}
             for i, s in enumerate(spans):
                 if full:
@@ -113,16 +145,20 @@ class Engine:
                     p_ai = sum(probs) / len(probs)
                 else:
                     wi = len(text[: s.start].split())
-                    me = next((m for a, b, m in bounds if a <= wi < b), bounds[-1][2])
-                    mm, pe = 0.0, _sig(me, pe_c, pe_s)
-                    pm, p_ai = 0.0, pe
+                    c = wi + max(1, len(s.text.split())) // 2  # the word in the middle of the sentence
+                    cover = [w for w in wspans if w[0] <= c < w[1]] or [min(wspans, key=lambda w: abs((w[0] + w[1]) / 2 - c))]
+                    me = sum(w[2] for w in cover) / len(cover)  # average over the windows that cover the sentence
+                    mm = sum(w[3] for w in cover) / len(cover)
+                    pe, pm = _sig(me, pe_c, pe_s), _sig(mm, pm_c, pm_s)
+                    probs = ([pe] if "linda_essay" in selected else []) + ([pm] if "linda_multi_v2" in selected else []) or [pe, pm]
+                    p_ai = sum(probs) / len(probs)
                 lbl = "ai" if p_ai >= 0.58 else "uncertain" if p_ai >= 0.38 else "human"
                 cnt[lbl] += 1
                 sentences.append({"start": s.start, "end": s.end, "text": s.text, "essay_margin": round(me, 2), "multi_margin": round(mm, 2),
                                   "essay_prob": round(pe, 3), "multi_prob": round(pm, 3), "p_ai": round(p_ai, 3), "label": lbl})
             res["sentences"] = sentences
             res["sentence_stats"] = {"total": len(sentences), **cnt, "ai_pct": round(cnt["ai"] / len(sentences) * 100) if sentences else 0,
-                                     "granularity": "sentence" if full else "window"}
+                                     "granularity": {"full": "sentence", "smooth": "smooth", "windows": "window"}[gran]}
             if models and len(models) < 3:
                 chosen = [m for m in models if m in det.mean]
                 if len(chosen) == 1:

@@ -116,8 +116,8 @@ class LindaPro:
             agg = {"stylo7c": raw["stylo7c"][i], "linda_essay": top25(raw["linda_essay"][i]), "linda_multi_v2": top25(raw["linda_multi_v2"][i])}
             z = sum((agg[k] - self.mean[k]) / self.std[k] for k in self.voters) / len(self.voters)
             ess = agg["linda_essay"]
-            wl = [{"first_word": a, "last_word": b, "essay": float(s), "flag": bool(s > self.window_thr)}
-                  for (_, a, b), s in zip(wins[i], raw["linda_essay"][i])]
+            wl = [{"first_word": a, "last_word": b, "essay": float(s), "multi": float(m), "flag": bool(s > self.window_thr)}
+                  for (_, a, b), s, m in zip(wins[i], raw["linda_essay"][i], raw["linda_multi_v2"][i])]
             tot = sum(w["last_word"] - w["first_word"] for w in wl) or 1
             share = sum(w["last_word"] - w["first_word"] for w in wl if w["flag"]) / tot
             res.append({"verdict": verdict(ess, z, agg["stylo7c"], self.rules, self.mode), "mode": self.mode, "essay": float(ess),

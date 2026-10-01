@@ -60,7 +60,7 @@ class Core:
     def __init__(self) -> None:
         self.engine = Engine()
         self.job = updater.Job()
-        self.job.on_done = lambda m: self.engine.unload()  # new weights: reload on the next analysis
+        self.job.on_done = lambda m: (self.engine.unload(), self.preload())  # new weights: drop the old ones and, if enabled, load the new ones right away
         self.manifest: dict | None = None
         self.manifest_raw: bytes = b""
         self.update: dict | None = None
@@ -78,7 +78,24 @@ class Core:
             self.update_error = str(e)
         self.checked_at = time.time()
 
+    def preload(self) -> bool:
+        """Load the models into memory in the background (setting "preload", on by default) so that the first analysis is fast. Returns True if a load was started."""
+        if not load_settings().get("preload", True) or self.engine.dets is not None or not updater.is_complete():
+            return False
+
+        def work():
+            try:
+                with self.engine.lock:
+                    self.engine.ensure_loaded()
+            except Exception as e:  # noqa: BLE001
+                self.engine.state = {"phase": "error", "error": f"{type(e).__name__}: {e}"}
+
+        threading.Thread(target=work, daemon=True).start()
+        return True
+
     def background(self) -> None:
+        self.preload()
+
         def loop():
             try:
                 licensing.revalidate()
@@ -198,11 +215,15 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         cur = load_settings()
         if body.get("sentences") in ("auto", "full", "windows"):
             cur["sentences"] = body["sentences"]
+        if isinstance(body.get("preload"), bool):
+            cur["preload"] = body["preload"]
         if body.get("device") in ("auto", "cpu", "cuda"):
             if cur.get("device") != body["device"]:
                 core.engine.unload()
             cur["device"] = body["device"]
         save_settings(cur)
+        if cur.get("preload", True):
+            core.preload()  # switched on (or the device changed): load now
         return {"settings": cur}
 
     @api.post("/api/app/update")
