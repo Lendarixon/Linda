@@ -1,0 +1,1473 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linda-Pro — AI Content Detector & Origin Attribution</title>
+<script>
+/* every API call carries the local session token (the page is served by the app itself, 127.0.0.1 only) */
+(function () {
+  const orig = window.fetch.bind(window);
+  window.fetch = function (url, opts) {
+    opts = Object.assign({}, opts || {});
+    opts.headers = Object.assign({}, opts.headers || {}, { "x-linda-token": "__LINDA_TOKEN__" });
+    return orig(url, opts);
+  };
+})();
+</script>
+<style>
+:root {
+  --bg: #0d0f15;
+  --bg-card: #151822;
+  --bg-elevated: #1b1f2c;
+  --border: #282d3e;
+  --border-focus: #5b7cfa;
+  --text: #e9ecf2;
+  --text-muted: #8b93a7;
+  --accent: #5b7cfa;
+  --accent-light: rgba(91, 124, 250, 0.15);
+  --ai: #ff5768;
+  --ai-bg: rgba(255, 87, 104, 0.16);
+  --ai-border: rgba(255, 87, 104, 0.4);
+  --human: #34d399;
+  --human-bg: rgba(52, 211, 153, 0.14);
+  --human-border: rgba(52, 211, 153, 0.4);
+  --uncertain: #f59e0b;
+  --uncertain-bg: rgba(245, 158, 11, 0.15);
+  --uncertain-border: rgba(245, 158, 11, 0.4);
+  --radius-lg: 14px;
+  --radius-md: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* HEADER */
+.header {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+.brand-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #5b7cfa, #a855f7);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(91, 124, 250, 0.4);
+}
+.badge-commercial {
+  background: linear-gradient(135deg, var(--accent), #9333ea);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+/* MAIN LAYOUT */
+.main-grid {
+  display: grid;
+  grid-template-columns: 290px 1fr 360px;
+  min-height: calc(100vh - 61px);
+}
+@media (max-width: 1180px) {
+  .main-grid { grid-template-columns: 1fr; }
+  .panel-left, .panel-right { border: none !important; position: static !important; max-height: none !important; }
+}
+
+/* LEFT PANEL: CONFIG */
+.panel-left {
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 20px;
+  overflow-y: auto;
+  max-height: calc(100vh - 61px);
+  position: sticky;
+  top: 61px;
+}
+.section-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+.tabs-mode {
+  display: flex;
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 3px;
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+}
+.tabs-mode button {
+  flex: 1;
+  text-align: center;
+  padding: 8px 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--text-muted);
+  border: none;
+  background: none;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+.tabs-mode button.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(91, 124, 250, 0.4);
+}
+
+.model-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.model-card:hover { border-color: var(--accent); }
+.model-card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.model-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.model-name { font-size: 0.85rem; font-weight: 700; }
+.model-check {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+.model-check.radio { border-radius: 50%; }
+.model-card.active .model-check { background: var(--accent); border-color: var(--accent); }
+.model-card.active .model-check::after { content: '✓'; color: #fff; font-size: 11px; font-weight: 900; }
+.model-desc { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; line-height: 1.45; }
+.model-tags { display: flex; gap: 4px; margin-top: 8px; }
+.tag { font-size: 0.62rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+.tag.en { background: rgba(91, 124, 250, 0.15); color: #7c9fff; }
+.tag.multi { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+.tag.cpu { background: rgba(139, 147, 167, 0.15); color: var(--text-muted); }
+
+/* CENTER PANEL: INPUT & HEATMAP */
+.panel-center {
+  padding: 24px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* DROPZONE & TEXTAREA */
+.input-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  position: relative;
+  transition: border-color 0.2s, background 0.2s;
+}
+.input-box.dragover {
+  border-color: var(--accent);
+  background: rgba(91, 124, 250, 0.05);
+}
+
+.dropzone-overlay {
+  display: none;
+  position: absolute;
+  inset: 12px;
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius-md);
+  background: rgba(21, 24, 34, 0.95);
+  backdrop-filter: blur(4px);
+  z-index: 10;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.input-box.dragover .dropzone-overlay { display: flex; }
+.dropzone-overlay .drop-icon { font-size: 2.2rem; }
+.dropzone-overlay .drop-text { font-size: 0.95rem; font-weight: 700; color: var(--accent); }
+
+.file-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-light);
+  border: 1px solid rgba(91, 124, 250, 0.3);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.file-pill.hidden { display: none; }
+.file-pill .btn-del-file {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0 2px;
+}
+.file-pill .btn-del-file:hover { color: var(--ai); }
+
+textarea {
+  width: 100%;
+  min-height: 220px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  line-height: 1.7;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+textarea:focus { border-color: var(--border-focus); }
+textarea::placeholder { color: #555d73; }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.btn-analyze {
+  background: linear-gradient(135deg, #5b7cfa, #7c3aed);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 11px 32px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(91, 124, 250, 0.35);
+  transition: all 0.2s;
+}
+.btn-analyze:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(91, 124, 250, 0.5); }
+.btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-upload {
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.btn-upload:hover { border-color: var(--accent); background: var(--bg); }
+
+.status-indicator {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.btn-analyze.loading .spinner { display: inline-block; }
+
+.counter {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* HEATMAP PANGRAM-STYLE PANEL */
+.heatmap-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.heatmap-card.hidden { display: none; }
+
+.heatmap-header {
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.heatmap-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.heatmap-switcher {
+  display: flex;
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 3px;
+  border: 1px solid var(--border);
+}
+.heatmap-switcher button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 5px 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.heatmap-switcher button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* SENTENCE STATS BAR */
+.sentence-stats-bar {
+  display: flex;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 22px;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.stat-dot.ai { background: var(--ai); }
+.stat-dot.uncertain { background: var(--uncertain); }
+.stat-dot.human { background: var(--human); }
+
+/* DOCUMENT VIEW WITH SPANS */
+.doc-view {
+  padding: 24px 28px;
+  line-height: 2.2;
+  font-size: 0.98rem;
+  white-space: pre-wrap;
+  color: #d1d5db;
+}
+.sent-span {
+  padding: 3px 2px;
+  border-radius: 4px;
+  transition: background 0.2s, filter 0.2s;
+  cursor: pointer;
+  position: relative;
+}
+.sent-span:hover {
+  filter: brightness(1.25);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.sent-span.ai {
+  background: var(--ai-bg);
+  border-bottom: 2px solid var(--ai);
+}
+.sent-span.uncertain {
+  background: var(--uncertain-bg);
+  border-bottom: 2px solid var(--uncertain);
+}
+.sent-span.human {
+  background: var(--human-bg);
+}
+
+.sent-tag {
+  font-size: 0.6rem;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 3px;
+  vertical-align: super;
+  margin-left: 3px;
+  letter-spacing: 0.4px;
+}
+.sent-tag.ai { background: var(--ai); color: #fff; }
+
+/* TOOLTIP */
+.sent-tooltip {
+  position: fixed;
+  background: #1e2230;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  pointer-events: none;
+  z-index: 1000;
+  display: none;
+  max-width: 280px;
+}
+
+/* RIGHT PANEL: RESULTS */
+.panel-right {
+  background: var(--bg-card);
+  border-left: 1px solid var(--border);
+  padding: 20px;
+  overflow-y: auto;
+  max-height: calc(100vh - 61px);
+  position: sticky;
+  top: 61px;
+}
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  padding: 60px 10px;
+  line-height: 1.8;
+}
+.empty-state .icon { font-size: 2.8rem; margin-bottom: 12px; }
+
+/* VERDICT CARD */
+.verdict-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.verdict-header {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.verdict-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 24px;
+  border-radius: 999px;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+.verdict-badge.ai { background: var(--ai-bg); color: var(--ai); border: 1px solid var(--ai-border); }
+.verdict-badge.human { background: var(--human-bg); color: var(--human); border: 1px solid var(--human-border); }
+.verdict-badge.uncertain { background: var(--uncertain-bg); color: var(--uncertain); border: 1px solid var(--uncertain-border); }
+
+.verdict-pct {
+  font-size: 2.2rem;
+  font-weight: 900;
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.verdict-meta {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* METRICS GRID */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.metric-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+.metric-label { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); }
+.metric-val { font-size: 1.25rem; font-weight: 900; margin-top: 2px; }
+
+/* VOTERS SUMMARY */
+.voters-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.voter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.voter-row:last-child { border-bottom: none; }
+.voter-title { font-size: 0.8rem; font-weight: 700; }
+.voter-score { font-size: 0.95rem; font-weight: 900; font-family: monospace; }
+
+.hidden { display: none !important; }
+</style>
+
+<style>
+.lp-link{background:none;border:0;color:#8fa8ff;cursor:pointer;font:inherit}
+.lp-overlay{position:fixed;inset:0;background:rgba(8,10,16,.88);z-index:50;display:none;align-items:center;justify-content:center;padding:20px}
+.lp-overlay.show{display:flex}
+.lp-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:28px 30px;max-width:560px;width:100%;box-shadow:var(--shadow)}
+.lp-card h2{font-size:1.35rem;margin-bottom:8px}.lp-card p{color:var(--text-muted);margin:8px 0}
+.lp-btn{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:10px 18px;font-weight:700;cursor:pointer;font:inherit;font-weight:700}
+.lp-btn.sec{background:var(--bg-elevated);color:var(--text);border:1px solid var(--border)}
+.lp-bar{height:12px;background:var(--bg-elevated);border-radius:7px;overflow:hidden;margin:14px 0 6px}
+.lp-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#5b7cfa,#34d399);transition:width .4s}
+.lp-banner{display:none;position:sticky;top:0;z-index:40;padding:10px 20px;background:#26325f;border-bottom:1px solid #3b4b8a;color:#dfe6ff;font-size:.9rem;align-items:center;gap:14px;flex-wrap:wrap}
+.lp-banner.show{display:flex}.lp-banner.warn{background:#5a2330;border-color:#8a3b4b}
+.lp-input{width:100%;background:var(--bg-elevated);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 12px;font:inherit;margin:8px 0}
+.lp-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.lp-msg{font-size:.88rem;margin-top:8px;min-height:1.2em}.lp-msg.bad{color:#ff8a98}.lp-msg.ok{color:#5be0ae}
+.lp-lic-note{display:none;margin:10px auto 0;max-width:1100px;padding:0 20px;color:#9aa2b6;font-size:.82rem}
+</style>
+</head>
+<body>
+<div class="lp-banner" id="lpBanner"><span id="lpBannerText"></span><button class="lp-btn" id="lpBannerBtn"></button></div>
+
+<div class="lp-overlay" id="lpSetup"><div class="lp-card">
+  <h2>Welcome to Linda-Pro</h2>
+  <p id="lpSetupText">First start: the detector models (<b id="lpSetupSize">…</b>) are downloaded once and stay on this computer. Afterwards the app works fully offline.</p>
+  <div class="lp-bar"><i id="lpSetupBar"></i></div>
+  <p id="lpSetupProg" style="font-size:.85rem"></p>
+  <div class="lp-msg bad" id="lpSetupErr"></div>
+  <div class="lp-row"><button class="lp-btn" id="lpSetupGo">Download models</button><button class="lp-btn sec" id="lpSetupCancel" style="display:none">Pause</button></div>
+</div></div>
+
+<div class="lp-overlay" id="lpLic"><div class="lp-card">
+  <h2>Licence</h2>
+  <p id="lpLicState"></p>
+  <p>Linda-Pro (the app, the command line tools and the models) is free for personal non-commercial use. Commercial use (paid work, clients, a business, a school or university, a product) needs a licence key; <b>one key covers the app, the command line tools and the models together</b>.</p>
+  <input class="lp-input" id="lpKey" placeholder="LINDA-XXXXXXXX-…" autocomplete="off" spellcheck="false">
+  <div class="lp-msg" id="lpLicMsg"></div>
+  <div class="lp-row"><button class="lp-btn" id="lpKeyGo">Activate</button><button class="lp-btn sec" id="lpKeyRemove" style="display:none">Remove key</button><button class="lp-btn sec" id="lpLicClose">Close</button></div>
+  <p style="margin-top:16px;font-size:.88rem">Buy: <a class="lp-link" id="lpBuy1" href="#" target="_blank">Personal $10 / Team $30</a> · <a class="lp-link" id="lpBuy2" href="#" target="_blank">Organization / University $1000 per year</a> · OEM, exclusive, custom calibration: <span id="lpMail"></span></p>
+  <p style="font-size:.8rem">Activation sends only the key and a random device label to the licence server (Polar). Your texts never leave this computer.</p>
+</div></div>
+
+<div class="lp-overlay" id="lpSet"><div class="lp-card">
+  <h2>Settings</h2>
+  <p>Sentence highlighting</p>
+  <select class="lp-input" id="lpSent"><option value="auto">Automatic (per sentence on a GPU, per ~300-word window on a CPU)</option><option value="windows">Fast: colour by ~300-word window</option><option value="full">Detailed: score every sentence (slow on a CPU)</option></select>
+  <p>Processor</p>
+  <select class="lp-input" id="lpDev"><option value="auto">Automatic</option><option value="cpu">CPU</option><option value="cuda">GPU (NVIDIA CUDA)</option></select>
+  <p id="lpAbout" style="font-size:.82rem"></p>
+  <div class="lp-row"><button class="lp-btn" id="lpSetSave">Save</button><button class="lp-btn sec" id="lpSetClose">Close</button><button class="lp-btn sec" id="lpCheckUpd">Check for updates</button></div>
+  <div class="lp-msg" id="lpSetMsg"></div>
+</div></div>
+
+
+<header class="header">
+  <div class="brand">
+    <div class="brand-icon">⚡</div>
+    Linda-Pro __LINDA_VERSION__
+    <span class="badge-commercial" id="licBadge" style="cursor:pointer" title="Licence">Free · personal use</span>
+  </div>
+  <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600">
+    <span id="devInfo"></span> <button class="lp-link" id="btnSettings">⚙ Settings</button>
+  </div>
+</header>
+
+<div class="main-grid">
+  <!-- LEFT: CONFIG -->
+  <aside class="panel-left">
+    <div class="section-title">Analysis Mode</div>
+    <div class="tabs-mode" id="modeTabs">
+      <button data-mode="single">Single</button>
+      <button data-mode="compare">Compare</button>
+      <button class="active" data-mode="ensemble">Ensemble</button>
+    </div>
+
+    <div class="section-title">Commercial Models</div>
+    <div id="modelsContainer">
+      <div class="model-card active" data-id="linda_essay">
+        <div class="model-card-top">
+          <span class="model-name">Linda-Essay-D</span>
+          <span class="model-check"></span>
+        </div>
+        <div class="model-desc">DeBERTa-large fine-tuned on diverse academic & formal essays</div>
+        <div class="model-tags">
+          <span class="tag en">EN</span>
+          <span class="tag">~2 GB VRAM</span>
+        </div>
+      </div>
+
+      <div class="model-card active" data-id="linda_multi_v2">
+        <div class="model-card-top">
+          <span class="model-name">Linda-Multi-D</span>
+          <span class="model-check"></span>
+        </div>
+        <div class="model-desc">mDeBERTa-base multilingual classifier for EN, RU and PL</div>
+        <div class="model-tags">
+          <span class="tag multi">EN / RU / PL</span>
+          <span class="tag">~1.2 GB VRAM</span>
+        </div>
+      </div>
+
+      <div class="model-card active" data-id="stylo7c">
+        <div class="model-card-top">
+          <span class="model-name">Stylo-D</span>
+          <span class="model-check"></span>
+        </div>
+        <div class="model-desc">LightGBM stylometry (~250 features + char/word n-grams)</div>
+        <div class="model-tags">
+          <span class="tag multi">EN / RU / PL</span>
+          <span class="tag cpu">CPU only</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <div class="section-title">Detection Threshold</div>
+      <div class="tabs-mode" id="sensTabs">
+        <button class="active" data-sens="sensitive">🎯 Sensitive</button>
+        <button data-sens="precise">🛡️ Precise</button>
+      </div>
+      <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.5">
+        <b>Sensitive:</b> high recall for modern LLMs.<br>
+        <b>Precise:</b> minimized false positives for schools/publishers.
+      </div>
+    </div>
+  </aside>
+
+  <!-- CENTER: INPUT & SENTENCE HEATMAP -->
+  <main class="panel-center">
+    <div class="input-box" id="dropzoneBox">
+      <div class="dropzone-overlay">
+        <div class="drop-icon">📁</div>
+        <div class="drop-text">Drop file here to extract text</div>
+      </div>
+
+      <div class="file-pill hidden" id="filePill">
+        <span>📄 <b id="filePillName">file.docx</b> (<span id="filePillSize">0 KB</span>)</span>
+        <button class="btn-del-file" id="btnDelFile" title="Remove file">✕</button>
+      </div>
+
+      <textarea id="textInput" placeholder="Paste your text here to verify authorship and trace sentence-level origins...
+
+Or drag & drop a .pdf, .docx, .txt, or .md document directly into this box."></textarea>
+
+      <div class="toolbar">
+        <button class="btn-analyze" id="btnAnalyze">
+          <span class="spinner"></span>
+          <span>Analyze Text</span>
+        </button>
+
+        <button class="btn-upload" id="btnUploadTrigger" type="button">
+          <span>📎 Attach File</span>
+        </button>
+        <input type="file" id="filePicker" accept=".pdf,.docx,.txt,.md" class="hidden">
+
+        <span class="status-indicator" id="statusIndicator"></span>
+        <span class="counter" id="charCounter">0 characters · 0 words</span>
+      </div>
+    </div>
+
+    <!-- PANGRAM-STYLE SENTENCE HEATMAP -->
+    <div class="heatmap-card hidden" id="heatmapCard">
+      <div class="heatmap-header">
+        <div class="heatmap-title">
+          <span>🔬 Sentence-Level Origin Heatmap</span>
+        </div>
+        <div class="heatmap-switcher" id="heatmapSwitcher">
+          <button class="active" data-source="ensemble">Ensemble Consensus</button>
+          <button data-source="essay">Linda-Essay-D</button>
+          <button data-source="multi">Linda-Multi-D</button>
+        </div>
+      </div>
+
+      <div class="sentence-stats-bar" id="sentenceStatsBar">
+        <div class="stat-pill">
+          <span class="stat-dot ai"></span>
+          <span id="statAiCount">0 AI sentences (0%)</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-dot uncertain"></span>
+          <span id="statUncCount">0 Uncertain</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-dot human"></span>
+          <span id="statHuCount">0 Human</span>
+        </div>
+      </div>
+
+      <div class="doc-view" id="docView"></div>
+    </div>
+  </main>
+
+  <!-- RIGHT: RESULTS -->
+  <aside class="panel-right">
+    <div class="empty-state" id="emptyState">
+      <div class="icon">📊</div>
+      Paste text or upload a document<br>to view the commercial ensemble verdict.
+    </div>
+
+    <div class="hidden" id="resultsContent">
+      <div class="verdict-box">
+        <div class="verdict-header" id="verdictHeader">Ensemble Verdict</div>
+        <div class="verdict-badge" id="verdictBadge">AI Generated</div>
+        <div class="verdict-pct" id="verdictPct">98%</div>
+        <div class="verdict-meta" id="verdictMeta">Confidence based on ensemble z-score</div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">AI Sentences</div>
+          <div class="metric-val" id="metricAiSentences" style="color:var(--ai)">0%</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Ensemble Z-Score</div>
+          <div class="metric-val" id="metricZScore">0.00</div>
+        </div>
+      </div>
+
+      <div class="voters-card">
+        <div class="section-title">Model Margins (higher = AI)</div>
+        <div class="voter-row">
+          <span class="voter-title">📝 Linda-Essay-D</span>
+          <span class="voter-score" id="voterScoreEssay">—</span>
+        </div>
+        <div class="voter-row">
+          <span class="voter-title">🌐 Linda-Multi-D</span>
+          <span class="voter-score" id="voterScoreMulti">—</span>
+        </div>
+        <div class="voter-row">
+          <span class="voter-title">📊 Stylo-D (Stylometry)</span>
+          <span class="voter-score" id="voterScoreStylo">—</span>
+        </div>
+      </div>
+
+      <!-- EXPORT & HUMANIZATION -->
+      <div class="voters-card" style="margin-top:16px;">
+        <div class="section-title">📋 Export & Humanization</div>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:12px;">
+          Export report or copy prompt to ask Claude / ChatGPT to humanize flagged sentences:
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button class="btn-primary" style="padding:10px; font-size:0.85rem;" onclick="copyHumanizerPrompt()">🤖 Copy Humanizer Prompt</button>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <button class="btn-secondary" style="padding:8px; font-size:0.8rem;" onclick="downloadMarkdownReport()">💾 Download .md</button>
+            <button class="btn-secondary" style="padding:8px; font-size:0.8rem;" onclick="downloadJsonReport()">💾 Download JSON</button>
+          </div>
+        </div>
+        <div id="demoAiSentencesList" style="margin-top:14px;"></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- FLOATING TOOLTIP FOR HOVER -->
+<div class="sent-tooltip" id="sentTooltip"></div>
+
+<script>
+// STATE
+let activeMode = 'ensemble'; // 'single' | 'compare' | 'ensemble'
+let activeSens = 'sensitive';
+let selectedModels = new Set(['linda_essay', 'linda_multi_v2', 'stylo7c']);
+let lastResult = null;
+let activeHeatmapSource = 'ensemble';
+
+// DOM REFS
+const textInput = document.getElementById('textInput');
+const btnAnalyze = document.getElementById('btnAnalyze');
+const btnUploadTrigger = document.getElementById('btnUploadTrigger');
+const filePicker = document.getElementById('filePicker');
+const dropzoneBox = document.getElementById('dropzoneBox');
+const filePill = document.getElementById('filePill');
+const filePillName = document.getElementById('filePillName');
+const filePillSize = document.getElementById('filePillSize');
+const btnDelFile = document.getElementById('btnDelFile');
+const charCounter = document.getElementById('charCounter');
+const statusIndicator = document.getElementById('statusIndicator');
+
+const emptyState = document.getElementById('emptyState');
+const resultsContent = document.getElementById('resultsContent');
+const verdictHeader = document.getElementById('verdictHeader');
+const verdictBadge = document.getElementById('verdictBadge');
+const verdictPct = document.getElementById('verdictPct');
+const verdictMeta = document.getElementById('verdictMeta');
+const metricAiSentences = document.getElementById('metricAiSentences');
+const metricZScore = document.getElementById('metricZScore');
+const voterScoreEssay = document.getElementById('voterScoreEssay');
+const voterScoreMulti = document.getElementById('voterScoreMulti');
+const voterScoreStylo = document.getElementById('voterScoreStylo');
+
+const heatmapCard = document.getElementById('heatmapCard');
+const heatmapSwitcher = document.getElementById('heatmapSwitcher');
+const docView = document.getElementById('docView');
+const statAiCount = document.getElementById('statAiCount');
+const statUncCount = document.getElementById('statUncCount');
+const statHuCount = document.getElementById('statHuCount');
+const sentTooltip = document.getElementById('sentTooltip');
+
+// UPDATE COUNTERS
+textInput.addEventListener('input', () => {
+  const t = textInput.value;
+  const chars = t.length;
+  const words = t.trim() ? t.trim().split(/\s+/).length : 0;
+  charCounter.textContent = `${chars.toLocaleString()} characters · ${words.toLocaleString()} words`;
+});
+
+// MODE TABS
+document.getElementById('modeTabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  document.querySelectorAll('#modeTabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeMode = btn.dataset.mode;
+
+  if (activeMode === 'single') {
+    selectedModels.clear();
+    selectedModels.add('linda_essay');
+  } else if (activeMode === 'ensemble') {
+    selectedModels = new Set(['linda_essay', 'linda_multi_v2', 'stylo7c']);
+  }
+  updateModelCardsUI();
+});
+
+// SENSITIVITY TABS
+document.getElementById('sensTabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  document.querySelectorAll('#sensTabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeSens = btn.dataset.sens;
+});
+
+// MODEL CARD SELECTION
+document.getElementById('modelsContainer').addEventListener('click', (e) => {
+  const card = e.target.closest('.model-card');
+  if (!card) return;
+  const id = card.dataset.id;
+
+  if (activeMode === 'single') {
+    selectedModels.clear();
+    selectedModels.add(id);
+  } else if (activeMode === 'compare') {
+    if (selectedModels.has(id)) {
+      if (selectedModels.size > 1) selectedModels.delete(id);
+    } else {
+      selectedModels.add(id);
+    }
+  } else {
+    // Ensemble mode always keeps all models
+    return;
+  }
+  updateModelCardsUI();
+});
+
+function updateModelCardsUI() {
+  document.querySelectorAll('.model-card').forEach(card => {
+    const id = card.dataset.id;
+    const isSelected = selectedModels.has(id);
+    card.classList.toggle('active', isSelected);
+    const check = card.querySelector('.model-check');
+    check.classList.toggle('radio', activeMode === 'single');
+  });
+}
+
+// DRAG & DROP & FILE ATTACHMENT
+['dragenter', 'dragover'].forEach(name => {
+  dropzoneBox.addEventListener(name, (e) => {
+    e.preventDefault();
+    dropzoneBox.classList.add('dragover');
+  });
+});
+['dragleave', 'drop'].forEach(name => {
+  dropzoneBox.addEventListener(name, (e) => {
+    e.preventDefault();
+    dropzoneBox.classList.remove('dragover');
+  });
+});
+
+dropzoneBox.addEventListener('drop', (e) => {
+  if (e.dataTransfer.files && e.dataTransfer.files.length) {
+    handleFileUpload(e.dataTransfer.files[0]);
+  }
+});
+
+btnUploadTrigger.addEventListener('click', () => filePicker.click());
+filePicker.addEventListener('change', () => {
+  if (filePicker.files && filePicker.files.length) {
+    handleFileUpload(filePicker.files[0]);
+  }
+});
+
+btnDelFile.addEventListener('click', () => {
+  filePill.classList.add('hidden');
+  filePicker.value = '';
+  textInput.value = '';
+  textInput.dispatchEvent(new Event('input'));
+});
+
+async function handleFileUpload(file) {
+  if (!file) return;
+  const formData = new FormData();
+  formData.append('file', file);
+
+  statusIndicator.innerHTML = '<span class="spinner" style="display:inline-block"></span> Extracting text…';
+  btnAnalyze.disabled = true;
+
+  try {
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Failed to extract text from document');
+
+    textInput.value = data.text;
+    textInput.dispatchEvent(new Event('input'));
+
+    filePillName.textContent = data.filename;
+    filePillSize.textContent = `${(file.size / 1024).toFixed(1)} KB`;
+    filePill.classList.remove('hidden');
+
+    statusIndicator.textContent = `✅ Loaded ${data.words.toLocaleString()} words`;
+  } catch (err) {
+    alert('Upload error: ' + err.message);
+    statusIndicator.textContent = '';
+  } finally {
+    btnAnalyze.disabled = false;
+  }
+}
+
+// ANALYSIS
+btnAnalyze.addEventListener('click', runAnalysis);
+textInput.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runAnalysis();
+});
+
+async function runAnalysis() {
+  const text = textInput.value.trim();
+  if (!text) { textInput.focus(); return; }
+
+  btnAnalyze.disabled = true;
+  btnAnalyze.classList.add('loading');
+  statusIndicator.innerHTML = '<span class="spinner" style="display:inline-block"></span> Running inference…';
+  const t0 = performance.now();
+
+  try {
+    const res = await fetch('/api/detect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text,
+        mode: activeSens,
+        models: Array.from(selectedModels)
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || res.statusText);
+    }
+    const data = await res.json();
+    lastResult = data.result;
+    lastResult._elapsed = ((performance.now() - t0) / 1000).toFixed(2);
+    lastResult._text = text;
+
+    renderResults(lastResult);
+    renderSentenceHeatmap(lastResult);
+    statusIndicator.textContent = `Finished in ${lastResult._elapsed}s`;
+  } catch (err) {
+    alert('Error during analysis: ' + err.message);
+    statusIndicator.textContent = '';
+  } finally {
+    btnAnalyze.disabled = false;
+    btnAnalyze.classList.remove('loading');
+  }
+}
+
+// RENDER RESULTS
+function renderResults(r) {
+  emptyState.classList.add('hidden');
+  resultsContent.classList.remove('hidden');
+
+  let verdict = r.verdict;
+  let pct = 0;
+  let metaDesc = `Mode: ${r.mode} · Elapsed: ${r._elapsed}s`;
+
+  if (r.custom_verdict) {
+    // Single or custom subset mode
+    verdict = r.custom_verdict.verdict;
+    pct = Math.round(r.custom_verdict.p_ai * 100);
+    verdictHeader.textContent = r.custom_verdict.model ? `Single Model: ${r.custom_verdict.model}` : 'Subset Ensemble Verdict';
+    metaDesc = `Score: ${r.custom_verdict.score || r.custom_verdict.z} · ${metaDesc}`;
+  } else {
+    // Standard ensemble
+    verdictHeader.textContent = 'Linda-Pro Ensemble Verdict';
+    const z = r.ens_z || 0;
+    pct = Math.min(99, Math.max(1, Math.round(100 / (1 + Math.exp(-1.7 * z)))));
+    metaDesc = `Ensemble Z-Score: ${z.toFixed(3)} · ${metaDesc}`;
+  }
+
+  verdictBadge.className = 'verdict-badge ' + verdict;
+  verdictBadge.textContent = verdict === 'ai' ? 'AI Generated' : (verdict === 'human' ? 'Human Written' : 'Uncertain');
+
+  verdictPct.textContent = `${pct}%`;
+  verdictPct.style.color = `var(--${verdict})`;
+  verdictMeta.textContent = metaDesc;
+
+  // Sentences stat
+  if (r.sentence_stats) {
+    metricAiSentences.textContent = `${r.sentence_stats.ai_pct}%`;
+    metricAiSentences.style.color = r.sentence_stats.ai_pct >= 50 ? 'var(--ai)' : 'var(--human)';
+  } else {
+    metricAiSentences.textContent = `${Math.round((r.ai_share || 0) * 100)}%`;
+  }
+
+  metricZScore.textContent = (r.ens_z || 0).toFixed(2);
+
+  // Voter scores
+  const v = r.voters || {};
+  voterScoreEssay.textContent = v.linda_essay !== undefined ? v.linda_essay.toFixed(2) : '—';
+  voterScoreEssay.style.color = v.linda_essay > 8.0 ? 'var(--ai)' : 'var(--text)';
+
+  voterScoreMulti.textContent = v.linda_multi_v2 !== undefined ? v.linda_multi_v2.toFixed(2) : '—';
+  voterScoreMulti.style.color = v.linda_multi_v2 > 4.0 ? 'var(--ai)' : 'var(--text)';
+
+  voterScoreStylo.textContent = v.stylo7c !== undefined ? v.stylo7c.toFixed(2) : '—';
+  voterScoreStylo.style.color = v.stylo7c > 2.5 ? 'var(--ai)' : 'var(--text)';
+
+  renderExportSection(r);
+}
+
+// PANGRAM HEATMAP SWITCHER
+heatmapSwitcher.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  heatmapSwitcher.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeHeatmapSource = btn.dataset.source;
+  if (lastResult) renderSentenceHeatmap(lastResult);
+});
+
+// PANGRAM-STYLE SENTENCE HEATMAP RENDERING
+function renderSentenceHeatmap(r) {
+  if (!r.sentences || !r.sentences.length) {
+    heatmapCard.classList.add('hidden');
+    return;
+  }
+  heatmapCard.classList.remove('hidden');
+
+  const stats = r.sentence_stats || { total: r.sentences.length, ai: 0, uncertain: 0, human: 0 };
+  statAiCount.textContent = `${stats.ai} AI sentences (${stats.total ? Math.round(stats.ai / stats.total * 100) : 0}%)`;
+  statUncCount.textContent = `${stats.uncertain} Uncertain`;
+  statHuCount.textContent = `${stats.human} Human`;
+
+  docView.innerHTML = '';
+  const text = r._text;
+  let cursor = 0;
+
+  r.sentences.forEach((s, idx) => {
+    const sText = s.text || text.slice(s.start, s.end);
+    let sStart = s.start;
+    let sEnd = s.end;
+    if (s.text) {
+      const found = text.indexOf(s.text, cursor);
+      if (found !== -1) {
+        sStart = found;
+        sEnd = found + s.text.length;
+      }
+    }
+
+    // Append whitespace/text before sentence
+    if (sStart > cursor) {
+      docView.appendChild(document.createTextNode(text.slice(cursor, sStart)));
+    }
+
+    const span = document.createElement('span');
+    span.className = 'sent-span';
+    span.dataset.idx = idx;
+
+    // Pick probability based on active switcher
+    let prob = s.p_ai;
+    let probLabel = 'Ensemble Consensus';
+    if (activeHeatmapSource === 'essay') {
+      prob = s.essay_prob !== undefined ? s.essay_prob : s.p_ai;
+      probLabel = 'Linda-Essay-D';
+    } else if (activeHeatmapSource === 'multi') {
+      prob = s.multi_prob !== undefined ? s.multi_prob : s.p_ai;
+      probLabel = 'Linda-Multi-D';
+    }
+
+    // Color classes
+    if (prob >= 0.58) {
+      span.classList.add('ai');
+    } else if (prob >= 0.38) {
+      span.classList.add('uncertain');
+    } else {
+      span.classList.add('human');
+    }
+
+    span.textContent = sText;
+
+    // AI badge for high probability
+    if (prob >= 0.65) {
+      const tag = document.createElement('span');
+      tag.className = 'sent-tag ai';
+      tag.textContent = `AI ${Math.round(prob * 100)}%`;
+      span.appendChild(tag);
+    }
+
+    // Hover tooltip
+    span.addEventListener('mouseenter', (ev) => {
+      const pPct = Math.round(prob * 100);
+      sentTooltip.innerHTML = `
+        <div style="font-weight:800;color:${prob >= 0.58 ? 'var(--ai)' : 'var(--human)'};margin-bottom:4px">
+          ${prob >= 0.58 ? '🚨 Likely AI Generated' : (prob >= 0.38 ? '⚠️ Uncertain' : '✅ Human Written')} (${pPct}%)
+        </div>
+        <div style="color:var(--text-muted);font-size:0.7rem;line-height:1.4">
+          <b>Source:</b> ${probLabel}<br>
+          <b>Essay margin:</b> ${s.essay_margin > 0 ? '+' : ''}${s.essay_margin}<br>
+          <b>Multi margin:</b> ${s.multi_margin > 0 ? '+' : ''}${s.multi_margin}
+        </div>
+      `;
+      sentTooltip.style.display = 'block';
+    });
+
+    span.addEventListener('mousemove', (ev) => {
+      sentTooltip.style.left = (ev.clientX + 14) + 'px';
+      sentTooltip.style.top = (ev.clientY + 14) + 'px';
+    });
+
+    span.addEventListener('mouseleave', () => {
+      sentTooltip.style.display = 'none';
+    });
+
+    docView.appendChild(span);
+    cursor = Math.max(cursor, sEnd);
+  });
+
+  if (cursor < text.length) {
+    docView.appendChild(document.createTextNode(text.slice(cursor)));
+  }
+}
+
+function renderExportSection(r) {
+  const container = document.getElementById('demoAiSentencesList');
+  if (!container) return;
+  const aiSentences = (r.sentences || []).filter(s => s.label === 'ai' || s.p_ai >= 0.5);
+  
+  if (!aiSentences.length) {
+    container.innerHTML = `
+      <div style="padding:10px; border-radius:6px; background:var(--human-bg); border:1px solid var(--human-border); color:var(--human); font-size:0.8rem; font-weight:600;">
+        ✅ No strongly AI-flagged sentences detected. Text looks natural!
+      </div>
+    `;
+    return;
+  }
+
+  let html = `
+    <div style="font-size:0.75rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px;">
+      Flagged AI Sentences (${aiSentences.length} of ${(r.sentences || []).length}):
+    </div>
+  `;
+
+  aiSentences.slice(0, 10).forEach((s, idx) => {
+    const pAi = Math.round(s.p_ai * 100);
+    html += `
+      <div style="background:var(--bg-elevated); border:1px solid var(--border); border-left:3px solid var(--ai); border-radius:6px; padding:8px 10px; margin-bottom:8px; font-size:0.8rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <span style="font-weight:700; color:var(--ai); font-size:0.75rem;">#${idx + 1} · AI ${pAi}%</span>
+          <button style="background:none; border:1px solid var(--border); color:var(--text); padding:2px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer;" onclick="copySingleSent(${idx})">📋 Copy</button>
+        </div>
+        <div style="color:var(--text); font-size:0.78rem; line-height:1.4;">"${escapeHtml(s.text)}"</div>
+      </div>
+    `;
+  });
+
+  if (aiSentences.length > 10) {
+    html += `<div style="font-size:0.75rem; color:var(--text-muted); text-align:center;">...and ${aiSentences.length - 10} more in export file</div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function copySingleSent(idx) {
+  if (!lastResult || !lastResult.sentences) return;
+  const aiSentences = lastResult.sentences.filter(s => s.label === 'ai' || s.p_ai >= 0.5);
+  if (aiSentences[idx]) {
+    navigator.clipboard.writeText(aiSentences[idx].text).then(() => {
+      alert(`Sentence #${idx + 1} copied to clipboard!`);
+    });
+  }
+}
+
+function buildHumanizerPrompt(r, fullText) {
+  const aiSentences = (r && r.sentences) ? r.sentences.filter(s => s.label === 'ai' || s.p_ai >= 0.5) : [];
+  let sentsList = '';
+  if (aiSentences.length > 0) {
+    sentsList = aiSentences.map((s, idx) => `${idx + 1}. "${s.text}"\n   [AI Probability: ${(s.p_ai * 100).toFixed(0)}%, Score: ${s.essay_margin > 0 ? '+' : ''}${s.essay_margin}]`).join('\n\n');
+  } else {
+    sentsList = 'No strongly AI-flagged sentences detected.';
+  }
+
+  return `Please rewrite and humanize the following sentences from the document. The Linda-Pro AI detector flagged them as containing characteristic AI artifacts (formulaic transitions, uniform rhythm, predictable academic syntax).
+
+=== SENTENCES TO REWRITE (${aiSentences.length} items) ===
+${sentsList}
+=========================================================
+
+HUMANIZATION REQUIREMENTS:
+1. Rewrite each sentence in a natural, lively, human voice.
+2. Remove formulaic transition words ("Furthermore", "Moreover", "It is worth noting", "In conclusion", "delves into", "a testament to") and academic padding.
+3. Vary sentence structure and rhythm (mix short and long sentences, use natural idioms).
+4. Preserve the original core meaning and context.
+
+FULL CONTEXT OF THE DOCUMENT:
+\"\"\"
+${fullText}
+\"\"\"`;
+}
+
+function buildMarkdownReport(r, fullText) {
+  const aiSentences = (r && r.sentences) ? r.sentences.filter(s => s.label === 'ai' || s.p_ai >= 0.5) : [];
+  const uncSentences = (r && r.sentences) ? r.sentences.filter(s => s.label === 'uncertain') : [];
+  const huSentences = (r && r.sentences) ? r.sentences.filter(s => s.label === 'human') : [];
+  const total = (r && r.sentences) ? r.sentences.length : 0;
+  const now = new Date().toISOString();
+  
+  let sentsList = '';
+  if (aiSentences.length > 0) {
+    sentsList = aiSentences.map((s, idx) => `${idx + 1}. **"${s.text}"**\n   - AI Probability: ${(s.p_ai * 100).toFixed(0)}% | Linda-Essay Score: ${s.essay_margin > 0 ? '+' : ''}${s.essay_margin} | Linda-Multi Score: ${s.multi_margin > 0 ? '+' : ''}${s.multi_margin}`).join('\n\n');
+  } else {
+    sentsList = '_No strongly AI-flagged sentences detected._';
+  }
+
+  const prompt = buildHumanizerPrompt(r, fullText);
+
+  return `# Linda-Pro 1.1 — AI Verification Report
+**Date:** ${now}
+**Verdict:** ${r.verdict.toUpperCase()}
+**Mode:** ${r.mode}
+**AI Share:** ${Math.round(r.ai_share * 100)}%
+**Ensemble Z-Score:** ${(r.ens_z || 0).toFixed(2)}
+
+---
+
+## Model Scores:
+- **Linda-Essay-D (DeBERTa-v3-large):** ${r.voters ? r.voters.linda_essay.toFixed(2) : '—'}
+- **Linda-Multi-D (mDeBERTa-v3-base):** ${r.voters ? r.voters.linda_multi_v2.toFixed(2) : '—'}
+- **Stylo-D (LightGBM Stylometry):** ${r.voters ? r.voters.stylo7c.toFixed(2) : '—'}
+
+## Sentence Statistics:
+- Total Sentences: ${total}
+- AI-Flagged: ${aiSentences.length} (${total ? Math.round(aiSentences.length / total * 100) : 0}%)
+- Uncertain: ${uncSentences.length}
+- Human: ${huSentences.length}
+
+---
+
+## 🎯 Flagged AI Sentences:
+${sentsList}
+
+---
+
+## 🤖 Ready Humanizer Prompt (Copy into Claude / ChatGPT):
+
+\`\`\`
+${prompt}
+\`\`\`
+
+---
+
+## Document Text with Sentence Annotations:
+
+${(r.sentences || []).map((s, i) => `[${s.label.toUpperCase()}] ${s.text}`).join('\n\n')}
+`;
+}
+
+function downloadFile(filename, content, type = 'text/markdown;charset=utf-8') {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function copyHumanizerPrompt() {
+  if (!lastResult) return;
+  const prompt = buildHumanizerPrompt(lastResult, lastResult._text || textInput.value);
+  navigator.clipboard.writeText(prompt).then(() => {
+    alert('🤖 Humanizer prompt copied to clipboard! Paste it into Claude or ChatGPT.');
+  });
+}
+
+function downloadMarkdownReport() {
+  if (!lastResult) return;
+  const md = buildMarkdownReport(lastResult, lastResult._text || textInput.value);
+  const now = new Date().toISOString().slice(0, 10);
+  downloadFile(`linda_pro_report_${now}.md`, md, 'text/markdown;charset=utf-8');
+}
+
+function downloadJsonReport() {
+  if (!lastResult) return;
+  const data = {
+    timestamp: new Date().toISOString(),
+    verdict: lastResult.verdict,
+    mode: lastResult.mode,
+    ai_share: lastResult.ai_share,
+    ens_z: lastResult.ens_z,
+    voters: lastResult.voters,
+    sentence_stats: lastResult.sentence_stats,
+    ai_sentences: (lastResult.sentences || []).filter(s => s.label === 'ai' || s.p_ai >= 0.5),
+    all_sentences: lastResult.sentences || [],
+    full_text: lastResult._text || textInput.value
+  };
+  const now = new Date().toISOString().slice(0, 10);
+  downloadFile(`linda_pro_report_${now}.json`, JSON.stringify(data, null, 2), 'application/json;charset=utf-8');
+}
+</script>
+<div style="max-width:1100px;margin:28px auto 40px;padding:0 20px;color:#9aa2b6;font-size:.85rem;line-height:1.5">
+<b>Limits.</b> English only; up to 20,000 words (above ~3,600 words the 12 windows get wider, so highlighting is coarser). Sentence colours are indicative only: the models were calibrated on ~300-word windows, single sentences are much less reliable.
+Essays by non-native writers of exam type can get false flags in <i>sensitive</i> mode; <i>precise</i> flags AI only when two independent signals agree. Not better than the best commercial detectors.
+<b>Never use a verdict as the sole basis for a decision about a person.</b> Your text is analysed on this computer and is never uploaded.
+Free for personal non-commercial use; commercial use needs a licence key (<a href="#" id="footLic" style="color:#8fa8ff">enter or buy a key</a>).
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const fmt = b => b >= 1e9 ? (b / 1e9).toFixed(2) + ' GB' : (b / 1e6).toFixed(0) + ' MB';
+  const post = (u, b) => fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b || {}) }).then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.detail || ('HTTP ' + r.status)); return j; });
+  let S = null, started = false;
+  const tierName = { personal: 'Personal', team: 'Team', organization: 'Organization' };
+
+  function render(s) {
+    S = s;
+    $('licBadge').textContent = s.license.licensed ? 'Licensed · ' + (tierName[s.license.tier] || 'Commercial') : 'Free · personal use';
+    $('licBadge').style.background = s.license.licensed ? 'rgba(52,211,153,.18)' : '';
+    $('devInfo').textContent = s.engine.phase === 'ready' || s.engine.device !== 'cpu' || s.models_ready ? ('Running on ' + (s.engine.device === 'cuda' ? 'GPU' : 'CPU') + ' · models ' + (s.installed_version || '—')) : '';
+    // first-run / download screen
+    const d = s.download, setup = $('lpSetup');
+    const busy = ['checking', 'downloading', 'finishing'].includes(d.phase);
+    setup.classList.toggle('show', !s.models_ready);
+    if (!s.models_ready) {
+      const up = s.update;
+      $('lpSetupSize').textContent = up && up.bytes_to_download ? fmt(up.bytes_to_download) : (d.total ? fmt(d.total) : '~2.7 GB');
+      $('lpSetupBar').style.width = d.total ? Math.min(100, d.done / d.total * 100) + '%' : '0';
+      $('lpSetupProg').textContent = busy ? (d.total ? fmt(d.done) + ' of ' + fmt(d.total) + (d.speed ? ' · ' + (d.speed / 1e6).toFixed(1) + ' MB/s' : '') : 'Checking…') : '';
+      $('lpSetupErr').textContent = d.phase === 'error' ? d.error : (s.update_error && !up ? 'Cannot reach the update server: ' + s.update_error : '');
+      $('lpSetupGo').style.display = busy ? 'none' : '';
+      $('lpSetupGo').textContent = d.phase === 'error' || d.phase === 'cancelled' ? 'Try again / resume' : 'Download models';
+      $('lpSetupCancel').style.display = busy ? '' : 'none';
+      if (s.update && s.update.app_required) { $('lpSetupErr').textContent = 'This version of the app is too old for the current models. Please update the app first.'; }
+    }
+    // banner
+    const ban = $('lpBanner'), up = s.update, ij = s.installer_job;
+    let text = '', btn = '', act = null, warn = false;
+    if (ij.phase === 'downloading') { text = 'Downloading the new app version… ' + (ij.total ? Math.round(ij.done / ij.total * 100) + '%' : ''); }
+    else if (ij.phase === 'error') { text = 'App update failed: ' + ij.error; warn = true; }
+    else if (up && up.app_required) { text = 'A new version of the app (' + (up.installer ? up.installer.version : '') + ') is required to use the latest models.'; btn = 'Update app'; act = 'app'; warn = true; }
+    else if (up && up.app_new) { text = 'Linda-Pro ' + up.installer.version + ' is available.'; btn = 'Update app'; act = 'app'; }
+    else if (up && up.weights_update && s.models_ready && !busy) { text = 'Model update ' + up.remote_version + ' is available' + (up.bytes_to_download ? ' (' + fmt(up.bytes_to_download) + ')' : '') + (up.notes ? ' — ' + up.notes : '') + '.'; btn = 'Update models'; act = 'models'; }
+    else if (busy && s.models_ready) { text = 'Updating models… ' + (d.total ? Math.round(d.done / d.total * 100) + '%' : ''); }
+    else if (d.phase === 'done' && up && !up.weights_update) { text = ''; }
+    ban.classList.toggle('show', !!text); ban.classList.toggle('warn', warn);
+    $('lpBannerText').textContent = text; $('lpBannerBtn').style.display = btn ? '' : 'none'; $('lpBannerBtn').textContent = btn; $('lpBannerBtn').dataset.act = act || '';
+    // licence dialog state
+    $('lpLicState').textContent = s.license.licensed ? 'Licensed (' + (tierName[s.license.tier] || 'commercial') + ') · key ' + s.license.key_hint : (s.license.status !== 'none' ? 'The saved key is not active (' + s.license.status + ').' : 'No key entered — free personal use.');
+    $('lpKeyRemove').style.display = s.license.key_hint ? '' : 'none';
+    $('lpBuy1').href = s.buy.personal_team; $('lpBuy2').href = s.buy.org; $('lpMail').textContent = s.buy.email;
+    $('lpAbout').textContent = 'App ' + s.app_version + ' · models ' + (s.installed_version || 'not installed') + ' · ' + (s.engine.device === 'cuda' ? 'GPU' : 'CPU') + ' · data folder: %LOCALAPPDATA%\\Linda-Pro';
+  }
+
+  async function poll() {
+    try { render(await (await fetch('/api/status')).json()); } catch (e) { /* app closing */ }
+    const fast = S && (['checking', 'downloading', 'finishing'].includes(S.download.phase) || S.installer_job.phase === 'downloading');
+    setTimeout(poll, fast ? 800 : 3000);
+  }
+  poll();
+  setTimeout(() => { if (S && !S.models_ready && !S.update) post('/api/update/check').catch(() => {}); }, 600);
+
+  $('lpSetupGo').onclick = () => post('/api/models/download').catch(e => { $('lpSetupErr').textContent = e.message; });
+  $('lpSetupCancel').onclick = () => post('/api/models/cancel');
+  $('lpBannerBtn').onclick = () => { const a = $('lpBannerBtn').dataset.act; (a === 'app' ? post('/api/app/update') : post('/api/models/download')).catch(e => alert(e.message)); };
+  const show = (id, on) => $(id).classList.toggle('show', on);
+  $('licBadge').onclick = () => show('lpLic', true); $('footLic').onclick = e => { e.preventDefault(); show('lpLic', true); };
+  $('lpLicClose').onclick = () => show('lpLic', false);
+  $('lpKeyGo').onclick = async () => { const m = $('lpLicMsg'); m.className = 'lp-msg'; m.textContent = 'Checking…'; try { await post('/api/license/activate', { key: $('lpKey').value }); m.className = 'lp-msg ok'; m.textContent = 'Activated. Thank you!'; $('lpKey').value = ''; } catch (e) { m.className = 'lp-msg bad'; m.textContent = e.message; } };
+  $('lpKeyRemove').onclick = async () => { await post('/api/license/remove'); $('lpLicMsg').textContent = 'Key removed from this computer.'; };
+  $('btnSettings').onclick = () => { if (S) { $('lpSent').value = S.settings.sentences || 'auto'; $('lpDev').value = S.settings.device || 'auto'; } show('lpSet', true); };
+  $('lpSetClose').onclick = () => show('lpSet', false);
+  $('lpSetSave').onclick = async () => { await post('/api/settings', { sentences: $('lpSent').value, device: $('lpDev').value }); $('lpSetMsg').className = 'lp-msg ok'; $('lpSetMsg').textContent = 'Saved.'; };
+  $('lpCheckUpd').onclick = async () => { const m = $('lpSetMsg'); m.className = 'lp-msg'; m.textContent = 'Checking…'; const r = await post('/api/update/check'); m.className = 'lp-msg ' + (r.error ? 'bad' : 'ok'); m.textContent = r.error ? r.error : (r.update && (r.update.weights_update || r.update.app_new) ? 'An update is available (see the banner on top).' : 'Everything is up to date.'); };
+})();
+</script>
+</body>
+</html>
