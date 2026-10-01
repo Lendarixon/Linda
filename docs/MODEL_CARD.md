@@ -1,5 +1,7 @@
-# Model card — Linda-Pro 1.0
+# Model card — Linda-Pro 1.1
 
-Intended use: screening English texts for AI generation, showing per-window scores; human review required. Not intended: sole evidence for misconduct, employment or legal decisions; non-English text.
-Training: see DATA_BOM.md. Evaluation: EVIDENCE_PACK.md (public benchmarks, held-out human sets). Known weaknesses: exam-style ESL essays (TOEFL), humanizer-rewritten text (85% vs 98% for the strongest commercial detector), essays by newest models under the ensemble (use Linda-Essay component / sensitive mode).
-Ethics: false positives disproportionately affect non-native writers in all detectors; the `precise` mode reduces this at the cost of recall.
+Intended use: screening English texts for AI generation, showing per-window scores; human review required. Not for sole evidence of misconduct. English only.
+Architecture: ensemble of Stylo-D (LightGBM + n-grams, CPU), Linda-Essay-D (DeBERTa-v3-large, max_len 320) and Linda-Multi-D (mDeBERTa-v3-base, max_len 256), windowed scoring, calibration v6 on 14,980 held-out human texts.
+Training: continued from Linda-Essay v3 / Linda-Multi v2 / stylo7e recipe on open-model AI texts, texts rewritten in humanizer styles, real outputs of commercial humanizers from two public CC BY 4.0 benchmarks, and human texts. See DATA_BOM.md.
+Evaluation: EVIDENCE_PACK.md (sections 7-8). Known limits: humanizers evolve monthly, old small open models, non-native exam essays.
+Licence: free for research and non-commercial use (CC BY-NC 4.0); commercial use needs a paid licence.

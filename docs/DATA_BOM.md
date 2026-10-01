@@ -4,7 +4,7 @@ Tier A = open licence permitting commercial use; B = licence not stated / NC / s
 
 ## Voter 1 — stylo7e (Tier A, strict-clean)
 
-Training texts: 54008 (AI 21211). Cleanliness filters: `scripts/stylo_strict.py` (audit: prohibited sources and generators 0).
+Training texts: 54008 (AI 21211). Cleanliness filters: `scripts/stylo_strict.py` (audit: forbidden sources and generators 0).
 
 | source:class | texts |
 |---|---:|
@@ -34,7 +34,7 @@ Training texts: 54008 (AI 21211). Cleanliness filters: `scripts/stylo_strict.py`
 | en_fiction:ai | 41 |
 | en_thinktank:ai | 22 |
 
-AI text generators (only open weights with permissive licences: gpt-oss-20b Apache-2.0, Gemma-4-12b, and others):
+AI text generators (only open weights with permissive licenses: gpt-oss-20b Apache-2.0, Gemma-4-12b, etc.):
 
 | generator | texts |
 |---|---:|
@@ -90,3 +90,13 @@ mDeBERTa-v3-base fine-tuned on ~667k mixed texts (LLMTrace, AINL-Eval, RAID repl
 ## Calibration and evaluation data (not training)
 
 Human texts before 2022: persuasive/student essays, Gutenberg books, arXiv abstracts, ASAP, ELLIPSE, FineWeb 2016-2021, cc_news, Yelp, PELIC, W&I, long-form books/wiki sources. 15k texts.
+
+## Linda-Pro 1.1 additions (October 2026)
+* **Linda-Essay-D and Linda-Multi-D** (Tier C): continued from Essay v3 / Multi v2 on (1) 4,689 AI texts from open-weight models (gpt-oss-120b, qwen3-30b-a3b-fp8, llama-3.1-8b-instruct) generated through a commercial inference API,
+  2,344 of them rewritten in "humanizer" styles (Llama licence terms apply); (2) 817 real outputs of commercial AI humanizer tools from two public benchmarks,
+  CC BY 4.0: "AI Humanizer Benchmark" (huggingface.co/datasets/ai-humanizer-benchmark/ai-humanizer-benchmark, September 2026 cycle) and the independent humanizer audit record
+  (huggingface.co/datasets/AIHumanizerBenchmarks/best-ai-humanizer-independent-benchmark, June-July 2026 cycles) — the source texts of those cycles were written by frontier language models, and the humanizer tools' own terms apply;
+  (3) 96 source texts of the same cycles; (4) human texts as in 1.0.
+* **Stylo-D** (Tier C, NOT strict-clean): the stylo7e recipe plus the data above. Strict-clean stylometry (stylo7e, Linda-Stylo-Clean) is unchanged and separate.
+* **Test only, never trained on:** HumanizerBench (CC BY 4.0, humanizerbench.com), the October 2026 cycle of the AI Humanizer Benchmark, the August 2026 cycle of the independent audit record.
+* Calibration v6: the same 14,980 held-out human texts as calibration v5; thresholds recomputed for the new voters.

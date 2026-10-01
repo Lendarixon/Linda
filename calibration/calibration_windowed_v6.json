@@ -1,0 +1,58 @@
+{
+ "mode": "windowed",
+ "window_words": 300,
+ "max_windows": 12,
+ "agg": "top25",
+ "voters": [
+  "stylo7c",
+  "linda_essay",
+  "linda_multi_v2"
+ ],
+ "spec": {
+  "stylo7c": "stylo:linda_stylo_d",
+  "linda_essay": "own:linda_essay_d",
+  "linda_multi_v2": "own:linda_multi_d"
+ },
+ "mean": {
+  "stylo7c": -1.6560973102735306,
+  "linda_essay": -3.254552271500354,
+  "linda_multi_v2": -0.2701582293933355
+ },
+ "std": {
+  "stylo7c": 2.3190795070918004,
+  "linda_essay": 4.357657739750996,
+  "linda_multi_v2": 4.618030058378982
+ },
+ "rules": {
+  "ensemble": {
+   "thr_05": 2.080909049491993,
+   "thr_1": 1.9514517059290535,
+   "thr_5": 1.51814382591791
+  },
+  "essay": {
+   "thr_05": 9.567886497974387,
+   "thr_1": 8.424061183929433,
+   "thr_5": 5.880626368522644
+  },
+  "stylo": {
+   "thr_05": 3.765989407231301,
+   "thr_1": 3.2587895530711095,
+   "thr_5": 1.989740921714461
+  },
+  "multi": {
+   "thr_05": 9.135983302593232,
+   "thr_1": 9.017952461242674,
+   "thr_5": 8.274283838272094
+  }
+ },
+ "window": {
+  "essay_thr_1": 8.068734240531933,
+  "n_windows": 19636
+ },
+ "n_humans": 14980,
+ "groups": [
+  "pool",
+  "long_cal"
+ ],
+ "date": "2026-10-01"
+}

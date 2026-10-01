@@ -19,11 +19,11 @@ and for `ai or uncertain`, and writes `evaluation_report.csv`. Use **at least 10
 Open `colab/Linda_Pro_demo.ipynb` in Colab (free T4 is enough), run all cells, paste or upload your texts.
 
 ## What it is
-Three voters — stylometry (CPU), Linda-Essay v3 and Linda-Multi v2 (transformers). Text is cut into ~300-word windows; verdict `ai` / `uncertain` / `human`,
+Three voters — stylometry (CPU), Linda-Essay-D and Linda-Multi-D (transformers); version 1.1, retrained against AI humanizers (1.0 is in the git history, tag `v1.0`). Text is cut into ~300-word windows; verdict `ai` / `uncertain` / `human`,
 `ai_share` (rough share of AI-looking text) and per-window scores. Modes: `sensitive` (default) and `precise` (fewer false accusations for schools/universities).
 Results, limits and data provenance: [EVIDENCE_PACK.md](docs/EVIDENCE_PACK.md), [DATA_BOM.md](docs/DATA_BOM.md), [MODEL_CARD.md](docs/MODEL_CARD.md).
-Short version: on the public Chicago Booth benchmark plain AI 99.7% (Pangram 99.9, GPTZero 98.6, Originality 94.2), after a humanizer 85% (Pangram 98.1, GPTZero 44.3, Originality 29.1);
-we are **not** better than Pangram. English only. Weak spot: exam-style essays by non-native writers (TOEFL 8.8% false `ai` in `sensitive` mode, 1.1% in `precise`).
+Short version: on the public Chicago Booth benchmark plain AI 99.7% (Pangram 99.9, GPTZero 98.6, Originality 94.2), after a humanizer 83% (Pangram 98.1, GPTZero 44.3, Originality 29.1); on HumanizerBench (not used for training) 70% of 1,675 humanized texts are flagged `ai` (1.0: 31%);
+we are **not** better than Pangram. English only. Weak spot: exam-style essays by non-native writers (TOEFL 4.4% false `ai` in `sensitive` mode, 0.0% in `precise`).
 Never use a verdict as the sole basis for decisions about people.
 
 Deployment (hardware, measured speed, offline install, local HTTP service `python -m linda_pro.server`): [DEPLOYMENT.md](docs/DEPLOYMENT.md). Data flow, integrity check, dependencies: [SECURITY.md](docs/SECURITY.md).
@@ -33,14 +33,14 @@ ninjagovlad@gmail.com — describe the use case, volume and languages.
 
 ## Citation
 
-If you use Linda-Pro, please cite the technical report (Zenodo, DOI [10.5281/zenodo.23072494](https://doi.org/10.5281/zenodo.23072494)):
+If you use Linda-Pro 1.1, please cite the technical report (Zenodo, DOI [10.5281/zenodo.23080472](https://doi.org/10.5281/zenodo.23080472)); the report for version 1.0 is [10.5281/zenodo.23072494](https://doi.org/10.5281/zenodo.23072494):
 
 ```bibtex
-@techreport{manzyuk2026lindapro,
-  title     = {Linda-Pro 1.0: a local ensemble detector of AI-generated English text},
+@techreport{manzyuk2026lindapro11,
+  title     = {Linda-Pro 1.1: retraining a local AI-text detector against AI humanizers},
   author    = {Manzyuk, Vladyslav},
   year      = {2026},
   publisher = {Zenodo},
-  doi       = {10.5281/zenodo.23072494}
+  doi       = {10.5281/zenodo.23080472}
 }
 ```

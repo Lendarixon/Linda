@@ -44,7 +44,7 @@ Air-gapped install: on a connected machine run `pip download -r requirements.txt
 then `pip install --no-index --find-links wheels -r requirements.txt`. The models are files in `models/`; nothing is downloaded at runtime.
 Optional readers for `.docx`/`.pdf`: `pip install python-docx pypdf`.
 
-Integrity: the full package checksum list `CHECKSUMS.sha256` is in the Hugging Face repository (this repository holds code only) — see `SECURITY.md`.
+Verify integrity of the package against the shipped checksums (`CHECKSUMS.sha256`) before first use — see `SECURITY.md`.
 
 ## 4. Use
 
@@ -70,10 +70,10 @@ Requests are processed one at a time.
 ## 5. Choosing the mode
 
 * `sensitive` — flags a text as AI if the Essay voter **or** the ensemble is above the 0.5 % false-positive threshold.
-* `precise` — flags AI only if two independent signals agree (Essay above the 1 % threshold **and** stylometry above the 5 % threshold). Recommended when a false accusation is costly. Catches noticeably fewer AI texts (see `docs/EVIDENCE_PACK.md`).
+* `precise` — flags AI only if two independent signals agree (Essay above the 1 % threshold **and** stylometry above the 5 % threshold). Recommended when a false accusation is costly. Catches noticeably fewer AI texts (see `EVIDENCE_PACK.md`).
 
 Thresholds come from held-out human texts (`calibration/`). Domain shift (non-native English, unusual genres) changes the false-positive rate:
-see the ESL/TOEFL rows in `docs/EVIDENCE_PACK.md`. If your texts differ from the calibration domains, recalibrate on your own human texts.
+see the ESL/TOEFL rows in `EVIDENCE_PACK.md`. If your texts differ from the calibration domains, recalibrate on your own human texts.
 A verdict is a screening signal and must not be the sole basis for a decision about a person.
 
 ## 6. Operations

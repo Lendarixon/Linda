@@ -18,7 +18,7 @@ You can confirm the network claim yourself: run the package on a machine with th
 
 ## 2. Integrity of the package
 
-`CHECKSUMS.sha256` (in the Hugging Face repository; this GitHub repository holds code and calibration only, no weights) lists SHA-256 hashes of every file of the package. Verify before use:
+`CHECKSUMS.sha256` lists SHA-256 hashes of every file (code, models, calibration). Verify before use:
 
 ```
 # Linux/macOS
@@ -59,7 +59,7 @@ Optional: `python-docx`, `pypdf` (file readers). The bundled `_vendor/aidetector
 
 ## 5. Models and data provenance
 
-See `docs/DATA_BOM.md` (training data sources, licences, what was used only for calibration/evaluation) and `docs/MODEL_CARD.md`.
+See `DATA_BOM.md` (training data sources, licences, what was used only for calibration/evaluation) and `MODEL_CARD.md`.
 Base models: Microsoft DeBERTa-v3-large and mDeBERTa-v3-base (MIT licence).
 
 ## 6. Not provided (be aware before procurement)

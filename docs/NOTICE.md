@@ -9,3 +9,8 @@
 * `linda_pro/_vendor/aidetector/` (stylometry, text canonicalisation, pattern lists) is the Licensor's own code, not a third-party library.
 * Microsoft DeBERTa-v3 / mDeBERTa-v3 (base models of the fine-tuned weights) are distributed under the MIT License. MIT License, Copyright (c) Microsoft Corporation. Permission is granted, free of charge, to use, copy, modify, merge, publish, distribute, sublicense and/or sell copies of the software, provided that the copyright notice and this permission notice are included; the software is provided "as is", without warranty of any kind. Full text: https://opensource.org/license/mit
 * Third-party Python libraries are not bundled; they are installed from `requirements.txt` under their own licences.
+
+## Linda-Pro 1.1 data attribution (CC BY 4.0)
+* Humanizer outputs from "AI Humanizer Benchmark" (aihumanizerbenchmark.com), CC BY 4.0, and from the independent AI Humanizer Benchmark audit record (AIHumanizerBenchmarks), CC BY 4.0; changes: texts filtered and used as training examples.
+* Evaluation only: audit data from HumanizerBench (humanizerbench.com), CC BY 4.0.
+* Open-weight generators used to create training texts: gpt-oss-120b (Apache-2.0), Qwen3-30B-A3B (Apache-2.0), Llama-3.1-8B-Instruct (Llama 3.1 Community License).

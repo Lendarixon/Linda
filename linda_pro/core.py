@@ -20,9 +20,9 @@ from pathlib import Path
 from .voters import FastSeqCls, StyloVoter, clean_text
 
 PKG_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CALIBRATION = PKG_ROOT / "calibration" / "calibration_windowed_v5.json"
+DEFAULT_CALIBRATION = PKG_ROOT / "calibration" / "calibration_windowed_v6.json"
 DEFAULT_MODELS = PKG_ROOT / "models"
-MODEL_SUBDIRS = {"stylo7c": "stylo7e", "linda_essay": "linda_essay_v3", "linda_multi_v2": "linda_multi_v2"}  # calibration keys -> folders
+MODEL_SUBDIRS = {"stylo7c": "stylo_d", "linda_essay": "linda_essay_d", "linda_multi_v2": "linda_multi_d"}  # calibration keys -> folders
 WINDOW_WORDS, MAX_WINDOWS = 300, 12
 
 
