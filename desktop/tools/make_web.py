@@ -108,7 +108,10 @@ EXTRA_HTML = """
   <p>Sentence highlighting</p>
   <select class="lp-input" id="lpSent"><option value="auto">Automatic: sliding windows, fast blocks for long texts on a CPU (recommended)</option><option value="smooth">Sliding windows of ~300 words: accurate boundaries, a few seconds more on a CPU</option><option value="windows">Fast: one colour per ~300-word block</option><option value="full">Single sentences (experimental, less reliable)</option></select>
   <p>Processor</p>
-  <select class="lp-input" id="lpDev"><option value="auto">Automatic</option><option value="cpu">CPU</option><option value="cuda">GPU (NVIDIA CUDA)</option></select>
+  <select class="lp-input" id="lpDev"><option value="auto">Automatic</option><option value="cpu">CPU</option><option value="cuda">GPU (AMD, NVIDIA, Intel)</option></select>
+  <div class="lp-msg" id="lpGpuNote" style="display:none;font-size:.82rem"></div>
+  <p style="margin-top:10px">GPU number <span class="note" style="color:var(--text-muted)">(only if you have several graphics cards: try 1 if the wrong one is used)</span></p>
+  <select class="lp-input" id="lpGpuIdx"><option value="0">0 (default)</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
   <label style="display:flex;gap:12px;align-items:flex-start;margin:16px 0 4px;cursor:pointer"><input type="checkbox" id="lpPreload" style="margin-top:6px;width:18px;height:18px"><span><b>Load the models when the app starts</b> (recommended)<br><span class="note" style="color:var(--text-muted)">The models are put into memory in the background right after start, while updates are checked, so the first analysis is fast.</span></span></label>
   <div class="lp-msg" id="lpPreloadWarn" style="display:none;color:#fa6800;border-left:6px solid #fa6800;padding:8px 12px;background:rgba(250,104,0,.12)">Warning: with this off, the first analysis will take noticeably longer (roughly 5&ndash;15 s on a fast CPU, more on an older one), because the models are loaded at that moment. Later analyses are fast.</div>
   <p id="lpAbout" style="font-size:.82rem"></p>
@@ -129,8 +132,15 @@ EXTRA_JS = """
     S = s;
     $('licBadge').textContent = s.license.licensed ? 'Licensed \u00b7 ' + (tierName[s.license.tier] || 'Commercial') : 'Free \u00b7 personal use';
     $('licBadge').style.background = s.license.licensed ? 'rgba(52,211,153,.18)' : '';
+    const g = s.engine.gpu, gnote = $('lpGpuNote');
+    if (g) {
+      $('lpDev').querySelector('option[value=cuda]').disabled = !g.available;
+      gnote.style.display = '';
+      gnote.style.color = g.available ? 'var(--human)' : '#fa6800';
+      gnote.textContent = s.engine.gpu_error ? 'The GPU could not be used (' + s.engine.gpu_error.slice(0, 120) + '); the CPU is used instead.' : g.available ? ('GPU found: ' + g.name + ' (' + g.backend + '). ' + (g.discrete ? 'Automatic mode uses it; the first start on the GPU prepares the models once (about a minute).' : 'Only an integrated GPU was found, so Automatic mode keeps using the CPU; choose GPU above to try it.')) : 'No supported graphics card found: the CPU is used.';
+    }
     const eng = s.engine.phase;
-    $('devInfo').textContent = !s.models_ready ? '' : eng === 'loading' ? 'Loading models\u2026' : eng === 'error' ? 'Model loading failed' : ((eng === 'ready' ? 'Ready on ' : 'Models load on first use \u00b7 ') + (s.engine.device === 'cuda' ? 'GPU' : 'CPU') + ' \u00b7 models ' + (s.installed_version || '\u2014'));
+    $('devInfo').textContent = !s.models_ready ? '' : eng === 'loading' ? (s.engine.note || 'Loading models\u2026') : eng === 'error' ? 'Model loading failed' : ((eng === 'ready' ? 'Ready on ' : 'Models load on first use \u00b7 ') + (s.engine.device === 'cpu' ? 'CPU' : 'GPU') + ' \u00b7 models ' + (s.installed_version || '\u2014'));
     // first-run / download screen
     const d = s.download, setup = $('lpSetup');
     const busy = ['checking', 'downloading', 'finishing'].includes(d.phase);
@@ -183,9 +193,9 @@ EXTRA_JS = """
   $('lpKeyRemove').onclick = async () => { await post('/api/license/remove'); $('lpLicMsg').textContent = 'Key removed from this computer.'; };
   const warnPre = () => { $('lpPreloadWarn').style.display = $('lpPreload').checked ? 'none' : 'block'; };
   $('lpPreload').onchange = warnPre;
-  $('btnSettings').onclick = () => { if (S) { $('lpSent').value = S.settings.sentences || 'auto'; $('lpDev').value = S.settings.device || 'auto'; $('lpPreload').checked = S.settings.preload !== false; } warnPre(); show('lpSet', true); };
+  $('btnSettings').onclick = () => { if (S) { $('lpSent').value = S.settings.sentences || 'auto'; $('lpDev').value = S.settings.device || 'auto'; $('lpGpuIdx').value = String(S.settings.gpu_index || 0); $('lpPreload').checked = S.settings.preload !== false; } warnPre(); show('lpSet', true); };
   $('lpSetClose').onclick = () => show('lpSet', false);
-  $('lpSetSave').onclick = async () => { await post('/api/settings', { sentences: $('lpSent').value, device: $('lpDev').value, preload: $('lpPreload').checked }); $('lpSetMsg').className = 'lp-msg ok'; $('lpSetMsg').textContent = 'Saved.'; };
+  $('lpSetSave').onclick = async () => { await post('/api/settings', { sentences: $('lpSent').value, device: $('lpDev').value, preload: $('lpPreload').checked, gpu_index: parseInt($('lpGpuIdx').value, 10) }); $('lpSetMsg').className = 'lp-msg ok'; $('lpSetMsg').textContent = 'Saved.'; };
   $('lpCheckUpd').onclick = async () => { const m = $('lpSetMsg'); m.className = 'lp-msg'; m.textContent = 'Checking\u2026'; const r = await post('/api/update/check'); m.className = 'lp-msg ' + (r.error ? 'bad' : 'ok'); m.textContent = r.error ? r.error : (r.update && (r.update.weights_update || r.update.app_new) ? 'An update is available (see the banner on top).' : 'Everything is up to date.'); };
 })();
 (function () {

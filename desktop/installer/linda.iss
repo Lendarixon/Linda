@@ -1,13 +1,22 @@
 ; Linda-Pro installer (Inno Setup 6). Per-user install: no administrator rights needed, installs to %LOCALAPPDATA%\Programs\Linda-Pro.
 ; Build:  tools\InnoSetup\ISCC.exe installer\linda.iss   (after tools\build_app.py)
 ; Silent update (used by the app itself):  Linda-Setup.exe /SILENT /SUPPRESSMSGBOXES /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS
-#define AppName "Linda-Pro"
+#ifdef TestInstall
+  #define AppName "Linda-Pro (test)"
+#else
+  #define AppName "Linda-Pro"
+#endif
 #ifndef AppVersion
-  #define AppVersion "1.1.1"
+  #define AppVersion "1.1.2"
 #endif
 
 [Setup]
+#ifdef TestInstall
+; test builds (ISCC /DTestInstall=1) use another AppId and name so that installing/uninstalling them never touches a real installation, its shortcuts or its registry entry
+AppId={{E57A11B0-7E57-4E57-9E57-7E57E57E57E5}
+#else
 AppId={{B6D1E7F4-5E1C-4B8E-9D2A-4C8F0A11D0A1}
+#endif
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher=Linda

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import re
+import subprocess
 import threading
 from pathlib import Path
 
@@ -18,15 +20,51 @@ def _sig(m: float, c: float, s: float) -> float:
     return 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, (m - c) / s))))
 
 
-def pick_device(pref: str = "auto") -> str:
-    if pref in ("cpu", "cuda"):
-        return pref
+def _adapter_names() -> list[str]:
+    """Names of the graphics adapters (Windows). Cosmetic: shown in the settings."""
+    if os.name != "nt":
+        return []
+    try:
+        out = subprocess.run(["powershell", "-NoProfile", "-Command", "(Get-CimInstance Win32_VideoController).Name"], capture_output=True, text=True, timeout=20,
+                             creationflags=0x08000000).stdout
+        return [l.strip() for l in out.splitlines() if l.strip() and "basic" not in l.lower()]
+    except Exception:  # noqa: BLE001
+        return []
+
+
+_DISCRETE = re.compile(r"\b(rtx|gtx|geforce|quadro|titan|tesla|radeon rx|radeon pro|radeon vii)\b|\barc\W*(tm\W*)?[ab]\d", re.I)
+
+
+def gpu_probe() -> dict:
+    """Which GPU backend can be used: PyTorch CUDA (NVIDIA) or ROCm (AMD) in development installs, otherwise DirectML through ONNX Runtime (any DirectX 12 card on
+    Windows: AMD Radeon, NVIDIA GeForce, Intel Arc), otherwise none."""
+    none = {"available": False, "backend": None, "name": "", "discrete": False}
     try:
         import torch
 
-        return "cuda" if torch.cuda.is_available() else "cpu"
+        if torch.cuda.is_available():
+            return {"available": True, "backend": "ROCm" if getattr(torch.version, "hip", None) else "CUDA", "name": torch.cuda.get_device_name(0), "discrete": True}
     except Exception:  # noqa: BLE001
+        pass
+    try:
+        from . import onnx_gpu
+
+        if onnx_gpu.available():
+            names = _adapter_names()
+            return {"available": True, "backend": "DirectML", "name": ", ".join(names) or "DirectX 12 graphics card", "discrete": any(_DISCRETE.search(n) for n in names)}
+    except Exception:  # noqa: BLE001
+        pass
+    return none
+
+
+def pick_device(pref: str = "auto") -> str:
+    """"cpu", "cuda" (PyTorch CUDA/ROCm) or "dml" (ONNX Runtime DirectML). A GPU choice that cannot be honoured falls back to the CPU instead of failing."""
+    if pref == "cpu":
         return "cpu"
+    g = gpu_probe()
+    if not g["available"] or (pref == "auto" and not g["discrete"]):  # "auto" leaves a lone integrated GPU alone (it can be slower than the CPU); choosing GPU by hand still works
+        return "cpu"
+    return "dml" if g["backend"] == "DirectML" else "cuda"
 
 
 class Engine:
@@ -35,6 +73,11 @@ class Engine:
         self.device = "cpu"
         self.lock = threading.Lock()  # one analysis at a time: the voters share the processor / GPU
         self.state = {"phase": "idle", "error": ""}
+        self.gpu: dict | None = None  # filled by probe_gpu() in the background (importing torch takes a moment)
+        self.gpu_error = ""
+
+    def probe_gpu(self) -> None:
+        self.gpu = gpu_probe()
 
     def calibration_file(self) -> Path | None:
         files = sorted((config.data_dir() / "calibration").glob("*.json"))
@@ -65,18 +108,63 @@ class Engine:
             torch.set_num_threads(max(1, min(6, (__import__("os").cpu_count() or 4) - 1)))
         except Exception:  # noqa: BLE001
             pass
-        dets = make_detectors(self.device)
+        self.gpu_error = ""
+        if self.device == "dml":
+            try:
+                dets = self._dml_detectors(core, settings)
+            except Exception as e:  # noqa: BLE001
+                self.gpu_error = f"{type(e).__name__}: {e}"
+                self.device = "cpu"
+                dets = make_detectors("cpu")
+        else:
+            dets = make_detectors(self.device)
+        try:
+            self._load_voters(dets)
+        except Exception as e:  # noqa: BLE001
+            if self.device != "dml":
+                raise
+            self.gpu_error = f"{type(e).__name__}: {e}"  # the GPU path failed (export, driver): use the CPU instead
+            self.device = "cpu"
+            self.state = {"phase": "loading", "error": "", "note": ""}
+            dets = make_detectors("cpu")
+            self._load_voters(dets)
+        self.dets = dets
+        self.state = {"phase": "ready", "error": ""}
+        return dets
+
+    def _load_voters(self, dets: dict) -> None:
         for key in dets["sensitive"].voters:  # load every voter now, not on the first request
             v = dets["sensitive"]._factory(key)
             load = getattr(getattr(v, "_v", v), "_load", None)
             if callable(load):
                 load()
-        self.dets = dets
-        self.state = {"phase": "ready", "error": ""}
-        return dets
+
+    def _dml_detectors(self, core, settings: dict) -> dict:
+        """Detectors whose transformer voters run through ONNX Runtime DirectML (the models are exported to ONNX once, in the data folder)."""
+        from linda_pro.core import MODEL_SUBDIRS, LindaPro
+        from linda_pro.server import _Resident
+        from linda_pro.voters import StyloVoter
+
+        from . import onnx_gpu
+
+        cache_dir = config.data_dir() / "onnx"
+        idx = int(settings.get("gpu_index", 0) or 0)
+        if not (cache_dir / "linda_essay_d" / "model.onnx").exists():
+            self.state = {"phase": "loading", "error": "", "note": "Preparing the GPU version of the models (one time, about a minute)..."}
+        voters: dict = {}
+
+        def factory(key: str):
+            if key not in voters:
+                d = Path(core.DEFAULT_MODELS) / MODEL_SUBDIRS[key]
+                voters[key] = _Resident(StyloVoter(d) if key == "stylo7c" else onnx_gpu.OnnxSeqCls(d, cache_dir, idx))
+            return voters[key]
+
+        base = LindaPro(mode="sensitive", voter_factory=factory)
+        base._factory = factory
+        return {"sensitive": base, "precise": LindaPro(mode="precise", voter_factory=factory)}
 
     def info(self) -> dict:
-        return {"device": self.device, "phase": self.state["phase"], "error": self.state["error"]}
+        return {"device": self.device, "phase": self.state["phase"], "error": self.state["error"], "note": self.state.get("note", ""), "gpu": self.gpu, "gpu_error": self.gpu_error}
 
     CPU_SMOOTH_MAX_WORDS = 700  # automatic mode on a CPU: sliding windows up to this length (about 10 s), longer texts use the fast block colouring
     SMOOTH_WINDOW, SMOOTH_MIN_STEP, SMOOTH_MAX_WINDOWS = 300, 75, 16
@@ -86,7 +174,7 @@ class Engine:
         full = every single sentence on its own (experimental: one sentence is much less reliable than a window)."""
         s = load_settings().get("sentences", "auto")
         if s == "auto":
-            return "windows" if self.device != "cuda" and nwords > self.CPU_SMOOTH_MAX_WORDS else "smooth"
+            return "windows" if self.device == "cpu" and nwords > self.CPU_SMOOTH_MAX_WORDS else "smooth"
         return s if s in ("smooth", "windows", "full") else "smooth"
 
     def _smooth_windows(self, nwords: int) -> list[tuple[int, int]]:

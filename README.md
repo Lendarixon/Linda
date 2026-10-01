@@ -10,13 +10,13 @@ Weights live on Hugging Face: [Lindarixon/Linda-Pro](https://huggingface.co/Lind
 Download **Linda-Setup.exe** from the [releases page](https://github.com/Lendarixon/Linda/releases/latest), install it and start it: the app downloads the models once (about 2.9 GB), then works offline, highlights the AI-looking passages and updates its models by itself. Free for personal non-commercial use; a commercial licence key ($10 person, $30 team of 10, $500 per year organization) covers the app, the command line and the models together ([how licensing works](LICENSING.md)). Source of the app: [desktop/](desktop).
 
 ## Speed
-The whole ensemble on one text, measured on one machine (AMD Ryzen 7 7800X3D, 6 CPU threads; AMD Radeon RX 9070 XT). Older laptops are slower. Scores on CPU and GPU agree to the third decimal.
+The whole ensemble on one text, measured on one machine (AMD Ryzen 7 7800X3D, 6 CPU threads; GPU: AMD Radeon RX 9070 XT through DirectML in the Windows app). Older laptops are slower. Scores on CPU and GPU agree to the third decimal.
 
-| text length | GPU | CPU, colours per ~300-word window | CPU, colours per sentence |
+| text length | GPU (DirectML) | CPU, colours per ~300-word window | CPU, colours per sentence |
 |---|---:|---:|---:|
-| 300 words | 0.11 s | 1.1 s | 3.8 s |
-| 1,000 words | 0.21 s | 3.9 s | 8.1 s |
-| 3,000 words | 0.67 s | 13.4 s | 27 s |
+| 300 words | 0.14 s | 1.1 s | 3.8 s |
+| 1,000 words | 0.34 s | 3.5 s | 8.1 s |
+| 3,000 words | 0.98 s | 11.9 s | 27 s |
 
 Model loading at start takes about 5-10 s.
 

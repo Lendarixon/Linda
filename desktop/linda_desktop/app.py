@@ -94,6 +94,7 @@ class Core:
         return True
 
     def background(self) -> None:
+        threading.Thread(target=self.engine.probe_gpu, daemon=True).start()
         self.preload()
 
         def loop():
@@ -217,6 +218,10 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             cur["sentences"] = body["sentences"]
         if isinstance(body.get("preload"), bool):
             cur["preload"] = body["preload"]
+        if isinstance(body.get("gpu_index"), int) and not isinstance(body.get("gpu_index"), bool) and 0 <= body["gpu_index"] <= 7:
+            if cur.get("gpu_index", 0) != body["gpu_index"]:
+                core.engine.unload()
+            cur["gpu_index"] = body["gpu_index"]
         if body.get("device") in ("auto", "cpu", "cuda"):
             if cur.get("device") != body["device"]:
                 core.engine.unload()
