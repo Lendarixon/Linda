@@ -7,7 +7,7 @@ Weights live on Hugging Face: [Lindarixon/Linda-Pro](https://huggingface.co/Lind
 [Lindarixon/Linda-Stylo-Clean](https://huggingface.co/Lindarixon/Linda-Stylo-Clean) (CPU only, strictly clean data lineage).
 
 ## Windows app (no Python needed)
-Download **Linda-Setup.exe** from the [releases page](https://github.com/Lendarixon/Linda/releases/latest), install it and start it: the app downloads the models once (about 2.9 GB), then works offline, highlights the AI-looking passages and updates its models by itself. Free for personal non-commercial use; a commercial licence key ($10 person, $30 team of 10, $1,000 per year organization) covers the app, the command line and the models together ([how licensing works](LICENSING.md)). Source of the app: [desktop/](desktop).
+Download **Linda-Setup.exe** from the [releases page](https://github.com/Lendarixon/Linda/releases/latest), install it and start it: the app downloads the models once (about 2.9 GB), then works offline, highlights the AI-looking passages and updates its models by itself. Free for personal non-commercial use; a commercial licence key ($10 person, $30 team of 10, $500 per year organization) covers the app, the command line and the models together ([how licensing works](LICENSING.md)). Source of the app: [desktop/](desktop).
 
 ## Speed
 The whole ensemble on one text, measured on one machine (AMD Ryzen 7 7800X3D, 6 CPU threads; AMD Radeon RX 9070 XT). Older laptops are slower. Scores on CPU and GPU agree to the third decimal.

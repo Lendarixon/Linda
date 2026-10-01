@@ -99,7 +99,7 @@ EXTRA_HTML = """
   <input class="lp-input" id="lpKey" placeholder="LINDA-XXXXXXXX-\u2026" autocomplete="off" spellcheck="false">
   <div class="lp-msg" id="lpLicMsg"></div>
   <div class="lp-row"><button class="lp-btn" id="lpKeyGo">Activate</button><button class="lp-btn sec" id="lpKeyRemove" style="display:none">Remove key</button><button class="lp-btn sec" id="lpLicClose">Close</button></div>
-  <p style="margin-top:16px;font-size:.88rem">Buy: <a class="lp-link" id="lpBuy1" href="#" target="_blank">Personal $10 / Team $30</a> \u00b7 <a class="lp-link" id="lpBuy2" href="#" target="_blank">Organization / University $1000 per year</a> \u00b7 OEM, exclusive, custom calibration: <span id="lpMail"></span></p>
+  <p style="margin-top:16px;font-size:.88rem">Buy: <a class="lp-link" id="lpBuy1" href="#" target="_blank">Personal $10 / Team $30</a> \u00b7 <a class="lp-link" id="lpBuy2" href="#" target="_blank">Organization / University $500 per year</a> \u00b7 OEM, exclusive, custom calibration: <span id="lpMail"></span></p>
   <p style="font-size:.8rem">Activation sends only the key and a random device label to the licence server (Polar). Your texts never leave this computer.</p>
 </div></div>
 
@@ -156,7 +156,7 @@ EXTRA_JS = """
     ban.classList.toggle('show', !!text); ban.classList.toggle('warn', warn);
     $('lpBannerText').textContent = text; $('lpBannerBtn').style.display = btn ? '' : 'none'; $('lpBannerBtn').textContent = btn; $('lpBannerBtn').dataset.act = act || '';
     // licence dialog state
-    $('lpLicState').textContent = s.license.licensed ? 'Licensed (' + (tierName[s.license.tier] || 'commercial') + ') \u00b7 key ' + s.license.key_hint : (s.license.status !== 'none' ? 'The saved key is not active (' + s.license.status + ').' : 'No key entered \u2014 free personal use.');
+    $('lpLicState').textContent = s.license.licensed ? 'Licensed (' + (tierName[s.license.tier] || 'commercial') + ') \u00b7 key ' + s.license.key_hint : (s.license.status === 'other_machine' ? 'This key was activated on another computer. Enter it again to activate it here (on the old computer use Remove key, or free the device in your Polar customer portal).' : s.license.status !== 'none' ? 'The saved key is no longer valid (' + s.license.status + '): it may have been revoked or removed. Enter it again to re-activate.' : 'No key entered \u2014 free personal use.');
     $('lpKeyRemove').style.display = s.license.key_hint ? '' : 'none';
     $('lpBuy1').href = s.buy.personal_team; $('lpBuy2').href = s.buy.org; $('lpMail').textContent = s.buy.email;
     $('lpAbout').textContent = 'App ' + s.app_version + ' \u00b7 models ' + (s.installed_version || 'not installed') + ' \u00b7 ' + (s.engine.device === 'cuda' ? 'GPU' : 'CPU') + ' \u00b7 data folder: %LOCALAPPDATA%\\\\Linda-Pro';

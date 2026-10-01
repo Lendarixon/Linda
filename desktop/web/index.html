@@ -571,7 +571,81 @@ textarea::placeholder { color: #555d73; }
 
 .hidden { display: none !important; }
 </style>
-
+<style id="metro">
+/* Metro UI skin for the Linda-Pro app and the Modal demo: flat colour tiles, square corners, light headings, no gradients or shadows. Loaded after the base styles. */
+:root{--bg:#0d0f15;--bg-card:#171a22;--bg-elevated:#1f232d;--border:#2e323d;--border-focus:#1ba1e2;--text:#fff;--text-muted:#a8adb8;--accent:#1ba1e2;--accent-light:rgba(27,161,226,.18);
+--ai:#e51400;--ai-bg:rgba(229,20,0,.28);--ai-border:#e51400;--human:#60a917;--human-bg:rgba(96,169,23,.25);--human-border:#60a917;--uncertain:#fa6800;--uncertain-bg:rgba(250,104,0,.28);--uncertain-border:#fa6800;
+--cobalt:#0050ef;--teal:#00aba9;--purple:#6a00ff;--steel:#647687;--green:#008a00}
+*{border-radius:0!important;box-shadow:none!important;text-shadow:none!important}
+.spinner,.stat-dot,.model-check,.model-check::after{border-radius:50%!important}
+body{font-family:"Segoe UI","Segoe UI Variable","Helvetica Neue",Arial,sans-serif;font-weight:300;background:var(--bg)}
+.header{background:var(--bg);border-bottom:1px solid var(--border)}
+.brand{font-weight:300}
+.badge-commercial{background:var(--cobalt)!important;color:#fff!important;border:0!important;text-transform:uppercase;letter-spacing:.12em;font-size:.68rem!important;font-weight:600!important;padding:4px 10px!important}
+.section-title{font-size:.72rem!important;letter-spacing:.2em;text-transform:uppercase;color:var(--accent)!important;font-weight:600!important}
+.panel-left,.panel-right,.panel-center{background:transparent!important}
+/* mode tabs: flat segmented buttons */
+.tabs-mode{gap:2px;background:transparent!important;border:0!important;padding:0!important}
+.tabs-mode button{background:#2b2b2b!important;color:#cfcfcf!important;border:0!important;text-transform:uppercase;letter-spacing:.1em;font-size:.72rem!important;font-weight:600!important;padding:9px 6px!important}
+.tabs-mode button:hover{background:#3a3a3a!important}
+.tabs-mode button.active{background:var(--cobalt)!important;color:#fff!important}
+/* model cards = tiles */
+.model-card{background:#262a33!important;border:0!important;border-left:6px solid #4a4f5c!important;padding:12px 14px!important;transition:transform .1s}
+.model-card:hover{transform:scale(.985);background:#2f3440!important}
+.model-card.active{background:var(--cobalt)!important;border-left-color:#fff!important}
+.model-card:nth-child(2).active{background:var(--teal)!important}
+.model-card:nth-child(3).active{background:var(--purple)!important}
+.model-name{font-weight:600;letter-spacing:-.01em}
+.model-card.active .model-desc,.model-card.active .model-name{color:#fff!important}
+.model-desc{color:#b5bac6!important;font-weight:300}
+.tag{background:rgba(255,255,255,.14)!important;color:#fff!important;border:0!important;font-size:.64rem!important;text-transform:uppercase;letter-spacing:.08em}
+/* input */
+.input-box{background:#171a22!important;border:1px solid var(--border)!important}
+.input-box.dragover{border-color:var(--accent)!important;background:rgba(27,161,226,.1)!important}
+textarea{background:transparent!important;font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif!important;font-weight:300!important;color:#fff!important}
+textarea:focus{outline:2px solid var(--accent)!important;outline-offset:-2px}
+.toolbar{border-top:1px solid var(--border)}
+.btn-analyze{background:var(--cobalt)!important;color:#fff!important;border:2px solid var(--cobalt)!important;text-transform:uppercase;letter-spacing:.12em;font-weight:600!important;font-size:.82rem!important}
+.btn-analyze:hover:not(:disabled){background:transparent!important;color:var(--cobalt)!important}
+.btn-analyze:disabled{background:#3a3a3a!important;border-color:#3a3a3a!important;color:#8a8a8a!important}
+.btn-upload{background:transparent!important;color:#fff!important;border:2px solid #fff!important;text-transform:uppercase;letter-spacing:.1em;font-size:.78rem!important;font-weight:600!important}
+.btn-upload:hover{background:#fff!important;color:#111!important}
+.file-pill{background:var(--teal)!important;border:0!important;color:#fff!important}
+.counter,.status-indicator{color:var(--text-muted)!important}
+/* heat map */
+.heatmap-card{background:#171a22!important;border:1px solid var(--border)!important}
+.heatmap-header{border-bottom:1px solid var(--border)}
+.heatmap-title{font-weight:300!important;font-size:1.25rem!important;letter-spacing:-.02em}
+.heatmap-switcher{background:transparent!important;border:0!important;gap:2px}
+.heatmap-switcher button{background:#2b2b2b!important;color:#cfcfcf!important;border:0!important;text-transform:uppercase;letter-spacing:.08em;font-size:.68rem!important;font-weight:600!important}
+.heatmap-switcher button.active{background:var(--cobalt)!important;color:#fff!important}
+.stat-pill{background:#262a33!important;border:0!important}
+.sent-span.ai{background:var(--ai-bg)!important;border-bottom:2px solid var(--ai)!important}
+.sent-span.uncertain{background:var(--uncertain-bg)!important;border-bottom:2px solid var(--uncertain)!important}
+.sent-span.human{background:var(--human-bg)!important;border-bottom:2px solid var(--human)!important}
+.sent-tooltip{background:#000!important;border:1px solid #444!important}
+/* verdict + metrics = big tiles */
+.verdict-box{background:#171a22!important;border:0!important;border-top:6px solid var(--accent)!important}
+.verdict-badge{font-weight:600!important;text-transform:uppercase;letter-spacing:.12em;color:#fff!important;border:0!important;padding:8px 16px!important}
+.verdict-badge.ai{background:var(--ai)!important}
+.verdict-badge.human{background:var(--human)!important}
+.verdict-badge.uncertain{background:var(--uncertain)!important}
+.verdict-pct{font-weight:200!important;font-size:4.2rem!important;letter-spacing:-.05em;line-height:1}
+.metrics-grid{gap:6px!important}
+.metric-card{background:var(--cobalt)!important;border:0!important;color:#fff!important}
+.metric-card:nth-child(2){background:var(--teal)!important}
+.metric-card:nth-child(3){background:var(--purple)!important}
+.metric-card:nth-child(4){background:var(--steel)!important}
+.metric-label{color:rgba(255,255,255,.85)!important;text-transform:uppercase;letter-spacing:.12em;font-size:.64rem!important}
+.metric-val{font-weight:200!important;font-size:2rem!important;letter-spacing:-.03em;color:#fff!important}
+.voters-card{background:#171a22!important;border:0!important;border-left:6px solid var(--steel)!important}
+.voter-row{border-bottom:1px solid var(--border)!important}
+.voter-title{font-weight:600}
+.empty-state{color:var(--text-muted)}
+/* flat scrollbars */
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-track{background:#12141a}::-webkit-scrollbar-thumb{background:#3a3f4b}::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+a{color:var(--accent)}
+</style>
 <style>
 .lp-link{background:none;border:0;color:#8fa8ff;cursor:pointer;font:inherit}
 .lp-overlay{position:fixed;inset:0;background:rgba(8,10,16,.88);z-index:50;display:none;align-items:center;justify-content:center;padding:20px}
@@ -609,7 +683,7 @@ textarea::placeholder { color: #555d73; }
   <input class="lp-input" id="lpKey" placeholder="LINDA-XXXXXXXX-…" autocomplete="off" spellcheck="false">
   <div class="lp-msg" id="lpLicMsg"></div>
   <div class="lp-row"><button class="lp-btn" id="lpKeyGo">Activate</button><button class="lp-btn sec" id="lpKeyRemove" style="display:none">Remove key</button><button class="lp-btn sec" id="lpLicClose">Close</button></div>
-  <p style="margin-top:16px;font-size:.88rem">Buy: <a class="lp-link" id="lpBuy1" href="#" target="_blank">Personal $10 / Team $30</a> · <a class="lp-link" id="lpBuy2" href="#" target="_blank">Organization / University $1000 per year</a> · OEM, exclusive, custom calibration: <span id="lpMail"></span></p>
+  <p style="margin-top:16px;font-size:.88rem">Buy: <a class="lp-link" id="lpBuy1" href="#" target="_blank">Personal $10 / Team $30</a> · <a class="lp-link" id="lpBuy2" href="#" target="_blank">Organization / University $500 per year</a> · OEM, exclusive, custom calibration: <span id="lpMail"></span></p>
   <p style="font-size:.8rem">Activation sends only the key and a random device label to the licence server (Polar). Your texts never leave this computer.</p>
 </div></div>
 
@@ -1440,7 +1514,7 @@ Free for personal non-commercial use; commercial use needs a licence key (<a hre
     ban.classList.toggle('show', !!text); ban.classList.toggle('warn', warn);
     $('lpBannerText').textContent = text; $('lpBannerBtn').style.display = btn ? '' : 'none'; $('lpBannerBtn').textContent = btn; $('lpBannerBtn').dataset.act = act || '';
     // licence dialog state
-    $('lpLicState').textContent = s.license.licensed ? 'Licensed (' + (tierName[s.license.tier] || 'commercial') + ') · key ' + s.license.key_hint : (s.license.status !== 'none' ? 'The saved key is not active (' + s.license.status + ').' : 'No key entered — free personal use.');
+    $('lpLicState').textContent = s.license.licensed ? 'Licensed (' + (tierName[s.license.tier] || 'commercial') + ') · key ' + s.license.key_hint : (s.license.status === 'other_machine' ? 'This key was activated on another computer. Enter it again to activate it here (on the old computer use Remove key, or free the device in your Polar customer portal).' : s.license.status !== 'none' ? 'The saved key is no longer valid (' + s.license.status + '): it may have been revoked or removed. Enter it again to re-activate.' : 'No key entered — free personal use.');
     $('lpKeyRemove').style.display = s.license.key_hint ? '' : 'none';
     $('lpBuy1').href = s.buy.personal_team; $('lpBuy2').href = s.buy.org; $('lpMail').textContent = s.buy.email;
     $('lpAbout').textContent = 'App ' + s.app_version + ' · models ' + (s.installed_version || 'not installed') + ' · ' + (s.engine.device === 'cuda' ? 'GPU' : 'CPU') + ' · data folder: %LOCALAPPDATA%\\Linda-Pro';

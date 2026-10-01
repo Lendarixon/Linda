@@ -25,7 +25,7 @@ Commercial use means using Linda-Pro for paid work or for clients, inside a comp
 |---|---|---|---|---|
 | **Personal** | $10, one-off | one person (freelancer, consultant, small business owner) | up to 3 | free within version 1.x |
 | **Team** | $30, one-off | up to 10 people | up to 20 | free within version 1.x |
-| **Organization / University** | $1,000 per year | one organization at one site | up to 200 | for the whole licence year, including new model versions |
+| **Organization / University** | $500 per year | one organization at one site | up to 200 | for the whole licence year, including new model versions |
 
 * **How you get it.** After payment you receive a licence key by e-mail. Enter it in the app (Licence dialog): the licence notice disappears. The command-line tools do not check keys; the licence applies to them in the same way, and the key is your proof of purchase.
 * **Version rule.** A Personal or Team key is perpetual for the 1.x versions. A new major version (2.0) may need a new key or an upgrade. The Organization licence is valid for the paid year; when it ends, commercial use of Linda-Pro under it ends unless renewed.
@@ -38,6 +38,7 @@ Commercial use means using Linda-Pro for paid work or for clients, inside a comp
 * **I use only the command line at work. Do I need a key?** Yes, commercial use needs a licence however you run the software.
 * **I am a student or a teacher checking my own work or studying the tool.** Free (non-commercial). A school or university running checks as part of its operations needs the Organization licence.
 * **I am a freelancer checking texts for clients.** Personal licence.
+* **How are devices counted? Can I move my key to a new computer?** A purchased key is activated on the computer where you enter it (the app sends the key and an anonymous machine id, never your texts) and counts against the device limit of your licence. Copying the app or its licence file to another computer does not carry the licence over. To move: open the Licence window and press Remove key (this frees the slot), then enter the key on the new computer. If the old computer is gone, write to the support address and the slot is freed.
 * **Can I put it into my product or a website?** Only under a separate OEM agreement.
 * **What does the app send over the internet?** Only model downloads, update checks and, when you enter a key, the key plus a random device label. Your texts never leave your computer. See [Privacy](https://lendarixon.github.io/Linda/privacy.html).
 * **What if I disagree with a result?** The detector gives a probabilistic estimate and can be wrong; it must not be the sole basis for decisions about people. See [Terms](https://lendarixon.github.io/Linda/terms.html).

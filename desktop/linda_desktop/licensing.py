@@ -5,7 +5,9 @@ every REVALIDATE_DAYS days; offline the cached state is kept. No texts or person
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
+import os
 import re
 import time
 import urllib.error
@@ -113,7 +115,8 @@ def activate(key: str) -> dict:
     if not config.POLAR_ORG_ID:
         raise LicenseError("licensing is not configured in this build yet")
     label = "Windows-" + uuid.uuid4().hex[:6]
-    code, j = _post("/v1/customer-portal/license-keys/activate", {"key": key, "organization_id": config.POLAR_ORG_ID, "label": label})
+    mid = machine_id()
+    code, j = _post("/v1/customer-portal/license-keys/activate", {"key": key, "organization_id": config.POLAR_ORG_ID, "label": label, "conditions": {"machine": mid}})
     if code not in (200, 201):
         msg = _detail(j)
         if code == 403:
@@ -124,15 +127,40 @@ def activate(key: str) -> dict:
     lk = j.get("license_key") or {}
     if lk.get("status") not in (None, "granted"):
         raise LicenseError(f"this key is {lk.get('status')}")
-    st = {"key": key, "activation_id": j.get("id"), "label": label, "activated_at": int(time.time()), "last_validated": int(time.time()),
+    st = {"key": key, "activation_id": j.get("id"), "label": label, "machine": mid, "activated_at": int(time.time()), "last_validated": int(time.time()),
           "status": "granted", "limit_activations": lk.get("limit_activations"), "expires_at": lk.get("expires_at"),
           "tier": tier_of(lk.get("limit_activations"))}
     _save(st)
     return public_state(st)
 
 
+def machine_id() -> str:
+    """Anonymous id of THIS computer: a salted hash of the Windows MachineGuid (a random file in the data folder where that is not available). The raw guid never leaves the PC."""
+    guid = None
+    if os.name == "nt":
+        try:
+            import winreg
+
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Cryptography", 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY) as k:
+                guid = str(winreg.QueryValueEx(k, "MachineGuid")[0])
+        except OSError:
+            guid = None
+    if not guid:
+        p = config.data_dir() / "machine.id"
+        if not p.exists():
+            p.write_text(uuid.uuid4().hex, encoding="utf-8")
+        guid = p.read_text(encoding="utf-8").strip()
+    return hashlib.sha256(("linda-pro|" + guid).encode()).hexdigest()[:24]
+
+
 def deactivate_local() -> None:
-    """Forget the key on this computer (the device slot is freed in the Polar customer portal)."""
+    """Remove the key from this computer and, if online, free its device slot at the licence server (so the key can be entered on another computer)."""
+    st = load()
+    if st.get("key") and st.get("kind") != "gift" and st.get("activation_id") and config.POLAR_ORG_ID:
+        try:
+            _post("/v1/customer-portal/license-keys/deactivate", {"key": st["key"], "organization_id": config.POLAR_ORG_ID, "activation_id": st["activation_id"]}, timeout=10)
+        except LicenseError:
+            pass  # offline: the slot can be freed later in the Polar customer portal
     try:
         _path().unlink()
     except FileNotFoundError:
@@ -149,7 +177,8 @@ def revalidate(force: bool = False) -> dict:
     if not config.POLAR_ORG_ID:
         return public_state(st)
     try:
-        code, j = _post("/v1/customer-portal/license-keys/validate", {"key": st["key"], "organization_id": config.POLAR_ORG_ID, "activation_id": st.get("activation_id")})
+        code, j = _post("/v1/customer-portal/license-keys/validate", {"key": st["key"], "organization_id": config.POLAR_ORG_ID, "activation_id": st.get("activation_id"),
+                                                                                    "conditions": {"machine": st.get("machine") or machine_id()}})
     except LicenseError:
         return public_state(st)
     if code == 200:
@@ -166,6 +195,9 @@ def revalidate(force: bool = False) -> dict:
 def public_state(st: dict | None = None) -> dict:
     st = load() if st is None else st
     active = bool(st.get("key")) and st.get("status") == "granted"
+    status = st.get("status") or "none"
+    if active and st.get("kind") != "gift" and st.get("machine") and st["machine"] != machine_id():
+        active, status = False, "other_machine"  # the licence file was copied from another computer
     exp = st.get("expires_at")
     if active and exp:
         try:
@@ -176,4 +208,4 @@ def public_state(st: dict | None = None) -> dict:
         except Exception:  # noqa: BLE001
             pass
     return {"licensed": active, "kind": st.get("kind", "purchase"), "tier": st.get("tier") if active else None, "key_hint": _mask(st["key"]) if st.get("key") else "",
-            "status": st.get("status") or "none", "configured": bool(config.POLAR_ORG_ID)}
+            "status": status, "configured": bool(config.POLAR_ORG_ID)}

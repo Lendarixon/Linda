@@ -17,6 +17,8 @@ class FakePolar:
     def __init__(self):
         self.revoked = False
         self.calls = []
+        self.activation_conditions = None
+        self.deactivated = []
         me = self
 
         class H(http.server.BaseHTTPRequestHandler):
@@ -27,8 +29,12 @@ class FakePolar:
                 body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
                 me.calls.append((self.path, body))
                 code, out = 200, {}
-                if self.path.endswith("/activate"):
+                if self.path.endswith("/deactivate"):
+                    me.deactivated.append(body.get("activation_id"))
+                    code, out = 204, {}
+                elif self.path.endswith("/activate"):
                     if body["key"] == "LINDA-GOOD":
+                        me.activation_conditions = body.get("conditions")
                         out = {"id": "act1", "license_key": {"status": "granted", "limit_activations": 20, "expires_at": None}}
                     elif body["key"] == "LINDA-FULL":
                         code, out = 403, {"detail": "License key activation limit already reached"}
@@ -36,8 +42,8 @@ class FakePolar:
                         code, out = 404, {"detail": "Not found"}
                 elif self.path.endswith("/validate"):
                     out = {"status": "revoked" if me.revoked else "granted", "expires_at": None}
-                    if me.revoked:
-                        code = 200
+                    if body.get("conditions") != me.activation_conditions:  # like Polar: conditions must match the activation
+                        code, out = 404, {"detail": "Not found"}
                 data = json.dumps(out).encode()
                 self.send_response(code)
                 self.send_header("Content-Length", str(len(data)))
@@ -141,3 +147,28 @@ def test_app_required_blocks_download(client, repo):
     repo.publish({"models/a/m.bin": b"x" * 10, "calibration/c.json": b"{}"}, "2.0.0", min_app="9.0.0")
     client.post("/api/update/check")
     assert client.post("/api/models/download").status_code == 409
+
+
+def test_machine_binding_blocks_a_copied_licence_file(client, polar, monkeypatch):
+    client.post("/api/license/activate", json={"key": "LINDA-GOOD"})
+    mine = licensing.machine_id()
+    assert polar.calls[0][1]["conditions"] == {"machine": mine} and licensing.load()["machine"] == mine
+    assert len(mine) == 24 and mine == licensing.machine_id()  # stable
+    assert client.get("/api/status").json()["license"]["licensed"]
+    # the same licence.json on a different computer: not licensed, even offline (no network involved)
+    monkeypatch.setattr(licensing, "machine_id", lambda: "b" * 24)
+    lic = client.get("/api/status").json()["license"]
+    assert lic["licensed"] is False and lic["status"] == "other_machine"
+    # someone edits the machine field to match the new computer: the server-side condition check rejects it at the next validation
+    st = licensing.load()
+    st["machine"] = "b" * 24
+    licensing._save(st)
+    assert licensing.revalidate(force=True)["licensed"] is False and licensing.load()["status"] == "revoked"
+    assert polar.calls[-1][1]["conditions"] == {"machine": "b" * 24}
+
+
+def test_remove_key_frees_the_device_slot(client, polar):
+    client.post("/api/license/activate", json={"key": "LINDA-GOOD"})
+    assert client.post("/api/license/remove").json()["license"]["licensed"] is False
+    assert polar.deactivated == ["act1"]
+    assert licensing.load() == {}
