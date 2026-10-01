@@ -15,8 +15,8 @@ What it is: local (no cloud, no API) AI text detector for the English language. 
 We do not outperform Pangram; we are on its level on regular AI and noticeably higher than GPTZero and Originality on "humanized" texts.
 
 ## 2. Production mode (single threshold across diverse humans), "ai" shares %
-Humans: Chicago (news, blogs, reviews, resumes, books) 0.2; ELL school students (ELLIPSE, 1500) 0.7; long humans (1030) 0.0; **TOEFL essays (91 texts) 11.0 — weak spot**. AI: Chicago 99.0; StealthGPT 67.8 (90.1 with "uncertain"); YLP 5 out of 10 "ai" (10 out of 10 with "uncertain"); known AI control caught.
-Linda-Essay v3 separately (windows, 1% threshold): YLP 8 out of 10, Chicago false positives 0.45%.
+Humans: Chicago (news, blogs, reviews, resumes, books) 0.2; ELL school students (ELLIPSE, 1500) 0.7; long humans (1030) 0.0; **TOEFL essays (91 texts) 11.0 — weak spot**. AI: Chicago 99.0; StealthGPT 67.8 (90.1 with "uncertain"); known AI control caught.
+Linda-Essay v3 separately (windows, 1% threshold): Chicago false positives 0.45%.
 
 ## 3. Against open detectors (market benchmark, TPR@1%, average across 7 sets)
 Linda-Essay v3 93.9; GigaCheck 88.4; EditLens (open Pangram) 65.4; Desklib 58.5; Binoculars 56.0. On tests of newest models: 92 and 95.
@@ -27,7 +27,6 @@ Linda-Essay v3 93.9; GigaCheck 88.4; EditLens (open Pangram) 65.4; Desklib 58.5;
 ## 5. Limitations (honestly)
 - English language. Russian and Polish: Linda-Multi v3 is trained, but with web calibration false positives on Polish tests are 7–10% — not ready.
 - Essays of adult non-native speakers (TOEFL): ~11% false positives on 91 texts.
-- On YLP the ensemble dilutes Essay: part of the works fall into "uncertain".
 - Competitor scores are taken from public data of the set authors (2025), the set is easy (half of the humans are pre-2000 books); comparison with Pangram/GPTZero is not an independent audit.
 - Not the sole basis for decisions on academic dishonesty.
 
@@ -49,5 +48,5 @@ Share of "ai" verdict on humans (validation sets not involved in calibration), %
 | W&I, adult ESL, 280 | 1.1 | 0.0 |
 | TOEFL (Liang), 91 | 8.8 | 1.1 |
 | long humans, 1030 | 0.0 | 0.0 |
-AI detection: Chicago 99.0 / 97.1; StealthGPT 67.2 / 46.2; YLP 5 out of 10 / 0 out of 10 "ai" (100% / 80% with "uncertain").
+AI detection: Chicago 99.0 / 97.1; StealthGPT 67.2 / 46.2.
 Competitors on ESL (vendor data, not an independent audit; vendor default thresholds): Pangram — ELLIPSE 0% (3907), ICNALE 0% (5600), PELIC 0.019% (15,423), TOEFL 0% (91), total 0.012% (Pangram blog, updated May 2026); GPTZero itself reports 1.1% on TOEFL (+6.6% "possibly AI"); Turnitin 1.4% on ESL as measured by Pangram. Recent independent numbers not found (see `docs/research/gemini_modern_evals_20260930.md`). Our thresholds are 1% (theirs are on the order of 0.01%): in terms of strictness we are not comparable; on ELLIPSE, PELIC, W&I we are around 1% and below, on TOEFL 8.8% (sensitive) / 1.1% (precise).

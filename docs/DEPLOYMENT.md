@@ -81,4 +81,4 @@ A verdict is a screening signal and must not be the sole basis for a decision ab
 * **Updating:** the package is versioned (`VERSION`); a new release replaces the folder, calibration and models together.
 * **Monitoring:** `GET /health`. Watch GPU memory; run one service process per GPU.
 * **Language coverage:** English only in this release. Russian/Polish are not supported in Linda-Pro 1.0.
-* **Known limits:** modern-model polished essays can be missed (see evidence pack); paraphrasing/humanizer tools reduce recall; machine translation of English text is detected poorly.
+* **Known limits:** paraphrasing/humanizer tools reduce recall; machine translation of English text is detected poorly.

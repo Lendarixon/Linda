@@ -30,3 +30,17 @@ Deployment (hardware, measured speed, offline install, local HTTP service `pytho
 
 ## Commercial licence, custom calibration on your texts, integration
 ninjagovlad@gmail.com — describe the use case, volume and languages.
+
+## Citation
+
+If you use Linda-Pro, please cite the technical report (Zenodo, DOI [10.5281/zenodo.23072412](https://doi.org/10.5281/zenodo.23072412)):
+
+```bibtex
+@techreport{manzyuk2026lindapro,
+  title     = {Linda-Pro 1.0: a local ensemble detector of AI-generated English text},
+  author    = {Manzyuk, Vladyslav},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.23072412}
+}
+```

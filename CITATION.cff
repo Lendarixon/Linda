@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use Linda-Pro, please cite the technical report."
+title: "Linda-Pro 1.0: a local ensemble detector of AI-generated English text"
+type: software
+authors:
+  - family-names: Manzyuk
+    given-names: Vladyslav
+repository-code: "https://github.com/Lendarixon/Linda"
+license: CC-BY-NC-4.0
+date-released: "2026-10-01"
+preferred-citation:
+  type: report
+  title: "Linda-Pro 1.0: a local ensemble detector of AI-generated English text"
+  authors:
+    - family-names: Manzyuk
+      given-names: Vladyslav
+  year: 2026
+  publisher:
+    name: Zenodo
+  doi: "10.5281/zenodo.23072412"
