@@ -5,7 +5,7 @@ adds the local API token, the first-run download screen, update banner, licence 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = Path(r"C:\Users\ninja\Desktop\modal_demo\demo.html")
+SRC = Path(r"C:\Users\ninja\Desktop\modal_demo\demo_pre_metro.html")  # pristine page; the Metro skin is injected below
 OUT = ROOT / "web" / "index.html"
 
 B64 = (ROOT / "assets" / "wordmark_b64.txt").read_text(encoding="ascii").strip()
@@ -185,7 +185,8 @@ EXTRA_JS = """
 })();
 </script>
 """
-sub("</head>", EXTRA_CSS + "</head>")
+METRO = (ROOT / "tools" / "metro_override.css").read_text(encoding="utf-8")
+sub("</head>", '<style id="metro">\n' + METRO + "</style>" + EXTRA_CSS + "</head>")
 sub("<body>", "<body>" + EXTRA_HTML)
 sub("</body>", EXTRA_JS + "</body>")
 OUT.parent.mkdir(exist_ok=True)

@@ -4,7 +4,9 @@ Nothing is blocked without a key. Network use: one activation call when the key 
 every REVALIDATE_DAYS days; offline the cached state is kept. No texts or personal data are sent (only the key and a random device label)."""
 from __future__ import annotations
 
+import base64
 import json
+import re
 import time
 import urllib.error
 import urllib.request
@@ -66,10 +68,48 @@ def _mask(key: str) -> str:
     return key[:6] + "..." + key[-4:] if len(key) > 12 else "..."
 
 
+_GIFT_RE = re.compile(r"^LINDA-([PT])-(\d{4})-([A-Z2-7-]{100,125})$")
+GIFT_TIERS = {"P": "personal", "T": "team"}
+
+
+def verify_gift(key: str, pubkey_b64: str | None = None) -> dict | None:
+    """Offline check of a complimentary key: Ed25519 signature over "linda-gift|<P|T>|<number>". Returns {"tier", "id", "key"} or None."""
+    k = re.sub(r"\s+", "", key or "").upper()
+    m = _GIFT_RE.match(k)
+    if not m:
+        return None
+    code, num, sig = m.groups()
+    raw = sig.replace("-", "")
+    try:
+        from cryptography.exceptions import InvalidSignature
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+
+        sigb = base64.b32decode(raw + "=" * (-len(raw) % 8))
+        Ed25519PublicKey.from_public_bytes(base64.b64decode(pubkey_b64 or config.LICENSE_PUBKEY_B64)).verify(sigb, f"linda-gift|{code}|{num}".encode())
+    except (InvalidSignature, ValueError, TypeError):
+        return None
+    return {"tier": GIFT_TIERS[code], "id": f"{code}-{num}", "key": k}
+
+
+def apply_revocations(ids: list) -> None:
+    """Called with the `revoked` list of the signed update manifest: a revoked complimentary key stops being licensed."""
+    st = load()
+    if st.get("kind") == "gift" and st.get("gift_id") in set(ids or []) and st.get("status") != "revoked":
+        st["status"] = "revoked"
+        _save(st)
+
+
 def activate(key: str) -> dict:
     key = (key or "").strip()
     if not key:
         raise LicenseError("enter your licence key")
+    g = verify_gift(key)
+    if g:  # complimentary key: verified offline, no network needed
+        st = {"key": g["key"], "kind": "gift", "gift_id": g["id"], "activated_at": int(time.time()), "last_validated": int(time.time()), "status": "granted", "tier": g["tier"]}
+        _save(st)
+        return public_state(st)
+    if re.match(r"^\s*LINDA-[PT]-\d{4}-", key, re.I):
+        raise LicenseError("this key is not valid; check that it was copied completely (it is long)")
     if not config.POLAR_ORG_ID:
         raise LicenseError("licensing is not configured in this build yet")
     label = "Windows-" + uuid.uuid4().hex[:6]
@@ -102,7 +142,7 @@ def deactivate_local() -> None:
 def revalidate(force: bool = False) -> dict:
     """Check the saved key online if it has not been checked for REVALIDATE_DAYS days. Network errors keep the cached state."""
     st = load()
-    if not st.get("key"):
+    if not st.get("key") or st.get("kind") == "gift":  # complimentary keys are verified offline; revocation comes with the signed manifest
         return public_state(st)
     if not force and time.time() - st.get("last_validated", 0) < config.REVALIDATE_DAYS * 86400:
         return public_state(st)
@@ -135,5 +175,5 @@ def public_state(st: dict | None = None) -> dict:
                 active = False
         except Exception:  # noqa: BLE001
             pass
-    return {"licensed": active, "tier": st.get("tier") if active else None, "key_hint": _mask(st["key"]) if st.get("key") else "",
+    return {"licensed": active, "kind": st.get("kind", "purchase"), "tier": st.get("tier") if active else None, "key_hint": _mask(st["key"]) if st.get("key") else "",
             "status": st.get("status") or "none", "configured": bool(config.POLAR_ORG_ID)}

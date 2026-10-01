@@ -73,6 +73,7 @@ class Core:
             self.manifest, self.manifest_raw = updater.get_manifest()
             self.update = updater.update_status(self.manifest)
             self.update_error = ""
+            licensing.apply_revocations(self.manifest.get("revoked", []))
         except Exception as e:  # noqa: BLE001
             self.update_error = str(e)
         self.checked_at = time.time()

@@ -60,6 +60,9 @@ def build(a) -> None:
     if a.installer_file:
         f = Path(a.installer_file)
         m["installer"] = {"version": a.installer_version or a.version, "url": a.installer_url, "size": f.stat().st_size, "sha256": sha256(f)}
+    rev = ROOT / "keys" / "revoked.txt"  # ids of revoked complimentary keys, one per line (e.g. P-0007)
+    if rev.exists():
+        m["revoked"] = sorted({l.strip() for l in rev.read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith("#")})
     raw = json.dumps(m, indent=1, ensure_ascii=False).encode("utf-8")
     out = Path(a.out or src)
     out.mkdir(parents=True, exist_ok=True)

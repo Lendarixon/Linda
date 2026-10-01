@@ -24,6 +24,8 @@ POLAR_API = os.environ.get("LINDA_POLAR_API", "https://api.polar.sh").rstrip("/"
 POLAR_ORG_ID = os.environ.get("LINDA_POLAR_ORG_ID", "696a6525-f56d-4863-8e63-d8afc1fd3902")
 BUY_URL_PERSONAL_TEAM = "https://buy.polar.sh/polar_cl_xbgd3gaCH2ZQIzNHmRAjyJiIUTNAHuRmE51zi1P8ywI"
 BUY_URL_ORG = "https://buy.polar.sh/polar_cl_UznG2OPeM5diDZ1nCtxwRD1HW1pO3OZIu55DN07bCQe"
+# Ed25519 public key that verifies complimentary ("gift") licence keys offline (LINDA-P-0001-..., LINDA-T-0001-...); a different key from the update-manifest key.
+LICENSE_PUBKEY_B64 = os.environ.get("LINDA_LICENSE_PUBKEY_B64", "kK6CGNqIIJ49aYL1joTDHkO+SrJjCail5RqYHRRoMaY=")
 CONTACT_EMAIL = "lindapro.support@proton.me"
 REVALIDATE_DAYS = 7
 
