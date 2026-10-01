@@ -1,6 +1,6 @@
 # Linda — local AI-text detector (English)
 
-Free for personal non-commercial use, **paid for commercial use** - one licence covers the app, the command-line tools and the models ([LICENSING.md](LICENSING.md), [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md), contact ninjagovlad@gmail.com). Runs on your machine: no cloud, no API.
+Free for personal non-commercial use, **paid for commercial use** - one licence covers the app, the command-line tools and the models ([LICENSING.md](LICENSING.md), [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md), contact lindapro.support@proton.me). Runs on your machine: no cloud, no API.
 Weights live on Hugging Face: [Lindarixon/Linda-Pro](https://huggingface.co/Lindarixon/Linda-Pro) (ensemble, GPU recommended) and
 [Lindarixon/Linda-Stylo-Clean](https://huggingface.co/Lindarixon/Linda-Stylo-Clean) (CPU only, strictly clean data lineage).
 
@@ -43,7 +43,7 @@ Never use a verdict as the sole basis for decisions about people.
 Deployment (hardware, measured speed, offline install, local HTTP service `python -m linda_pro.server`): [DEPLOYMENT.md](docs/DEPLOYMENT.md). Data flow, integrity check, dependencies: [SECURITY.md](docs/SECURITY.md).
 
 ## Commercial licence, custom calibration on your texts, integration
-ninjagovlad@gmail.com — describe the use case, volume and languages.
+lindapro.support@proton.me — describe the use case, volume and languages.
 
 ## Citation
 

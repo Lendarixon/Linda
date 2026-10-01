@@ -22,5 +22,5 @@ use in a product or service that earns money; any other use that supports a busi
 * A result is a probabilistic estimate and must not be the sole basis for decisions about people. The software is provided "as is"; liability is limited to the price paid, to the extent the law allows.
 
 ## OEM, exclusive rights, custom calibration
-Write to **ninjagovlad@gmail.com** with the use case, volume, languages and deployment.
+Write to **lindapro.support@proton.me** with the use case, volume, languages and deployment.
 Data provenance is disclosed in the model card and in DATA_BOM.md. Not legal advice.

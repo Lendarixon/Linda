@@ -9,4 +9,4 @@ Use case (education, publishing, HR, platform...):
 Languages and text lengths:
 Volume (texts per month):
 Deployment (own servers / cloud / embedded):
-Contact e-mail (or write to ninjagovlad@gmail.com):
+Contact e-mail (or write to lindapro.support@proton.me):

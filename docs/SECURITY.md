@@ -70,4 +70,4 @@ Base models: Microsoft DeBERTa-v3-large and mDeBERTa-v3-base (MIT licence).
 
 ## 7. Vulnerability reports
 
-Contact: ninjagovlad@gmail.com. Please include the version (`VERSION`) and reproduction steps.
+Contact: lindapro.support@proton.me. Please include the version (`VERSION`) and reproduction steps.

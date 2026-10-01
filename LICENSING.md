@@ -30,7 +30,7 @@ Commercial use means using Linda-Pro for paid work or for clients, inside a comp
 * **How you get it.** After payment you receive a licence key by e-mail. Enter it in the app (Licence dialog): the licence notice disappears. The command-line tools do not check keys; the licence applies to them in the same way, and the key is your proof of purchase.
 * **Version rule.** A Personal or Team key is perpetual for the 1.x versions. A new major version (2.0) may need a new key or an upgrade. The Organization licence is valid for the paid year; when it ends, commercial use of Linda-Pro under it ends unless renewed.
 * **Nothing is locked.** The app works the same without a key; the key is the legal permission, not a technical switch.
-* **Not included in these licences:** exclusive rights, OEM / white-label integration into another product, hosting Linda-Pro as a service or API for third parties, redistribution of the models, custom calibration on your texts. These are agreed individually: write to ninjagovlad@gmail.com with your use case, volume and deployment.
+* **Not included in these licences:** exclusive rights, OEM / white-label integration into another product, hosting Linda-Pro as a service or API for third parties, redistribution of the models, custom calibration on your texts. These are agreed individually: write to lindapro.support@proton.me with your use case, volume and deployment.
 
 ## 3. Quick questions
 
