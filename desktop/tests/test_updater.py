@@ -128,3 +128,15 @@ def test_server_unreachable(repo):
     repo.srv.server_close()
     with pytest.raises(updater.UpdateError, match="cannot reach|update"):
         updater.get_manifest()
+
+
+def test_is_complete_survives_os_errors(repo, monkeypatch):
+    repo.publish(FILES1, "1.1.0")
+    m, raw = updater.get_manifest()
+    assert run_job(m, raw)["phase"] == "done" and updater.is_complete()
+
+    def boom(self):
+        raise OSError(448, "untrusted mount point")
+
+    monkeypatch.setattr(type(config.data_dir()), "is_file", boom)
+    assert updater.is_complete() is False  # no crash

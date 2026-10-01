@@ -129,7 +129,10 @@ def is_complete(manifest: dict | None = None, root: Path | None = None) -> bool:
     if not m:
         return False
     root = root or config.data_dir()
-    return all((root / f["path"]).is_file() and (root / f["path"]).stat().st_size == f["size"] for f in m["files"])
+    try:
+        return all((root / f["path"]).is_file() and (root / f["path"]).stat().st_size == f["size"] for f in m["files"])
+    except OSError:  # unreadable folder, antivirus lock, network drive, untrusted mount point: treat as "not installed" instead of crashing
+        return False
 
 
 class Job:
