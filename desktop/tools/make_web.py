@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = Path(r"C:\Users\ninja\Desktop\modal_demo\demo.html")
 OUT = ROOT / "web" / "index.html"
 
+B64 = (ROOT / "assets" / "wordmark_b64.txt").read_text(encoding="ascii").strip()
 t = SRC.read_text(encoding="utf-8")
 
 
@@ -31,6 +32,7 @@ t = t[:s] + """/* every API call carries the local session token (the page is se
 })();""" + t[e:]
 
 # 2. names and header
+sub('    <div class="brand-icon">⚡</div>\n', '', 1)
 sub("Linda-Essay v3", "Linda-Essay-D", 0)
 sub("Linda-Multi v2", "Linda-Multi-D", 0)
 sub("Stylo7e (Stylometry)", "Stylo-D (Stylometry)")
@@ -41,7 +43,7 @@ sub("""    Linda-Pro 1.0
   </div>
   <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600">
     Pangram-Style Sentence Origin Attribution
-  </div>""", """    Linda-Pro __LINDA_VERSION__
+  </div>""", """    <img class="brand-logo" alt="Linda-Pro" height="36" src="data:image/png;base64,""" + B64 + """"> <span style="font-weight:600;color:var(--text-muted);font-size:.85rem">__LINDA_VERSION__</span>
     <span class="badge-commercial" id="licBadge" style="cursor:pointer" title="Licence">Free \u00b7 personal use</span>
   </div>
   <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600">
@@ -52,7 +54,7 @@ sub("""    Linda-Pro 1.0
 fs = t.index('<div style="max-width:1100px;margin:28px auto 40px')
 fe = t.index("</div>", fs) + len("</div>")
 t = t[:fs] + """<div style="max-width:1100px;margin:28px auto 40px;padding:0 20px;color:#9aa2b6;font-size:.85rem;line-height:1.5">
-<b>Limits.</b> English only; up to 20,000 words (above ~3,600 words the 12 windows get wider, so highlighting is coarser). Sentence colours are indicative only: the models were calibrated on ~300-word windows, single sentences are much less reliable.
+<b>Limits.</b> English is the main language; Russian and Polish work at moderate quality (thresholds are tuned for English, results are indicative); up to 20,000 words (above ~3,600 words the 12 windows get wider, so highlighting is coarser). Sentence colours are indicative only: the models were calibrated on ~300-word windows, single sentences are much less reliable.
 Essays by non-native writers of exam type can get false flags in <i>sensitive</i> mode; <i>precise</i> flags AI only when two independent signals agree. Not better than the best commercial detectors.
 <b>Never use a verdict as the sole basis for a decision about a person.</b> Your text is analysed on this computer and is never uploaded.
 Free for personal non-commercial use; commercial use needs a licence key (<a href="#" id="footLic" style="color:#8fa8ff">enter or buy a key</a>).

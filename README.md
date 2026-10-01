@@ -1,3 +1,5 @@
+<p align="center"><img src="desktop/assets/logo_wordmark.png" alt="Linda-Pro" height="72"></p>
+
 # Linda — local AI-text detector (English)
 
 Free for personal non-commercial use, **paid for commercial use** - one licence covers the app, the command-line tools and the models ([LICENSING.md](LICENSING.md), [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md), contact lindapro.support@proton.me). Runs on your machine: no cloud, no API.
@@ -37,7 +39,7 @@ Three voters — stylometry (CPU), Linda-Essay-D and Linda-Multi-D (transformers
 `ai_share` (rough share of AI-looking text) and per-window scores. Modes: `sensitive` (default) and `precise` (fewer false accusations for schools/universities).
 Results, limits and data provenance: [EVIDENCE_PACK.md](docs/EVIDENCE_PACK.md), [DATA_BOM.md](docs/DATA_BOM.md), [MODEL_CARD.md](docs/MODEL_CARD.md).
 Short version: on the public Chicago Booth benchmark plain AI 99.7% (Pangram 99.9, GPTZero 98.6, Originality 94.2), after a humanizer 83% (Pangram 98.1, GPTZero 44.3, Originality 29.1); on HumanizerBench (not used for training) 70% of 1,675 humanized texts are flagged `ai` (1.0: 31%);
-we are **not** better than Pangram. English only. Weak spot: exam-style essays by non-native writers (TOEFL 4.4% false `ai` in `sensitive` mode, 0.0% in `precise`).
+we are **not** better than Pangram. English is the main language; Russian and Polish work at moderate quality (the network was trained on them, but thresholds are tuned for English: on our test sets the AI verdict catches about 63% of Russian and 51% of Polish AI texts at 0-1% false flags); treat those results as indicative. No comparison with other detectors was measured for these languages. Weak spot: exam-style essays by non-native writers (TOEFL 4.4% false `ai` in `sensitive` mode, 0.0% in `precise`).
 Never use a verdict as the sole basis for decisions about people.
 
 Deployment (hardware, measured speed, offline install, local HTTP service `python -m linda_pro.server`): [DEPLOYMENT.md](docs/DEPLOYMENT.md). Data flow, integrity check, dependencies: [SECURITY.md](docs/SECURITY.md).
