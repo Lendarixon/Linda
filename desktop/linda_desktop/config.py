@@ -21,7 +21,7 @@ SIGNING_PUBKEY_B64 = os.environ.get("LINDA_PUBKEY_B64", "Om56X62V4ODc26e7wlbrqZr
 
 # Polar (Merchant of Record). The organization id is not a secret; the validate/activate endpoints are public.
 POLAR_API = os.environ.get("LINDA_POLAR_API", "https://api.polar.sh").rstrip("/")
-POLAR_ORG_ID = os.environ.get("LINDA_POLAR_ORG_ID", "")
+POLAR_ORG_ID = os.environ.get("LINDA_POLAR_ORG_ID", "696a6525-f56d-4863-8e63-d8afc1fd3902")
 BUY_URL_PERSONAL_TEAM = "https://buy.polar.sh/polar_cl_xbgd3gaCH2ZQIzNHmRAjyJiIUTNAHuRmE51zi1P8ywI"
 BUY_URL_ORG = "https://buy.polar.sh/polar_cl_UznG2OPeM5diDZ1nCtxwRD1HW1pO3OZIu55DN07bCQe"
 CONTACT_EMAIL = "ninjagovlad@gmail.com"
