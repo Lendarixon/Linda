@@ -71,3 +71,24 @@ def test_not_json_and_unknown_path(url):
 def test_default_bind_is_localhost():
     src = Path(server.__file__).read_text(encoding="utf-8")
     assert 'add_argument("--host", default="127.0.0.1")' in src
+
+
+def test_check_bind_refuses_open_address_without_token():
+    server.check_bind("127.0.0.1", None)
+    server.check_bind("localhost", None)
+    server.check_bind("0.0.0.0", "secret")
+    with pytest.raises(SystemExit):
+        server.check_bind("0.0.0.0", None)
+    with pytest.raises(SystemExit):
+        server.check_bind("192.168.1.10", None)
+
+
+def test_garbage_content_length_does_not_crash(url):
+    import http.client
+    host, port = url.replace("http://", "").split(":")
+    c = http.client.HTTPConnection(host, int(port))
+    c.putrequest("POST", "/v1/detect")
+    c.putheader("Authorization", "Bearer tok")
+    c.putheader("Content-Length", "abc")
+    c.endheaders()
+    assert c.getresponse().status == 413

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Проверка Linda-Pro на ВАШИХ размеченных текстах.
+"""Check Linda-Pro on YOUR labelled texts.
     python evaluate.py --human folder_of_human_txt --ai folder_of_ai_txt [--mode sensitive|precise]
-    python evaluate.py --jsonl labelled.jsonl        # строки {"text": ..., "label": "human"|"ai"}
-Пишет evaluation_report.csv; данные никуда не отправляются."""
+    python evaluate.py --jsonl labelled.jsonl        # lines {"text": ..., "label": "human"|"ai"}
+Writes evaluation_report.csv; no data is sent anywhere."""
 import argparse
 import csv
 import json
@@ -20,7 +20,7 @@ def auroc(y, s):
     order = np.argsort(s)
     ranks = np.empty(len(s))
     ranks[order] = np.arange(1, len(s) + 1)
-    for v in np.unique(s):  # средние ранги при равных оценках
+    for v in np.unique(s):  # average ranks for tied scores
         m = s == v
         ranks[m] = ranks[m].mean()
     n1, n0 = y.sum(), (1 - y).sum()

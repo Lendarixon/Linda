@@ -53,7 +53,7 @@ Optional: `python-docx`, `pypdf` (file readers). The bundled `_vendor/aidetector
 
 ## 4. Local HTTP service
 
-* Binds to 127.0.0.1 by default. Optional bearer token (`--token`), request limit 20 MB / 64 texts, no request logging.
+* Binds to 127.0.0.1 by default and refuses to start on any other address without `--token`. The token is compared in constant time. Request limit 20 MB / 64 texts, no request logging.
 * No TLS, user management or rate limiting in the built-in service — place it behind your own reverse proxy / API gateway if it is reachable from other hosts.
 * Error responses do not echo request contents.
 

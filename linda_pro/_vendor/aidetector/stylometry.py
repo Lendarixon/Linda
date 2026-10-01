@@ -1,26 +1,25 @@
-"""Стилометрия без нейросетей: признаки текста и обученная статистическая модель.
+"""Stylometry without neural networks: text features and a trained statistical model.
 
-Две части, обе на CPU, миллисекунды на текст:
+Two parts, both on CPU, milliseconds per text:
 
-1. Ручные признаки (`extract_features`) — ~250 чисел на язык: пунктуация,
-   ритм и разброс длин предложений/абзацев, лексическое разнообразие (MATTR,
-   MTLD, Yule K), частоты служебных слов, дискурсивные маркеры и «ИИ-обороты»,
-   повторяемость и сжимаемость текста, разметка (списки, заголовки),
-   Unicode-криминалистика. Все частоты — на 1000 слов/символов или в окнах
-   фиксированной длины, чтобы признак не зависел от длины текста.
-2. Модель n-грамм (`ngram_matrix`) — символьные n-граммы 2–5 внутри слов и
-   словесные 1–2-граммы, хешированные в разреженный вектор; логистическая
-   регрессия по ним даёт одну оценку, которая идёт в бустинг как признак.
+1. Handcrafted features (`extract_features`) — ~250 numbers per language: punctuation,
+   rhythm and spread of sentence/paragraph lengths, lexical diversity (MATTR,
+   MTLD, Yule K), function word frequencies, discourse markers and "AI phrases",
+   repetitiveness and compressibility of text, markup (lists, headings),
+   Unicode forensics. All frequencies are per 1000 words/characters or in fixed-length
+   windows so that the feature does not depend on text length.
+2. N-gram model (`ngram_matrix`) — character 2–5-grams within words and
+   word 1–2-grams hashed into a sparse vector; logistic
+   regression on them yields a single score, which goes into boosting as a feature.
 
-Итог — градиентный бустинг (LightGBM) по признакам + оценке n-грамм, своя
-модель на каждый язык (train/train_stylometry.py). Модель хранится текстом
-LightGBM и массивами numpy (без pickle) в src/aidetector/stylometry_model/.
+Result — gradient boosting (LightGBM) on features + n-gram score, a separate
+model for each language (train/train_stylometry.py). The model is stored as LightGBM
+text and numpy arrays (without pickle) in src/aidetector/stylometry_model/.
 
-Нормализация перед признаками убирает типографику, которая говорит об
-источнике текста, а не об авторе: кавычки всех видов → ", апострофы → ',
-многоточие … → ..., неразрывные и прочие пробелы → пробел. Тире не трогаем:
-длинное тире — известный стилевой признак LLM.
-"""
+Normalization before features removes typography that reflects the text's
+source rather than the author: quotes of all kinds → ", apostrophes → ',
+ellipsis … → ..., non-breaking and other spaces → space. We don't touch dashes:
+em dash is a known stylistic feature of LLMs."""
 from __future__ import annotations
 
 import json
@@ -35,12 +34,12 @@ from pathlib import Path
 import numpy as np
 
 MODEL_DIR = Path(__file__).resolve().parent / "stylometry_model"
-# отдельный профиль «под бенчмарки» (train-части RAID/MAGE/SemEval/COLING/CoAT в обучении): голос stylometry_bench,
-# только для отчётов по бенчмаркам и сабмита — основной голос его не использует (eval/reports/stylometry_v6_bench.md)
+# separate profile "for benchmarks" (train splits of RAID/MAGE/SemEval/COLING/CoAT in training): stylometry_bench voice,
+# only for benchmark reports and submission — the main voice does not use it (eval/reports/stylometry_v6_bench.md)
 BENCH_MODEL_DIR = Path(__file__).resolve().parent / "stylometry_model_bench"
 LANGS = ("en", "ru", "pl")
 
-# ---------------------------------------------------------------- нормализация
+# ---------------------------------------------------------------- normalization
 
 _QUOTES = str.maketrans({
     "“": '"', "”": '"', "„": '"', "‟": '"', "«": '"', "»": '"', "″": '"',
@@ -62,7 +61,7 @@ def normalize(text: str) -> str:
     return _MANY_NL.sub("\n\n", text).strip()
 
 
-# ---------------------------------------------------------------- словари
+# ---------------------------------------------------------------- dictionaries
 
 FUNCTION_WORDS: dict[str, list[str]] = {
     "en": """the a an and or but if then so because as of in on at to for with by from about into through over under
@@ -86,7 +85,7 @@ FUNCTION_WORDS: dict[str, list[str]] = {
         wśród stanowi kluczowe kluczową szczególnie znacząco różnych""".split(),
 }
 
-# категория -> фразы (ищутся как отдельные слова/обороты, без учёта регистра)
+# category -> phrases (searched as separate words/phrases, case-insensitive)
 MARKERS: dict[str, dict[str, list[str]]] = {
     "en": {
         "m_add": ["moreover", "furthermore", "additionally", "in addition", "besides", "what's more"],
@@ -133,8 +132,8 @@ MARKERS: dict[str, dict[str, list[str]]] = {
     },
 }
 
-# Структура текста (по SlopShape, arXiv 2609.15369: «аккуратный, самоанонсирующий» ИИ-текст — план и тезис в начале,
-# итог и повтор тезиса в конце; у людей этих вех нет). Обороты ищутся не во всём тексте, а в первом/последнем блоке.
+# Text structure (following SlopShape, arXiv 2609.15369: "neat, self-announcing" AI text — outline and thesis at the beginning,
+# summary and thesis restatement at the end; humans lack these milestones). Phrases are searched not in the entire text, but in the first/last block.
 _STRUCT: dict[str, dict[str, list[str]]] = {
     "en": {
         "roadmap": ["this essay", "this article", "this post", "this paper", "this review", "in this essay", "in this article",
@@ -222,7 +221,7 @@ PUNCT_CHARS = {
 def _phrase_regex(phrases: tuple[str, ...]) -> re.Pattern:
     parts = []
     for p in sorted(phrases, key=len, reverse=True):
-        # «корень*» совпадает с любым окончанием (эффективн* -> эффективный, эффективно, ...)
+        # "stem*" matches any ending (эффективн* -> эффективный, эффективно, ...)
         stem = p.endswith("*")
         esc = re.escape(p.rstrip("*")).replace(r"\ ", r"\s+")
         parts.append(esc + (r"\w*" if stem else ""))
@@ -241,7 +240,7 @@ def _yaml_patterns(lang: str) -> dict[str, list[re.Pattern]]:
             for k in ("antithesis", "simile_markers", "conclusive_markers", "tell_words")}
 
 
-# ---------------------------------------------------------------- вспомогательное
+# ---------------------------------------------------------------- auxiliary
 
 
 def split_sentences(text: str) -> list[str]:
@@ -249,7 +248,7 @@ def split_sentences(text: str) -> list[str]:
 
 
 def _stats(xs: list[float]) -> tuple[float, float, float, float]:
-    """mean, std, коэффициент вариации, асимметрия."""
+    """mean, std, coefficient of variation, skewness."""
     if not xs:
         return 0.0, 0.0, 0.0, 0.0
     a = np.asarray(xs, dtype=float)
@@ -335,9 +334,9 @@ def _char_script(ch: str) -> str | None:
     return "O"
 
 
-# ---------------------------------------------------------------- признаки
+# ---------------------------------------------------------------- features
 
-# (имя, описание) — описание показывается в объяснении голоса
+# (name, description) — description is shown in the voice explanation
 BASE_FEATURES: list[tuple[str, str]] = [
     ("log_words", "длина текста (слов, лог)"),
     ("word_len_mean", "средняя длина слова"),
@@ -407,11 +406,11 @@ BASE_FEATURES: list[tuple[str, str]] = [
 _PUNCT_FEATURES = [(f"p_{k}", f"«{v}» на 1000 символов") for k, v in PUNCT_CHARS.items()]
 
 
-STRUCT_ENABLED = False  # признаки структуры в обучении — только с train_stylometry.py --struct (eval/reports/stylometry_structure.md)
+STRUCT_ENABLED = False  # structure features in training — only with train_stylometry.py --struct (eval/reports/stylometry_structure.md)
 
 
 def feature_names(lang: str) -> list[str]:
-    """Признаки для обучения новой модели; готовая модель берёт свой список из meta (LangModel.names)."""
+    """Features for training a new model; a trained model takes its list from meta (LangModel.names)."""
     return ([n for n, _ in BASE_FEATURES] + [n for n, _ in _PUNCT_FEATURES]
             + sorted(MARKERS[lang]) + [f"fw:{w}" for w in _fw_list(lang)]
             + ([n for n, _ in STRUCT_FEATURES] if STRUCT_ENABLED else []))
@@ -439,8 +438,8 @@ def _fw_list(lang: str) -> tuple[str, ...]:
 
 
 def extract_features(text: str, lang: str) -> dict[str, float]:
-    """Признаки одного текста. text — исходный (невидимые символы и пробелы
-    считаются до нормализации), всё остальное — по нормализованному."""
+    """Features of a single text. text — original (invisible characters and spaces
+    are counted before normalization), everything else — on the normalized one."""
     raw = text
     zero_width = sum(raw.count(ch) for ch in _ZERO_WIDTH)
     odd_spaces = len(_ODD_SPACES.findall(raw.replace("\t", "")))
@@ -484,7 +483,7 @@ def extract_features(text: str, lang: str) -> dict[str, float]:
     f["allcaps_share"] = sum(1 for w in ws_orig if len(w) >= 2 and w.isupper()) / n_w
     f["num_rate"] = len(_NUM_RE.findall(text)) * per_kw
 
-    # предложения
+    # sentences
     sents = split_sentences(text)
     n_s = max(1, len(sents))
     s_words = [_WORD_RE.findall(s) for s in sents]
@@ -519,7 +518,7 @@ def extract_features(text: str, lang: str) -> dict[str, float]:
     f["commas_per_sent"], f["commas_per_sent_std"], _, _ = _stats(commas)
     f["no_comma_share"] = sum(1 for c in commas if c == 0) / len(commas)
 
-    # абзацы = непустые строки (у разных источников абзацы разделены по-разному)
+    # paragraphs = non-empty lines (different sources separate paragraphs differently)
     lines = [ln for ln in text.split("\n") if ln.strip()]
     n_l = max(1, len(lines))
     f["log_lines"] = math.log1p(len(lines))
@@ -531,7 +530,7 @@ def extract_features(text: str, lang: str) -> dict[str, float]:
     f["bold_rate"] = len(_BOLD_RE.findall(text)) * per_kw
     f["emoji_rate"] = len(_EMOJI_RE.findall(text)) * per_kc
 
-    # повторы и сжатие
+    # repetitions and compression
     f["compress"] = _compress_ratio(text)
     tri, bi = [], []
     for win in _windows(ws, 200):
@@ -545,7 +544,7 @@ def extract_features(text: str, lang: str) -> dict[str, float]:
     ov = [len(a & b) / max(1, len(a | b)) for a, b in zip(content, content[1:]) if a or b]
     f["adj_overlap"] = float(np.mean(ov)) if ov else 0.0
 
-    # символы
+    # characters
     letters = [ch for ch in text if ch.isalpha()]
     n_let = max(1, len(letters))
     f["upper_share"] = sum(1 for ch in letters if ch.isupper()) / n_let
@@ -591,11 +590,11 @@ def extract_features(text: str, lang: str) -> dict[str, float]:
 
 
 def _structure_features(lines: list[str], sents: list[str], lang: str, fw_set: set[str]) -> dict[str, float]:
-    """Где стоят вехи текста: план/тезис в первом блоке, итог/повтор тезиса в последнем. Блок — абзац, если абзацев
-    ≥ 3, иначе первые/последние два предложения (аннотации и короткие ответы пишутся одним абзацем)."""
+    """Where text milestones are located: outline/thesis in the first block, summary/thesis restatement in the last. A block is a paragraph if there are
+    ≥ 3 paragraphs, otherwise the first/last two sentences (abstracts and short answers are written as a single paragraph)."""
     rx = {k: _phrase_regex(tuple(v)) for k, v in _STRUCT[lang].items()}
     if len(lines) >= 4 and len(_WORD_RE.findall(lines[0])) <= 12 and not lines[0].rstrip().endswith((".", "!", "?", "…")):
-        lines = lines[1:]  # заголовок — не первый абзац
+        lines = lines[1:]  # heading — not the first paragraph
     para = len(lines) >= 3
     blocks = lines if para else [" ".join(sents[:2]), " ".join(sents[2:-2]), " ".join(sents[-2:])] if len(sents) >= 4 else (
         [" ".join(sents)] * 3 if sents else ["", "", ""])
@@ -628,12 +627,12 @@ def _structure_features(lines: list[str], sents: list[str], lang: str, fw_set: s
 
 
 def feature_vector(text: str, lang: str, names: list[str] | None = None) -> np.ndarray:
-    """names — список признаков модели (из её meta): старые модели без новых признаков продолжают работать."""
+    """names — list of model features (from its meta): old models without new features continue to work."""
     f = extract_features(text, lang)
     return np.array([f.get(n, 0.0) for n in (names or feature_names(lang))], dtype=np.float32)
 
 
-# ---------------------------------------------------------------- n-граммы
+# ---------------------------------------------------------------- n-grams
 
 NGRAM_CHAR_BITS = 19
 NGRAM_WORD_BITS = 18
@@ -642,10 +641,10 @@ _SKEL_TOKEN = re.compile(r"\w+|[^\w\s]|\n", re.UNICODE)
 
 
 def skeleton(text: str, lang: str) -> str:
-    """«Скелет» текста: служебные слова и знаки препинания остаются, остальные слова
-    -> W, числа -> D, перевод строки -> NL. n-граммы скелета — синтаксис и ритм без
-    темы текста (приём text distortion из стилометрии), поэтому меньше зависят от
-    того, о чём текст."""
+    """"Skeleton" of the text: function words and punctuation marks remain, other words
+    -> W, numbers -> D, newline -> NL. Skeleton n-grams are syntax and rhythm without
+    the topic of the text (a text distortion technique from stylometry), so they depend less on
+    what the text is about."""
     fw = set(_fw_list(lang))
     out = []
     for tok in _SKEL_TOKEN.findall(text.lower()):
@@ -677,8 +676,8 @@ def _vectorizers():
 
 
 def ngram_matrix(texts: list[str], lang: str):
-    """Разреженная матрица: log(1+tf) символьных 2–5-грамм (внутри слов), словесных
-    1–2-грамм и 1–4-грамм скелета; каждая часть нормирована по L2 отдельно."""
+    """Sparse matrix: log(1+tf) of character 2–5-grams (within words), word
+    1–2-grams and skeleton 1–4-grams; each part is normalized by L2 separately."""
     import scipy.sparse as sp
     from sklearn.preprocessing import normalize as l2
 
@@ -692,16 +691,16 @@ def ngram_matrix(texts: list[str], lang: str):
     return sp.hstack(parts, format="csr")
 
 
-# ---------------------------------------------------------------- модель
+# ---------------------------------------------------------------- model
 
 
 class LangModel:
-    """Обученная модель одного языка.
+    """Trained model for a single language.
 
-    m_lr — логистическая регрессия по n-граммам (среднее моделей фолдов), m_gb —
-    бустинг LightGBM по ручным признакам. Итог:
+    m_lr — logistic regression on n-grams (average of fold models), m_gb —
+    LightGBM boosting on handcrafted features. Result:
         z = a·(m_lr − μ_lr)/σ_lr + (1 − a)·(m_gb − μ_gb)/σ_gb,   logit(p_ai) = c1·z + c0
-    a, μ, σ, c1, c0 подобраны на оценках вне фолда (train/train_stylometry.py)."""
+    a, μ, σ, c1, c0 are tuned on out-of-fold predictions (train/train_stylometry.py)."""
 
     def __init__(self, lang: str, booster, ngram_coef: np.ndarray, ngram_bias: float, meta: dict, oof: dict[str, float]):
         self.lang = lang
@@ -709,7 +708,7 @@ class LangModel:
         self.ngram_coef = ngram_coef
         self.ngram_bias = ngram_bias
         self.meta = meta
-        self.oof = oof  # ключ текста -> логит вне фолда (для текстов обучающей выборки из eval-наборов)
+        self.oof = oof  # text key -> out-of-fold logit (for training set texts from eval sets)
         self.names = meta["feature_names"]
         self.blend = meta["blend"]
 
@@ -719,15 +718,15 @@ class LangModel:
         return b["c1"] * z + b["c0"]
 
     def margins(self, texts: list[str]) -> np.ndarray:
-        """Логиты p_ai (финальная модель, без подстановки оценок вне фолда)."""
+        """Logits of p_ai (final model, without substitution of out-of-fold predictions)."""
         X = ngram_matrix(texts, self.lang)
         m_lr = np.asarray(X @ self.ngram_coef, dtype=np.float64).ravel() + self.ngram_bias
         F = np.stack([feature_vector(t, self.lang, self.names) for t in texts])
         return self._combine(m_lr, self.booster.predict(F, raw_score=True))
 
     def explain(self, text: str, top: int = 6) -> dict:
-        """Логит и его разбор: вклад части n-грамм и части признаков, крупнейшие по модулю
-        вклады отдельных признаков и словесных n-грамм этого текста."""
+        """Logit and its breakdown: contribution of the n-gram part and feature part, largest in magnitude
+        contributions of individual features and word n-grams of this text."""
         b = self.blend
         X = ngram_matrix([text], self.lang)
         m_lr = float(np.asarray(X @ self.ngram_coef).ravel()[0] + self.ngram_bias)
@@ -755,8 +754,8 @@ def _identity_hasher():
 
 
 def _word_ngram_contrib(text: str, X, coef: np.ndarray, top: int) -> list[tuple[str, float]]:
-    """Вклады словесных 1–2-грамм текста в логит n-граммной регрессии (те же хеши, что у
-    HashingVectorizer: хешер с анализатором-тождеством даёт индекс колонки по строке)."""
+    """Contributions of text word 1–2-grams to the n-gram regression logit (same hashes as
+    HashingVectorizer: hasher with identity analyzer gives column index by string)."""
     _, word, _ = _vectorizers()
     grams = sorted(set(word.build_analyzer()(normalize(text))))
     if not grams:
@@ -792,10 +791,10 @@ def load_model(lang: str, model_dir: str | None = None) -> LangModel | None:
 
 
 def model_version(model_dir: Path | None = None) -> str:
-    """Хеш файлов модели — в cache_salt голоса: переобученная модель = новая версия голоса."""
+    """Hash of model files — in voice cache_salt: retrained model = new voice version."""
     import hashlib
 
-    h = hashlib.sha1(Path(__file__).read_bytes())  # код признаков — часть модели
+    h = hashlib.sha1(Path(__file__).read_bytes())  # feature code is part of the model
     for p in sorted(Path(model_dir or MODEL_DIR).glob("*.meta.json")):
         h.update(p.read_bytes())
     return h.hexdigest()[:12]

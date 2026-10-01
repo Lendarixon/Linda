@@ -63,7 +63,7 @@ r["verdict"], r["ai_share"], r["windows"]   # verdict: ai | uncertain | human; p
 python -m linda_pro.server --port 8080 --token <secret> [--mode precise] [--device cuda]
 curl -H "Authorization: Bearer <secret>" -d "{\"texts\":[\"...\"]}" http://127.0.0.1:8080/v1/detect
 ```
-Listens on 127.0.0.1 by default. If you expose it beyond the host, put it behind your own TLS reverse proxy and network controls;
+Listens on 127.0.0.1 by default (it refuses to start on another address without `--token`). If you expose it beyond the host, put it behind your own TLS reverse proxy and network controls;
 the built-in service provides only a bearer token, request-size limit (20 MB, 64 texts) and no logging of request texts.
 Requests are processed one at a time.
 

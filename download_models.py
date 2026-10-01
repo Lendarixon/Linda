@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Скачивает веса Linda-Pro с Hugging Face в ./models (нужен интернет, ~2.7 ГБ)."""
+"""Downloads the Linda-Pro weights from Hugging Face into ./models (needs internet, ~2.7 GB)."""
 from pathlib import Path
 
 from huggingface_hub import snapshot_download

@@ -1,17 +1,16 @@
-"""Очистка текста от «атак» перед голосами-моделями (RAID-подобные обфускации).
+"""Cleaning text from "attacks" before model votes (RAID-like obfuscations).
 
-Атаки из бенчмарка RAID (homoglyph, zero_width_space, whitespace) и «гуманизаторы» ломают
-нейросетевые детекторы, почти не меняя текст для читателя: латинская «a» заменяется кириллической «а»,
-между буквами вставляются невидимые символы, между словами — лишние пробелы. Модель видит
-незнакомые токены и отвечает «человек».
+Attacks from the RAID benchmark (homoglyph, zero_width_space, whitespace) and "humanizers" break
+neural network detectors while barely changing the text for the reader: Latin "a" is replaced with Cyrillic "а",
+invisible characters are inserted between letters, extra spaces between words. The model sees
+unfamiliar tokens and responds "human".
 
-Регистр не трогаем: атака upper_lower в RAID меняет первую букву случайных слов («quantum Systems»), и
-отличить это от имён собственных без словаря нельзя, а правка регистра внутри слов портила аббревиатуры
-(CNNs, LSTMs). Здесь только обратимые для смысла замены, и ТОЛЬКО там, где есть след атаки; обычный текст не меняется
-ни на символ (кавычки, многоточия, тире, NFC — как есть), поэтому кэш оценок и поведение моделей на
-чистых текстах те же. Голос heuristics получает исходный текст: для него следы атаки — улика
-(`_rule_unicode_forensics`), а не шум.
-"""
+We do not touch case: the upper_lower attack in RAID changes the first letter of random words ("quantum Systems"), and
+distinguishing this from proper nouns without a dictionary is impossible, and editing case inside words corrupted abbreviations
+(CNNs, LSTMs). Here, only substitutions reversible in meaning are made, and ONLY where there is an attack trace; normal text does not change
+by a single character (quotes, ellipses, dashes, NFC — as is), so the evaluation cache and model behavior on
+clean texts remain the same. The heuristics vote receives the original text: for it, attack traces are evidence
+(`_rule_unicode_forensics`), not noise."""
 from __future__ import annotations
 
 import re
@@ -19,13 +18,13 @@ import unicodedata
 from dataclasses import dataclass, field
 from functools import lru_cache
 
-RAW_TEXT_VOTERS = {"heuristics"}  # им нужен исходный текст
+RAW_TEXT_VOTERS = {"heuristics"}  # they need the original text
 
 _ZERO_WIDTH = dict.fromkeys(map(ord, "​‌‍⁠﻿­᠎⁡⁢⁣⁤"), None)
 _ODD_SPACES = {ord(c): " " for c in "              　"}
 _FULLWIDTH = {cp: cp - 0xFEE0 for cp in range(0xFF01, 0xFF5F)}  # ！..～ -> !..~
 
-# гомоглифы: кириллица/греческий -> латиница и обратно (только визуально неотличимые пары)
+# homoglyphs: Cyrillic/Greek -> Latin and vice versa (only visually indistinguishable pairs)
 _TO_LATIN = dict(zip(
     "аеорсухіјѕԁԛԝӏАВЕКМНОРСТХІЈЅԚԜοαενιρτυχκΑΒΕΖΗΙΚΜΝΟΡΤΥΧУ",
     "aeopcyxijsdqwlABEKMHOPCTXIJSQWoaeviptuxkABEZHIKMNOPTYXY"))
@@ -67,10 +66,10 @@ def _fix_word(word: str, doc_script: str) -> str:
     n_cyr = scripts.count("CYRILLIC")
     n_grk = scripts.count("GREEK")
     if doc_script == "LATIN":
-        if n_lat and (n_cyr or n_grk):  # смешанное слово: «аpple»
+        if n_lat and (n_cyr or n_grk):  # mixed word: "аpple"
             return "".join(_TO_LATIN.get(ch, ch) for ch in word)
-        # целиком «кириллическое» слово из одних двойников латиницы («а», «сор») в латинском тексте;
-        # греческие буквы-символы (α, ν, ρ в научных текстах) целиком не трогаем
+        # entirely "Cyrillic" word consisting solely of Latin lookalikes ("а", "сор") in Latin text;
+        # Greek letter-symbols (α, ν, ρ in scientific texts) are left completely untouched
         if n_cyr and not n_grk and all(ch in _TO_LATIN for ch in word):
             return "".join(_TO_LATIN[ch] for ch in word)
         return word
@@ -109,7 +108,7 @@ def canonicalize(text: str, lang: str | None = None) -> Canon:
     t = _WORD.sub(repl, t)
     counts["слов с гомоглифами"] = n_homo
 
-    # лишние пробелы чистим, только если есть другие следы атаки или их много: двойной пробел после точки — норма
+    # extra spaces are cleaned only if there are other traces of an attack or there are many of them: a double space after a period is normal
     lines = t.split("\n")
     fixed = [_SPACE_BEFORE_PUNCT.sub(r"\1", _MULTI_SPACE.sub(" ", ln)) for ln in lines]
     n_space = sum(a != b for a, b in zip(lines, fixed))

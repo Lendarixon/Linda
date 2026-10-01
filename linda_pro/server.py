@@ -8,13 +8,15 @@ Requests (JSON):
     GET  /health                       -> {"status": "ok", "mode": ...}
     POST /v1/detect  {"texts": ["..."], "mode": "sensitive"|"precise", "windows": true|false}
                      -> {"results": [{"verdict", "essay", "ens_z", "ai_share", "n_windows", "windows": [...]}]}
-If --token is specified, the header  Authorization: Bearer SECRET is required. By default listens only on 127.0.0.1.
+If --token is specified, the header  Authorization: Bearer SECRET is required. By default listens only on 127.0.0.1;
+listening on any other address without --token is refused.
 This is a local wrapper for integration (e.g., gateway for an LTI tool), not a cloud API; models are shared per process,
 requests are processed strictly in sequence.
 """
 from __future__ import annotations
 
 import argparse
+import hmac
 import json
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -24,6 +26,12 @@ from .core import LindaPro
 MAX_BODY = 20 * 1024 * 1024  # 20 MB per request
 MAX_TEXTS = 64
 LOCK = threading.Lock()  # voters strictly sequentially
+
+
+def check_bind(host: str, token: str | None) -> None:
+    """Refuse to listen on a non-loopback address without a token."""
+    if host not in ("localhost", "::1") and not host.startswith("127.") and not token:
+        raise SystemExit(f"refusing to listen on {host} without --token (use 127.0.0.1, or set --token and put TLS in front)")
 
 
 class _Resident:
@@ -69,7 +77,7 @@ def make_handler(detectors: dict, token: str | None, default_mode: str):
             self.wfile.write(b)
 
         def _auth(self) -> bool:
-            return token is None or self.headers.get("Authorization", "") == "Bearer " + token
+            return token is None or hmac.compare_digest(self.headers.get("Authorization", "").encode(), ("Bearer " + token).encode())
 
         def do_GET(self):
             if self.path == "/health":
@@ -81,7 +89,10 @@ def make_handler(detectors: dict, token: str | None, default_mode: str):
                 return self._send(404, {"error": "not found"})
             if not self._auth():
                 return self._send(401, {"error": "unauthorized"})
-            n = int(self.headers.get("Content-Length", "0") or 0)
+            try:
+                n = int(self.headers.get("Content-Length", "0") or 0)
+            except ValueError:
+                n = 0
             if n <= 0 or n > MAX_BODY:
                 return self._send(413, {"error": "body size must be 1..%d bytes" % MAX_BODY})
             try:
@@ -113,6 +124,7 @@ def main(argv=None) -> None:
     ap.add_argument("--token", default=None)
     ap.add_argument("--device", default=None, help="cuda or cpu (default: auto)")
     a = ap.parse_args(argv)
+    check_bind(a.host, a.token)
     dets = make_detectors(a.device)
     srv = ThreadingHTTPServer((a.host, a.port), make_handler(dets, a.token, a.mode))
     print(f"Linda-Pro service on http://{a.host}:{a.port} (mode {a.mode}); request texts are never logged", flush=True)
