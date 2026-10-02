@@ -14,7 +14,7 @@ from pathlib import Path
 from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from . import config, licensing, updater
+from . import analytics, config, history, licensing, structure, updater
 from .engine import Engine, load_settings, save_settings
 
 MAX_UPLOAD = 20_000_000
@@ -116,6 +116,8 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
     api = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     api.state.core, api.state.token = core, token
     html = (config.resource_dir() / "web" / "index.html").read_text(encoding="utf-8")
+    cabinet = (config.resource_dir() / "web" / "cabinet.html").read_text(encoding="utf-8")  # history, batch and compare views
+    html = html.replace("</body>", cabinet + "\n</body>", 1)
 
     @api.middleware("http")
     async def guard(request: Request, call_next):
@@ -197,7 +199,114 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             res = core.engine.run(text, mode, models)
         except Exception as e:  # noqa: BLE001
             return err(f"analysis failed: {type(e).__name__}: {e}", 500)
-        return {"status": "ok", "result": res}
+        hid = None
+        if load_settings().get("save_history", True) and body.get("save", True):
+            try:
+                hid = history.add(text, res, mode, title=str(body.get("title") or "")[:200] or None, filename=str(body.get("filename") or "")[:200] or None,
+                                  folder_id=int(body["folder_id"]) if str(body.get("folder_id") or "").isdigit() else None)
+            except Exception:  # noqa: BLE001  # a history problem must never lose the result
+                hid = None
+        return {"status": "ok", "result": res, "history_id": hid}
+
+    # ---- local history ("cabinet"), batch results are saved through /api/detect ----
+    @api.get("/api/history")
+    def hist_list(q: str = "", verdict: str = "", limit: int = 200, offset: int = 0, folder: str = "", sort: str = "date", order: str = "desc"):
+        days = int(load_settings().get("history_retention_days", 0) or 0)
+        if days:
+            history.purge_older_than(days)
+        fo = int(folder) if folder.isdigit() else None  # "" = all, "0" = not in a folder
+        return {"items": history.list_checks(q, verdict, min(max(limit, 1), 1000), max(offset, 0), fo, sort, order), "stats": history.stats(), **history.folders()}
+
+    @api.post("/api/history/folders")
+    def folder_add(body: dict):
+        return {"id": history.folder_add(str(body.get("name", "")), body.get("color"))}
+
+    @api.patch("/api/history/folders/{folder_id}")
+    def folder_update(folder_id: int, body: dict):
+        return {"status": "ok"} if history.folder_update(folder_id, body.get("name"), body.get("color")) else err("not found", 404)
+
+    @api.delete("/api/history/folders/{folder_id}")
+    def folder_delete(folder_id: int, with_checks: bool = False):
+        return {"status": "ok", "deleted": history.folder_delete(folder_id, with_checks)}
+
+    @api.post("/api/history/move")
+    def hist_move(body: dict):
+        try:
+            ids = [int(i) for i in body["ids"]]
+            fid = int(body["folder_id"]) if body.get("folder_id") else None
+        except Exception:  # noqa: BLE001
+            return err("bad request")
+        return {"moved": history.move(ids, fid)}
+
+    @api.post("/api/history/delete")
+    def hist_delete_many(body: dict):
+        try:
+            return {"deleted": history.delete_many([int(i) for i in body["ids"]])}
+        except Exception:  # noqa: BLE001
+            return err("bad request")
+
+    @api.get("/api/structure/{check_id}")
+    def hist_structure(check_id: int):
+        c = history.get(check_id)
+        return structure.profile(c["text"], c["result"].get("sentences")) if c else err("not found", 404)
+
+    @api.post("/api/structure")
+    def text_structure(body: dict):
+        sents = body.get("sentences") if isinstance(body.get("sentences"), list) else None
+        return structure.profile(str(body.get("text", "")), sents)
+
+    @api.get("/api/history/{check_id}")
+    def hist_get(check_id: int):
+        c = history.get(check_id)
+        return c if c else err("not found", 404)
+
+    @api.patch("/api/history/{check_id}")
+    def hist_rename(check_id: int, body: dict):
+        return {"status": "ok"} if history.rename(check_id, str(body.get("title", ""))) else err("not found", 404)
+
+    @api.delete("/api/history/{check_id}")
+    def hist_delete(check_id: int):
+        return {"status": "ok"} if history.delete(check_id) else err("not found", 404)
+
+    @api.delete("/api/history")
+    def hist_clear():
+        return {"status": "ok", "deleted": history.clear()}
+
+    @api.get("/api/analytics/{check_id}")
+    def hist_analytics(check_id: int):
+        c = history.get(check_id)
+        return analytics.analyze(c["text"], c["result"].get("sentences")) if c else err("not found", 404)
+
+    @api.post("/api/analytics")
+    def text_analytics(body: dict):
+        return analytics.analyze(str(body.get("text", "")), body.get("sentences") if isinstance(body.get("sentences"), list) else None)
+
+    @api.post("/api/compare/matrix")
+    def compare_matrix(body: dict):
+        """Compare any number of saved checks at once: pairwise overlap matrix plus the most similar pairs."""
+        try:
+            ids = [int(x) for x in body["ids"]][:60]
+        except Exception:  # noqa: BLE001
+            return err("bad request")
+        checks = [history.get(i) for i in ids]
+        checks = [c for c in checks if c]
+        if len(checks) < 2:
+            return err("pick at least two checks", 400)
+        m = analytics.similarity_matrix([c["text"] for c in checks])
+        pairs = sorted(({"a": checks[i]["id"], "b": checks[j]["id"], "overlap": m[i][j]} for i in range(len(checks)) for j in range(i + 1, len(checks))), key=lambda x: -x["overlap"])
+        items = [{"id": c["id"], "title": c["title"], "verdict": c["result"].get("verdict"), "authorship": (c["result"].get("authorship") or {}).get("label"),
+                  "words": c["words"], "ai_share": c.get("ai_share")} for c in checks]
+        return {"items": items, "matrix": m, "pairs": pairs[:40]}
+
+    @api.post("/api/compare")
+    def compare(body: dict):
+        try:
+            a, b = history.get(int(body["a"])), history.get(int(body["b"]))
+        except Exception:  # noqa: BLE001
+            return err("bad request")
+        if not a or not b:
+            return err("check not found", 404)
+        return history.compare(a, b)
 
     @api.post("/api/license/activate")
     def lic_activate(body: dict):
@@ -214,8 +323,12 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
     @api.post("/api/settings")
     def settings(body: dict):
         cur = load_settings()
-        if body.get("sentences") in ("auto", "full", "windows"):
+        if body.get("sentences") in ("auto", "context", "smooth", "full", "windows"):
             cur["sentences"] = body["sentences"]
+        if isinstance(body.get("history_retention_days"), int) and not isinstance(body.get("history_retention_days"), bool) and 0 <= body["history_retention_days"] <= 3650:
+            cur["history_retention_days"] = body["history_retention_days"]
+        if isinstance(body.get("save_history"), bool):
+            cur["save_history"] = body["save_history"]
         if isinstance(body.get("preload"), bool):
             cur["preload"] = body["preload"]
         if isinstance(body.get("gpu_index"), int) and not isinstance(body.get("gpu_index"), bool) and 0 <= body["gpu_index"] <= 7:

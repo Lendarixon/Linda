@@ -55,17 +55,19 @@ def test_consensus_uses_selected_models_only(eng):
     assert abs(only_multi - eng.run(text_of(), "sensitive", ["linda_multi_v2"])["sentences"][-1]["multi_prob"]) < 1e-6
 
 
-def test_auto_mode_is_sliding_windows(eng):
+def test_auto_mode_is_every_sentence_on_its_own(eng):
     engine.save_settings({"sentences": "auto"})
-    assert eng.sentence_mode(500) == "smooth" and eng.sentence_mode(700) == "smooth" and eng.sentence_mode(701) == "windows"
+    assert eng.sentence_mode(500) == "full" and eng.sentence_mode(701) == "full"
     eng.device = "cuda"
-    assert eng.sentence_mode(9000) == "smooth"
+    assert eng.sentence_mode(9000) == "full"
     engine.save_settings({"sentences": "windows"})
     assert eng.sentence_mode(10) == "windows"
     engine.save_settings({"sentences": "full"})
     assert eng.sentence_mode(10) == "full"
-    engine.save_settings({"sentences": "bogus"})
+    engine.save_settings({"sentences": "smooth"})
     assert eng.sentence_mode(10) == "smooth"
+    engine.save_settings({"sentences": "bogus"})
+    assert eng.sentence_mode(10) == "full"
 
 
 def test_smooth_window_layout(eng):
@@ -98,3 +100,23 @@ def test_smooth_mode_finds_the_boundary_within_about_100_words(eng):
     assert far_h and far_a
     assert all(s["label"] == "human" for s in far_h) and all(s["label"] == "ai" for s in far_a)
     assert all(s["multi_prob"] < 0.1 for s in far_h) and all(s["multi_prob"] > 0.9 for s in far_a)  # the Multi view follows its own scores
+
+
+def test_context_mode_colours_sentence_by_sentence_and_finds_the_boundary(eng):
+    FakeDet._factory = lambda self, key: MarkerVoter()
+    engine.save_settings({"sentences": "context"})
+    human = " ".join("Plain human sentence number %d goes here today." % i for i in range(40))
+    ai = " ".join("AIW " * 8 + "sentence %d." % i for i in range(40))
+    r = eng.run(human + " " + ai, "sensitive")
+    assert r["sentence_stats"]["granularity"] == "context"
+    ss = r["sentences"]
+    assert [s["label"] for s in ss[:30]] == ["human"] * 30 and [s["label"] for s in ss[-30:]] == ["ai"] * 30
+    first_ai = next(i for i, s in enumerate(ss) if s["label"] == "ai")
+    assert 33 <= first_ai <= 50  # the switch happens within a few sentences of the real boundary (40), not a 300-word block away
+
+
+def test_context_anchors_are_capped_and_interpolated(eng):
+    sents = ["word " * 9 + "end." for _ in range(1000)]
+    anchors, texts = eng._sentence_contexts(sents, 40)
+    assert len(anchors) <= 41 and anchors[0] == 0 and anchors[-1] == 999 and len(texts) == len(anchors)
+    assert all(100 <= len(t.split()) <= 140 for t in texts)

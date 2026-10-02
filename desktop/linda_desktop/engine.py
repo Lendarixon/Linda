@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import numpy as np
 import math
 import os
 import re
@@ -166,16 +167,47 @@ class Engine:
     def info(self) -> dict:
         return {"device": self.device, "phase": self.state["phase"], "error": self.state["error"], "note": self.state.get("note", ""), "gpu": self.gpu, "gpu_error": self.gpu_error}
 
+    # Sentence labels. "ai" stays strict (about 1% of human sentences reach it); "uncertain" is the "possibly AI / mixed" band. A lone sentence is a much weaker
+    # input than the ~300-word windows the models were calibrated on, so in the per-sentence mode the band starts lower (about 10% of human sentences fall into
+    # it, measured on dev essays); the window-like modes keep the old 0.38.
+    AI_THR, UNCERTAIN_THR_SENTENCE, UNCERTAIN_THR_WINDOW = 0.58, 0.25, 0.38
+    CONTEXT_WORDS = 120                   # size of the neighbourhood scored for each sentence
+    CONTEXT_ANCHORS_GPU, CONTEXT_ANCHORS_CPU = 150, 40  # how many sentences are scored directly; the rest are interpolated between them
+
+    def _sentence_contexts(self, sents: list[str], max_anchors: int) -> tuple[list[int], list[str]]:
+        """Anchor sentence indices and, for each, the text of the sentence plus neighbours (alternately left and right) up to CONTEXT_WORDS words."""
+        n = len(sents)
+        wc = [len(x.split()) for x in sents]
+        step = max(1, -(-n // max_anchors))
+        anchors = list(range(0, n, step))
+        if anchors[-1] != n - 1:
+            anchors.append(n - 1)
+        texts = []
+        for i in anchors:
+            lo = hi = i
+            total, left = wc[i], True
+            while total < self.CONTEXT_WORDS and (lo > 0 or hi < n - 1):
+                if (left and lo > 0) or hi >= n - 1:
+                    lo -= 1
+                    total += wc[lo]
+                else:
+                    hi += 1
+                    total += wc[hi]
+                left = not left
+            texts.append(" ".join(sents[lo: hi + 1]))
+        return anchors, texts
+
     CPU_SMOOTH_MAX_WORDS = 700  # automatic mode on a CPU: sliding windows up to this length (about 10 s), longer texts use the fast block colouring
     SMOOTH_WINDOW, SMOOTH_MIN_STEP, SMOOTH_MAX_WINDOWS = 300, 75, 16
 
     def sentence_mode(self, nwords: int = 0) -> str:
-        """smooth = sliding ~300-word windows (the scale the models are calibrated on; boundaries accurate to ~100 words); windows = fast, one score per ~300-word block;
+        """context = every sentence is scored together with its neighbours (~CONTEXT_WORDS words around it), so the colour changes sentence by sentence and boundaries are found to the sentence;
+        smooth = sliding ~300-word windows (the scale the models are calibrated on; boundaries accurate to ~100 words); windows = fast, one score per ~300-word block;
         full = every single sentence on its own (experimental: one sentence is much less reliable than a window)."""
         s = load_settings().get("sentences", "auto")
         if s == "auto":
-            return "windows" if self.device == "cpu" and nwords > self.CPU_SMOOTH_MAX_WORDS else "smooth"
-        return s if s in ("smooth", "windows", "full") else "smooth"
+            return "full"
+        return s if s in ("full", "context", "smooth", "windows") else "full"
 
     def _smooth_windows(self, nwords: int) -> list[tuple[int, int]]:
         W = self.SMOOTH_WINDOW
@@ -201,10 +233,20 @@ class Engine:
             selected = set(models) if models else set(ALL_MODELS)
             nwords = len(text.split())
             gran = self.sentence_mode(nwords)
-            full = gran == "full"
+            full = gran in ("full", "context")  # both give one margin per sentence
             m_essay = m_multi = None
             wspans = []  # (first word, after last word, essay margin, multi margin) of the windows used for colouring
-            if full and spans:
+            if gran == "context" and spans:
+                from linda_pro.voters import clean_text
+
+                anchors, ctx = self._sentence_contexts([x.text for x in spans], self.CONTEXT_ANCHORS_CPU if self.device == "cpu" else self.CONTEXT_ANCHORS_GPU)
+                ctx = [clean_text(t) for t in ctx]
+                ae = det._factory("linda_essay").margins(ctx)
+                am = det._factory("linda_multi_v2").margins(ctx)
+                idx = list(range(len(spans)))
+                m_essay = [float(v) for v in np.interp(idx, anchors, ae)]  # between anchors the margin is interpolated
+                m_multi = [float(v) for v in np.interp(idx, anchors, am)]
+            elif full and spans:
                 s_texts = [s.text for s in spans]
                 m_essay = det._factory("linda_essay").margins(s_texts)
                 m_multi = det._factory("linda_multi_v2").margins(s_texts)
@@ -240,13 +282,14 @@ class Engine:
                     pe, pm = _sig(me, pe_c, pe_s), _sig(mm, pm_c, pm_s)
                     probs = ([pe] if "linda_essay" in selected else []) + ([pm] if "linda_multi_v2" in selected else []) or [pe, pm]
                     p_ai = sum(probs) / len(probs)
-                lbl = "ai" if p_ai >= 0.58 else "uncertain" if p_ai >= 0.38 else "human"
+                lbl = "ai" if p_ai >= self.AI_THR else "uncertain" if p_ai >= (self.UNCERTAIN_THR_SENTENCE if gran == "full" else self.UNCERTAIN_THR_WINDOW) else "human"
                 cnt[lbl] += 1
                 sentences.append({"start": s.start, "end": s.end, "text": s.text, "essay_margin": round(me, 2), "multi_margin": round(mm, 2),
                                   "essay_prob": round(pe, 3), "multi_prob": round(pm, 3), "p_ai": round(p_ai, 3), "label": lbl})
             res["sentences"] = sentences
+            res["authorship"] = authorship(res.get("verdict"), sentences)
             res["sentence_stats"] = {"total": len(sentences), **cnt, "ai_pct": round(cnt["ai"] / len(sentences) * 100) if sentences else 0,
-                                     "granularity": {"full": "sentence", "smooth": "smooth", "windows": "window"}[gran]}
+                                     "granularity": {"full": "sentence", "context": "context", "smooth": "smooth", "windows": "window"}[gran]}
             if models and len(models) < 3:
                 chosen = [m for m in models if m in det.mean]
                 if len(chosen) == 1:
@@ -262,6 +305,26 @@ class Engine:
                     p = 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, 1.7 * z_sub))))
                     res["custom_verdict"] = {"models": chosen, "z": round(z_sub, 3), "p_ai": round(p, 3), "verdict": v}
             return res
+
+
+def authorship(verdict: str | None, sentences: list[dict]) -> dict:
+    """Document-level authorship from the sentence labels (shares by words) and the calibrated ensemble verdict.
+
+    human = no AI signal worth reporting; ai = the ensemble says AI and most of the text carries an AI or "possibly AI" label;
+    mixed = AI shows up in part of the text (or the ensemble is unsure). Sentence-level recall is limited, so the shares are a floor, not an exact split."""
+    w = {"ai": 0, "uncertain": 0, "human": 0}
+    for x in sentences:
+        w[x["label"]] += max(1, len(x["text"].split()))
+    tot = sum(w.values()) or 1
+    ai, unc, hum = w["ai"] / tot, w["uncertain"] / tot, w["human"] / tot
+    n_ai = sum(1 for x in sentences if x["label"] == "ai")
+    if verdict == "ai":
+        label = "ai" if ai + unc >= 0.5 else "mixed"
+    elif verdict == "uncertain":
+        label = "mixed"
+    else:
+        label = "mixed" if ai >= 0.35 and n_ai >= 5 else "human"
+    return {"label": label, "ai_share": round(ai, 4), "uncertain_share": round(unc, 4), "human_share": round(hum, 4)}
 
 
 def load_settings() -> dict:

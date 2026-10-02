@@ -3,8 +3,9 @@
 Local app around the Linda-Pro detector: first start downloads the model files from Hugging Face (about 2.9 GB, once), then everything runs offline.
 GPU acceleration on any DirectX 12 card (AMD Radeon, NVIDIA GeForce, Intel Arc) through ONNX Runtime DirectML (`onnx_gpu.py`: the models are exported to ONNX once on the user's PC), colour map of the text, sensitive / precise modes, CPU or GPU, licence key dialog, update check (signed manifest) for models and for the app itself.
 
-* `linda_desktop/` - local web backend (FastAPI on 127.0.0.1), update logic (`updater.py`), licence (`licensing.py`), engine (`engine.py`), window launcher (`__main__.py`)
-* `web/index.html` - the UI (built by `tools/make_web.py`)
+* `linda_desktop/` - local web backend (FastAPI on 127.0.0.1), update logic (`updater.py`), licence (`licensing.py`), engine (`engine.py`), window launcher (`__main__.py`);
+  1.2: local history with folders (`history.py`, SQLite in the app data folder), text analytics (`analytics.py`), text structure view (`structure.py`, reference in `data/structure_ref.npz`)
+* `web/index.html` - the main UI (built by `tools/make_web.py`); `web/cabinet.html` - history, batch check, document comparison, reader (added to the page by the backend)
 * `installer/linda.iss` - Inno Setup script (per-user install, silent update switches)
 * `tools/` - build, signing of the update manifest (`make_manifest.py`), test helpers
 
@@ -15,3 +16,7 @@ Updates: the app reads `latest.json` and `latest.json.sig` from the Hugging Face
 and every file hash is checked. The signing key is not part of this repository.
 
 Licence of the code: see the repository `LICENSE` (free for non-commercial use; commercial use needs a key).
+
+## 1.2 (2026-10-02)
+
+History with folders (kept only on the PC; can be switched off or cleaned up automatically), batch check of any number of files, comparison of two documents with their shared passages or of many documents (overlap matrix), full reader for any saved check, authorship verdict (human / mixed / AI with shares), text analytics and a text-structure view, every sentence scored on its own with a lower "possibly AI" band, Metro animations.

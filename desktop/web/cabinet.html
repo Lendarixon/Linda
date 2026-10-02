@@ -1,0 +1,542 @@
+<!-- Linda-Pro 1.2: local cabinet (history with folders), batch check, document comparison, full-view reader and text-structure view. Appended to index.html by the backend. Everything stays on this machine. -->
+<style>
+#cabBtns { display:inline-flex; gap:6px; margin-right:12px; }
+#cabBtns button { background:#2b2b2b; color:#fff; border:0; border-radius:0; text-transform:uppercase; letter-spacing:.1em; font-size:.68rem; padding:6px 12px; font-weight:700; cursor:pointer; transition:background .15s, transform .08s; }
+#cabBtns button:hover { background:var(--cobalt); } #cabBtns button:active { transform:scale(.95); }
+.cab-layer { position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column; transform:translateX(40px); opacity:0; pointer-events:none; visibility:hidden; transition:transform .28s cubic-bezier(.1,.9,.2,1), opacity .22s; }
+.cab-layer.open { transform:none; opacity:1; pointer-events:auto; visibility:visible; }
+#cabView { z-index:900; } #cabViewer { z-index:950; }
+.cab-top { display:flex; align-items:center; gap:10px; padding:0 20px; height:62px; box-sizing:border-box; flex:none; border-bottom:1px solid var(--border); background:var(--bg-card); }
+.cab-top h2 { margin:0 18px 0 0; font-weight:300; font-size:1.5rem; letter-spacing:-.01em; }
+.cab-tab { background:transparent; color:var(--text-muted); border:0; padding:6px 14px; text-transform:uppercase; letter-spacing:.12em; font-size:.74rem; font-weight:600; cursor:pointer; position:relative; }
+.cab-tab::after { content:""; position:absolute; left:0; right:100%; bottom:-13px; height:3px; background:var(--accent); transition:right .25s ease; }
+.cab-tab.active { color:#fff; } .cab-tab.active::after { right:0; }
+.cab-close { margin-left:auto; min-width:104px; text-align:center; background:#2b2b2b; color:#fff; border:0; padding:7px 16px; cursor:pointer; font-weight:700; text-transform:uppercase; letter-spacing:.1em; font-size:.72rem; }
+.cab-close:hover { background:var(--ai); }
+.cab-body { flex:1; overflow:auto; padding:18px 24px 40px; }
+.cab-pane { display:none; max-width:1350px; margin:0 auto; } .cab-pane.active { display:block; animation:paneIn .35s cubic-bezier(.1,.9,.2,1) both; }
+.cab-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px; }
+.cab-in, .cab-sel { background:#262a33; color:#fff; border:1px solid var(--border); padding:7px 10px; font-size:.84rem; border-radius:0; }
+.cab-btn { background:var(--cobalt); color:#fff; border:0; padding:8px 14px; font-weight:700; cursor:pointer; font-size:.72rem; text-transform:uppercase; letter-spacing:.1em; transition:transform .08s, background .15s; }
+.cab-btn:hover:not(:disabled) { background:#1b6bff; } .cab-btn:active:not(:disabled) { transform:scale(.96); }
+.cab-btn.sec { background:#2b2b2b; } .cab-btn.sec:hover:not(:disabled) { background:#3a3a3a; }
+.cab-btn.danger { background:var(--ai); } .cab-btn.danger:hover:not(:disabled) { background:#ff2a14; }
+.cab-btn.on { background:var(--teal); }
+.cab-btn:disabled { opacity:.4; cursor:default; }
+.cab-note { color:var(--text-muted); font-size:.78rem; line-height:1.5; }
+.hist-grid { display:grid; grid-template-columns:230px 1fr; gap:18px; align-items:start; }
+.side { position:sticky; top:0; }
+.fold { display:flex; align-items:center; gap:8px; padding:9px 12px; background:#1f232d; margin-bottom:3px; cursor:pointer; border-left:6px solid transparent; transition:background .12s, transform .12s; user-select:none; }
+.fold:hover { background:#2a2f3b; transform:translateX(3px); } .fold.active { background:var(--cobalt); } .fold.drop { outline:2px dashed #fff; background:#2f3b55; }
+.fold .dot { width:10px; height:10px; flex:none; } .fold .nm { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; font-size:.85rem; }
+.fold .n { font-size:.72rem; opacity:.8; } .fold .fa { display:none; gap:2px; } .fold:hover .fa { display:inline-flex; }
+.fold .fa button { background:transparent; border:0; color:#fff; cursor:pointer; padding:0 3px; opacity:.8; } .fold .fa button:hover { opacity:1; }
+.tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:6px; margin-bottom:14px; }
+.tile { padding:12px 14px; color:#fff; min-height:78px; display:flex; flex-direction:column; justify-content:space-between; transform-origin:left center; animation:tileIn .5s cubic-bezier(.1,.9,.2,1) both; transition:transform .12s; }
+.tile:hover { transform:scale(.97); } .tile b { font-size:1.9rem; font-weight:200; line-height:1; } .tile span { font-size:.64rem; letter-spacing:.14em; text-transform:uppercase; opacity:.9; }
+.tile.c0 { background:var(--cobalt); } .tile.c1 { background:var(--ai); } .tile.c2 { background:var(--uncertain); } .tile.c3 { background:var(--human); } .tile.c4 { background:var(--purple); }
+@keyframes paneIn { from { opacity:0; transform:translateX(26px); } to { opacity:1; transform:none; } }
+@keyframes tileIn { from { opacity:0; transform:perspective(500px) rotateY(-70deg) scale(.96); } to { opacity:1; transform:none; } }
+@keyframes rowIn { from { opacity:0; transform:translateX(18px); } to { opacity:1; transform:none; } }
+@keyframes grow { from { transform:scaleY(0); } to { transform:scaleY(1); } }
+@keyframes dot { 0%,80%,100% { transform:translateY(0); opacity:.4; } 40% { transform:translateY(-6px); opacity:1; } }
+table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
+.cab-tbl th { text-align:left; color:var(--text-muted); font-size:.68rem; text-transform:uppercase; letter-spacing:.12em; padding:6px 8px; border-bottom:1px solid var(--border); user-select:none; white-space:nowrap; }
+.cab-tbl th.s { cursor:pointer; } .cab-tbl th.s:hover { color:#fff; } .cab-tbl th.cur { color:var(--accent); }
+.cab-tbl td { padding:7px 8px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.cab-tbl tbody tr { animation:rowIn .3s ease both; } .cab-tbl tbody tr:hover td { background:var(--bg-card); } .cab-tbl tr[draggable=true] { cursor:grab; }
+.cab-title { cursor:pointer; font-weight:600; max-width:340px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; vertical-align:bottom; }
+.cab-title:hover { color:var(--accent); text-decoration:underline; }
+.cab-badge { display:inline-block; padding:2px 8px; font-size:.62rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:.08em; }
+.cab-badge.ai { background:var(--ai); } .cab-badge.human { background:var(--human); } .cab-badge.uncertain, .cab-badge.mixed { background:var(--uncertain); }
+.fchip { display:inline-block; padding:1px 7px; font-size:.66rem; color:#fff; font-weight:600; }
+.cab-act { background:#2b2b2b; border:0; color:#fff; cursor:pointer; padding:4px 9px; font-size:.78rem; margin-left:3px; transition:background .12s; } .cab-act:hover { background:var(--cobalt); } .cab-act.del:hover { background:var(--ai); }
+.cab-drop { border:2px dashed #555; padding:24px; text-align:center; color:var(--text-muted); margin-bottom:14px; cursor:pointer; transition:background .15s, border-color .15s, transform .15s; }
+.cab-drop.over { border-color:var(--accent); background:var(--accent-light); transform:scale(1.01); }
+.cab-prog { height:6px; background:#262a33; margin:8px 0 12px; } .cab-prog > div { height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--cobalt)); transition:width .2s; }
+.dots { display:inline-flex; gap:4px; margin-left:6px; } .dots i { width:5px; height:5px; background:var(--accent); display:block; animation:dot 1s infinite ease-in-out; } .dots i:nth-child(2) { animation-delay:.15s; } .dots i:nth-child(3) { animation-delay:.3s; }
+.modebar { display:flex; gap:2px; margin-bottom:14px; } .modebar button { flex:0 0 auto; }
+.cmp-cards { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:14px; }
+.cmp-card { background:var(--bg-card); border-left:6px solid var(--cobalt); padding:12px 14px; } .cmp-card:nth-child(2) { border-left-color:var(--teal); }
+.cmp-card h4 { margin:0 0 6px; font-weight:600; font-size:.9rem; } .cmp-card h4 span { cursor:pointer; } .cmp-card h4 span:hover { color:var(--accent); text-decoration:underline; }
+.cmp-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px 12px; }
+.cmp-cell { padding:6px 9px; font-size:.8rem; line-height:1.45; border-left:4px solid transparent; background:var(--bg-card); cursor:pointer; }
+.cmp-cell:hover { filter:brightness(1.25); }
+.cmp-cell.ai { border-left-color:var(--ai); background:rgba(229,20,0,.14); } .cmp-cell.uncertain { border-left-color:var(--uncertain); background:rgba(250,104,0,.14); } .cmp-cell.human { border-left-color:var(--human); background:rgba(96,169,23,.1); }
+.cmp-cell.empty { background:transparent; border-left-color:var(--border); color:var(--text-muted); font-style:italic; cursor:default; }
+.cmp-kind { grid-column:1 / -1; font-size:.64rem; letter-spacing:.14em; text-transform:uppercase; color:var(--text-muted); margin-top:4px; }
+.sh-item { background:var(--bg-card); border-left:6px solid var(--uncertain); padding:9px 12px; margin-bottom:4px; animation:rowIn .3s ease both; }
+.sh-item b { font-weight:300; font-size:1.05rem; margin-right:10px; } .sh-item q { color:var(--text); font-size:.82rem; quotes:none; }
+.sh-pos { position:relative; height:6px; background:#262a33; margin:7px 0 2px; } .sh-pos i { position:absolute; top:0; height:100%; min-width:3px; background:var(--uncertain); }
+.mx { border-collapse:separate; border-spacing:3px; font-size:.74rem; }
+.mx th { color:var(--text-muted); font-weight:600; padding:4px 6px; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left; } .mx th.rh { cursor:pointer; } .mx th.rh:hover { color:var(--accent); }
+.mx td { width:56px; height:42px; text-align:center; color:#fff; font-weight:600; cursor:pointer; transition:transform .1s; animation:tileIn .45s cubic-bezier(.1,.9,.2,1) both; }
+.mx td:hover { transform:scale(1.12); position:relative; z-index:2; } .mx td.self { background:#2b2b2b; cursor:default; color:#777; }
+.pair { display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--bg-card); margin-bottom:4px; cursor:pointer; border-left:6px solid var(--steel); animation:rowIn .3s ease both; }
+.pair:hover { background:var(--bg-elevated); } .pair b { min-width:52px; font-size:1.1rem; font-weight:300; }
+/* reader */
+.v-grid { flex:1; display:grid; grid-template-columns:minmax(0,1fr) 400px; min-height:0; }
+.v-main { overflow:auto; padding:18px 26px 40px; } .v-side { overflow:auto; padding:14px 16px 40px; border-left:1px solid var(--border); background:var(--bg-card); }
+.v-doc { white-space:pre-wrap; line-height:1.85; font-size:1rem; font-weight:300; max-width:880px; }
+.v-doc .vs { padding:2px 1px; transition:filter .15s; cursor:default; } .v-doc .vs:hover { filter:brightness(1.35); }
+.v-doc .vs.ai { background:rgba(229,20,0,.32); border-bottom:2px solid var(--ai); } .v-doc .vs.uncertain { background:rgba(250,104,0,.3); border-bottom:2px solid var(--uncertain); } .v-doc .vs.human { background:rgba(96,169,23,.18); }
+.v-doc .sh { text-decoration:underline wavy #fff; text-underline-offset:4px; box-shadow:inset 0 -3px 0 rgba(27,161,226,.8); }
+.v-pills { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 14px; align-items:center; }
+.v-pill { padding:3px 10px; font-size:.72rem; font-weight:700; color:#fff; } .v-pill.ai { background:var(--ai); } .v-pill.uncertain { background:var(--uncertain); } .v-pill.human { background:var(--human); }
+.vbox { background:#1f232d; padding:12px 14px; margin-bottom:10px; animation:tileIn .45s cubic-bezier(.1,.9,.2,1) both; }
+.vbox h5 { margin:0 0 8px; font-size:.72rem; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+.vbig { font-size:2.4rem; font-weight:200; line-height:1; }
+.auth-bar { display:flex; height:12px; background:#2b2b2b; margin:8px 0 6px; } .auth-bar > i { display:block; height:100%; transition:width .6s cubic-bezier(.1,.9,.2,1); }
+.auth-leg { display:flex; gap:12px; flex-wrap:wrap; font-size:.72rem; color:var(--text-muted); }
+.an-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:5px; margin:8px 0; }
+.an-t { padding:8px 10px; background:var(--cobalt); color:#fff; animation:tileIn .5s cubic-bezier(.1,.9,.2,1) both; } .an-t:nth-child(2n) { background:var(--teal); } .an-t:nth-child(3n) { background:var(--purple); }
+.an-t b { display:block; font-size:1.2rem; font-weight:300; } .an-t span { font-size:.6rem; letter-spacing:.1em; text-transform:uppercase; opacity:.9; }
+.tl { display:flex; align-items:flex-end; height:46px; gap:1px; margin:8px 0 4px; overflow:hidden; } .tl i { flex:1 1 0; min-width:0; display:block; transform-origin:bottom; animation:grow .5s cubic-bezier(.1,.9,.2,1) both; }
+.chip { display:inline-block; background:#2b2b2b; padding:2px 8px; margin:2px 4px 2px 0; font-size:.72rem; }
+.smap { display:flex; align-items:flex-end; gap:3px; height:96px; overflow-x:auto; padding-bottom:2px; }
+.smap .col { flex:1 0 8px; max-width:34px; display:flex; flex-direction:column; justify-content:flex-end; gap:1px; animation:grow .5s cubic-bezier(.1,.9,.2,1) both; transform-origin:bottom; }
+.smap .col i { display:block; flex:1 1 0; min-height:2px; } .smap .col.heading { opacity:.55; } .smap .col.list { outline:1px dashed #fff; }
+.vio svg { width:100%; height:auto; display:block; } .vio text { fill:#cfd3dc; font-size:11px; }
+.ft { width:100%; border-collapse:collapse; font-size:.74rem; } .ft td, .ft th { padding:4px 5px; border-bottom:1px solid #2e323d; text-align:left; } .ft th { color:var(--text-muted); font-weight:600; font-size:.64rem; text-transform:uppercase; letter-spacing:.08em; }
+.pos-above_human, .pos-below_human { color:var(--uncertain); font-weight:700; }
+@media (max-width:1000px) { .v-grid, .hist-grid { grid-template-columns:1fr; } .cmp-cards, .cmp-grid { grid-template-columns:1fr; } }
+@media (prefers-reduced-motion:reduce) { * { animation:none !important; transition:none !important; } }
+</style>
+
+<div id="cabView" class="cab-layer" role="dialog" aria-label="Cabinet">
+  <div class="cab-top">
+    <h2>Cabinet</h2>
+    <button class="cab-tab active" data-pane="hist">History</button>
+    <button class="cab-tab" data-pane="batch">Batch check</button>
+    <button class="cab-tab" data-pane="cmp">Compare</button>
+    <button class="cab-close" id="cabClose">✕ Close</button>
+  </div>
+  <div class="cab-body">
+    <!-- HISTORY -->
+    <div class="cab-pane active" id="pane-hist">
+      <div class="tiles" id="hTiles"></div>
+      <div class="hist-grid">
+        <div class="side">
+          <div id="fList"></div>
+          <button class="cab-btn sec" id="fNew" style="width:100%;margin-top:6px">＋ New folder</button>
+          <p class="cab-note" style="margin-top:10px">Drag a row onto a folder to move it. Folders are only labels on this computer.</p>
+        </div>
+        <div>
+          <div class="cab-row">
+            <input class="cab-in" id="hSearch" placeholder="Search by title…" style="min-width:200px">
+            <select class="cab-sel" id="hVerdict"><option value="">All verdicts</option><option value="ai">AI</option><option value="uncertain">Uncertain</option><option value="human">Human</option></select>
+            <select class="cab-sel" id="hSort"><option value="date">Sort: date</option><option value="title">Sort: title</option><option value="ai">Sort: AI share</option><option value="pct">Sort: ensemble %</option><option value="words">Sort: words</option><option value="verdict">Sort: verdict</option></select>
+            <button class="cab-btn sec" id="hOrder" title="Sort direction">↓</button>
+          </div>
+          <div class="cab-row" id="hBulk">
+            <button class="cab-btn sec" id="hSelAll">Select all</button>
+            <select class="cab-sel" id="hMove" disabled><option value="">Move selected to…</option></select>
+            <button class="cab-btn danger" id="hDelSel" disabled>🗑 Delete selected</button>
+            <button class="cab-btn sec" id="hCompareSel" disabled>Compare selected</button>
+            <button class="cab-btn sec" id="hCsv">Export CSV</button>
+            <details style="margin-left:auto"><summary class="cab-btn sec" style="display:inline-block;list-style:none">⚙ Settings</summary>
+              <div class="vbox" style="position:absolute;right:30px;z-index:5;min-width:290px;margin-top:4px">
+                <label class="cab-note" style="display:block"><input type="checkbox" id="hSave" checked> Save new checks to history</label>
+                <div class="cab-note" style="margin:8px 0">Delete checks older than
+                  <select class="cab-sel" id="hRet"><option value="0">never (keep forever)</option><option value="30">30 days</option><option value="90">90 days</option><option value="365">1 year</option></select></div>
+                <button class="cab-btn danger" id="hClear">Delete ALL history</button>
+              </div></details>
+          </div>
+          <div class="cab-note" id="hStats" style="margin-bottom:8px"></div>
+          <table class="cab-tbl"><thead><tr id="hHead"><th></th><th class="s" data-s="date">Date</th><th class="s" data-s="title">Title</th><th>Folder</th><th class="s" data-s="verdict">Verdict</th><th class="s" data-s="ai">AI</th><th>Authorship</th><th class="s" data-s="words">Words</th><th></th></tr></thead><tbody id="hBody"></tbody></table>
+          <p class="cab-note">History, texts and results are stored only in this computer's app data folder (history.db). Nothing is sent anywhere. Click a title to open the check in the full reader.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- BATCH -->
+    <div class="cab-pane" id="pane-batch">
+      <div class="cab-row">
+        <select class="cab-sel" id="bMode"><option value="sensitive">Sensitive</option><option value="precise">Precise (fewer false positives)</option></select>
+        <select class="cab-sel" id="bFolder" title="Where to save the results"></select>
+        <button class="cab-btn" id="bStart" disabled>Start</button>
+        <button class="cab-btn sec" id="bCancel" disabled>Stop</button>
+        <button class="cab-btn sec" id="bCsv" disabled>Export CSV</button>
+        <button class="cab-btn" id="bMatrix" disabled>Compare all</button>
+        <button class="cab-btn sec" id="bClear">Clear list</button>
+      </div>
+      <div class="cab-drop" id="bDrop">📁 Drop any number of files here or click to choose (.pdf, .docx, .txt, .md). They are checked one after another and saved to History.</div>
+      <input type="file" id="bFiles" multiple accept=".pdf,.docx,.txt,.md" style="display:none">
+      <div class="cab-prog"><div id="bProg"></div></div>
+      <div class="cab-note" id="bInfo" style="margin-bottom:8px"></div>
+      <table class="cab-tbl"><thead><tr><th>File</th><th>Words</th><th>Verdict</th><th>AI</th><th>Authorship</th><th title="Sentence-length variation">Burst.</th><th title="Lexical diversity (MATTR-50)">Diversity</th><th>Status</th></tr></thead><tbody id="bBody"></tbody></table>
+    </div>
+
+    <!-- COMPARE -->
+    <div class="cab-pane" id="pane-cmp">
+      <div class="modebar"><button class="cab-btn on" id="cmPair">Two documents</button><button class="cab-btn sec" id="cmMany">Many documents</button></div>
+      <div id="cmPairBox">
+        <div class="cab-row">
+          <span class="cab-note">A (original):</span><select class="cab-sel" id="cA" style="max-width:300px"></select>
+          <span class="cab-note">B (revised):</span><select class="cab-sel" id="cB" style="max-width:300px"></select>
+          <button class="cab-btn" id="cGo">Compare</button>
+          <label class="cab-note"><input type="checkbox" id="cOnly" checked> only changed sentences</label>
+        </div>
+        <div id="cOut"><p class="cab-note">Pick two checks from your history (for example two versions of one document): you will see shared passages, how sentences changed and how their AI colouring moved. Click a document title to open it in the reader.</p></div>
+      </div>
+      <div id="cmManyBox" style="display:none">
+        <div class="cab-row">
+          <select class="cab-sel" id="mScope"><option value="all">All saved checks</option><option value="folder">Current folder of History</option><option value="picked">Rows ticked in History</option></select>
+          <button class="cab-btn" id="mGo">Build matrix</button>
+          <span class="cab-note">Cell = share of the shorter text that also appears (word 5-grams) in the other.</span>
+        </div>
+        <div id="mOut"><p class="cab-note">Compare any number of documents at once: overlap matrix and the most similar pairs. Click a cell to open that pair, a row name to open the document.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- READER: full analysis view of one saved check (workspace + statistics), closes back to the list it was opened from -->
+<div id="cabViewer" class="cab-layer" role="dialog" aria-label="Reader">
+  <div class="cab-top">
+    <h2 id="vTitle" style="font-size:1.15rem;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0"></h2>
+    <button class="cab-btn sec" id="vMain" style="margin-left:auto">Open in main window</button>
+    <button class="cab-close" id="vBack" style="margin-left:0">◀ Back</button>
+  </div>
+  <div class="v-grid">
+    <div class="v-main">
+      <div class="v-pills"><span class="v-pill ai" id="vpA"></span><span class="v-pill uncertain" id="vpU"></span><span class="v-pill human" id="vpH"></span>
+        <span style="margin-left:auto" class="modebar"><button class="cab-btn on" data-src="ensemble">Ensemble</button><button class="cab-btn sec" data-src="essay">Essay</button><button class="cab-btn sec" data-src="multi">Multi</button></span></div>
+      <div class="cab-note" id="vShNote" style="margin-bottom:8px"></div>
+      <div class="v-doc" id="vDoc"></div>
+    </div>
+    <div class="v-side" id="vSide"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const api = async (u, opts) => { const r = await fetch(u, opts); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.detail || ('HTTP ' + r.status)); return j; };
+  const jpost = (u, b, m) => api(u, { method: m || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b || {}) });
+  const when = ts => new Date(ts * 1000).toLocaleString();
+  const VLAB = { ai: 'AI', human: 'Human', uncertain: 'Uncertain', mixed: 'Mixed' };
+  const badge = v => v ? `<span class="cab-badge ${v}">${VLAB[v] || v}</span>` : '—';
+  const PAL = ['#0050ef', '#00aba9', '#e51400', '#fa6800', '#60a917', '#6a00ff', '#d80073', '#a4c400', '#1ba1e2', '#647687'];
+  const nowords = s => Math.max(1, s.split(/\s+/).length);
+
+  // ================= navigation =================
+  const hdr = document.querySelector('header .brand');
+  const holder = document.createElement('span'); holder.id = 'cabBtns';
+  holder.innerHTML = '<button data-open="hist">History</button><button data-open="batch">Batch</button><button data-open="cmp">Compare</button>';
+  if (hdr && hdr.parentNode) hdr.parentNode.insertBefore(holder, hdr.nextSibling);
+  holder.addEventListener('click', e => { const b = e.target.closest('button'); if (b) openCab(b.dataset.open); });
+  function openCab(pane) { $('cabView').classList.add('open'); showPane(pane || 'hist'); }
+  function closeCab() { closeViewer(); $('cabView').classList.remove('open'); }
+  function showPane(p) {
+    document.querySelectorAll('.cab-tab').forEach(t => t.classList.toggle('active', t.dataset.pane === p));
+    document.querySelectorAll('.cab-pane').forEach(x => x.classList.toggle('active', x.id === 'pane-' + p));
+    if (p === 'hist') loadHistory(); if (p === 'cmp') fillCompareSelects(); if (p === 'batch') fillFolderSelects();
+  }
+  $('cabClose').onclick = closeCab;
+  document.querySelectorAll('.cab-tab').forEach(t => t.onclick = () => showPane(t.dataset.pane));
+  document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if ($('cabViewer').classList.contains('open')) closeViewer(); else if ($('cabView').classList.contains('open')) closeCab(); });
+
+  // ================= shared drawing: authorship, analytics, structure =================
+  function drawAuthorship(el, r) {
+    const a = r && r.authorship; if (!a) { el.innerHTML = ''; return; }
+    const p = x => Math.round(x * 100);
+    el.innerHTML = `<h5>Authorship</h5><div style="display:flex;justify-content:space-between;align-items:center"><span class="vbig" style="font-size:1.5rem">${VLAB[a.label] || a.label}</span>${badge(a.label)}</div>
+      <div class="auth-bar"><i style="width:${p(a.ai_share)}%;background:var(--ai)"></i><i style="width:${p(a.uncertain_share)}%;background:var(--uncertain)"></i><i style="width:${p(a.human_share)}%;background:var(--human)"></i></div>
+      <div class="auth-leg"><span>AI ${p(a.ai_share)}%</span><span>possibly AI / mixed ${p(a.uncertain_share)}%</span><span>human ${p(a.human_share)}%</span></div>
+      <div class="cab-note" style="margin-top:6px">Shares by words. Sentence-level detection is weaker than whole-text detection, so these shares are a lower bound.</div>`;
+  }
+  async function drawAnalytics(el, r, text) {
+    try {
+      const a = await jpost('/api/analytics', { text, sentences: r.sentences || [] });
+      const T = [[a.avg_sentence_words, 'words / sentence'], [a.burstiness, 'burstiness'], [a.lexical_diversity, 'lexical diversity'], [a.stock_per_1000, 'stock phrases /1000'], [a.longest_ai_streak != null ? a.longest_ai_streak : '—', 'longest AI streak'], [a.paragraphs, 'paragraphs']];
+      // long texts: at most 120 bars, each = a group of consecutive sentences (height = their strongest p_ai, colour = the worst label), so the strip always fits the card
+      const sents = r.sentences || [], per = Math.max(1, Math.ceil(sents.length / 120)), rank = { human: 0, uncertain: 1, ai: 2 }, groups = [];
+      for (let i = 0; i < sents.length; i += per) groups.push(sents.slice(i, i + per));
+      const bars = groups.map((g, i) => { const top = g.reduce((m, s) => s.p_ai > m.p_ai ? s : m, g[0]), lab = g.reduce((m, s) => rank[s.label] > rank[m] ? s.label : m, 'human');
+        return `<i style="height:${Math.max(6, Math.round(top.p_ai * 100))}%;background:${lab === 'ai' ? 'var(--ai)' : lab === 'uncertain' ? 'var(--uncertain)' : 'var(--human)'};animation-delay:${Math.min(i, 80) * 8}ms" title="sentence${per > 1 ? 's ' + (i * per + 1) + '–' + (i * per + g.length) : ' #' + (i + 1)} · p_ai ${top.p_ai}"></i>`; }).join('');
+      el.innerHTML = `<h5>Text analytics</h5><div class="an-grid">${T.map((t, i) => `<div class="an-t" style="animation-delay:${i * 50}ms"><b>${t[0]}</b><span>${t[1]}</span></div>`).join('')}</div>
+        <div class="cab-note">AI probability along the text (one bar per sentence; long texts are grouped)</div><div class="tl">${bars}</div>
+        ${a.stock_phrases.length ? `<div class="cab-note" style="margin-top:8px">Stock phrases: ${a.stock_phrases.map(x => `<span class="chip">${esc(x[0])} ×${x[1]}</span>`).join('')}</div>` : ''}
+        ${a.repeated_phrases.length ? `<div class="cab-note" style="margin-top:6px">Repeated phrases: ${a.repeated_phrases.map(x => `<span class="chip">${esc(x[0])} ×${x[1]}</span>`).join('')}</div>` : ''}
+        <div class="cab-note" style="margin-top:8px">Burstiness = variation of sentence length (human prose is usually more varied). These numbers explain the result; they are not part of the verdict.</div>`;
+    } catch (e) { el.innerHTML = ''; }
+  }
+  // violin: reference human / AI sentence distributions and this text (histograms over p_ai in [0,1])
+  function smooth(h, s) { const o = h.map(() => 0); h.forEach((v, i) => { for (let j = -3; j <= 3; j++) { const k = i + j; if (k >= 0 && k < h.length) o[i] += v * Math.exp(-(j * j) / (2 * s * s)); } }); return o; }
+  function histMedian(h) { const t = h.reduce((a, b) => a + b, 0) || 1; let c = 0; for (let i = 0; i < h.length; i++) { c += h[i]; if (c >= t / 2) return (i + .5) / h.length; } return .5; }
+  function median(xs) { if (!xs.length) return 0; const s = xs.slice().sort((a, b) => a - b), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+  function violinSvg(groups) {
+    const W = 440, H = 230, top = 28, bot = 26, left = 34, n = groups.length, cw = (W - left - 10) / n;
+    let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+    [0, .25, .5, .75, 1].forEach(t => { const y = H - bot - t * (H - top - bot); svg += `<line x1="${left}" x2="${W - 6}" y1="${y}" y2="${y}" stroke="#2e323d" ${t === .5 ? 'stroke-dasharray="4 3"' : ''}/><text x="${left - 5}" y="${y + 4}" text-anchor="end">${t.toFixed(2)}</text>`; });
+    groups.forEach((g, gi) => {
+      const cx = left + cw * (gi + .5), N = g.hist.length, h = smooth(g.hist, 1.1), mx = Math.max(...h) || 1, half = cw * .42;
+      const ys = i => H - bot - (i + .5) / N * (H - top - bot);
+      let d = ''; for (let i = 0; i < N; i++) d += (i ? 'L' : 'M') + (cx + h[i] / mx * half).toFixed(1) + ',' + ys(i).toFixed(1);
+      for (let i = N - 1; i >= 0; i--) d += 'L' + (cx - h[i] / mx * half).toFixed(1) + ',' + ys(i).toFixed(1);
+      svg += `<path d="${d}Z" fill="${g.color}" fill-opacity="${g.fill || .9}" stroke="#0d0f15"><animate attributeName="fill-opacity" from="0" to="${g.fill || .9}" dur=".6s"/></path>`;
+      const my = H - bot - g.median * (H - top - bot);
+      svg += `<line x1="${cx - half}" x2="${cx + half}" y1="${my}" y2="${my}" stroke="#fff" stroke-width="2"/><text x="${cx}" y="14" text-anchor="middle" style="fill:${g.color === '#d9dce3' ? '#cfd3dc' : '#1ba1e2'};font-weight:700">${g.median.toFixed(2)}</text><text x="${cx}" y="${H - 8}" text-anchor="middle">${esc(g.label)}</text>`;
+    });
+    return svg + '</svg>';
+  }
+  async function drawStructure(el, r, text) {
+    try {
+      const st = await jpost('/api/structure', { text, sentences: r.sentences || [] });
+      const lay = st.layout || [], mxw = Math.max(1, ...lay.map(p => p.words));
+      const col = s => s.label === 'ai' ? 'var(--ai)' : s.label === 'uncertain' ? 'var(--uncertain)' : 'var(--human)';
+      const map = lay.map((p, i) => { const has = p.sentences && p.sentences.length; return `<div class="col ${p.kind}" style="height:${Math.max(10, Math.round(p.words / mxw * 100))}%;animation-delay:${Math.min(i, 40) * 25}ms" title="paragraph ${i + 1}: ${p.words} words${p.kind !== 'text' ? ' (' + p.kind + ')' : ''}">${(has ? p.sentences : [{ label: 'human', words: 1 }]).map(s => `<i style="background:${has ? col(s) : '#4a4f5c'};flex-grow:${Math.max(1, s.words)}" title="${has ? 'p_ai ' + s.p_ai : ''}"></i>`).join('')}</div>`; }).join('');
+      let vio = '';
+      if (st.reference && (r.sentences || []).length) {
+        const ps = r.sentences.map(s => s.p_ai), N = st.reference.human_hist.length, mine = new Array(N).fill(0);
+        ps.forEach(p => { mine[Math.min(N - 1, Math.floor(p * N))]++; });
+        vio = `<div class="vio">${violinSvg([{ label: 'Human ref.', hist: st.reference.human_hist, color: '#d9dce3', median: histMedian(st.reference.human_hist), fill: .85 },
+          { label: 'AI ref.', hist: st.reference.ai_hist, color: '#d9dce3', median: histMedian(st.reference.ai_hist), fill: .85 }, { label: 'This text', hist: mine, color: '#0050ef', median: median(ps) }])}</div>
+          <div class="cab-note">Sentence-level AI probability: reference human sentences, reference AI sentences (dev sets, ${st.reference.n_sentences[0]} + ${st.reference.n_sentences[1]} sentences) and the sentences of this text. White line = median.</div>`;
+      }
+      const f = st.features || [], isN = x => x.position && x.position !== 'in_human_range', notable = f.filter(isN), rest = f.filter(x => !isN(x));
+      const row = x => `<tr><td>${esc(x.name)}</td><td><b>${x.value}</b></td><td class="cab-note">${x.human_median != null ? x.human_median + ' <span style="opacity:.6">(' + x.human_range[0] + '–' + x.human_range[1] + ')</span>' : ''}</td><td class="cab-note">${x.ai_median != null ? x.ai_median : ''}</td><td class="pos-${x.position}">${x.position === 'above_human' ? '▲ above' : x.position === 'below_human' ? '▼ below' : ''}</td></tr>`;
+      const head = '<tr><th>Feature</th><th>This text</th><th>Human typical</th><th>AI median</th><th></th></tr>';
+      el.innerHTML = `<h5>Text structure</h5><div class="cab-note" style="margin-bottom:4px">Document map: one column per paragraph (height = length), cells = sentences coloured by AI label.</div><div class="smap">${map}</div>${vio}
+        <details style="margin-top:8px"><summary class="cab-note" style="cursor:pointer">Structure features (${notable.length} outside the human range)</summary>
+          <table class="ft">${head}${notable.map(row).join('')}${rest.map(row).join('')}</table></details>
+        <div class="cab-note" style="margin-top:8px">Structure is shown as a description, not a score: on our dev sets a nearest-neighbour “structural rarity” percentile and a structure-only classifier did not separate human from AI text across domains, so they are not used.</div>`;
+    } catch (e) { el.innerHTML = ''; }
+  }
+  window.drawAuthorship = drawAuthorship;
+
+  // ---- hooks into the main page: results panel gets authorship, analytics and structure
+  function mainBoxes(r) {
+    let host = $('mainExtras');
+    if (!r || !r._text) { if (host) host.remove(); return; }
+    if (!host) { host = document.createElement('div'); host.id = 'mainExtras'; const vb = document.querySelector('.verdict-box'); if (vb && vb.parentNode) vb.parentNode.insertBefore(host, vb.nextSibling); host.innerHTML = '<div class="vbox" id="mxA"></div><div class="vbox" id="mxN"></div><div class="vbox" id="mxS"></div>'; }
+    drawAuthorship($('mxA'), r); drawAnalytics($('mxN'), r, r._text); drawStructure($('mxS'), r, r._text);
+  }
+  const _rr = window.renderResults;
+  if (typeof _rr === 'function') window.renderResults = function (r) { _rr.apply(this, arguments); try { mainBoxes(r); } catch (e) { } };
+
+  // ================= reader =================
+  let V = { r: null, text: '', src: 'ensemble', shared: [], id: null };
+  function closeViewer() { $('cabViewer').classList.remove('open'); }
+  $('vBack').onclick = closeViewer;
+  async function openViewer(id, opts) {
+    opts = opts || {};
+    try {
+      const c = await api('/api/history/' + id);
+      const r = c.result; r._text = c.text; r._elapsed = '—';
+      V = { r, text: c.text, src: 'ensemble', shared: opts.shared || [], id: c.id, title: c.title };
+      $('vTitle').textContent = c.title; $('vShNote').textContent = opts.note || '';
+      document.querySelectorAll('#cabViewer [data-src]').forEach(b => { b.classList.toggle('on', b.dataset.src === 'ensemble'); b.classList.toggle('sec', b.dataset.src !== 'ensemble'); });
+      renderDoc();
+      const pct = r.ens_z != null ? Math.min(99, Math.max(1, Math.round(100 / (1 + Math.exp(-1.7 * r.ens_z))))) : null, v = r.voters || {};
+      $('vSide').innerHTML = `<div class="vbox"><h5>Verdict</h5><div style="display:flex;justify-content:space-between;align-items:flex-end"><span class="vbig">${pct != null ? pct + '%' : ''}</span>${badge(r.verdict)}</div>
+          <div class="cab-note" style="margin-top:6px">${esc(c.mode)} mode · ${c.words} words · ${esc(when(c.ts))}</div></div>
+        <div class="vbox" id="vxA"></div>
+        <div class="vbox"><h5>Model margins (higher = AI)</h5><table class="ft"><tr><td>Linda-Essay-D</td><td><b>${v.linda_essay != null ? v.linda_essay.toFixed(2) : '—'}</b></td></tr><tr><td>Linda-Multi-D</td><td><b>${v.linda_multi_v2 != null ? v.linda_multi_v2.toFixed(2) : '—'}</b></td></tr><tr><td>Stylo-D</td><td><b>${v.stylo7c != null ? v.stylo7c.toFixed(2) : '—'}</b></td></tr></table></div>
+        <div class="vbox" id="vxN"></div><div class="vbox" id="vxS"></div>`;
+      drawAuthorship($('vxA'), r); drawAnalytics($('vxN'), r, c.text); drawStructure($('vxS'), r, c.text);
+      $('cabViewer').classList.add('open'); $('vSide').scrollTop = 0; $('vDoc').parentNode.scrollTop = 0;
+    } catch (e) { alert(e.message); }
+  }
+  function renderDoc() {
+    const { r, text } = V, S = (r.sentences || []).slice().sort((a, b) => a.start - b.start);
+    const gran = (r.sentence_stats || {}).granularity, uThr = gran === 'sentence' ? 0.25 : 0.38;
+    const prob = s => V.src === 'essay' ? s.essay_prob : V.src === 'multi' ? s.multi_prob : s.p_ai;
+    const lab = s => V.src === 'ensemble' ? s.label : (prob(s) >= 0.58 ? 'ai' : prob(s) >= uThr ? 'uncertain' : 'human');
+    const tok = [...text.matchAll(/\S+/g)], rng = [];
+    (V.shared || []).forEach(p => { const a = tok[p.start], b = tok[p.start + p.words - 1]; if (a && b) rng.push([a.index, b.index + b[0].length]); });
+    const pts = new Set([0, text.length]); S.forEach(s => { pts.add(s.start); pts.add(s.end); }); rng.forEach(x => { pts.add(x[0]); pts.add(x[1]); });
+    const P = [...pts].filter(x => x >= 0 && x <= text.length).sort((a, b) => a - b); let html = '', si = 0; const cnt = { ai: 0, uncertain: 0, human: 0 };
+    S.forEach(s => cnt[lab(s)]++);
+    for (let i = 0; i < P.length - 1; i++) {
+      const a = P[i], b = P[i + 1]; while (si < S.length && S[si].end <= a) si++;
+      const s = S[si] && S[si].start <= a && a < S[si].end ? S[si] : null, sh = rng.some(x => x[0] <= a && b <= x[1]), piece = esc(text.slice(a, b));
+      html += s || sh ? `<span class="${s ? 'vs ' + lab(s) : ''}${sh ? ' sh' : ''}" ${s ? `title="${V.src} · AI probability ${(prob(s) * 100).toFixed(0)}%"` : ''}>${piece}</span>` : piece;
+    }
+    $('vDoc').innerHTML = html;
+    $('vpA').textContent = `${cnt.ai} AI sentences`; $('vpU').textContent = `${cnt.uncertain} uncertain`; $('vpH').textContent = `${cnt.human} human`;
+  }
+  document.querySelector('#cabViewer .modebar').addEventListener('click', e => { const b = e.target.closest('[data-src]'); if (!b) return; V.src = b.dataset.src; document.querySelectorAll('#cabViewer [data-src]').forEach(x => { x.classList.toggle('on', x === b); x.classList.toggle('sec', x !== b); }); renderDoc(); });
+  $('vMain').onclick = () => {
+    const r = V.r; if (!r) return; try { lastResult = r; } catch (e) { }
+    $('textInput').value = V.text; $('textInput').dispatchEvent(new Event('input')); window.renderResults(r); renderSentenceHeatmap(r);
+    $('statusIndicator').textContent = 'Opened from history: ' + V.title; closeCab();
+  };
+
+  // ================= history =================
+  const S = { folder: '', sort: 'date', order: 'desc', rows: [], picked: new Set(), data: null };
+  const fcol = f => (f && f.color) || '#647687';
+  async function loadHistory() {
+    try {
+      const qs = new URLSearchParams({ q: $('hSearch').value.trim(), verdict: $('hVerdict').value, folder: S.folder, sort: S.sort, order: S.order, limit: 500 });
+      const d = await api('/api/history?' + qs); S.data = d; S.rows = d.items;
+      const s = d.stats, T = [['c0', s.n, 'checks'], ['c1', s.ai, 'AI'], ['c2', s.unc, 'uncertain'], ['c3', s.hum, 'human'], ['c4', s.words.toLocaleString(), 'words checked']];
+      $('hTiles').innerHTML = T.map((t, i) => `<div class="tile ${t[0]}" style="animation-delay:${i * 60}ms"><b>${t[1]}</b><span>${t[2]}</span></div>`).join('');
+      const st = await api('/api/status'); $('hSave').checked = (st.settings || {}).save_history !== false; $('hRet').value = String((st.settings || {}).history_retention_days || 0);
+      renderFolders(); renderRows();
+    } catch (e) { $('hStats').textContent = 'Could not load history: ' + e.message; }
+  }
+  function renderFolders() {
+    const d = S.data; if (!d) return;
+    const one = (key, name, n, color, extra) => `<div class="fold ${String(S.folder) === String(key) ? 'active' : ''}" data-f="${key}" style="${color ? 'border-left-color:' + color : ''}"><span class="dot" style="background:${color || '#fff'}"></span><span class="nm">${esc(name)}</span><span class="n">${n}</span>${extra || ''}</div>`;
+    $('fList').innerHTML = one('', 'All checks', d.total, '') + one('0', 'Unsorted', d.unsorted, '#647687') +
+      d.folders.map(f => one(f.id, f.name, f.n, fcol(f), `<span class="fa"><button data-fren="${f.id}" title="Rename">✎</button><button data-fcol="${f.id}" title="Change colour">◐</button><button data-fdel="${f.id}" title="Delete folder">✕</button></span>`)).join('');
+    $('hMove').innerHTML = '<option value="">Move selected to…</option><option value="0">Unsorted</option>' + d.folders.map(f => `<option value="${f.id}">${esc(f.name)}</option>`).join('');
+  }
+  const fname = id => { const f = S.data && S.data.folders.find(x => x.id === id); return f ? `<span class="fchip" style="background:${fcol(f)}">${esc(f.name)}</span>` : '<span class="cab-note">—</span>'; };
+  function renderRows() {
+    const rows = S.rows;
+    $('hBody').innerHTML = rows.length ? rows.map((c, i) => `<tr draggable="true" data-row="${c.id}" style="animation-delay:${Math.min(i, 20) * 16}ms">
+      <td><input type="checkbox" data-pick="${c.id}" ${S.picked.has(c.id) ? 'checked' : ''}></td><td class="cab-note">${esc(when(c.ts))}</td>
+      <td><span class="cab-title" data-open="${c.id}" title="${esc(c.title)}">${esc(c.title)}</span></td><td>${fname(c.folder_id)}</td>
+      <td>${badge(c.verdict)}</td><td>${c.ai_share != null ? Math.round(c.ai_share * 100) + '%' : '—'}</td><td>${badge(c.authorship)}</td><td>${c.words}</td>
+      <td style="white-space:nowrap"><button class="cab-act" data-open="${c.id}" title="Open in the reader">Open</button><button class="cab-act" data-ren="${c.id}" title="Rename">✎</button><button class="cab-act del" data-del="${c.id}" title="Delete">🗑</button></td></tr>`).join('')
+      : '<tr><td colspan="9" class="cab-note">Nothing here. Every check you run is saved automatically.</td></tr>';
+    const n = S.picked.size; $('hCompareSel').disabled = n < 2; $('hDelSel').disabled = n < 1; $('hMove').disabled = n < 1;
+    $('hCompareSel').textContent = n > 2 ? `Compare selected (${n}) as matrix` : 'Compare selected'; $('hDelSel').textContent = n ? `🗑 Delete selected (${n})` : '🗑 Delete selected';
+    $('hStats').textContent = `${rows.length} shown`; $('hOrder').textContent = S.order === 'desc' ? '↓' : '↑';
+    document.querySelectorAll('#hHead th.s').forEach(t => t.classList.toggle('cur', t.dataset.s === S.sort)); $('hSort').value = S.sort;
+  }
+  $('fList').addEventListener('click', async e => {
+    const t = e.target;
+    try {
+      if (t.dataset.fren) { const f = S.data.folders.find(x => x.id == t.dataset.fren); const n = prompt('Folder name', f ? f.name : ''); if (n) { await jpost('/api/history/folders/' + t.dataset.fren, { name: n }, 'PATCH'); loadHistory(); } return; }
+      if (t.dataset.fcol) { const f = S.data.folders.find(x => x.id == t.dataset.fcol); const i = PAL.indexOf(f.color); await jpost('/api/history/folders/' + t.dataset.fcol, { color: PAL[(i + 1) % PAL.length] }, 'PATCH'); loadHistory(); return; }
+      if (t.dataset.fdel) {
+        const f = S.data.folders.find(x => x.id == t.dataset.fdel);
+        if (confirm(`Delete folder “${f.name}” together with the ${f.n} checks inside it?\n\nOK = delete folder AND its checks.\nCancel = next question.`)) await api('/api/history/folders/' + t.dataset.fdel + '?with_checks=true', { method: 'DELETE' });
+        else if (confirm(`Delete only the folder “${f.name}”? Its checks will move to “Unsorted”.`)) await api('/api/history/folders/' + t.dataset.fdel, { method: 'DELETE' });
+        else return;
+        if (String(S.folder) === String(f.id)) S.folder = ''; loadHistory(); return;
+      }
+      const f = t.closest('.fold'); if (f) { S.folder = f.dataset.f; S.picked.clear(); loadHistory(); }
+    } catch (err) { alert(err.message); }
+  });
+  $('fNew').onclick = async () => { const n = prompt('New folder name'); if (n) { await jpost('/api/history/folders', { name: n, color: PAL[(S.data ? S.data.folders.length : 0) % PAL.length] }); loadHistory(); } };
+  // drag rows onto folders
+  $('hBody').addEventListener('dragstart', e => { const tr = e.target.closest('tr[data-row]'); if (!tr) return; const id = +tr.dataset.row; if (!S.picked.has(id)) { S.picked = new Set([id]); renderRows(); } e.dataTransfer.setData('text/plain', 'linda'); e.dataTransfer.effectAllowed = 'move'; });
+  $('fList').addEventListener('dragover', e => { const f = e.target.closest('.fold'); if (f && f.dataset.f !== '') { e.preventDefault(); document.querySelectorAll('.fold.drop').forEach(x => x.classList.remove('drop')); f.classList.add('drop'); } });
+  $('fList').addEventListener('dragleave', () => document.querySelectorAll('.fold.drop').forEach(x => x.classList.remove('drop')));
+  $('fList').addEventListener('drop', async e => { const f = e.target.closest('.fold'); document.querySelectorAll('.fold.drop').forEach(x => x.classList.remove('drop')); if (!f || f.dataset.f === '' || !S.picked.size) return; e.preventDefault(); await jpost('/api/history/move', { ids: [...S.picked], folder_id: +f.dataset.f || null }); S.picked.clear(); loadHistory(); });
+  $('hMove').onchange = async () => { const v = $('hMove').value; if (v === '' || !S.picked.size) return; await jpost('/api/history/move', { ids: [...S.picked], folder_id: +v || null }); S.picked.clear(); loadHistory(); };
+  $('hBody').addEventListener('click', async e => {
+    const t = e.target;
+    try {
+      if (t.dataset.open) await openViewer(t.dataset.open);
+      else if (t.dataset.del) { if (confirm('Delete this check and its saved text?')) { await jpost('/api/history/' + t.dataset.del, {}, 'DELETE'); S.picked.delete(+t.dataset.del); loadHistory(); } }
+      else if (t.dataset.ren) { const c = S.rows.find(x => x.id == t.dataset.ren); const n = prompt('New title', c ? c.title : ''); if (n != null) { await jpost('/api/history/' + t.dataset.ren, { title: n }, 'PATCH'); loadHistory(); } }
+      else if (t.dataset.pick) { const id = +t.dataset.pick; t.checked ? S.picked.add(id) : S.picked.delete(id); renderRows(); }
+    } catch (err) { alert(err.message); }
+  });
+  $('hDelSel').onclick = async () => { const n = S.picked.size; if (n && confirm(`Delete ${n} selected check${n > 1 ? 's' : ''} and their saved texts?`)) { await jpost('/api/history/delete', { ids: [...S.picked] }); S.picked.clear(); loadHistory(); } };
+  $('hSelAll').onclick = () => { if (S.picked.size === S.rows.length) S.picked.clear(); else S.rows.forEach(c => S.picked.add(c.id)); renderRows(); };
+  $('hSearch').oninput = () => { clearTimeout(window._hs); window._hs = setTimeout(loadHistory, 250); };
+  $('hVerdict').onchange = loadHistory; $('hSort').onchange = () => { S.sort = $('hSort').value; loadHistory(); };
+  $('hOrder').onclick = () => { S.order = S.order === 'desc' ? 'asc' : 'desc'; loadHistory(); };
+  $('hHead').addEventListener('click', e => { const th = e.target.closest('th.s'); if (!th) return; if (S.sort === th.dataset.s) S.order = S.order === 'desc' ? 'asc' : 'desc'; else { S.sort = th.dataset.s; S.order = 'desc'; } loadHistory(); });
+  $('hSave').onchange = () => jpost('/api/settings', { save_history: $('hSave').checked }).catch(e => alert(e.message));
+  $('hRet').onchange = () => jpost('/api/settings', { history_retention_days: +$('hRet').value }).then(loadHistory).catch(e => alert(e.message));
+  $('hClear').onclick = async () => { if (confirm('Delete ALL saved checks, texts and results from this computer?')) { await jpost('/api/history', {}, 'DELETE'); S.picked.clear(); loadHistory(); } };
+  $('hCompareSel').onclick = async () => { const ids = [...S.picked].sort((x, y) => x - y); showPane('cmp'); await fillCompareSelects(); if (ids.length === 2) { setMode('pair'); $('cA').value = ids[0]; $('cB').value = ids[1]; runCompare(); } else { setMode('many'); $('mScope').value = 'picked'; runMatrix(ids); } };
+  function csv(lines) { return '﻿' + lines.map(r => r.map(x => '"' + String(x == null ? '' : x).replace(/"/g, '""') + '"').join(',')).join('\r\n'); }
+  function save(name, text) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+  $('hCsv').onclick = () => save('linda_history.csv', csv([['id', 'date', 'title', 'mode', 'verdict', 'ensemble %', 'AI sentences share', 'authorship', 'words']].concat(S.rows.map(c => [c.id, when(c.ts), c.title, c.mode, c.verdict, c.pct, c.ai_share, c.authorship, c.words]))));
+
+  // ================= batch =================
+  let queue = [], running = false, stop = false;
+  async function fillFolderSelects() { try { const d = await api('/api/history?limit=1'); $('bFolder').innerHTML = '<option value="">Save to: Unsorted</option>' + d.folders.map(f => `<option value="${f.id}">Save to: ${esc(f.name)}</option>`).join(''); } catch (e) { } }
+  const addFiles = fl => { for (const f of fl) queue.push({ file: f, state: 'queued', words: '', verdict: '', share: '', auth: '', id: null, msg: '' }); renderBatch(); };
+  function renderBatch() {
+    $('bBody').innerHTML = queue.map(q => `<tr><td>${q.id ? `<span class="cab-title" data-bopen="${q.id}">${esc(q.file.name)}</span>` : esc(q.file.name)}</td><td>${q.words}</td><td>${badge(q.verdict)}</td><td>${q.share}</td><td>${badge(q.auth)}</td><td>${q.burst != null ? q.burst : ''}</td><td>${q.div != null ? q.div : ''}</td><td class="cab-note">${esc(q.msg || q.state)}${q.state === 'running' ? '<span class="dots"><i></i><i></i><i></i></span>' : ''}</td></tr>`).join('');
+    const done = queue.filter(q => q.state === 'done' || q.state === 'error').length;
+    $('bProg').style.width = queue.length ? (done / queue.length * 100) + '%' : '0'; $('bInfo').textContent = queue.length ? `${done} of ${queue.length} processed` : '';
+    $('bStart').disabled = running || !queue.some(q => q.state === 'queued'); $('bCancel').disabled = !running; $('bCsv').disabled = !queue.some(q => q.state === 'done'); $('bMatrix').disabled = running || queue.filter(q => q.id).length < 2;
+  }
+  $('bDrop').onclick = () => $('bFiles').click(); $('bFiles').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+  ['dragover', 'dragenter'].forEach(n => $('bDrop').addEventListener(n, e => { e.preventDefault(); $('bDrop').classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(n => $('bDrop').addEventListener(n, e => { e.preventDefault(); $('bDrop').classList.remove('over'); }));
+  $('bDrop').addEventListener('drop', e => addFiles(e.dataTransfer.files));
+  $('bClear').onclick = () => { if (!running) { queue = []; renderBatch(); } }; $('bCancel').onclick = () => { stop = true; };
+  $('bBody').addEventListener('click', e => { if (e.target.dataset.bopen) openViewer(e.target.dataset.bopen); });
+  $('bStart').onclick = async () => {
+    running = true; stop = false; renderBatch();
+    for (const q of queue) {
+      if (stop) break; if (q.state !== 'queued') continue; q.state = 'running'; q.msg = 'extracting text…'; renderBatch();
+      try {
+        const fd = new FormData(); fd.append('file', q.file); const up = await api('/api/upload', { method: 'POST', body: fd }); q.words = up.words; q.msg = 'analysing…'; renderBatch();
+        const d = await jpost('/api/detect', { text: up.text, mode: $('bMode').value, title: q.file.name, filename: q.file.name, folder_id: $('bFolder').value || null });
+        const r = d.result; q.id = d.history_id; q.verdict = r.verdict; q.auth = (r.authorship || {}).label || '';
+        const s = r.sentences || [], tot = s.reduce((a, x) => a + nowords(x.text), 0) || 1; q.share = Math.round(s.filter(x => x.label === 'ai').reduce((a, x) => a + nowords(x.text), 0) / tot * 100) + '%';
+        try { const an = await jpost('/api/analytics', { text: up.text, sentences: s }); q.burst = an.burstiness; q.div = an.lexical_diversity; } catch (e) { }
+        q.state = 'done'; q.msg = q.id ? 'saved to history' : 'done (history is off)';
+      } catch (err) { q.state = 'error'; q.msg = err.message; }
+      renderBatch();
+    }
+    running = false; renderBatch();
+  };
+  $('bMatrix').onclick = () => { const ids = queue.filter(q => q.id).map(q => q.id); showPane('cmp'); setMode('many'); runMatrix(ids); };
+  $('bCsv').onclick = () => save('linda_batch.csv', csv([['file', 'words', 'verdict', 'AI sentences share', 'authorship', 'burstiness', 'lexical diversity', 'status']].concat(queue.filter(q => q.state !== 'queued').map(q => [q.file.name, q.words, q.verdict, q.share, q.auth, q.burst, q.div, q.msg]))));
+
+  // ================= compare =================
+  function setMode(m) { $('cmPairBox').style.display = m === 'pair' ? '' : 'none'; $('cmManyBox').style.display = m === 'many' ? '' : 'none'; $('cmPair').className = 'cab-btn ' + (m === 'pair' ? 'on' : 'sec'); $('cmMany').className = 'cab-btn ' + (m === 'many' ? 'on' : 'sec'); }
+  $('cmPair').onclick = () => setMode('pair'); $('cmMany').onclick = () => setMode('many');
+  async function fillCompareSelects() {
+    try {
+      const d = await api('/api/history?limit=500'); const opts = d.items.map(c => `<option value="${c.id}">${esc(when(c.ts))} — ${esc(c.title.slice(0, 50))}</option>`).join('');
+      const a = $('cA').value, b = $('cB').value; $('cA').innerHTML = opts; $('cB').innerHTML = opts;
+      if (a) $('cA').value = a; if (b) $('cB').value = b; else if (d.items[1]) { $('cA').value = d.items[1].id; $('cB').value = d.items[0].id; }
+    } catch (e) { }
+  }
+  const card = (t, s) => `<div class="cmp-card"><h4>${t}: <span data-view="${s.id}" title="Open in the reader">${esc(s.title)}</span></h4><div>${badge(s.verdict)} ${badge((s.authorship || {}).label)} <span class="cab-note">${s.words} words · ${s.sentences} sentences</span></div>
+    <div class="cab-note" style="margin-top:6px">AI sentences: <b>${Math.round(s.ai_words_share * 100)}%</b> of the text${s.pct != null ? ` · ensemble ${s.pct}%` : ''}</div></div>`;
+  let lastCmp = null;
+  async function runCompare() { try { lastCmp = await jpost('/api/compare', { a: +$('cA').value, b: +$('cB').value }); drawCompare(); } catch (e) { $('cOut').innerHTML = `<p class="cab-note">${esc(e.message)}</p>`; } }
+  const cell = (c, id) => c ? `<div class="cmp-cell ${c.label}" data-view="${id}" title="p_ai ${c.p_ai} · click to open the document">${esc(c.text)}</div>` : '<div class="cmp-cell empty">—</div>';
+  function drawCompare() {
+    const d = lastCmp; if (!d) return; const sh = d.shared || {}, delta = Math.round((d.b.ai_words_share - d.a.ai_words_share) * 100);
+    const rows = d.rows.filter(r => !$('cOnly').checked || r.kind !== 'same' || (r.a && r.b && r.a.label !== r.b.label));
+    const pass = (sh.passages || []).slice(0, 15).map((p, i) => `<div class="sh-item" style="animation-delay:${i * 30}ms"><b>${p.words} words</b><q>${esc(p.text.length > 320 ? p.text.slice(0, 320) + '…' : p.text)}</q>
+      <div class="sh-pos" title="position in A"><i style="left:${p.a_pos * 100}%;width:${Math.max(.4, p.words / Math.max(1, sh.a_words) * 100)}%"></i></div><div class="sh-pos" title="position in B"><i style="left:${p.b_pos * 100}%;width:${Math.max(.4, p.words / Math.max(1, sh.b_words) * 100)}%;background:var(--teal)"></i></div></div>`).join('');
+    $('cOut').innerHTML = `<div class="cmp-cards">${card('A', d.a)}${card('B', d.b)}</div>
+      <p class="cab-note">Sentence similarity: <b>${Math.round(d.similarity * 100)}%</b> · AI share changed by <b>${delta > 0 ? '+' : ''}${delta} pp</b> · ${d.counts.same} unchanged, ${d.counts.changed} rewritten, ${d.counts.added} added, ${d.counts.removed} removed${d.text_equal ? ' · the texts are identical' : ''}.</p>
+      <h4 style="font-weight:300;letter-spacing:.12em;text-transform:uppercase;font-size:.8rem;margin:16px 0 8px">Shared passages</h4>
+      ${sh.count ? `<p class="cab-note">${sh.count} shared passages · ${sh.words_shared} words = <b>${Math.round(sh.share_of_a * 100)}%</b> of A and <b>${Math.round(sh.share_of_b * 100)}%</b> of B (runs of 8+ identical words, case and punctuation ignored).
+        <button class="cab-btn sec" data-hl="a">Open A with shared parts marked</button> <button class="cab-btn sec" data-hl="b">Open B with shared parts marked</button></p>${pass}` : '<p class="cab-note">No shared passages of 8 or more words.</p>'}
+      <h4 style="font-weight:300;letter-spacing:.12em;text-transform:uppercase;font-size:.8rem;margin:16px 0 8px">Sentence by sentence</h4>
+      <div class="cmp-grid">${rows.map(r => `<div class="cmp-kind">${r.kind}</div>${cell(r.a, d.a.id)}${cell(r.b, d.b.id)}`).join('') || '<p class="cab-note">No differences to show.</p>'}</div>`;
+  }
+  $('cOut').addEventListener('click', e => {
+    const v = e.target.closest('[data-view]'), h = e.target.closest('[data-hl]');
+    if (h && lastCmp) { const side = h.dataset.hl, other = side === 'a' ? 'b' : 'a'; openViewer(lastCmp[side].id, { shared: lastCmp.shared.passages.map(p => ({ start: p[side + '_start'], words: p.words })), note: `${lastCmp.shared.count} passages shared with “${lastCmp[other].title}” are underlined` }); }
+    else if (v) openViewer(v.dataset.view);
+  });
+  $('cGo').onclick = runCompare; $('cOnly').onchange = drawCompare;
+
+  const heat = v => v >= .6 ? '#e51400' : v >= .3 ? '#fa6800' : v >= .1 ? '#0050ef' : v > 0 ? '#00aba9' : '#2f3b2f';
+  async function runMatrix(ids) {
+    $('mOut').innerHTML = '<p class="cab-note">Comparing<span class="dots"><i></i><i></i><i></i></span></p>';
+    try {
+      const d = await jpost('/api/compare/matrix', { ids }); const short = t => esc(t.length > 22 ? t.slice(0, 21) + '…' : t);
+      let h = `<p class="cab-note">${d.items.length} documents. <b style="color:#e51400">≥60%</b> near-copy · <b style="color:#fa6800">30–60%</b> large overlap · <b style="color:#0050ef">10–30%</b> some shared passages.</p><div style="overflow:auto"><table class="mx"><tr><th></th>${d.items.map(x => `<th title="${esc(x.title)}">${short(x.title)}</th>`).join('')}</tr>`;
+      d.items.forEach((x, i) => { h += `<tr><th class="rh" data-view="${x.id}" title="Open ${esc(x.title)}">${short(x.title)} ${badge(x.verdict)}</th>` + d.items.map((y, j) => i === j ? '<td class="self">—</td>' : `<td style="background:${heat(d.matrix[i][j])};animation-delay:${(i + j) * 25}ms" data-a="${x.id}" data-b="${y.id}" title="${esc(x.title)} ↔ ${esc(y.title)}">${Math.round(d.matrix[i][j] * 100)}%</td>`).join('') + '</tr>'; });
+      h += '</table></div><h4 style="font-weight:300;letter-spacing:.1em;text-transform:uppercase;font-size:.8rem;margin:18px 0 8px">Most similar pairs</h4>';
+      const nm = id => (d.items.find(x => x.id === id) || {}).title || id;
+      h += d.pairs.filter(p => p.overlap > 0).slice(0, 15).map((p, i) => `<div class="pair" style="border-left-color:${heat(p.overlap)};animation-delay:${i * 30}ms" data-a="${p.a}" data-b="${p.b}"><b>${Math.round(p.overlap * 100)}%</b><span>${esc(nm(p.a))} ↔ ${esc(nm(p.b))}</span></div>`).join('') || '<p class="cab-note">No shared passages found.</p>';
+      $('mOut').innerHTML = h;
+    } catch (e) { $('mOut').innerHTML = `<p class="cab-note">${esc(e.message)}</p>`; }
+  }
+  $('mOut').addEventListener('click', async e => {
+    const v = e.target.closest('[data-view]'); if (v) { openViewer(v.dataset.view); return; }
+    const t = e.target.closest('[data-a]'); if (t && t.dataset.b) { await fillCompareSelects(); setMode('pair'); $('cA').value = t.dataset.a; $('cB').value = t.dataset.b; runCompare(); }
+  });
+  $('mGo').onclick = async () => {
+    const sc = $('mScope').value; let ids = [];
+    if (sc === 'picked') ids = [...S.picked]; else { const q = new URLSearchParams({ limit: 60 }); if (sc === 'folder' && S.folder !== '') q.set('folder', S.folder); ids = (await api('/api/history?' + q)).items.map(x => x.id); }
+    runMatrix(ids);
+  };
+
+  window.openLindaCabinet = openCab;
+})();
+</script>

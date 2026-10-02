@@ -690,7 +690,7 @@ a{color:var(--accent)}
 <div class="lp-overlay" id="lpSet"><div class="lp-card">
   <h2>Settings</h2>
   <p>Sentence highlighting</p>
-  <select class="lp-input" id="lpSent"><option value="auto">Automatic: sliding windows, fast blocks for long texts on a CPU (recommended)</option><option value="smooth">Sliding windows of ~300 words: accurate boundaries, a few seconds more on a CPU</option><option value="windows">Fast: one colour per ~300-word block</option><option value="full">Single sentences (experimental, less reliable)</option></select>
+  <select class="lp-input" id="lpSent"><option value="auto">Automatic: every sentence scored on its own (recommended)</option><option value="context">Sentence in context (smoother, for long AI/human stretches)</option><option value="smooth">Sliding windows of ~300 words: accurate boundaries, a few seconds more on a CPU</option><option value="windows">Fast: one colour per ~300-word block</option><option value="full">Every sentence on its own</option></select>
   <p>Processor</p>
   <select class="lp-input" id="lpDev"><option value="auto">Automatic</option><option value="cpu">CPU</option><option value="cuda">GPU (AMD, NVIDIA, Intel)</option></select>
   <div class="lp-msg" id="lpGpuNote" style="display:none;font-size:.82rem"></div>
@@ -1097,7 +1097,8 @@ async function runAnalysis() {
       body: JSON.stringify({
         text,
         mode: activeSens,
-        models: Array.from(selectedModels)
+        models: Array.from(selectedModels),
+        filename: filePill.classList.contains('hidden') ? '' : filePillName.textContent
       })
     });
     if (!res.ok) {
@@ -1567,7 +1568,7 @@ Free for personal non-commercial use; commercial use needs a licence key (<a hre
       let h = document.getElementById('lpGranHint');
       if (!h) { h = document.createElement('div'); h.id = 'lpGranHint'; h.style.cssText = 'padding:8px 20px;color:var(--text-muted);font-size:.78rem;border-bottom:1px solid var(--border)'; card.querySelector('.heatmap-header').insertAdjacentElement('afterend', h); }
       const g = r && r.sentence_stats && r.sentence_stats.granularity;
-      h.textContent = g === 'window' ? 'Fast mode: colours show blocks of about 300 words (every sentence in a block gets the score of the block). Choose sliding windows in Settings for finer boundaries.' : g === 'smooth' ? 'Colours follow sliding windows of about 300 words, so boundaries are accurate to roughly 100 words; a single sentence is not scored on its own.' : g === 'sentence' ? 'Experimental: each sentence is scored on its own, which is much less reliable than a window of text.' : '';
+      h.textContent = g === 'window' ? 'Fast mode: colours show blocks of about 300 words (every sentence in a block gets the score of the block). Choose sliding windows in Settings for finer boundaries.' : g === 'context' ? 'Each sentence is scored together with its neighbours (about 120 words around it), so colours change sentence by sentence. Very short texts give nearly uniform colours.' : g === 'smooth' ? 'Colours follow sliding windows of about 300 words, so boundaries are accurate to roughly 100 words; a single sentence is not scored on its own.' : g === 'sentence' ? 'Each sentence is scored on its own, so single AI and human sentences can alternate; a lone short sentence is less reliable than a window of text.' : '';
       h.style.display = g ? '' : 'none';
     } catch (e) { /* cosmetic only */ }
   };

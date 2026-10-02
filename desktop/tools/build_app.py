@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 args = [sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--name", "Linda-Pro", "--noconsole", "--onedir",
         "--icon", str(ROOT / "assets" / "linda.ico"),
         "--add-data", f"{ROOT / 'web'};web",
+        "--add-data", f"{ROOT / 'linda_desktop' / 'data'};linda_desktop/data",
         "--add-data", f"{ROOT / 'linda_pro' / '_vendor' / 'aidetector' / 'patterns'};linda_pro/_vendor/aidetector/patterns",
         "--collect-submodules", "uvicorn", "--collect-submodules", "linda_pro", "--collect-submodules", "linda_desktop",
         "--collect-submodules", "transformers.models.deberta_v2", "--collect-submodules", "transformers.models.deberta",
