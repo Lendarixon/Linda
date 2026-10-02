@@ -342,9 +342,9 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
   }
   function renderDoc() {
     const { r, text } = V, S = (r.sentences || []).slice().sort((a, b) => a.start - b.start);
-    const gran = (r.sentence_stats || {}).granularity, uThr = gran === 'sentence' ? 0.25 : 0.38;
+    const TH = (r.sentence_stats || {}).thresholds || { ai: 0.58, uncertain: 0.38 }, uThr = TH.uncertain;
     const prob = s => V.src === 'essay' ? s.essay_prob : V.src === 'multi' ? s.multi_prob : s.p_ai;
-    const lab = s => V.src === 'ensemble' ? s.label : (prob(s) >= 0.58 ? 'ai' : prob(s) >= uThr ? 'uncertain' : 'human');
+    const lab = s => V.src === 'ensemble' ? s.label : (prob(s) >= TH.ai ? 'ai' : prob(s) >= uThr ? 'uncertain' : 'human');
     const tok = [...text.matchAll(/\S+/g)], rng = [];
     (V.shared || []).forEach(p => { const a = tok[p.start], b = tok[p.start + p.words - 1]; if (a && b) rng.push([a.index, b.index + b[0].length]); });
     const pts = new Set([0, text.length]); S.forEach(s => { pts.add(s.start); pts.add(s.end); }); rng.forEach(x => { pts.add(x[0]); pts.add(x[1]); });

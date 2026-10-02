@@ -55,11 +55,11 @@ def test_consensus_uses_selected_models_only(eng):
     assert abs(only_multi - eng.run(text_of(), "sensitive", ["linda_multi_v2"])["sentences"][-1]["multi_prob"]) < 1e-6
 
 
-def test_auto_mode_is_every_sentence_on_its_own(eng):
+def test_auto_mode_is_hybrid(eng):
     engine.save_settings({"sentences": "auto"})
-    assert eng.sentence_mode(500) == "full" and eng.sentence_mode(701) == "full"
+    assert eng.sentence_mode(500) == "hybrid" and eng.sentence_mode(701) == "hybrid"
     eng.device = "cuda"
-    assert eng.sentence_mode(9000) == "full"
+    assert eng.sentence_mode(9000) == "hybrid"
     engine.save_settings({"sentences": "windows"})
     assert eng.sentence_mode(10) == "windows"
     engine.save_settings({"sentences": "full"})
@@ -67,7 +67,7 @@ def test_auto_mode_is_every_sentence_on_its_own(eng):
     engine.save_settings({"sentences": "smooth"})
     assert eng.sentence_mode(10) == "smooth"
     engine.save_settings({"sentences": "bogus"})
-    assert eng.sentence_mode(10) == "full"
+    assert eng.sentence_mode(10) == "hybrid"
 
 
 def test_smooth_window_layout(eng):
@@ -120,3 +120,22 @@ def test_context_anchors_are_capped_and_interpolated(eng):
     anchors, texts = eng._sentence_contexts(sents, 40)
     assert len(anchors) <= 41 and anchors[0] == 0 and anchors[-1] == 999 and len(texts) == len(anchors)
     assert all(100 <= len(t.split()) <= 140 for t in texts)
+
+
+class IsoLowCtxHigh:
+    """A sentence alone looks human (low margin) but inside a window of this text the models say AI: stand-in for a polished AI story."""
+
+    def margins(self, texts):
+        return [14.0 if len(t.split()) > 60 else 2.0 for t in texts]
+
+
+def test_hybrid_shows_a_whole_ai_text_as_ai_not_as_human_sentences(eng):
+    FakeDet._factory = lambda self, key: IsoLowCtxHigh()
+    engine.save_settings({"sentences": "auto"})
+    text = " ".join("A short plain sentence number %d is right here." % i for i in range(40))
+    r = eng.run(text, "sensitive")
+    st = r["sentence_stats"]
+    assert st["granularity"] == "hybrid" and st["thresholds"] == {"ai": 0.72, "uncertain": 0.45}
+    assert st["ai"] >= 0.9 * st["total"]  # the context score lifts the sentences that alone would be human
+    engine.save_settings({"sentences": "full"})
+    assert eng.run(text, "sensitive")["sentence_stats"]["ai"] == 0  # on its own every sentence stays human (the old behaviour)

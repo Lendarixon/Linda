@@ -17,6 +17,10 @@ and every file hash is checked. The signing key is not part of this repository.
 
 Licence of the code: see the repository `LICENSE` (free for non-commercial use; commercial use needs a key).
 
+## 1.2.1 (2026-10-03)
+
+Colour map fix: sentences are scored alone and in their context (about 120 words) and the higher score counts ("hybrid" mode), so an AI text is no longer shown as human sentence by sentence; AI / possibly-AI thresholds are sent by the program (`sentence_stats.thresholds`). Models unchanged.
+
 ## 1.2 (2026-10-02)
 
 History with folders (kept only on the PC; can be switched off or cleaned up automatically), batch check of any number of files, comparison of two documents with their shared passages or of many documents (overlap matrix), full reader for any saved check, authorship verdict (human / mixed / AI with shares), text analytics and a text-structure view, every sentence scored on its own with a lower "possibly AI" band, Metro animations.

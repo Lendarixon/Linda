@@ -171,6 +171,23 @@ class Engine:
     # input than the ~300-word windows the models were calibrated on, so in the per-sentence mode the band starts lower (about 10% of human sentences fall into
     # it, measured on dev essays); the window-like modes keep the old 0.38.
     AI_THR, UNCERTAIN_THR_SENTENCE, UNCERTAIN_THR_WINDOW = 0.58, 0.25, 0.38
+    # (ai, uncertain) thresholds per mode. Hybrid: about 1% and 5% of human sentences reach them (measured on dev essays, whole-human vs whole-AI documents).
+    THRESHOLDS = {"hybrid": (0.72, 0.45), "full": (0.58, 0.25)}
+
+    def thresholds(self, gran: str) -> tuple[float, float]:
+        return self.THRESHOLDS.get(gran, (self.AI_THR, self.UNCERTAIN_THR_WINDOW))
+
+    def _context_margins(self, det, spans) -> tuple[list[float], list[float]]:
+        """Margins of Essay and Multi for every sentence scored in its context (~CONTEXT_WORDS words); between the directly scored anchor sentences the margin is interpolated."""
+        from linda_pro.voters import clean_text
+
+        anchors, ctx = self._sentence_contexts([x.text for x in spans], self.CONTEXT_ANCHORS_CPU if self.device == "cpu" else self.CONTEXT_ANCHORS_GPU)
+        ctx = [clean_text(t) for t in ctx]
+        ae = det._factory("linda_essay").margins(ctx)
+        am = det._factory("linda_multi_v2").margins(ctx)
+        idx = list(range(len(spans)))
+        return [float(v) for v in np.interp(idx, anchors, ae)], [float(v) for v in np.interp(idx, anchors, am)]
+
     CONTEXT_WORDS = 120                   # size of the neighbourhood scored for each sentence
     CONTEXT_ANCHORS_GPU, CONTEXT_ANCHORS_CPU = 150, 40  # how many sentences are scored directly; the rest are interpolated between them
 
@@ -201,13 +218,15 @@ class Engine:
     SMOOTH_WINDOW, SMOOTH_MIN_STEP, SMOOTH_MAX_WINDOWS = 300, 75, 16
 
     def sentence_mode(self, nwords: int = 0) -> str:
-        """context = every sentence is scored together with its neighbours (~CONTEXT_WORDS words around it), so the colour changes sentence by sentence and boundaries are found to the sentence;
+        """hybrid (default) = every sentence is scored alone AND in its context and the higher score counts: a lone strongly-AI sentence still lights up, and a whole AI text is no longer shown as human
+        sentence by sentence (alone, a sentence is too short for models calibrated on ~300-word windows: on whole-AI essays it flagged about a quarter of the sentences, the context score about 95%);
+        context = every sentence is scored together with its neighbours (~CONTEXT_WORDS words around it), so the colour changes sentence by sentence and boundaries are found to the sentence;
         smooth = sliding ~300-word windows (the scale the models are calibrated on; boundaries accurate to ~100 words); windows = fast, one score per ~300-word block;
         full = every single sentence on its own (experimental: one sentence is much less reliable than a window)."""
         s = load_settings().get("sentences", "auto")
         if s == "auto":
-            return "full"
-        return s if s in ("full", "context", "smooth", "windows") else "full"
+            return "hybrid"
+        return s if s in ("hybrid", "full", "context", "smooth", "windows") else "hybrid"
 
     def _smooth_windows(self, nwords: int) -> list[tuple[int, int]]:
         W = self.SMOOTH_WINDOW
@@ -233,19 +252,17 @@ class Engine:
             selected = set(models) if models else set(ALL_MODELS)
             nwords = len(text.split())
             gran = self.sentence_mode(nwords)
-            full = gran in ("full", "context")  # both give one margin per sentence
+            full = gran in ("hybrid", "full", "context")  # all of them give one margin per sentence
             m_essay = m_multi = None
             wspans = []  # (first word, after last word, essay margin, multi margin) of the windows used for colouring
             if gran == "context" and spans:
-                from linda_pro.voters import clean_text
-
-                anchors, ctx = self._sentence_contexts([x.text for x in spans], self.CONTEXT_ANCHORS_CPU if self.device == "cpu" else self.CONTEXT_ANCHORS_GPU)
-                ctx = [clean_text(t) for t in ctx]
-                ae = det._factory("linda_essay").margins(ctx)
-                am = det._factory("linda_multi_v2").margins(ctx)
-                idx = list(range(len(spans)))
-                m_essay = [float(v) for v in np.interp(idx, anchors, ae)]  # between anchors the margin is interpolated
-                m_multi = [float(v) for v in np.interp(idx, anchors, am)]
+                m_essay, m_multi = self._context_margins(det, spans)
+            elif gran == "hybrid" and spans:
+                s_texts = [x.text for x in spans]
+                ie, im = det._factory("linda_essay").margins(s_texts), det._factory("linda_multi_v2").margins(s_texts)
+                ce, cm = self._context_margins(det, spans)
+                m_essay = [max(float(x), y) for x, y in zip(ie, ce)]  # sigmoid is monotone: the larger margin is the larger probability
+                m_multi = [max(float(x), y) for x, y in zip(im, cm)]
             elif full and spans:
                 s_texts = [s.text for s in spans]
                 m_essay = det._factory("linda_essay").margins(s_texts)
@@ -265,6 +282,7 @@ class Engine:
                     wspans = [(a, b, float(e), float(m)) for (a, b), e, m in zip(wins, ce, cm)]
             else:  # fast: sentences inherit the score of their ~300-word block
                 wspans = [(w["first_word"], w["last_word"], w["essay"], w.get("multi", w["essay"])) for w in res["windows"]]
+            thr_ai, thr_unc = self.thresholds(gran)
             sentences, cnt = [], {"ai": 0, "uncertain": 0, "human": 0}
             for i, s in enumerate(spans):
                 if full:
@@ -282,14 +300,15 @@ class Engine:
                     pe, pm = _sig(me, pe_c, pe_s), _sig(mm, pm_c, pm_s)
                     probs = ([pe] if "linda_essay" in selected else []) + ([pm] if "linda_multi_v2" in selected else []) or [pe, pm]
                     p_ai = sum(probs) / len(probs)
-                lbl = "ai" if p_ai >= self.AI_THR else "uncertain" if p_ai >= (self.UNCERTAIN_THR_SENTENCE if gran == "full" else self.UNCERTAIN_THR_WINDOW) else "human"
+                lbl = "ai" if p_ai >= thr_ai else "uncertain" if p_ai >= thr_unc else "human"
                 cnt[lbl] += 1
                 sentences.append({"start": s.start, "end": s.end, "text": s.text, "essay_margin": round(me, 2), "multi_margin": round(mm, 2),
                                   "essay_prob": round(pe, 3), "multi_prob": round(pm, 3), "p_ai": round(p_ai, 3), "label": lbl})
             res["sentences"] = sentences
             res["authorship"] = authorship(res.get("verdict"), sentences)
             res["sentence_stats"] = {"total": len(sentences), **cnt, "ai_pct": round(cnt["ai"] / len(sentences) * 100) if sentences else 0,
-                                     "granularity": {"full": "sentence", "context": "context", "smooth": "smooth", "windows": "window"}[gran]}
+                                     "granularity": {"hybrid": "hybrid", "full": "sentence", "context": "context", "smooth": "smooth", "windows": "window"}[gran],
+                                     "thresholds": {"ai": thr_ai, "uncertain": thr_unc}}
             if models and len(models) < 3:
                 chosen = [m for m in models if m in det.mean]
                 if len(chosen) == 1:

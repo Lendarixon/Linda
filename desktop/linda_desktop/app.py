@@ -323,7 +323,7 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
     @api.post("/api/settings")
     def settings(body: dict):
         cur = load_settings()
-        if body.get("sentences") in ("auto", "context", "smooth", "full", "windows"):
+        if body.get("sentences") in ("auto", "hybrid", "context", "smooth", "full", "windows"):
             cur["sentences"] = body["sentences"]
         if isinstance(body.get("history_retention_days"), int) and not isinstance(body.get("history_retention_days"), bool) and 0 <= body["history_retention_days"] <= 3650:
             cur["history_retention_days"] = body["history_retention_days"]
