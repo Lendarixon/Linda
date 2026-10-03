@@ -1,0 +1,118 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Linda-Pro: локальный детектор ИИ-текстов</title><meta name="description" content="Linda-Pro — детектор ИИ-текста, работающий на вашем компьютере, без отправки текстов. Бесплатно для личного использования; находит 70% текстов после «гуманизаторов».">
+<link rel="canonical" href="https://lendarixon.github.io/Linda/index.html">
+<link rel="alternate" hreflang="en" href="https://lendarixon.github.io/Linda/index.html">
+<link rel="alternate" hreflang="ru" href="https://lendarixon.github.io/Linda/ru.html">
+<link rel="alternate" hreflang="pl" href="https://lendarixon.github.io/Linda/pl.html">
+<link rel="alternate" hreflang="x-default" href="https://lendarixon.github.io/Linda/index.html">
+<meta property="og:type" content="website"><meta property="og:title" content="Linda-Pro: локальный детектор ИИ-текстов"><meta property="og:description" content="Linda-Pro — детектор ИИ-текста, работающий на вашем компьютере, без отправки текстов. Бесплатно для личного использования; находит 70% текстов после «гуманизаторов».">
+<meta property="og:url" content="https://lendarixon.github.io/Linda/ru.html"><meta property="og:image" content="https://lendarixon.github.io/Linda/assets/logo_square.png"><meta property="og:locale" content="ru_RU">
+<meta name="twitter:card" content="summary"><meta name="twitter:title" content="Linda-Pro: локальный детектор ИИ-текстов"><meta name="twitter:description" content="Linda-Pro — детектор ИИ-текста, работающий на вашем компьютере, без отправки текстов. Бесплатно для личного использования; находит 70% текстов после «гуманизаторов».">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Linda-Pro", "operatingSystem": "Windows 10/11", "applicationCategory": "UtilitiesApplication", "inLanguage": "ru", "description": "Linda-Pro — детектор ИИ-текста, работающий на вашем компьютере, без отправки текстов. Бесплатно для личного использования; находит 70% текстов после «гуманизаторов».", "offers": [{"@type": "Offer", "price": "0", "priceCurrency": "USD"}, {"@type": "Offer", "price": "10", "priceCurrency": "USD"}]}</script>
+<link rel="icon" href="assets/linda.png"><link rel="stylesheet" href="site.css?v=227e0e2c"></head><body>
+<header class="top" id="topbar"><div class="wrap"><a class="brand" href="ru.html"><img src="assets/logo_wordmark.png" alt="Linda-Pro" height="42"></a>
+<button class="burger" id="burger" aria-label="Меню" aria-expanded="false">&#9776;</button>
+<nav class="main" aria-label="Main"><a href="#how">Как это работает</a><a href="#pricing">Цены</a><a href="business-ru.html">Для бизнеса</a><a href="faq-ru.html">Вопросы</a><a class="dl" href="https://github.com/Lendarixon/Linda/releases/latest">Скачать</a><span class="more"><details><summary>Ещё &#9662;</summary><span class="more-menu"><a href="results-ru.html">Результаты</a><a href="developers-ru.html">Разработчикам</a><a href="memo-ru.html">Если процент высокий</a><a href="licensing-ru.html">Лицензия</a><a href="results-ru.html#news">Новости</a></span></details></span></nav><span class="langbox"><label for="langsel">Язык:</label><select class="langsel" id="langsel" aria-label="Language"><option value="en">EN</option><option value="ru">RU</option><option value="pl">PL</option></select><noscript><a href="index.html">EN</a> <a href="pl.html">PL</a></noscript></span></div></header>
+
+<div class="wrap hero"><div>
+<span class="tag">приложение 2.0 · модели находят тексты даже после «гуманизаторов»</span>
+<h1>распознайте текст, написанный ИИ<br><em>прямо на вашем компьютере.</em></h1>
+<p class="lead">Linda-Pro определяет, написан ли текст искусственным интеллектом, и подсвечивает подозрительные фрагменты. Всё считается на вашем компьютере — тексты никуда не отправляются. Лучше всего программа работает с английским; для русского и польского она настроена осторожно, чтобы не обвинять людей зря (подробности — в разделе результатов).</p>
+<div class="btns"><a class="btn acc" href="https://github.com/Lendarixon/Linda/releases/latest">Скачать для Windows</a><a class="btn sec" href="#pricing">Цены</a><a class="btn sec" href="business-ru.html">Для бизнеса</a><a class="btn sec" href="https://doi.org/10.5281/zenodo.23080472">Технический отчёт</a></div>
+<aside class="priv" aria-label="Тексты остаются только у вас"><span class="lock" aria-hidden="true">&#128274;</span><div><b>Тексты остаются только у вас</b><p>Ваши тексты никуда не отправляются. После установки приложение один раз скачивает модели (~2,9 ГБ) и дальше работает полностью без интернета.</p></div></aside>
+<p class="note" style="margin-top:16px">Бесплатно для личного некоммерческого использования. Ключ не нужен — скачайте и проверяйте.</p></div>
+<div class="tiles stats">
+<div class="tile c-cobalt w2 h2"><span class="cap">находит тексты после «гуманизаторов»</span><span class="big" data-count="70" data-suffix="%">70%</span><span class="lbl">на открытом тесте HumanizerBench; в версии 1.0 было 31%. В обучении не участвовал.</span></div>
+<div class="tile c-green"><span class="cap">300 слов</span><span class="big" data-count="1.1" data-dec="1" data-suffix=" s">1.1 s</span><span class="lbl">на обычном процессоре</span></div>
+<div class="tile c-orange ink-dark"><span class="cap">ваш текст</span><span class="big" data-count="0" data-suffix=" B">0 B</span><span class="lbl">никуда не отправляется</span></div>
+<a class="tile c-purple w2" href="https://github.com/Lendarixon/Linda/releases/latest"><span class="cap">windows 10 / 11</span><span class="big" style="font-size:2rem">Скачать</span><span class="lbl">установщик, без прав администратора, обновляется сам</span></a>
+</div>
+<p class="note" style="margin-top:10px"><a href="results-ru.html">Подробности в разделе Результаты</a></p>
+</div>
+
+<section id="how"><div class="wrap"><p class="sec-no">01 — как это работает</p><h2>три модели — один вердикт</h2><p class="sub">Три независимые модели оценивают текст отдельно, а вы получаете один понятный вердикт с подсвеченными подозрительными местами.</p>
+<div class="grid g3">
+<div class="panel c-teal ink-dark"><div class="num">1</div><h3>Вставьте текст или файл</h3><p>Текст, .docx, .pdf или .md — длина не ограничена (чем длиннее текст, тем дольше проверка).</p></div>
+<div class="panel c-magenta"><div class="num">2</div><h3>Получите вердикт</h3><p>ИИ, человек или смешанный текст: программа покажет долю текста с признаками ИИ и подсветит фрагменты цветом.</p></div>
+<div class="panel c-steel"><div class="num">3</div><h3>Выберите режим: больше находок или меньше ошибок</h3><p><b>Чувствительный</b> находит больше ИИ-текста, но чаще ошибается на человеческом. <b>Точный</b> говорит «ИИ», только если согласны две независимые модели: ложных срабатываний меньше, но часть ИИ-текста пропускается. Для школ и издательств, где ложное обвинение обходится дороже всего, лучше Точный.</p></div>
+</div>
+<div class="btns" style="margin-top:22px;max-width:520px"><a class="btn sec" href="results-ru.html">Подробнее</a></div>
+</div></section>
+
+<section id="results"><div class="wrap"><p class="sec-no">02 — результаты</p><h2>прогресс: 1.0 → 1.1</h2>
+<p class="sub" style="margin-bottom:14px">HumanizerBench дал всем детекторам одни и те же переписанные тексты. Чем выше доля распознанного как ИИ, тем лучше.</p>
+<div class="bars">
+<span class="us">Linda-Pro 1.1</span><div class="bar us"><i style="width:69.9%"></i></div><span class="v us">69.9%</span>
+<span>GPTZero</span><div class="bar"><i style="width:47.7%"></i></div><span class="v">47.7%</span>
+<span>Originality.ai</span><div class="bar"><i style="width:47.2%"></i></div><span class="v">47.2%</span></div>
+<p class="note" style="margin-top:8px">Вердикты конкурентов — по данным операторов бенчмарка; их пороги неизвестны, поэтому уровни ложных срабатываний несопоставимы.</p>
+<div class="btns" style="margin-top:22px;max-width:520px"><a class="btn sec" href="results-ru.html">Подробнее</a></div>
+</div></section>
+
+
+
+<section id="pricing"><div class="wrap"><p class="sec-no">08 — цены</p><h2>начните бесплатно, платите только за коммерческое использование</h2>
+<p class="sub">Для личных задач, учёбы и хобби программа бесплатна навсегда и без ограничений. Ключ нужен для коммерческой работы: фриланс, редактура, проверка работ на заказ, компании. Он даёт официальное право на коммерческое использование и убирает напоминание о лицензии.</p>
+<div class="grid g4">
+<div class="panel c-green"><h3>Бесплатно</h3><div class="price">$0 <small>навсегда</small></div><ul><li>Личное некоммерческое использование: ваши тексты, учёба, хобби, некоммерческие исследования</li><li>То же приложение и модели — без ключа и ограничений</li><li>Все обновления</li></ul><div class="btn-col"><a class="btn" href="https://github.com/Lendarixon/Linda/releases/latest">Скачать бесплатно</a></div><p class="note" style="color:#fff;opacity:.85">Не уверены, что считается некоммерческим? <a href="licensing-ru.html" style="color:#fff;text-decoration:underline">Читать правила</a>.</p></div>
+<div class="panel c-teal ink-dark"><h3>Personal</h3><div class="price">$10 <small>разово</small></div><ul><li>1 человек, до 3 устройств</li><li>Фриланс и малый бизнес</li><li>Бесплатные обновления в пределах 1.x</li></ul><div class="btn-col"><a class="btn" href="https://buy.polar.sh/polar_cl_xbgd3gaCH2ZQIzNHmRAjyJiIUTNAHuRmE51zi1P8ywI">Купить Personal</a></div></div>
+<div class="panel c-cobalt"><h3>Team</h3><div class="price">$30 <small>разово</small></div><ul><li>До 10 человек, 20 устройств</li><li>Коммерческое использование</li><li>Бесплатные обновления в пределах 1.x</li></ul><div class="btn-col"><a class="btn" href="https://buy.polar.sh/polar_cl_xbgd3gaCH2ZQIzNHmRAjyJiIUTNAHuRmE51zi1P8ywI">Купить Team</a></div><p class="note" style="color:#fff;opacity:.8">На странице оплаты выберите Team.</p></div>
+<div class="panel c-purple"><h3>Organization</h3><div class="price">$500 <small>в год</small></div><ul><li>Компания, школа или вуз, одна площадка, 200 устройств</li><li>Обновления весь год, включая новые модели</li><li>Счёт с НДС</li></ul><div class="btn-col"><a class="btn" href="https://buy.polar.sh/polar_cl_UznG2OPeM5diDZ1nCtxwRD1HW1pO3OZIu55DN07bCQe">Купить Organization</a></div></div>
+</div>
+<div class="panel c-orange ink-dark" style="margin-top:8px"><h3>OEM, white-label, эксклюзивные права, калибровка под вас</h3><p>Если вам нужна интеграция Linda-Pro в LMS, систему антиплагиата или HR-сервис, дообучение на ваших текстах или эксклюзивные права — напишите на <a href="mailto:lindapro.support@proton.me">lindapro.support@proton.me</a>. Расскажите о задаче, объёмах и вашей инфраструктуре.</p></div>
+<div style="margin-top:14px">
+<div class="btns" style="margin-top:0"><a class="btn" href="https://github.com/Lendarixon/Linda/releases/latest">Скачать бесплатно для Windows</a><a class="btn sec" href="https://buy.polar.sh/polar_cl_xbgd3gaCH2ZQIzNHmRAjyJiIUTNAHuRmE51zi1P8ywI">Купить Personal — $10</a><a class="btn sec" href="mailto:lindapro.support@proton.me">Написать нам про OEM / B2B</a></div></div>
+</div></section>
+
+<section id="faq"><div class="wrap"><p class="sec-no">09 — вопросы</p><h2>вопросы и ответы</h2>
+<details><summary>Мои тексты куда-то отправляются?</summary><div class="faq-a"><div class="faq-a-in"><p>Нет, тексты проверяются прямо на вашем компьютере. Программа выходит в интернет только чтобы скачать модели, проверить обновления или активировать платный ключ (передаются только сам ключ и случайный ID устройства).</p></div></div></details><details><summary>Насколько точен детектор? Может ли он по ошибке обвинить человека?</summary><div class="faq-a"><div class="faq-a-in"><p>Идеальных детекторов нет. На реальных человеческих текстах ложные срабатывания составляют всего 0–2%, а на экзаменационных эссе TOEFL — до 4,4% в чувствительном режиме (и 0% в точном). Если автор пишет не на родном английском, риск ошибки выше. Никогда не наказывайте человека, опираясь только на цифру из детектора.</p></div></div></details><details><summary>А как же ИИ-«гуманизаторы»?</summary><div class="faq-a"><div class="faq-a-in"><p>Версия 1.1 переобучена на реальных результатах работы «гуманизаторов». На открытом тесте гуманизаторов она отмечает 70% переписанных текстов (версия 1.0: 31%). Гуманизаторы меняются каждый месяц, поэтому модели регулярно обновляются, а приложение скачивает обновления.</p></div></div></details><details><summary>Какие языки?</summary><div class="faq-a"><div class="faq-a-in"><p><b>Английский</b> — основной язык: всё настроено и замерено на английских текстах. <b>Русский и польский</b> работают со средним качеством: приложение училось в том числе на русских и польских текстах. На наших наборах (по 150 ИИ- и 150 человеческих текстов на язык) оно уверенно ставит ИИ-тексты выше человеческих: 98% для русского, 99% для польского, — но граница «ИИ» проведена под английский, поэтому вердикт «ИИ» ловит около 63% (русский) и 51% (польский) ИИ-текстов при 0–1% ложных срабатываний; зона «неопределённо» ловит больше. Считайте результаты по русскому и польскому подсказкой, а не вердиктом. С другими детекторами на русском и польском мы не сравнивались, поэтому сравнительных заявлений не делаем. Другие языки не поддерживаются. Точные цифры — также в разделе результатов.</p></div></div></details><details><summary>Это бесплатно?</summary><div class="faq-a"><div class="faq-a-in"><p>Да — для личного некоммерческого использования: ваши тексты, учёба, хобби, некоммерческие исследования. Без регистрации, без ключа, без ограничений. Платный ключ — это только разрешение на коммерческое использование (оплачиваемая работа, клиенты, компании, школы и вузы, продукты): он убирает напоминание о лицензии; само приложение без него работает так же. См. цены.</p></div></div></details>
+<div class="btns" style="margin-top:22px;max-width:520px"><a class="btn sec" href="faq-ru.html">Подробнее</a></div>
+</div></section>
+
+<script>
+(function(){
+try{
+  var els=document.querySelectorAll('section .wrap, .hero>div, .tile, .panel, .news, .shot, .priv');
+  els.forEach(function(el){el.classList.add('rv');});
+  var reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduced||!('IntersectionObserver' in window)){els.forEach(function(el){el.classList.add('on');});}
+  else{var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target);}});},{threshold:.08});
+  els.forEach(function(el){io.observe(el);});}
+  var nums=document.querySelectorAll('[data-count]');
+  function anim(el){
+    var target=parseFloat(el.getAttribute('data-count')),dec=parseInt(el.getAttribute('data-dec')||'0',10),suf=el.getAttribute('data-suffix')||'';
+    if(reduced||!(target>0)){return;}
+    var t0=null,dur=900;
+    function fr(ts){if(!t0)t0=ts;var p=Math.min(1,(ts-t0)/dur);el.textContent=(target*(0.2+0.8*p)).toFixed(dec)+suf;if(p<1)requestAnimationFrame(fr);else el.textContent=target.toFixed(dec)+suf;}
+    requestAnimationFrame(fr);
+  }
+  if('IntersectionObserver' in window&&!reduced){var io2=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){anim(e.target);io2.unobserve(e.target);}});},{threshold:.4});nums.forEach(function(el){io2.observe(el);});}
+}catch(e){}
+})();
+</script>
+
+<footer><div class="wrap"><p>Оператор Linda-Pro — Vladyslav Manzyuk (Польша). Платежи обрабатывает Polar (Merchant of Record).</p>
+<p><a href="results-ru.html">Результаты</a><a href="business-ru.html">Для бизнеса</a><a href="faq-ru.html">Вопросы</a><a href="developers-ru.html">Разработчикам</a><a href="memo-ru.html">Если процент высокий</a></p>
+<p><a href="licensing-ru.html">Лицензия</a><a href="terms-ru.html">Условия</a><a href="privacy-ru.html">Конфиденциальность</a><a href="refund-ru.html">Возвраты</a><a href="https://github.com/Lendarixon/Linda">GitHub</a><a href="https://huggingface.co/Lindarixon/Linda-Pro">Hugging Face</a><a href="https://doi.org/10.5281/zenodo.23080472">Technical report</a><a href="mailto:lindapro.support@proton.me">lindapro.support@proton.me</a></p></div></footer><script>
+(function(){
+var FILES={"index": {"en": "index.html", "ru": "ru.html", "pl": "pl.html"}, "results": {"en": "results.html", "ru": "results-ru.html", "pl": "results-pl.html"}, "business": {"en": "business.html", "ru": "business-ru.html", "pl": "business-pl.html"}, "faq": {"en": "faq.html", "ru": "faq-ru.html", "pl": "faq-pl.html"}, "developers": {"en": "developers.html", "ru": "developers-ru.html", "pl": "developers-pl.html"}, "memo": {"en": "memo.html", "ru": "memo-ru.html", "pl": "memo-pl.html"}, "terms": {"en": "terms.html", "ru": "terms-ru.html", "pl": "terms-pl.html"}, "privacy": {"en": "privacy.html", "ru": "privacy-ru.html", "pl": "privacy-pl.html"}, "refund": {"en": "refund.html", "ru": "refund-ru.html", "pl": "refund-pl.html"}, "licensing": {"en": "licensing.html", "ru": "licensing-ru.html", "pl": "licensing-pl.html"}};
+var slug='index', lang='ru';
+var sel=document.getElementById('langsel');
+function navLang(){var l=(navigator.language||navigator.userLanguage||'en').toLowerCase();return l.indexOf('ru')===0?'ru':(l.indexOf('pl')===0?'pl':'en');}
+try{
+  var stored=null;try{stored=localStorage.getItem('linda-lang');}catch(e){}
+  if(stored&&FILES[slug]&&FILES[slug][stored]&&stored!==lang){sel.value=stored;}
+  else{sel.value=lang;}
+  if(!stored&&slug==='index'&&lang==='en'&&navLang()!=='en'){
+    try{localStorage.setItem('linda-lang',navLang());}catch(e){}
+    location.replace(FILES[slug][navLang()]);
+  }
+}catch(e){sel.value=lang;}
+sel.addEventListener('change',function(){
+  try{localStorage.setItem('linda-lang',sel.value);}catch(e){}
+  location.href=FILES[slug][sel.value];
+});
+})();
+</script><script>
+(function(){var b=document.getElementById('burger'),h=document.getElementById('topbar');if(b&&h){b.addEventListener('click',function(){var o=h.classList.toggle('open');b.setAttribute('aria-expanded',o?'true':'false');});}})();
+</script></body></html>
