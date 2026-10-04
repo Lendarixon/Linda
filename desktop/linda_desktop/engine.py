@@ -21,6 +21,9 @@ def _sig(m: float, c: float, s: float) -> float:
     return 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, (m - c) / s))))
 
 
+_DISCRETE = re.compile(r"\b(rtx|gtx|geforce|quadro|titan|tesla|radeon rx|radeon pro|radeon vii)\b|\barc\W*(tm\W*)?[ab]\d", re.I)
+
+
 def _adapter_names() -> list[str]:
     """Names of the graphics adapters (Windows). Cosmetic: shown in the settings."""
     if os.name != "nt":
@@ -28,23 +31,26 @@ def _adapter_names() -> list[str]:
     try:
         out = subprocess.run(["powershell", "-NoProfile", "-Command", "(Get-CimInstance Win32_VideoController).Name"], capture_output=True, text=True, timeout=20,
                              creationflags=0x08000000).stdout
-        return [l.strip() for l in out.splitlines() if l.strip() and "basic" not in l.lower()]
+        names = [l.strip() for l in out.splitlines() if l.strip() and "basic" not in l.lower()]
+        # DirectML нумерует адаптеры «мощные первыми» (device_id 0 = дискретная карта), а Windows перечисляет их в произвольном порядке:
+        # без сортировки пункт «RX 9070 XT» в списке мог означать встроенную графику (в 25 раз медленнее)
+        return sorted(names, key=lambda n: 0 if _DISCRETE.search(n) else 1)
     except Exception:  # noqa: BLE001
         return []
 
 
-_DISCRETE = re.compile(r"\b(rtx|gtx|geforce|quadro|titan|tesla|radeon rx|radeon pro|radeon vii)\b|\barc\W*(tm\W*)?[ab]\d", re.I)
 
 
 def gpu_probe() -> dict:
     """Which GPU backend can be used: PyTorch CUDA (NVIDIA) or ROCm (AMD) in development installs, otherwise DirectML through ONNX Runtime (any DirectX 12 card on
-    Windows: AMD Radeon, NVIDIA GeForce, Intel Arc), otherwise none."""
-    none = {"available": False, "backend": None, "name": "", "discrete": False}
+    Windows: AMD Radeon, NVIDIA GeForce, Intel Arc), otherwise none. "names" lists every adapter found (used to offer a choice only when there are several)."""
+    none = {"available": False, "backend": None, "name": "", "names": [], "discrete": False}
     try:
         import torch
 
         if torch.cuda.is_available():
-            return {"available": True, "backend": "ROCm" if getattr(torch.version, "hip", None) else "CUDA", "name": torch.cuda.get_device_name(0), "discrete": True}
+            name = torch.cuda.get_device_name(0)
+            return {"available": True, "backend": "ROCm" if getattr(torch.version, "hip", None) else "CUDA", "name": name, "names": [name], "discrete": True}
     except Exception:  # noqa: BLE001
         pass
     try:
@@ -52,7 +58,7 @@ def gpu_probe() -> dict:
 
         if onnx_gpu.available():
             names = _adapter_names()
-            return {"available": True, "backend": "DirectML", "name": ", ".join(names) or "DirectX 12 graphics card", "discrete": any(_DISCRETE.search(n) for n in names)}
+            return {"available": True, "backend": "DirectML", "name": ", ".join(names) or "DirectX 12 graphics card", "names": names, "discrete": any(_DISCRETE.search(n) for n in names)}
     except Exception:  # noqa: BLE001
         pass
     return none
@@ -73,6 +79,8 @@ class Engine:
         self.dets: dict | None = None
         self.device = "cpu"
         self.lock = threading.Lock()  # one analysis at a time: the voters share the processor / GPU
+        self._jobs: list[dict] = []  # идущие и ожидающие проверки (для отмены)
+        self._jobs_lock = threading.Lock()
         self.state = {"phase": "idle", "error": ""}
         self.gpu: dict | None = None  # filled by probe_gpu() in the background (importing torch takes a moment)
         self.gpu_error = ""
@@ -84,14 +92,70 @@ class Engine:
         files = sorted((config.data_dir() / "calibration").glob("*.json"))
         return files[0] if files else None
 
+    def routing_file(self) -> Path | None:
+        """Linda-Pro 2.0: table 'language -> three voters + thresholds' (calibration/routing.json, or LINDA_ROUTING for development). Without it the 1.x single-ensemble path is used."""
+        env = os.environ.get("LINDA_ROUTING")
+        p = Path(env) if env else config.data_dir() / "calibration" / "routing.json"
+        return p if p.exists() else None
+
     def unload(self) -> None:
         with self.lock:
+            pool = getattr(getattr(self.dets, "get", lambda k: None)("sensitive"), "pool", None) if self.dets else None
+            if pool is not None:
+                pool.clear()
             self.dets = None
             self.state = {"phase": "idle", "error": ""}
+
+    def _routed_detectors(self, table_path: Path, settings: dict) -> dict:
+        """2.0: per-language voters through one model pool (VRAM budget); fp16 ONNX on DirectML, torch on the CPU."""
+        from linda_pro.routed import ModelPool, RoutedLindaPro
+        from linda_pro.voters import FastSeqCls, StyloVoter
+
+        table = json.loads(table_path.read_text(encoding="utf-8"))
+        models, dirs, cache_dir = config.data_dir() / "models", table["voice_dirs"], config.data_dir() / "onnx"
+        idx = int(settings.get("gpu_index", 0) or 0)
+        device = self.device
+
+        def make(key: str):
+            d = models / dirs[key]
+            if key.startswith("stylo"):
+                return StyloVoter(d)
+            if device == "dml":
+                from . import onnx_gpu
+
+                return onnx_gpu.OnnxSeqCls(d, cache_dir, idx, fp16=True)
+            return FastSeqCls(d, batch=8, device="cpu")
+
+        budget = int(settings.get("vram_budget_mb", 2600 if device == "dml" else 9000))
+        pool = ModelPool(make, table.get("size_mb_fp16", {"essay": 870, "multi": 560}), budget)
+        return {"sensitive": RoutedLindaPro(table, make, "sensitive", budget, pool=pool), "precise": RoutedLindaPro(table, make, "precise", budget, pool=pool)}
+
+    def _ensure_routed(self, table_path: Path) -> dict:
+        self.state = {"phase": "loading", "error": ""}
+        settings = load_settings()
+        self.device = pick_device(settings.get("device", "auto"))
+        self.gpu_error = ""
+        dets = self._routed_detectors(table_path, settings)
+        try:  # warm up one transformer now so that a broken GPU path falls back to the CPU here, not in the middle of an analysis
+            first = next(k for k in dets["sensitive"].tier("en")["voters"] if not k.startswith("stylo"))
+            dets["sensitive"].pool.get(first).margins(["Warm up."])
+        except Exception as e:  # noqa: BLE001
+            if self.device != "dml":
+                raise
+            self.gpu_error = f"{type(e).__name__}: {e}"
+            self.device = "cpu"
+            dets["sensitive"].pool.clear()
+            dets = self._routed_detectors(table_path, settings)
+        self.dets = dets
+        self.state = {"phase": "ready", "error": ""}
+        return dets
 
     def ensure_loaded(self) -> dict:
         if self.dets is not None:
             return self.dets
+        rt = self.routing_file()
+        if rt is not None:
+            return self._ensure_routed(rt)
         cal = self.calibration_file()
         if cal is None:
             raise RuntimeError("model files are not installed yet")
@@ -120,7 +184,8 @@ class Engine:
         else:
             dets = make_detectors(self.device)
         try:
-            self._load_voters(dets)
+            if self.device != 'cpu':
+                self._load_voters(dets)
         except Exception as e:  # noqa: BLE001
             if self.device != "dml":
                 raise
@@ -134,6 +199,8 @@ class Engine:
         return dets
 
     def _load_voters(self, dets: dict) -> None:
+        if getattr(dets["sensitive"], "routed", False):
+            return  # the pool loads voters lazily, per language
         for key in dets["sensitive"].voters:  # load every voter now, not on the first request
             v = dets["sensitive"]._factory(key)
             load = getattr(getattr(v, "_v", v), "_load", None)
@@ -214,6 +281,7 @@ class Engine:
             texts.append(" ".join(sents[lo: hi + 1]))
         return anchors, texts
 
+    HYBRID_MAX_WORDS = 1500  # автоматический режим: длиннее этого — контекстная подсветка по опорным предложениям
     CPU_SMOOTH_MAX_WORDS = 700  # automatic mode on a CPU: sliding windows up to this length (about 10 s), longer texts use the fast block colouring
     SMOOTH_WINDOW, SMOOTH_MIN_STEP, SMOOTH_MAX_WINDOWS = 300, 75, 16
 
@@ -225,7 +293,9 @@ class Engine:
         full = every single sentence on its own (experimental: one sentence is much less reliable than a window)."""
         s = load_settings().get("sentences", "auto")
         if s == "auto":
-            return "hybrid"
+            # hybrid оценивает КАЖДОЕ предложение отдельно (на GPU каждое добивается до полного окна), для сотен тысяч слов это минуты и часы;
+            # длинные тексты считаем по ~150 опорным предложениям в контексте с интерполяцией — вердикт тот же, подсветка чуть грубее
+            return "hybrid" if nwords <= self.HYBRID_MAX_WORDS else "context"
         return s if s in ("hybrid", "full", "context", "smooth", "windows") else "hybrid"
 
     def _smooth_windows(self, nwords: int) -> list[tuple[int, int]]:
@@ -236,10 +306,53 @@ class Engine:
         starts = list(range(0, nwords - W, step)) + [nwords - W]
         return [(s, s + W) for s in starts]
 
-    def run(self, text: str, mode: str = "sensitive", models: list | None = None) -> dict:
-        with self.lock:
+    def cancel_cancellable(self) -> int:
+        """Прервать все проверки, помеченные как отменяемые (идущие и ожидающие очереди). Возвращает, сколько заданий затронуто."""
+        n = 0
+        with self._jobs_lock:
+            for j in self._jobs:
+                if j["cancellable"] and not j["cancel"].is_set():
+                    j["cancel"].set()
+                    n += 1
+        return n
+
+    def run(self, text: str, mode: str = "sensitive", models: list | None = None, cancellable: bool = False, cancel: threading.Event | None = None) -> dict:
+        """Одна проверка за раз. cancellable=True: её можно прервать (новый текст в окне одной проверки); пакетные проверки не отменяются."""
+        from linda_pro import voters as _voters
+
+        job = {"cancel": cancel if cancel is not None else threading.Event(), "cancellable": cancellable}
+        with self._jobs_lock:
+            self._jobs.append(job)
+        try:
+            with self.lock:
+                if job["cancel"].is_set():
+                    raise _voters.Cancelled()
+                _voters.CANCEL = job["cancel"].is_set
+                try:
+                    result = self._run_locked(text, mode, models)
+                    _voters.check_cancel()
+                    return result
+                finally:
+                    _voters.CANCEL = None
+        finally:
+            with self._jobs_lock:
+                if job in self._jobs:
+                    self._jobs.remove(job)
+
+    def _run_locked(self, text: str, mode: str = "sensitive", models: list | None = None) -> dict:
+        if True:
+            chosen_models = list(dict.fromkeys(models or ALL_MODELS))
+            if any(name not in ALL_MODELS for name in chosen_models):
+                raise ValueError('Unknown model selection')
+            if mode == 'precise' and len(chosen_models) < len(ALL_MODELS):
+                raise ValueError('Precise mode requires all models.')
             dets = self.ensure_loaded()
             det = dets[mode]
+            if getattr(det,'routed',False) and len(chosen_models)<3:
+                raise ValueError('This routed calibration requires all models; select all models.')
+            if len(chosen_models)==1:
+                from .single_model import run as run_single
+                return run_single(self,det,text,mode,chosen_models[0])
             res = det.detect([text])[0]
             R = det.rules
 
@@ -305,6 +418,10 @@ class Engine:
                 sentences.append({"start": s.start, "end": s.end, "text": s.text, "essay_margin": round(me, 2), "multi_margin": round(mm, 2),
                                   "essay_prob": round(pe, 3), "multi_prob": round(pm, 3), "p_ai": round(p_ai, 3), "label": lbl})
             res["sentences"] = sentences
+            try:
+                res["p_ai"] = verdict_probability(res, R)
+            except Exception:  # noqa: BLE001 — отображение не должно ронять проверку
+                pass
             res["authorship"] = authorship(res.get("verdict"), sentences)
             res["sentence_stats"] = {"total": len(sentences), **cnt, "ai_pct": round(cnt["ai"] / len(sentences) * 100) if sentences else 0,
                                      "granularity": {"hybrid": "hybrid", "full": "sentence", "context": "context", "smooth": "smooth", "windows": "window"}[gran],
@@ -323,7 +440,42 @@ class Engine:
                     v = "ai" if z_sub >= R["ensemble"]["thr_1"] else ("uncertain" if z_sub >= R["ensemble"]["thr_5"] else "human")
                     p = 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, 1.7 * z_sub))))
                     res["custom_verdict"] = {"models": chosen, "z": round(z_sub, 3), "p_ai": round(p, 3), "verdict": v}
+            if res.get('custom_verdict'):
+                res['ensemble_reference'] = {k:res.get(k) for k in ('verdict','p_ai','ens_z')}
+                custom = res['custom_verdict']
+                res['verdict'],res['p_ai'],res['ens_z'] = custom['verdict'],custom['p_ai'],custom.get('z')
+                res['authorship'] = authorship(res['verdict'],sentences)
+            res['analysis_scope'] = 'subset' if len(chosen_models)<3 else 'ensemble'
+            res['models_used'] = chosen_models
+            res['models_executed'] = list(ALL_MODELS)
+            res['heatmap_available'] = True
+            res['ai_share'] = res['authorship']['ai_share']
             return res
+
+
+def verdict_probability(res: dict, rules: dict) -> float:
+    """Вероятность ИИ для показа: 0,5 в начале зоны «неясно» (порог 5% ложных), 0,9 на пороге «ИИ» (0,5% ложных); берётся большая из оценок
+    ансамбля и Essay и подгоняется под вердикт (человек < 0,5 <= неясно < 0,9 <= ИИ). Раньше показывалась сигмоида от z без калибровки:
+    у человеческих текстов выходило 80-90% «ИИ»."""
+    def sig(x: float, c: float, hi: float) -> float:
+        k = math.log(9.0) / max(1e-6, hi - c)
+        return 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, k * (x - c)))))
+
+    n, e = rules.get("ensemble") or {}, rules.get("essay") or {}
+    ps = []
+    if "ens_z" in res and "thr_5" in n and "thr_05" in n:
+        ps.append(sig(float(res["ens_z"]), n["thr_5"], n["thr_05"]))
+    if "essay" in res and "thr_5" in e and "thr_05" in e:
+        ps.append(sig(float(res["essay"]), e["thr_5"], e["thr_05"]))
+    p = max(ps) if ps else 0.5
+    v = res.get("verdict")
+    if v == "human":
+        p = min(p, 0.49)
+    elif v == "ai":
+        p = max(p, 0.9)
+    elif v == "uncertain":
+        p = min(max(p, 0.5), 0.89)
+    return round(p, 4)
 
 
 def authorship(verdict: str | None, sentences: list[dict]) -> dict:
@@ -346,13 +498,46 @@ def authorship(verdict: str | None, sentences: list[dict]) -> dict:
     return {"label": label, "ai_share": round(ai, 4), "uncertain_share": round(unc, 4), "human_share": round(hum, 4)}
 
 
+# Значения интерфейса по умолчанию (задача D + язык из задачи E): хранятся только
+# локально в settings.json, применяются фронтом через CSS-переменные и data-атрибуты.
+UI_THEMES = ("dark", "light", "contrast")
+UI_ACCENTS = ("cobalt", "teal", "purple", "green", "orange")
+UI_DENSITIES = ("comfortable", "compact", "spacious")
+UI_FONT_SCALES = (90, 100, 110, 125)
+UI_RADII = ("square", "soft", "round")
+UI_SIDEBARS = ("left", "right", "hidden")
+UI_LANGUAGES = ("ru", "pl", "en")
+
+DEFAULT_SETTINGS = {
+    "preload": False,
+    "theme": "dark", "accent": "cobalt", "density": "comfortable",
+    "font_scale": 100, "radius": "square", "sidebar": "left",
+    "language": "ru",
+}
+
+
 def load_settings() -> dict:
+    """Настройки из settings.json поверх значений по умолчанию (интерфейс + язык)."""
     p = config.data_dir() / "settings.json"
     try:
-        return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+        stored = json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
     except Exception:  # noqa: BLE001
-        return {}
+        stored = {}
+    if not isinstance(stored, dict):
+        stored = {}
+    merged = dict(DEFAULT_SETTINGS)
+    merged.update(stored)
+    return merged
 
 
 def save_settings(d: dict) -> None:
-    (config.data_dir() / "settings.json").write_text(json.dumps(d, indent=1), encoding="utf-8")
+    import os
+    import tempfile
+    path = config.data_dir() / 'settings.json'
+    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=path.parent, suffix='.tmp', delete=False) as out:
+        tmp = Path(out.name)
+        json.dump(d, out, indent=1)
+    try:
+        os.replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)

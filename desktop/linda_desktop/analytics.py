@@ -38,7 +38,12 @@ def shingles(text: str, n: int = 5) -> set[tuple[str, ...]]:
 def analyze(text: str, sentences: list[dict] | None = None) -> dict:
     ws = words(text)
     sents = sentences or []
-    lens = [len(s["text"].split()) for s in sents] or [len(text.split())]
+    if sents:
+        lengths = [len(s['text'].split()) for s in sents]
+    else:
+        from .sentences import split_sentences_with_offsets
+        lengths = [len(s.text.split()) for s in split_sentences_with_offsets(text)]
+    lens = lengths or [len(text.split())]
     mean = sum(lens) / len(lens)
     sd = math.sqrt(sum((x - mean) ** 2 for x in lens) / len(lens)) if len(lens) > 1 else 0.0
     low = text.lower()
@@ -47,7 +52,7 @@ def analyze(text: str, sentences: list[dict] | None = None) -> dict:
     rep = [(" ".join(k), v) for k, v in tri.most_common(40) if v >= 3 and len(set(k)) > 1 and sum(len(w) for w in k) >= 10][:6]
     paragraphs = [p for p in re.split(r"\n\s*\n", text) if p.strip()]
     out = {
-        "words": len(text.split()), "sentences": len(sents) or None, "paragraphs": len(paragraphs),
+        "words": len(text.split()), "sentences": len(lengths), "paragraphs": len(paragraphs),
         "avg_sentence_words": round(mean, 1), "sentence_length_sd": round(sd, 1),
         "burstiness": round(sd / mean, 2) if mean else 0.0,      # human prose varies sentence length more (higher = more varied)
         "lexical_diversity": round(_mattr(ws), 3),                 # MATTR-50

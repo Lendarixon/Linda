@@ -1,0 +1,166 @@
+[
+  {
+    "version": "2.0.2.17",
+    "date": "2026-10-04",
+    "title": {
+      "ru": "Обновления, документы, одиночные модели и Metro UI",
+      "en": "Updates, documents, single models and Metro UI",
+      "pl": "Aktualizacje, dokumenty, pojedyncze modele i Metro UI"
+    },
+    "notes": {
+      "ru": "• Скачивание обновления в фоне, скрытая установка и автоматическое повторное открытие программы; исправлено зависание помощника после успешной установки.\n• После отказа установщика открывается предыдущая версия, сохраняется ошибка и доступна повторная попытка; отказный пакет не запускается снова автоматически.\n• Несохранённый текст восстанавливается после обновления; временный черновик удаляется после подтверждения, учитываются запреты хранения.\n• Повторные клики обновления блокируются; заметки относятся к предлагаемой версии. Перезапуск запрещён при анализе, очереди и разборе документа.\n• Проверяются подпись, размер, версия и хеш пакета. При ошибке обновления моделей откатываются изменённые, добавленные и удалённые файлы вместе с манифестом; исправлены открытые файлы Windows.\n• Отмена привязана к заданию и вкладке, включая раннюю отмену, перезагрузку страницы и разрыв связи. Отменённый результат не сохраняется в историю.\n• PDF/DOCX разбираются в отдельном процессе: 20 секунд, 512 МиБ, вход 20 МБ, результат 4 МБ, PDF до 500 страниц; ограничены число файлов и распаковка DOCX. Интерфейс остаётся доступен при разборе.\n• Поздний ответ загрузки не подменяет новый ввод; повреждённые документы дают ошибку и позволяют продолжить работу.\n• Одиночный legacy-режим запускает только выбранную модель. CPU загружает голоса по требованию; предварительная загрузка остаётся отдельной настройкой.\n• Одиночный вердикт и вероятность согласованы с историей и JSON/CSV/HTML-отчётами; экспорт указывает выбранную модель и область анализа.\n• Stylo без подсветки не показывает NaN, выдуманные доли или ложное утверждение о человеческом авторстве. Исправлены пустые scores и текстовая аналитика без меток.\n• Неопределённые предложения не экспортируются как явные ИИ-сигналы. Отсутствие подсветки не подтверждает человеческое авторство.\n• Точный режим доступен только с полным ансамблем; интерфейс сбрасывает несовместимый выбор, API отклоняет его до загрузки моделей. Routed поддерживает полный ансамбль.\n• Старый результат сбрасывается после изменения текста, режима или модели. Исправлены уверенность вердикта «человек», нулевой score, проценты и открытие истории.\n• Настройки сохраняются атомарно; усилены проверки Origin/Host и защита от iframe. CSV защищён от формул; соблюдаются политики истории, экспорта, папок и лицензии.\n• Metro UI: плоские цвета, прямые углы, клавиатурный фокус, reduced-motion. История / Пакет / Сравнение расположены по центру окна, на узком окне — отдельной строкой.\n• Опрос состояния имеет таймаут, переводы не перерисовываются постоянно, ошибки обновления показаны без блокирующего окна.\n• На сайте мобильное меню закрывается по Escape, выбору раздела и клику снаружи; добавлен полный список изменений.\nВеса и калибровки не менялись.",
+      "en": "• Background update download, hidden installation and automatic app relaunch; fixed the helper waiting indefinitely after a successful install.\n• Installer failure reopens the previous app, records the error and allows retry; failed packages are not automatically relaunched.\n• Unsaved text is restored after updating; temporary drafts are acknowledged and removed, respecting storage policies.\n• Duplicate update clicks are blocked, notes match the offered version, and restart is blocked during analysis, queued work or document parsing.\n• Package signature, size, version and checksum are verified. Failed model updates roll back changed, added and deleted files with the manifest; fixed open-file handling on Windows.\n• Cancellation belongs to a job and tab, covering early cancellation, page reload and disconnect. Cancelled results are not stored in history.\n• PDF/DOCX use a separate process: 20-second timeout, 512 MiB memory cap, 20 MB input, 4 MB output, PDF up to 500 pages; DOCX entry and expansion limits. Parsing keeps HTTP responsive.\n• Late uploads cannot overwrite newer input; damaged documents fail without blocking subsequent work.\n• Legacy single mode executes only the selected model. CPU voters load on demand, with optional preload.\n• Single verdict/probability agree with history and JSON/CSV/HTML exports, including model and analysis scope.\n• Stylo without sentence evidence no longer displays NaN, fabricated authorship shares or a human-authorship claim. Missing scores and text analytics without labels are handled correctly.\n• Uncertain sentences are not exported as explicit AI signals. Missing highlighting does not establish human authorship.\n• Precise mode requires the full ensemble; UI resets incompatible choices and API rejects them before model loading. Routed calibration supports the full ensemble.\n• Editing text, mode or model invalidates stale results. Fixed human-verdict confidence, zero scores, history percentages and opening history records.\n• Atomic settings; Origin/Host and iframe protections; CSV formula escaping; storage/export/folder/licence policies respected.\n• Metro UI: flat colours, square corners, keyboard focus and reduced motion. History / Batch / Compare centred on the window, using a separate row on narrow windows.\n• Status polling has a timeout; translations no longer redraw continually; update errors avoid blocking dialogs.\n• Website mobile menu closes on Escape, navigation and outside clicks; full release notes added.\nWeights and calibrations are unchanged.",
+      "pl": "• Pobieranie aktualizacji w tle, ukryta instalacja i ponowne otwarcie aplikacji; usunięto zawieszanie pomocnika po instalacji.\n• Błąd instalatora przywraca poprzednią aplikację, zapisuje komunikat i pozwala ponowić próbę; błędny pakiet nie uruchamia się automatycznie.\n• Przywracanie niezapisanego tekstu po aktualizacji; tymczasowy szkic jest usuwany po potwierdzeniu, z uwzględnieniem zasad przechowywania.\n• Blokada powtórnych kliknięć, informacje dla oferowanej wersji oraz blokada restartu podczas analizy, kolejki i odczytu dokumentu.\n• Weryfikacja podpisu, rozmiaru, wersji i sumy pakietu. Nieudana aktualizacja modeli cofa zmienione, dodane i usunięte pliki wraz z manifestem; poprawiono otwarte pliki Windows.\n• Anulowanie przypisane do zadania i karty, także przed rejestracją, przy odświeżeniu i utracie połączenia. Anulowany wynik nie trafia do historii.\n• PDF/DOCX w osobnym procesie: 20 sekund, 512 MiB, wejście 20 MB, wynik 4 MB, PDF do 500 stron; limity liczby plików i rozpakowania DOCX. Serwer pozostaje dostępny.\n• Spóźniony wynik wczytania nie zastępuje nowego tekstu; uszkodzony dokument nie blokuje dalszej pracy.\n• Tryb pojedynczy legacy uruchamia wybrany model. Modele CPU ładowane na żądanie; opcjonalne ładowanie wstępne pozostaje dostępne.\n• Wynik i prawdopodobieństwo pojedynczego modelu zgodne z historią oraz JSON/CSV/HTML; eksport zawiera model i zakres analizy.\n• Stylo bez podświetlenia nie pokazuje NaN, wymyślonych udziałów ani twierdzenia o ludzkim autorstwie. Poprawiono brakujące wyniki i analizę zdań bez etykiet.\n• Niepewne zdania nie są eksportowane jako wyraźne sygnały AI; brak podświetlenia nie potwierdza ludzkiego autorstwa.\n• Tryb precyzyjny wymaga wszystkich modeli; interfejs resetuje niezgodny wybór, API odrzuca go przed ładowaniem. Routed obsługuje pełny zespół.\n• Zmiana tekstu, trybu lub modelu usuwa nieaktualny wynik; poprawiono pewność wyniku ludzkiego, zera, procenty i otwieranie historii.\n• Atomowy zapis ustawień, ochrona Origin/Host i iframe, zabezpieczenie CSV przed formułami oraz zasady historii, eksportu, katalogów i licencji.\n• Metro UI: płaskie kolory, prostokątne elementy, fokus klawiatury i ograniczony ruch. Historia / Pakiet / Porównanie na środku okna, w osobnym wierszu przy małej szerokości.\n• Limit czasu odpytywania stanu, brak ciągłego odrysowywania tłumaczeń, błędy aktualizacji bez blokującego okna.\n• Menu mobilne strony zamyka się klawiszem Escape, wyborem sekcji i kliknięciem poza nim; pełna lista zmian na stronie.\nWagi i kalibracje bez zmian."
+    }
+  },
+  {
+    "version": "2.0.2.4",
+    "date": "2026-10-03",
+    "title": {
+      "ru": "Верный вердикт и уверенность",
+      "pl": "Poprawny werdykt i pewność",
+      "en": "Correct verdict and confidence"
+    },
+    "notes": {
+      "ru": "Исправлено: надпись «Написан ИИ» не зависит от результата (теперь показывает настоящий вердикт); процент — это уверенность в показанном вердикте, у человеческих текстов больше не 80-90% «ИИ».",
+      "pl": "Naprawiono: napis „Napisane przez AI” nie zależy już od wyniku (pokazuje prawdziwy werdykt); procent to pewność pokazanego werdyktu, teksty ludzkie nie mają już 80-90% „AI”.",
+      "en": "Fixed: the Written by AI label no longer ignores the result (it shows the real verdict); the percentage is the confidence in the shown verdict, human texts no longer show 80-90% AI."
+    },
+    "notes_ru": "Исправлено: надпись «Написан ИИ» не зависит от результата (теперь показывает настоящий вердикт); процент — это уверенность в показанном вердикте, у человеческих текстов больше не 80-90% «ИИ»."
+  },
+  {
+    "version": "2.0.2.3",
+    "date": "2026-10-03",
+    "title": {
+      "ru": "Счётчики подсветки и единые эталоны",
+      "pl": "Liczniki podświetlenia i wspólne wzorce",
+      "en": "Highlight counters and consistent references"
+    },
+    "notes": {
+      "ru": "Исправлены счётчики ИИ / неясных / человека над подсветкой (показывали нули и не менялись при переключении вкладок); эталонный график в PDF-отчёте совпадает с панелью приложения.",
+      "pl": "Naprawiono liczniki AI / niepewnych / człowieka nad podświetleniem (pokazywały zera i nie zmieniały się po przełączeniu kart); wykres wzorcowy w raporcie PDF zgadza się z panelem aplikacji.",
+      "en": "Fixed the AI / uncertain / human counters above the highlight (they showed zeros and ignored tab switches); the reference chart in the PDF report now matches the app panel."
+    },
+    "notes_ru": "Исправлены счётчики ИИ / неясных / человека над подсветкой (показывали нули и не менялись при переключении вкладок); эталонный график в PDF-отчёте совпадает с панелью приложения."
+  },
+  {
+    "version": "2.0.2.2",
+    "date": "2026-10-03",
+    "title": {
+      "ru": "Быстрая проверка на видеокарте",
+      "pl": "Szybkie sprawdzanie na karcie graficznej",
+      "en": "Fast checks on the graphics card"
+    },
+    "notes": {
+      "ru": "Исправлен выбор видеокарты (проверка могла идти на встроенной графике и занимать минуты); длинные тексты считаются за секунды; новая проверка отменяет незаконченную.",
+      "pl": "Naprawiono wybór karty graficznej (sprawdzanie mogło działać na zintegrowanej grafice i trwać minuty); długie teksty liczą się w sekundy; nowe sprawdzenie anuluje niedokończone.",
+      "en": "Fixed the graphics card choice (checks could run on the integrated GPU and take minutes); long texts take seconds; a new check cancels an unfinished one."
+    },
+    "notes_ru": "Исправлен выбор видеокарты (проверка могла идти на встроенной графике и занимать минуты); длинные тексты считаются за секунды; новая проверка отменяет незаконченную."
+  },
+  {
+    "version": "2.0.2.1",
+    "date": "2026-10-03",
+    "title": {
+      "ru": "Без ограничения длины текста",
+      "pl": "Bez limitu długości tekstu",
+      "en": "No text length limit"
+    },
+    "notes": {
+      "ru": "Убран предел в 20 000 слов: можно проверять тексты любой длины (чем длиннее, тем дольше проверка).",
+      "pl": "Usunięto limit 20 000 słów: można sprawdzać teksty dowolnej długości (im dłuższy, tym dłużej trwa sprawdzanie).",
+      "en": "Removed the 20,000-word limit: texts of any length can be checked (the longer the text, the longer the check)."
+    },
+    "notes_ru": "Убран предел в 20 000 слов: можно проверять тексты любой длины (чем длиннее, тем дольше проверка)."
+  },
+  {
+    "version": "2.0.2",
+    "date": "2026-10-03",
+    "title": {
+      "ru": "Обновление в одно нажатие",
+      "pl": "Aktualizacja jednym kliknięciem",
+      "en": "One-click update"
+    },
+    "notes": {
+      "ru": "Исправлено обновление приложения: после загрузки появляется кнопка «Перезапустить и обновить», приложение само устанавливает новую версию и запускается заново.",
+      "pl": "Naprawiono aktualizację aplikacji: po pobraniu pojawia się przycisk „Uruchom ponownie i zaktualizuj”, aplikacja sama instaluje nową wersję i uruchamia się ponownie.",
+      "en": "Fixed the app update: after the download a Restart and update button appears, and the app installs the new version by itself and starts again."
+    },
+    "notes_ru": "Исправлено обновление приложения: после загрузки появляется кнопка «Перезапустить и обновить», приложение само устанавливает новую версию и запускается заново."
+  },
+  {
+    "version": "2.0.1",
+    "date": "2026-10-03",
+    "title": {
+      "ru": "Исправлен экспорт отчётов",
+      "pl": "Naprawiony eksport raportów",
+      "en": "Report export fixed"
+    },
+    "notes": {
+      "ru": "Кнопки экспорта (PDF, HTML, CSV, JSON, Markdown) в окне приложения теперь открывают окно «Сохранить как». Работает и в полном окне истории.",
+      "pl": "Przyciski eksportu (PDF, HTML, CSV, JSON, Markdown) w oknie aplikacji otwierają teraz okno „Zapisz jako”. Działa też w pełnym oknie historii.",
+      "en": "The export buttons (PDF, HTML, CSV, JSON, Markdown) in the app window now open a Save As dialog. This also works in the full history window."
+    },
+    "notes_ru": "Кнопки экспорта (PDF, HTML, CSV, JSON, Markdown) в окне приложения теперь открывают окно «Сохранить как». Работает и в полном окне истории."
+  },
+  {
+    "version": "2.0.0",
+    "date": "2026-10-03",
+    "title": {
+      "ru": "Linda-Pro 2.0: отчёты, обновления без переустановки, три языка",
+      "pl": "Linda-Pro 2.0: raporty, aktualizacje bez reinstalacji, trzy języki",
+      "en": "Linda-Pro 2.0: reports, updates without reinstalling, three languages"
+    },
+    "notes": {
+      "ru": "PDF-отчёт с графиками (а также HTML, CSV, JSON); обновления скачиваются в фоне, применяются после перезапуска, с откатом при сбое; интерфейс на русском, польском и английском; настройка внешнего вида (тема, акцент, плотность, шрифт, углы); для организаций: пакетная проверка папки, журнал аудита, политики в enterprise.json. Исправлен счётчик слов и символов. Модели не менялись.",
+      "pl": "Raport PDF z wykresami (a także HTML, CSV, JSON); aktualizacje pobierają się w tle i działają po restarcie, z wycofaniem przy błędzie; interfejs po polsku, rosyjsku i angielsku; ustawienia wyglądu (motyw, akcent, gęstość, czcionka, rogi); dla organizacji: sprawdzanie folderów, dziennik audytu, polityki w enterprise.json. Naprawiono licznik słów i znaków. Modele bez zmian.",
+      "en": "PDF report with charts (plus HTML, CSV, JSON); updates download in the background and apply after a restart, with rollback on failure; interface in Russian, Polish and English; appearance settings (theme, accent, density, font, corners); for organizations: folder batch checks, audit log, policies in enterprise.json. Fixed the word and character counter. The models are unchanged."
+    },
+    "notes_ru": "PDF-отчёт с графиками (а также HTML, CSV, JSON); обновления скачиваются в фоне, применяются после перезапуска, с откатом при сбое; интерфейс на русском, польском и английском; настройка внешнего вида; для организаций: пакетная проверка папки, журнал аудита, политики в enterprise.json. Исправлен счётчик слов и символов. Модели не менялись."
+  },
+  {
+    "version": "1.2.1",
+    "date": "2026-09-28",
+    "title": {
+      "ru": "Кабинет 2.0",
+      "pl": "Gabinet 2.0",
+      "en": "Cabinet 2.0"
+    },
+    "notes": {
+      "ru": "Кабинет: история с папками, пакетная проверка, сравнение документов; тихие обновления с откатом.",
+      "pl": "Gabinet: historia z folderami, sprawdzanie wsadowe, porównywanie dokumentów; ciche aktualizacje z wycofywaniem.",
+      "en": "Cabinet: history with folders, batch checks, document comparison; quiet updates with rollback."
+    },
+    "notes_ru": "Кабинет: история с папками, пакетная проверка, сравнение документов; тихие обновления с откатом."
+  },
+  {
+    "version": "1.2.0",
+    "date": "2026-09-12",
+    "title": {
+      "ru": "Структура и аналитика",
+      "pl": "Struktura i analityka",
+      "en": "Structure and analytics"
+    },
+    "notes": {
+      "ru": "Структура текста и аналитика рядом с вердиктом; журнал истории локально на компьютере.",
+      "pl": "Struktura tekstu i analityka obok werdyktu; dziennik historii lokalnie na komputerze.",
+      "en": "Text structure and analytics next to the verdict; history log stored locally on your computer."
+    },
+    "notes_ru": "Структура текста и аналитика рядом с вердиктом; журнал истории локально на компьютере."
+  },
+  {
+    "version": "1.1.0",
+    "date": "2026-08-20",
+    "title": {
+      "ru": "Ансамбль из трёх моделей",
+      "pl": "Zespół trzech modeli",
+      "en": "Three-model ensemble"
+    },
+    "notes": {
+      "ru": "Ансамбль из трёх моделей, режимы Sensitive/Precise, офлайн-работа после загрузки моделей.",
+      "pl": "Zespół trzech modeli, tryby Sensitive/Precise, praca offline po pobraniu modeli.",
+      "en": "Three-model ensemble, Sensitive/Precise modes, offline work after downloading the models."
+    },
+    "notes_ru": "Ансамбль из трёх моделей, режимы Sensitive/Precise, офлайн-работа после загрузки моделей."
+  }
+]

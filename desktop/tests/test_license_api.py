@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from linda_desktop import config, licensing
+from linda_desktop.engine import DEFAULT_SETTINGS
 from linda_desktop.app import Core, create_app
 
 TOKEN = "t0k"
@@ -139,7 +140,7 @@ def test_download_through_api_and_settings(client, repo):
             break
         time.sleep(0.1)
     assert s["download"]["phase"] == "done" and s["models_ready"] and s["installed_version"] == "1.1.0"
-    assert client.post("/api/settings", json={"sentences": "windows", "device": "cpu"}).json()["settings"] == {"sentences": "windows", "device": "cpu"}
+    assert client.post("/api/settings", json={"sentences": "windows", "device": "cpu"}).json()["settings"] == {"sentences": "windows", "device": "cpu", **DEFAULT_SETTINGS, "gpu_map": 2}
     assert client.post("/api/app/update").status_code == 409  # no app update announced
 
 

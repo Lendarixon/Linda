@@ -9,6 +9,8 @@ from . import __version__
 
 APP_NAME = "Linda-Pro"
 APP_VERSION = __version__
+DEV_INSTALLER_ENABLED = False
+DEV_APP_ID = 'B2701632-0C56-438F-B07E-9355CABF191A'
 
 # Where the weights and the update manifest live. LINDA_BASE_URL overrides it (tests, mirrors).
 HF_REPO = "Lindarixon/Linda-Pro"
@@ -30,7 +32,7 @@ CONTACT_EMAIL = "lindapro.support@proton.me"
 REVALIDATE_DAYS = 7
 
 UPDATE_CHECK_HOURS = 24
-MAX_WORDS = 20000
+MAX_WORDS = None  # верхнего предела длины нет (раньше 20 000); окна расширяются сами, время растёт линейно
 MIN_WORDS = 20
 
 
@@ -40,6 +42,66 @@ def data_dir() -> Path:
     base = Path(env) if env else Path(os.environ.get("LOCALAPPDATA") or Path.home() / ".local" / "share") / APP_NAME
     base.mkdir(parents=True, exist_ok=True)
     return base
+
+
+# Корпоративные политики (только чтение, без сети): значения по умолчанию,
+# поверх — %PROGRAMDATA%\Linda-Pro\enterprise.json (ставит админ), поверх —
+# enterprise.json в папке данных, старые policy.json читаются так же.
+ENTERPRISE_DEFAULTS = {
+    "org_name": "", "disable_export": False, "disable_history": False,
+    "require_license": False, "audit_retention_days": 365,
+    "max_batch_files": 200, "allowed_dirs": [],
+}
+
+
+def program_data_dir() -> Path:
+    r"""Общая папка политик: %PROGRAMDATA%\Linda-Pro (LINDA_PROGRAMDATA overrides, для тестов)."""
+    env = os.environ.get("LINDA_PROGRAMDATA")
+    if env:
+        return Path(env)
+    if os.name == "nt":
+        return Path(os.environ.get("PROGRAMDATA") or r"C:\ProgramData") / APP_NAME
+    return Path("/etc") / "linda-pro"
+
+
+def _read_json(path: Path) -> dict:
+    try:
+        if path.is_file():
+            d = __import__("json").loads(path.read_text(encoding="utf-8"))
+            return d if isinstance(d, dict) else {}
+    except Exception:  # noqa: BLE001 — битый файл политик не роняет приложение
+        pass
+    return {}
+
+
+def enterprise() -> dict:
+    """Итоговые корпоративные политики (дефолт + enterprise.json + старый policy.json)."""
+    pol = dict(ENTERPRISE_DEFAULTS)
+    # Политики администратора имеют приоритет: пользовательский файл не ослабляет запрет экспорта/лицензию.
+    for p in (data_dir() / "policy.json", data_dir() / "enterprise.json",
+              program_data_dir() / "policy.json", program_data_dir() / "enterprise.json"):
+        for k, v in _read_json(p).items():
+            if k in pol:
+                pol[k] = v
+    try:
+        pol["max_batch_files"] = min(max(int(pol["max_batch_files"]), 1), 1000)
+        pol["audit_retention_days"] = min(max(int(pol["audit_retention_days"]), 0), 3650)
+    except (TypeError, ValueError):
+        pol["max_batch_files"], pol["audit_retention_days"] = 200, 365
+    return pol
+
+
+def enterprise_allows_path(path: str) -> bool:
+    """Разрешён ли каталог политикой allowed_dirs (пустой список — разрешено всё)."""
+    allowed = enterprise().get("allowed_dirs") or []
+    if not allowed:
+        return True
+    # Нормализация .. и junction: строковый префикс позволял выйти за разрешённую папку.
+    try:
+        target = Path(path).resolve()
+        return any(target.is_relative_to(Path(a).resolve()) for a in allowed)
+    except (OSError, ValueError, TypeError):
+        return False
 
 
 def resource_dir() -> Path:

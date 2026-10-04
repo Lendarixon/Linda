@@ -48,7 +48,12 @@ def test_windows_mode_gives_each_model_its_own_probability(eng):
     assert 25 <= r["sentence_stats"]["ai"] <= 35 and 25 <= r["sentence_stats"]["human"] <= 35
 
 
-def test_consensus_uses_selected_models_only(eng):
+def test_consensus_uses_selected_models_only(eng,monkeypatch):
+    FakeDet.window_words,FakeDet.max_windows = 300,12
+    class MultiVoter:
+        def margins(self,texts):
+            return [10.5 if 'Sentence number 59' in text else .5 for text in texts]
+    monkeypatch.setattr(FakeDet,'_factory',lambda self,key:MultiVoter(),raising=False)
     both = eng.run(text_of(), "sensitive")["sentences"][-1]["p_ai"]
     only_multi = eng.run(text_of(), "sensitive", ["linda_multi_v2"])["sentences"][-1]["p_ai"]
     assert both > 0.9 and only_multi > 0.9
@@ -59,7 +64,7 @@ def test_auto_mode_is_hybrid(eng):
     engine.save_settings({"sentences": "auto"})
     assert eng.sentence_mode(500) == "hybrid" and eng.sentence_mode(701) == "hybrid"
     eng.device = "cuda"
-    assert eng.sentence_mode(9000) == "hybrid"
+    assert eng.sentence_mode(1500) == "hybrid" and eng.sentence_mode(9000) == "context" and eng.sentence_mode(300000) == "context"  # длинные тексты: по опорным предложениям
     engine.save_settings({"sentences": "windows"})
     assert eng.sentence_mode(10) == "windows"
     engine.save_settings({"sentences": "full"})

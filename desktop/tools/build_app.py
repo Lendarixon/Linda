@@ -1,25 +1,25 @@
-# -*- coding: utf-8 -*-
-"""Builds the Windows application folder dist/Linda-Pro with PyInstaller (no console window).
-    python tools/build_app.py"""
+"""Build only the isolated Dev executable; no production paths or signing material."""
+import os
 import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-args = [sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--name", "Linda-Pro", "--noconsole", "--onedir",
-        "--icon", str(ROOT / "assets" / "linda.ico"),
-        "--add-data", f"{ROOT / 'web'};web",
-        "--add-data", f"{ROOT / 'linda_desktop' / 'data'};linda_desktop/data",
-        "--add-data", f"{ROOT / 'linda_pro' / '_vendor' / 'aidetector' / 'patterns'};linda_pro/_vendor/aidetector/patterns",
-        "--collect-submodules", "uvicorn", "--collect-submodules", "linda_pro", "--collect-submodules", "linda_desktop",
-        "--collect-submodules", "transformers.models.deberta_v2", "--collect-submodules", "transformers.models.deberta",
-        "--collect-all", "webview", "--collect-all", "lightgbm", "--collect-all", "pythonnet",
-        "--collect-all", "onnxruntime", "--collect-submodules", "onnx", "--hidden-import", "onnx",
-        "--hidden-import", "sklearn.feature_extraction.text", "--hidden-import", "sklearn.preprocessing", "--hidden-import", "scipy.sparse",
-        "--hidden-import", "tiktoken_ext.openai_public", "--hidden-import", "tiktoken_ext", "--hidden-import", "multipart",
-        "--exclude-module", "matplotlib", "--exclude-module", "tkinter", "--exclude-module", "IPython", "--exclude-module", "pytest",
-        ]
-for pkg in ("tqdm", "regex", "requests", "packaging", "filelock", "numpy", "tokenizers", "safetensors", "huggingface_hub", "torch", "onnx", "onnxruntime-directml", "transformers", "pyyaml", "python-docx", "pypdf", "fastapi", "starlette", "pydantic", "uvicorn"):
-    args += ["--copy-metadata", pkg]
-args.append(str(ROOT / "run_app.py"))
-sys.exit(subprocess.call(args, cwd=ROOT))
+root = Path(__file__).resolve().parents[1]
+os.environ.update(OMP_NUM_THREADS='6', MKL_NUM_THREADS='6', OPENBLAS_NUM_THREADS='6')
+args = [sys.executable, '-m', 'PyInstaller', '--noconfirm', '--name', 'Linda-Pro', '--noconsole', '--onedir',
+        '--distpath', str(root/'dist'), '--workpath', str(root/'build'), '--specpath', str(root/'build'),
+        '--icon', str(root/'assets/linda.ico')]
+for relative in ('web', 'assets', 'linda_desktop/data', 'linda_pro/_vendor/aidetector/patterns'):
+    args += ['--add-data', f'{root/relative};{relative}']
+for module in ('uvicorn','linda_pro','linda_desktop','transformers.models.deberta_v2','transformers.models.deberta','onnx'):
+    args += ['--collect-submodules', module]
+for module in ('webview','lightgbm','pythonnet','onnxruntime'):
+    args += ['--collect-all',module]
+for module in ('onnx','fpdf','sklearn.feature_extraction.text','sklearn.preprocessing','scipy.sparse','tiktoken_ext.openai_public','tiktoken_ext','multipart'):
+    args += ['--hidden-import',module]
+for module in ('matplotlib','tkinter','IPython','pytest'):
+    args += ['--exclude-module',module]
+for package in ('tqdm','regex','requests','packaging','filelock','numpy','tokenizers','safetensors','huggingface_hub','torch','onnx','onnxruntime-directml','transformers','pyyaml','python-docx','pypdf','fpdf2','fastapi','starlette','pydantic','uvicorn'):
+    args += ['--copy-metadata',package]
+args.append(str(root/'run_app.py'))
+raise SystemExit(subprocess.call(args, cwd=root))

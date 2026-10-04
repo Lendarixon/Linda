@@ -25,13 +25,15 @@ def available() -> bool:
         return False
 
 
-def export(model_dir: Path, out_dir: Path, max_len: int) -> Path:
-    """Export model_dir (HF sequence classifier) to out_dir/model.onnx for sequences of exactly max_len tokens (batch is dynamic)."""
+def export(model_dir: Path, out_dir: Path, max_len: int, fp16: bool = False) -> Path:
+    """Export model_dir (HF sequence classifier) to out_dir/model.onnx for sequences of exactly max_len tokens (batch is dynamic).
+    fp16=True halves the weights (Essay ~0.87 GB instead of 1.7 GB): the 2.0 voters have to fit a 4 GB card; the inputs stay int64, the logits are cast to float32 on read."""
     import torch
     from transformers import AutoModelForSequenceClassification
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    model = AutoModelForSequenceClassification.from_pretrained(str(model_dir)).eval().float()
+    model = AutoModelForSequenceClassification.from_pretrained(str(model_dir)).eval()
+    model = model.half() if fp16 else model.float()
     ids = torch.ones((1, max_len), dtype=torch.long)
     ids[0, 0] = 1
     mask = torch.ones((1, max_len), dtype=torch.long)
@@ -45,14 +47,15 @@ def export(model_dir: Path, out_dir: Path, max_len: int) -> Path:
         except TypeError:  # older torch without the dynamo switch
             torch.onnx.export(model, (ids, mask), str(tmp), **kw)
     tmp.replace(target)
-    (out_dir / "meta.json").write_text(json.dumps({"max_len": max_len, "source": str(model_dir.name)}), encoding="utf-8")
+    (out_dir / "meta.json").write_text(json.dumps({"max_len": max_len, "source": str(model_dir.name), "dtype": "fp16" if fp16 else "fp32"}), encoding="utf-8")
     return target
 
 
 class OnnxSeqCls:
     """Drop-in replacement of FastSeqCls (margins / close) that runs on the GPU through DirectML."""
 
-    def __init__(self, model_dir: str | Path, cache_dir: str | Path, device_id: int = 0):
+    def __init__(self, model_dir: str | Path, cache_dir: str | Path, device_id: int = 0, fp16: bool = False):
+        self.fp16 = fp16
         self.model_dir = Path(model_dir)
         self.cache = Path(cache_dir) / self.model_dir.name
         self.device_id = device_id
@@ -66,11 +69,17 @@ class OnnxSeqCls:
 
         onnx_path = self.cache / "model.onnx"
         meta = self.cache / "meta.json"
-        ok = onnx_path.exists() and meta.exists() and json.loads(meta.read_text(encoding="utf-8")).get("max_len") == self.max_len
+        m = json.loads(meta.read_text(encoding="utf-8")) if meta.exists() else {}
+        ok = onnx_path.exists() and m.get("max_len") == self.max_len and m.get("dtype", "fp32") == ("fp16" if self.fp16 else "fp32")
         if not ok:
-            export(self.model_dir, self.cache, self.max_len)
+            export(self.model_dir, self.cache, self.max_len, fp16=self.fp16)
         self.tok = AutoTokenizer.from_pretrained(str(self.model_dir))
         so = ort.SessionOptions()
+        so.intra_op_num_threads = 6
+        so.inter_op_num_threads = 1
+        so.add_session_config_entry('session.intra_op.allow_spinning','0')
+        so.enable_mem_pattern = False
+        so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
         so.log_severity_level = 3
         self.sess = ort.InferenceSession(str(onnx_path), sess_options=so, providers=[("DmlExecutionProvider", {"device_id": self.device_id}), "CPUExecutionProvider"])
 
@@ -97,7 +106,10 @@ class OnnxSeqCls:
                 owner.append(i)
         L, pad = self.max_len, tok.pad_token_id
         z = np.zeros(len(wins))
+        from linda_pro.voters import check_cancel
+
         for b in range(0, len(wins), MAX_BATCH):
+            check_cancel()
             chunk = wins[b: b + MAX_BATCH]
             ids = np.full((len(chunk), L), pad, dtype=np.int64)
             mask = np.zeros((len(chunk), L), dtype=np.int64)

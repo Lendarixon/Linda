@@ -71,7 +71,7 @@ def test_api_saves_and_serves_history(home, monkeypatch):
         def probe_gpu(self):
             pass
 
-        def run(self, text, mode, models):
+        def run(self, text, mode, models, cancellable=False, cancel=None):
             return res(["ai", "human"], "ai")
 
         def info(self):

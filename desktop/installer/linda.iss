@@ -1,13 +1,16 @@
 ; Linda-Pro installer (Inno Setup 6). Per-user install: no administrator rights needed, installs to %LOCALAPPDATA%\Programs\Linda-Pro.
 ; Build:  tools\InnoSetup\ISCC.exe installer\linda.iss   (after tools\build_app.py)
 ; Silent update (used by the app itself):  Linda-Setup.exe /SILENT /SUPPRESSMSGBOXES /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS
+; Corporate rollout (тихая установка по сети): Linda-Setup.exe /SILENT /SUPPRESSMSGBOXES /NORESTART /TASKS="" /DIR="C:\Program Files\Linda-Pro"
+;   Policies for all users: %PROGRAMDATA%\Linda-Pro\enterprise.json (org_name, disable_export, disable_history,
+;   require_license, audit_retention_days, max_batch_files, allowed_dirs) — читается приложением при старте.
 #ifdef TestInstall
   #define AppName "Linda-Pro (test)"
 #else
   #define AppName "Linda-Pro"
 #endif
 #ifndef AppVersion
-  #define AppVersion "1.2.1"
+  #define AppVersion "2.0.2.17"
 #endif
 
 [Setup]
@@ -41,7 +44,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 LicenseFile=..\installer\EULA.txt
 CloseApplications=yes
-RestartApplications=yes
+RestartApplications=no
 UsePreviousAppDir=yes
 
 [Languages]

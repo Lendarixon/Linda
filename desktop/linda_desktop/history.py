@@ -30,12 +30,40 @@ def _db():
     try:
         con.execute(SCHEMA)
         con.execute("CREATE TABLE IF NOT EXISTS folders (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, color TEXT, ts REAL NOT NULL)")
+        con.execute("CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL NOT NULL, action TEXT NOT NULL, detail TEXT NOT NULL DEFAULT '')")
         if "folder_id" not in {r[1] for r in con.execute("PRAGMA table_info(checks)")}:  # databases made by 1.2 before folders existed
             con.execute("ALTER TABLE checks ADD COLUMN folder_id INTEGER")
         yield con
         con.commit()
     finally:
         con.close()
+
+
+def audit(action: str, detail: str = "") -> int:
+    """Записать событие в журнал аудита (для корпоративных клиентов): кто/что/когда, локально."""
+    with _LOCK, _db() as con:
+        cur = con.execute("INSERT INTO audit (ts, action, detail) VALUES (?,?,?)",
+                          (time.time(), str(action)[:60], str(detail)[:2000]))
+        return int(cur.lastrowid)
+
+
+def audit_list(action: str = "", limit: int = 200, offset: int = 0) -> list[dict]:
+    """Прочитать журнал аудита: новые первыми. action='' — все действия."""
+    sql, args = "SELECT id, ts, action, detail FROM audit", []
+    if action:
+        sql += " WHERE action = ?"
+        args.append(action)
+    sql += " ORDER BY id DESC LIMIT ? OFFSET ?"
+    with _LOCK, _db() as con:
+        return [dict(r) for r in con.execute(sql, (*args, min(max(int(limit), 1), 1000), max(int(offset), 0)))]
+
+
+def audit_clear() -> int:
+    """Очистить журнал аудита (действие само фиксируется отдельной записью после очистки)."""
+    with _LOCK, _db() as con:
+        n = con.execute("DELETE FROM audit").rowcount
+    audit("audit_clear", "журнал очищен (%d записей)" % n)
+    return n
 
 
 def _pack(obj) -> bytes:
@@ -56,13 +84,13 @@ def _title(text: str, filename: str | None) -> str:
 def add(text: str, res: dict, mode: str, title: str | None = None, filename: str | None = None, folder_id: int | None = None) -> int:
     sent = res.get("sentences") or []
     tot = sum(max(1, len(s["text"].split())) for s in sent) or 1
-    ai_share = sum(max(1, len(s["text"].split())) for s in sent if s.get("label") == "ai") / tot
+    ai_share = sum(max(1, len(s["text"].split())) for s in sent if s.get("label") == "ai") / tot if res.get('heatmap_available',True) else None
     pct = None
-    if res.get("ens_z") is not None:
+    if res.get("p_ai") is not None or res.get("ens_z") is not None:
         import math
 
-        pct = min(99, max(1, round(100 / (1 + math.exp(-1.7 * float(res["ens_z"]))))))
-    row = (time.time(), (title or _title(text, filename))[:200], filename, mode, res.get("verdict"), pct, round(ai_share, 4),
+        pct = min(99, max(1, round(float(res["p_ai"]) * 100))) if res.get("p_ai") is not None else min(99, max(1, round(100 / (1 + math.exp(-1.7 * float(res["ens_z"]))))))
+    row = (time.time(), (title or _title(text, filename))[:200], filename, mode, res.get("verdict"), pct, round(ai_share, 4) if ai_share is not None else None,
            (res.get("authorship") or {}).get("label"), len(text.split()), hashlib.sha256(text.encode("utf-8")).hexdigest(),
            zlib.compress(text.encode("utf-8"), 6), _pack(res), folder_id or None)
     with _LOCK, _db() as con:

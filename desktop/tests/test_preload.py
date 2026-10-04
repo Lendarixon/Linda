@@ -14,6 +14,7 @@ def make(monkeypatch, complete=True):
     calls = []
     monkeypatch.setattr(updater, "is_complete", lambda *a, **k: complete)
     monkeypatch.setattr(core.engine, "ensure_loaded", lambda: calls.append(1) or {"x": 1})
+    monkeypatch.setattr(core.engine, "_load_voters", lambda dets: calls.append(2))
     return core, calls
 
 
@@ -23,11 +24,10 @@ def wait(calls, n=1, t=3.0):
         time.sleep(0.02)
 
 
-def test_preload_on_by_default(repo, monkeypatch):
+def test_preload_off_by_default_for_on_demand_loading(repo, monkeypatch):
     core, calls = make(monkeypatch)
-    assert core.preload() is True
-    wait(calls)
-    assert calls == [1]
+    assert core.preload() is False
+    assert calls == []
 
 
 def test_preload_can_be_switched_off(repo, monkeypatch):
@@ -45,15 +45,15 @@ def test_switching_on_loads_immediately(repo, monkeypatch):
     c = TestClient(create_app(core, token=TOKEN), headers={"x-linda-token": TOKEN})
     c.post("/api/settings", json={"preload": False})
     c.post("/api/settings", json={"preload": True})
-    wait(calls)
-    assert calls == [1]
+    wait(calls,2)
+    assert calls == [1,2]
 
 
 def test_no_preload_without_models_and_bad_value_ignored(repo, monkeypatch):
     core, calls = make(monkeypatch, complete=False)
     assert core.preload() is False
     c = TestClient(create_app(core, token=TOKEN), headers={"x-linda-token": TOKEN})
-    assert "preload" not in c.post("/api/settings", json={"preload": "yes"}).json()["settings"]
+    assert c.post("/api/settings", json={"preload": "yes"}).json()["settings"]["preload"] is False
     time.sleep(0.2)
     assert calls == []
 
@@ -72,15 +72,15 @@ def test_gpu_probe_and_safe_fallback(monkeypatch):
     # no GPU at all
     fake_torch(False)
     monkeypatch.setattr(onnx_gpu, "available", lambda: False)
-    assert engine.gpu_probe() == {"available": False, "backend": None, "name": "", "discrete": False}
+    assert engine.gpu_probe() == {"available": False, "backend": None, "name": "", "names": [], "discrete": False}
     assert engine.pick_device("cuda") == "cpu" and engine.pick_device("auto") == "cpu" and engine.pick_device("cpu") == "cpu"  # asking for a GPU never breaks the app
     # the Windows installer: CPU torch, but DirectML through ONNX Runtime
     monkeypatch.setattr(onnx_gpu, "available", lambda: True)
-    assert engine.gpu_probe() == {"available": True, "backend": "DirectML", "name": "AMD Radeon RX 9070 XT", "discrete": True}
+    assert engine.gpu_probe() == {"available": True, "backend": "DirectML", "name": "AMD Radeon RX 9070 XT", "names": ["AMD Radeon RX 9070 XT"], "discrete": True}
     assert engine.pick_device("auto") == "dml" and engine.pick_device("cuda") == "dml" and engine.pick_device("cpu") == "cpu"
     # development installs with a torch GPU backend win over DirectML
     fake_torch(True, hip="6.4", name="AMD Radeon RX 9070 XT")
-    assert engine.gpu_probe() == {"available": True, "backend": "ROCm", "name": "AMD Radeon RX 9070 XT", "discrete": True}
+    assert engine.gpu_probe() == {"available": True, "backend": "ROCm", "name": "AMD Radeon RX 9070 XT", "names": ["AMD Radeon RX 9070 XT"], "discrete": True}
     assert engine.pick_device("auto") == "cuda"
     fake_torch(True, hip=None, name="NVIDIA GeForce RTX 4060")
     assert engine.gpu_probe()["backend"] == "CUDA"

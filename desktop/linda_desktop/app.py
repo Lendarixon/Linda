@@ -3,55 +3,75 @@
 from __future__ import annotations
 
 import hmac
+import base64
+import asyncio
 import io
+import json
 import os
 import secrets
 import subprocess
+import sys
 import threading
 import time
 from pathlib import Path
 
 from fastapi import FastAPI, File, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
+from starlette.concurrency import run_in_threadpool
 
-from . import analytics, config, history, licensing, structure, updater
-from .engine import Engine, load_settings, save_settings
+from . import analytics, config, history, licensing, report, structure, updater, restart_draft
+from . import i18n as ui18n
+from .documents import extract
+from linda_pro.voters import Cancelled
+from .engine import DEFAULT_SETTINGS, Engine, load_settings, save_settings
+from .engine import UI_ACCENTS, UI_DENSITIES, UI_FONT_SCALES, UI_LANGUAGES, UI_RADII, UI_SIDEBARS, UI_THEMES
 
 MAX_UPLOAD = 20_000_000
 
 
 def launch_installer(path: Path) -> None:
-    """Start the silent installer AFTER this process has exited: Setup cannot close a windowless app by itself and would cancel the update, so a detached
-    shell waits ~3 s first. /RELAUNCH=1 makes Setup start the new version when it is done; its log is kept in the data folder."""
+    """A detached helper waits for this PID to exit, installs silently, and relaunches.
+    A failed installer brings the existing executable back; logs stay in the data folder."""
     log = config.data_dir() / "update_setup.log"
-    cmd = f'cmd /c "ping -n 4 127.0.0.1 >nul & "{path}" /SILENT /SUPPRESSMSGBOXES /CLOSEAPPLICATIONS /FORCECLOSEAPPLICATIONS /RELAUNCH=1 /LOG="{log}""'
-    flags = 0x08000000 | 0x00000200  # CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP
     note = config.data_dir() / "update_launch.log"
+    failure = config.data_dir() / 'update_failure.json'
+    ready = path.parent / updater.INSTALLER_READY_NAME
+    # Encoded PowerShell avoids cmd metacharacter expansion in paths. The helper
+    # waits for the actual app PID, rather than guessing how long shutdown takes.
+    literal = lambda value: "'" + str(value).replace("'", "''") + "'"
+    arguments = ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CLOSEAPPLICATIONS', '/RELAUNCH=1', f'/LOG="{log}"']
+    if os.environ.get('LINDA_DEV') == '1':
+        if not config.DEV_INSTALLER_ENABLED or Path(sys.executable).name != 'Linda-Pro Dev.exe':
+            raise RuntimeError('Only the packaged Dev app can install a Dev update')
+        arguments.append(f'/DIR="{Path(sys.executable).parent}"')
+    script = f"""$ErrorActionPreference = 'Stop'
+$owner = {os.getpid()}
+$note = {literal(note)}
+try {{
+    if (Get-Process -Id $owner -ErrorAction SilentlyContinue) {{ Wait-Process -Id $owner -Timeout 60 -ErrorAction Stop }}
+    $setup = Start-Process -FilePath {literal(path)} -ArgumentList @({','.join(literal(a) for a in arguments)}) -PassThru -WindowStyle Hidden
+    $setup.WaitForExit()
+    if ($setup.ExitCode -ne 0) {{ throw "Installer exit code $($setup.ExitCode)" }}
+    Remove-Item -LiteralPath {literal(failure)} -ErrorAction SilentlyContinue
+    Add-Content -LiteralPath $note -Value 'Installer finished successfully' -Encoding UTF8
+}} catch {{
+    $failureMessage = $_.Exception.Message
+    Add-Content -LiteralPath $note -Value $failureMessage -Encoding UTF8
+    if (Test-Path -LiteralPath {literal(ready)}) {{ Move-Item -LiteralPath {literal(ready)} -Destination {literal(path.parent / 'INSTALLER_FAILED')} -Force }}
+    $failureJson = @{{version={literal(path.parent.name)};error=$failureMessage;ts=[DateTimeOffset]::UtcNow.ToUnixTimeSeconds()}} | ConvertTo-Json
+    [IO.File]::WriteAllText({literal(failure)}, $failureJson, [Text.UTF8Encoding]::new($false))
+    if (-not (Get-Process -Id $owner -ErrorAction SilentlyContinue)) {{ Start-Process -FilePath {literal(sys.executable)} -WindowStyle Normal }}
+    exit 1
+}}
+"""
+    cmd = ['powershell.exe', '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-EncodedCommand', base64.b64encode(script.encode('utf-16le')).decode('ascii')]
+    flags = 0x08000000 | 0x00000200  # CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP
     try:
         pr = subprocess.Popen(cmd, creationflags=flags | 0x01000000, close_fds=True)  # + CREATE_BREAKAWAY_FROM_JOB
-        note.write_text("started pid %s (breakaway)\n%s\n" % (pr.pid, cmd), encoding="utf-8")
+        note.write_text("started helper pid %s (breakaway)\n" % pr.pid, encoding="utf-8")
     except OSError as e:  # the job does not allow breakaway
         pr = subprocess.Popen(cmd, creationflags=flags, close_fds=True)
-        note.write_text("started pid %s (no breakaway: %s)\n%s\n" % (pr.pid, e, cmd), encoding="utf-8")
-
-
-def extract(filename: str, content: bytes) -> str:
-    ext = Path(filename).suffix.lower()
-    if ext in (".txt", ".md", ".text", ""):
-        try:
-            return content.decode("utf-8-sig")
-        except UnicodeDecodeError:
-            return content.decode("cp1252", errors="replace")
-    if ext == ".docx":
-        import docx
-
-        return "\n\n".join(p.text for p in docx.Document(io.BytesIO(content)).paragraphs if p.text.strip())
-    if ext == ".pdf":
-        import pypdf
-
-        pages = [(pg.extract_text() or "").strip() for pg in pypdf.PdfReader(io.BytesIO(content)).pages]
-        return "\n\n".join(p for p in pages if p)
-    raise ValueError("Supported formats: .txt, .md, .docx, .pdf")
+        note.write_text("started helper pid %s (no breakaway: %s)\n" % (pr.pid, e), encoding="utf-8")
 
 
 class Core:
@@ -60,6 +80,7 @@ class Core:
     def __init__(self) -> None:
         self.engine = Engine()
         self.job = updater.Job()
+        self.job.apply_lock = self.engine.lock
         self.job.on_done = lambda m: (self.engine.unload(), self.preload())  # new weights: drop the old ones and, if enabled, load the new ones right away
         self.manifest: dict | None = None
         self.manifest_raw: bytes = b""
@@ -67,6 +88,38 @@ class Core:
         self.update_error = ""
         self.checked_at = 0.0
         self.installer_job = {"phase": "idle", "done": 0, "total": 0, "error": ""}
+        self.installer_cancel = threading.Event()  # отмена фоновой загрузки инсталлера (без зависаний)
+        self.installer_lock = threading.Lock()
+        self.settings_lock = threading.Lock()
+        self.folder_lock = threading.Lock()
+        self.folder_cancel = threading.Event()
+        self.batch_cancel = threading.Event()
+        self.checks_lock = threading.Lock()
+        self.active_checks = {}  # job_id -> (client_id, cancel event)
+        self.active_requests = 0
+        self.cancelled_checks = {}  # cancellation may arrive before the worker request
+        try:
+            failed = json.loads((config.data_dir() / 'update_failure.json').read_text(encoding='utf-8'))
+            if isinstance(failed, dict) and failed.get('error'):
+                self.installer_job.update(phase='error', error=str(failed['error'])[:2000])
+        except (OSError, ValueError):
+            pass
+        try:  # порядок видеокарт в списке изменился (дискретные первыми, как в DirectML): старый номер мог указывать на встроенную графику
+            _cur = load_settings()
+            if _cur.get("gpu_map") != 2:
+                _cur["gpu_map"] = 2
+                if int(_cur.get("gpu_index", 0) or 0) != 0:
+                    _cur["gpu_index"] = 0
+                save_settings(_cur)
+        except Exception:  # noqa: BLE001
+            pass
+        self.update_pending: dict | None = None  # {"version": ..., "staging": ...} — ждёт перезапуска
+        try:  # инсталлер, скачанный в прошлый раз, но не установленный: баннер «Перезапустите» остаётся
+            _st = updater.staged_installer()
+            if _st:
+                self.update_pending = {"version": _st["version"], "staging": _st["staging"]}
+        except Exception:  # noqa: BLE001
+            pass
 
     def check_updates(self) -> None:
         try:
@@ -79,14 +132,17 @@ class Core:
         self.checked_at = time.time()
 
     def preload(self) -> bool:
-        """Load the models into memory in the background (setting "preload", on by default) so that the first analysis is fast. Returns True if a load was started."""
+        """Optional explicit background warmup. Default CPU loading is on demand."""
         if not load_settings().get("preload", True) or self.engine.dets is not None or not updater.is_complete():
             return False
 
         def work():
             try:
                 with self.engine.lock:
-                    self.engine.ensure_loaded()
+                    detectors = self.engine.ensure_loaded()
+                    self.engine.state = {'phase':'loading','error':''}
+                    self.engine._load_voters(detectors)
+                    self.engine.state = {'phase':'ready','error':''}
             except Exception as e:  # noqa: BLE001
                 self.engine.state = {"phase": "error", "error": f"{type(e).__name__}: {e}"}
 
@@ -118,6 +174,8 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
     html = (config.resource_dir() / "web" / "index.html").read_text(encoding="utf-8")
     cabinet = (config.resource_dir() / "web" / "cabinet.html").read_text(encoding="utf-8")  # history, batch and compare views
     html = html.replace("</body>", cabinet + "\n</body>", 1)
+    metro = (config.resource_dir() / "web" / "metro-dev.css").read_text(encoding="utf-8")
+    html = html.replace("</head>", "<style>" + metro + "</style></head>", 1)
 
     @api.middleware("http")
     async def guard(request: Request, call_next):
@@ -126,13 +184,32 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             return JSONResponse({"detail": "forbidden"}, status_code=403)
         if request.url.path.startswith("/api/") and not hmac.compare_digest(request.headers.get("x-linda-token", ""), token):
             return JSONResponse({"detail": "forbidden"}, status_code=403)
+        origin = request.headers.get("origin")
+        if request.url.path.startswith("/api/") and origin and origin != str(request.base_url).rstrip("/"):
+            return JSONResponse({"detail": "forbidden"}, status_code=403)
         resp = await call_next(request)
         resp.headers["Cache-Control"] = "no-store"
         resp.headers["X-Content-Type-Options"] = "nosniff"
+        resp.headers["X-Frame-Options"] = "DENY"
+        resp.headers["Content-Security-Policy"] = "frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
         return resp
 
     def err(msg: str, code: int = 400):
         return JSONResponse({"detail": msg}, status_code=code)
+
+    def terr(key: str, code: int = 400, *args):
+        """Ошибка бэкенда на языке интерфейса из настроек (задача E)."""
+        try:
+            lang = ui18n.resolve_lang(load_settings())
+        except Exception:  # noqa: BLE001
+            lang = ui18n.DEFAULT_LANG
+        return err(ui18n.tr(key, lang, *args), code)
+
+    @api.get("/api/i18n/{lang}")
+    def i18n_dict(lang: str):
+        """Словарь интерфейса для фронта (ru/pl/en); фронт также встраивает его при сборке."""
+        lang = lang if lang in ui18n.SUPPORTED else ui18n.DEFAULT_LANG
+        return {"lang": lang, "strings": ui18n.load_lang(lang)}
 
     @api.get("/", response_class=HTMLResponse)
     def index():
@@ -141,10 +218,25 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
     @api.get("/api/status")
     def status():
         ready = updater.is_complete()
+        pend = updater.pending_status()  # баннер «Перезапустите для обновления»
+        rollback_msg = ""
+        try:
+            log = config.data_dir() / updater.ROLLBACK_LOG
+            if log.is_file():
+                rollback_msg = log.read_text(encoding="utf-8").strip().splitlines()[-1][:200]
+        except OSError:
+            pass
+        try:
+            chlog = report.changelog_merged(core.manifest)[:5]  # встроенный changelog для баннера/настроек
+        except Exception:  # noqa: BLE001
+            chlog = []
         return {"app_version": config.APP_VERSION, "installed_version": updater.installed_version(), "models_ready": ready,
                 "license": licensing.public_state(), "update": core.update, "update_error": core.update_error,
                 "download": core.job.snapshot(), "engine": core.engine.info(), "settings": load_settings(),
-                "installer_job": core.installer_job, "buy": {"personal_team": config.BUY_URL_PERSONAL_TEAM, "org": config.BUY_URL_ORG, "email": config.CONTACT_EMAIL}}
+                "installer_job": core.installer_job, "pending_restart": pend, "update_pending": core.update_pending,
+                "rollback": rollback_msg, "enterprise": config.enterprise(), "pdf_available": report.pdf_available(),
+                "changelog": chlog,
+                "buy": {"personal_team": config.BUY_URL_PERSONAL_TEAM, "org": config.BUY_URL_ORG, "email": config.CONTACT_EMAIL}}
 
     @api.post("/api/update/check")
     def check():
@@ -156,11 +248,11 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         if core.manifest is None:
             core.check_updates()
         if core.manifest is None:
-            return err(core.update_error or "cannot reach the update server", 502)
+            return err(core.update_error or ui18n.tr("err_cannot_reach", ui18n.resolve_lang(load_settings())), 502)
         if core.update and core.update.get("app_required"):
-            return err("this version of the app is too old for the latest models; update the app first", 409)
+            return terr("err_app_too_old", 409)
         if not core.job.start(core.manifest, core.manifest_raw):
-            return err("a download is already running", 409)
+            return terr("err_download_running", 409)
         return {"status": "started"}
 
     @api.post("/api/models/cancel")
@@ -170,42 +262,145 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
 
     @api.post("/api/upload")
     async def upload(file: UploadFile = File(...)):
-        content = await file.read()
-        if len(content) > MAX_UPLOAD:
-            return err("file is too large (max 20 MB)", 413)
+        with core.checks_lock:
+            if core.installer_job['phase'] == 'launching':
+                return err('The application is restarting; wait for the new window.', 409)
+            core.active_requests += 1
         try:
-            text = extract(file.filename or "file.txt", content).replace("\r\n", "\n").replace("\r", "\n").strip()
+            return await _upload(file)
+        finally:
+            with core.checks_lock:
+                core.active_requests -= 1
+
+    async def _upload(file):
+        content = await file.read(MAX_UPLOAD + 1)
+        if len(content) > MAX_UPLOAD:
+            return terr("err_file_too_large", 413)
+        try:
+            text = (await run_in_threadpool(extract, file.filename or "file.txt", content)).replace("\r\n", "\n").replace("\r", "\n").strip()
         except Exception as e:  # noqa: BLE001
-            return err("could not read the file: " + (str(e) if isinstance(e, ValueError) else type(e).__name__))
+            base = ui18n.tr("err_could_not_read", ui18n.resolve_lang(load_settings()))
+            return err(base + (": " + str(e) if isinstance(e, ValueError) else ": " + type(e).__name__))
         if not text:
-            return err("no text could be extracted from the file")
+            return terr("err_no_text")
         return {"status": "ok", "filename": file.filename or "file.txt", "text": text, "words": len(text.split()), "chars": len(text)}
 
+    @api.post("/api/detect/cancel")
+    def detect_cancel(body: dict | None = None):
+        """Отмена идущей проверки из окна одного текста (вставили новый текст, прикрепили файл)."""
+        job_id = (body or {}).get('job_id')
+        if job_id is not None and not valid_id(job_id):
+            return terr('err_bad_request', 400)
+        with core.checks_lock:
+            count = 0
+            if job_id:
+                now = time.monotonic()
+                core.cancelled_checks = {k: v for k, v in core.cancelled_checks.items() if now - v < 300}
+                if len(core.cancelled_checks) >= 1000:
+                    core.cancelled_checks.pop(next(iter(core.cancelled_checks)))
+                core.cancelled_checks[job_id] = now
+            for key, (_, event) in core.active_checks.items():
+                if (not job_id or key == job_id) and not event.is_set():
+                    event.set()
+                    count += 1
+        if not job_id:
+            count += core.engine.cancel_cancellable()
+        return {"status": "ok", "cancelled": count}
+
+    def valid_id(value):
+        return isinstance(value, str) and 1 <= len(value) <= 64 and all(c in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_' for c in value)
+
+    @api.post('/api/batch/start')
+    def batch_start():
+        core.batch_cancel.clear()
+        return {'status': 'ok'}
+
+    @api.post('/api/batch/cancel')
+    def batch_cancel():
+        core.batch_cancel.set()
+        return {'status': 'ok'}
+
     @api.post("/api/detect")
-    def detect(body: dict):
+    async def detect(body: dict, request: Request):
+        cancel = core.batch_cancel if body.get('batch') else threading.Event()
+        job_id, client_id = body.get('job_id'), body.get('client_id')
+        tracked = not body.get('batch') and job_id is not None
+        if tracked and (not valid_id(job_id) or not valid_id(client_id)):
+            return terr('err_bad_request', 400)
+        with core.checks_lock:
+            if core.installer_job['phase'] == 'launching':
+                return err('The application is restarting; wait for the new window.', 409)
+            if tracked:
+                if job_id in core.active_checks:
+                    return err('duplicate analysis request', 409)
+                if body.get('supersede'):
+                    for owner, event in core.active_checks.values():
+                        if owner == client_id:
+                            event.set()
+                if job_id in core.cancelled_checks:
+                    cancel.set()
+                core.active_checks[job_id] = (client_id, cancel)
+            core.active_requests += 1
+        work = asyncio.create_task(run_in_threadpool(_detect, body, cancel))
+        try:
+            while not work.done():
+                await asyncio.wait({work}, timeout=0.1)
+                if not work.done() and await request.is_disconnected():
+                    cancel.set()
+            return await work
+        except asyncio.CancelledError:
+            cancel.set()
+            raise
+        finally:
+            with core.checks_lock:
+                core.active_requests -= 1
+                if tracked:
+                    core.active_checks.pop(job_id, None)
+
+    def _detect(body: dict, cancel: threading.Event):
+        if cancel.is_set():
+            return err('cancelled', 409)
         if not updater.is_complete():
-            return err("model files are not installed yet", 409)
+            return terr("err_models_not_installed", 409)
         try:
             text = str(body["text"]).replace("\r\n", "\n").replace("\r", "\n").strip()
             mode = body.get("mode", "sensitive")
             models = body.get("models")
-            assert mode in ("sensitive", "precise") and (models is None or (isinstance(models, list) and all(m in ("linda_essay", "linda_multi_v2", "stylo7c") for m in models)))
+            if mode not in ("sensitive", "precise") or not (models is None or (isinstance(models, list) and all(m in ("linda_essay", "linda_multi_v2", "stylo7c") for m in models))):
+                raise ValueError('invalid mode or model')
         except Exception:  # noqa: BLE001
-            return err("bad request")
+            return terr("err_bad_request")
+        if mode == 'precise' and models and len(set(models)) < 3:
+            return terr("err_precise_requires_ensemble", 400)
         n = len(text.split())
-        if not config.MIN_WORDS <= n <= config.MAX_WORDS:
-            return err("text must be %d-%d words (now %d)" % (config.MIN_WORDS, config.MAX_WORDS, n))
+        if n < config.MIN_WORDS or (config.MAX_WORDS and n > config.MAX_WORDS):
+            return terr("err_text_min", 400, config.MIN_WORDS, n)
+        pol = config.enterprise()
+        if pol.get("require_license") and not licensing.public_state()["licensed"]:
+            return terr("err_license_required", 403)
+        sup = bool(body.get("supersede"))  # проверка из окна одного текста: прежняя неоконченная отменяется
+        if sup and not body.get('job_id'):
+            core.engine.cancel_cancellable()
         try:
-            res = core.engine.run(text, mode, models)
+            res = core.engine.run(text, mode, models, cancellable=sup, cancel=cancel)
+            if cancel.is_set():
+                raise Cancelled()
+        except Cancelled:
+            return err("cancelled", 409)
         except Exception as e:  # noqa: BLE001
-            return err(f"analysis failed: {type(e).__name__}: {e}", 500)
+            base = ui18n.tr("err_analysis_failed", ui18n.resolve_lang(load_settings()))
+            return err("%s: %s: %s" % (base, type(e).__name__, e), 500)
         hid = None
-        if load_settings().get("save_history", True) and body.get("save", True):
+        if not pol.get("disable_history") and load_settings().get("save_history", True) and body.get("save", True):
             try:
                 hid = history.add(text, res, mode, title=str(body.get("title") or "")[:200] or None, filename=str(body.get("filename") or "")[:200] or None,
                                   folder_id=int(body["folder_id"]) if str(body.get("folder_id") or "").isdigit() else None)
             except Exception:  # noqa: BLE001  # a history problem must never lose the result
                 hid = None
+        try:
+            history.audit("detect", "слов: %d, вердикт: %s%s" % (n, (res or {}).get("verdict"), " (не сохранено)" if hid is None else ""))
+        except Exception:  # noqa: BLE001
+            pass
         return {"status": "ok", "result": res, "history_id": hid}
 
     # ---- local history ("cabinet"), batch results are saved through /api/detect ----
@@ -223,7 +418,7 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
 
     @api.patch("/api/history/folders/{folder_id}")
     def folder_update(folder_id: int, body: dict):
-        return {"status": "ok"} if history.folder_update(folder_id, body.get("name"), body.get("color")) else err("not found", 404)
+        return {"status": "ok"} if history.folder_update(folder_id, body.get("name"), body.get("color")) else terr("err_not_found", 404)
 
     @api.delete("/api/history/folders/{folder_id}")
     def folder_delete(folder_id: int, with_checks: bool = False):
@@ -235,20 +430,25 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             ids = [int(i) for i in body["ids"]]
             fid = int(body["folder_id"]) if body.get("folder_id") else None
         except Exception:  # noqa: BLE001
-            return err("bad request")
+            return terr("err_bad_request")
         return {"moved": history.move(ids, fid)}
 
     @api.post("/api/history/delete")
     def hist_delete_many(body: dict):
         try:
-            return {"deleted": history.delete_many([int(i) for i in body["ids"]])}
+            n = history.delete_many([int(i) for i in body["ids"]])
+            try:
+                history.audit("history_delete", "удалено проверок: %d" % n)
+            except Exception:  # noqa: BLE001
+                pass
+            return {"deleted": n}
         except Exception:  # noqa: BLE001
-            return err("bad request")
+            return terr("err_bad_request")
 
     @api.get("/api/structure/{check_id}")
     def hist_structure(check_id: int):
         c = history.get(check_id)
-        return structure.profile(c["text"], c["result"].get("sentences")) if c else err("not found", 404)
+        return structure.profile(c["text"], c["result"].get("sentences")) if c else terr("err_not_found", 404)
 
     @api.post("/api/structure")
     def text_structure(body: dict):
@@ -258,28 +458,230 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
     @api.get("/api/history/{check_id}")
     def hist_get(check_id: int):
         c = history.get(check_id)
-        return c if c else err("not found", 404)
+        return c if c else terr("err_not_found", 404)
 
     @api.patch("/api/history/{check_id}")
     def hist_rename(check_id: int, body: dict):
-        return {"status": "ok"} if history.rename(check_id, str(body.get("title", ""))) else err("not found", 404)
+        return {"status": "ok"} if history.rename(check_id, str(body.get("title", ""))) else terr("err_not_found", 404)
 
     @api.delete("/api/history/{check_id}")
     def hist_delete(check_id: int):
-        return {"status": "ok"} if history.delete(check_id) else err("not found", 404)
+        return {"status": "ok"} if history.delete(check_id) else terr("err_not_found", 404)
 
     @api.delete("/api/history")
     def hist_clear():
-        return {"status": "ok", "deleted": history.clear()}
+        n = history.clear()
+        try:
+            history.audit("history_clear", "вся история удалена (%d)" % n)
+        except Exception:  # noqa: BLE001
+            pass
+        return {"status": "ok", "deleted": n}
 
     @api.get("/api/analytics/{check_id}")
     def hist_analytics(check_id: int):
         c = history.get(check_id)
-        return analytics.analyze(c["text"], c["result"].get("sentences")) if c else err("not found", 404)
+        return analytics.analyze(c["text"], c["result"].get("sentences")) if c else terr("err_not_found", 404)
 
     @api.post("/api/analytics")
     def text_analytics(body: dict):
         return analytics.analyze(str(body.get("text", "")), body.get("sentences") if isinstance(body.get("sentences"), list) else None)
+
+    def _report_lang() -> str:
+        """Язык отчёта = язык интерфейса из настроек."""
+        try:
+            return ui18n.resolve_lang(load_settings())
+        except Exception:  # noqa: BLE001
+            return ui18n.DEFAULT_LANG
+
+    def _serve_report(rep: dict, fmt: str):
+        """Отдать готовый отчёт в нужном формате (html — печатный, pdf — только если есть fpdf)."""
+        fmt = (fmt or "json").lower()
+        base = "linda_report_%s" % (rep.get("id") or "text")
+        if fmt == "html":
+            return HTMLResponse(report.to_html(rep, _report_lang()))
+        if fmt == "csv":
+            return PlainTextResponse(report.to_csv(rep), media_type="text/csv; charset=utf-8",
+                                     headers={"Content-Disposition": 'attachment; filename="%s.csv"' % base})
+        if fmt == "pdf":
+            if not report.pdf_available():
+                return terr("err_no_pdf", 501)
+            try:
+                try:
+                    _lang = ui18n.resolve_lang(load_settings())
+                except Exception:  # noqa: BLE001
+                    _lang = ui18n.DEFAULT_LANG
+                data = report.to_pdf_bytes(rep, _lang)
+            except RuntimeError as e:
+                return err(str(e), 501)
+            return Response(data, media_type="application/pdf",
+                            headers={"Content-Disposition": 'attachment; filename="%s.pdf"' % base})
+        return rep
+
+    @api.get("/api/report/{check_id}")
+    def report_saved(check_id: int, fmt: str = "json"):
+        """Экспорт отчёта по сохранённой проверке: fmt=html|json|csv|pdf (для корпоративных клиентов)."""
+        if config.enterprise().get("disable_export"):
+            return terr("err_export_disabled", 403)
+        c = history.get(check_id)
+        if not c:
+            return terr("err_not_found", 404)
+        try:
+            history.audit("report_export", "проверка №%s, формат: %s" % (check_id, fmt))
+        except Exception:  # noqa: BLE001
+            pass
+        return _serve_report(report.report_for_check(c), fmt)
+
+    @api.post("/api/report")
+    def report_adhoc(body: dict, fmt: str = "json"):
+        """Отчёт по несохранённому результату: {check_id} или {text, result, title, mode}."""
+        if config.enterprise().get("disable_export"):
+            return terr("err_export_disabled", 403)
+        fmt = (body.get("fmt") or fmt or "json").lower()
+        try:
+            if body.get("check_id") is not None:
+                c = history.get(int(body["check_id"]))
+                if not c:
+                    return terr("err_not_found", 404)
+                rep = report.report_for_check(c)
+            else:
+                text = str(body.get("text", "")).strip()
+                res = body.get("result")
+                if not text or not isinstance(res, dict) or not res.get("verdict"):
+                    return terr("err_need_check_or_text", 400)
+                rep = report.build_report(text, res, {"title": str(body.get("title", ""))[:200], "mode": str(body.get("mode", ""))[:20]})
+        except (ValueError, TypeError):
+            return terr("err_bad_request", 400)
+        try:
+            history.audit("report_export", "разовый отчёт, формат: %s" % fmt)
+        except Exception:  # noqa: BLE001
+            pass
+        return _serve_report(rep, fmt)
+
+    @api.get("/api/changelog")
+    def changelog():
+        """Встроенный changelog: локальный CHANGELOG.json + записи манифеста обновлений."""
+        return {"app_version": config.APP_VERSION, "items": report.changelog_merged(core.manifest)}
+
+    @api.get("/api/enterprise")
+    def enterprise_policies():
+        """Корпоративные политики из enterprise.json и доступность PDF-экспорта."""
+        return {"policies": config.enterprise(), "pdf_available": report.pdf_available()}
+
+    @api.get("/api/audit")
+    def audit_list(action: str = "", limit: int = 200, offset: int = 0):
+        """Журнал аудита (локально): новые события первыми."""
+        days = config.enterprise().get("audit_retention_days", 0) or 0
+        if days:  # чистка старых записей по политике хранения
+            try:
+                import sqlite3 as _sq
+
+                with history._LOCK, _sq.connect(str(config.data_dir() / "history.db")) as _con:
+                    _con.execute("CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL NOT NULL, action TEXT NOT NULL, detail TEXT NOT NULL DEFAULT '')")
+                    _con.execute("DELETE FROM audit WHERE ts < ?", (time.time() - days * 86400,))
+                    _con.commit()
+            except Exception:  # noqa: BLE001
+                pass
+        return {"items": history.audit_list(action, limit, offset)}
+
+    @api.delete("/api/audit")
+    def audit_delete():
+        """Очистить журнал аудита (сама очистка фиксируется новой записью)."""
+        return {"status": "ok", "deleted": history.audit_clear()}
+
+    @api.post("/api/batch_folder")
+    def batch_folder(body: dict):
+        with core.checks_lock:
+            if core.installer_job['phase'] == 'launching':
+                return err('The application is restarting; wait for the new window.', 409)
+            if not core.folder_lock.acquire(blocking=False):
+                return err('a folder check is already running',409)
+        core.folder_cancel.clear()
+        try:
+            return _batch_folder(body)
+        finally:
+            core.folder_lock.release()
+
+    @api.post('/api/batch_folder/cancel')
+    def batch_folder_cancel():
+        core.folder_cancel.set()
+        return {'status':'ok'}
+
+    def _batch_folder(body: dict):
+        """Пакетная проверка папки (рекурсивно): .txt/.md/.docx/.pdf, каждая — через движок, в историю."""
+        if not updater.is_complete():
+            return terr("err_models_not_installed", 409)
+        try:
+            folder = str(body.get("path", "")).strip().strip('"')
+            mode = body.get("mode", "sensitive")
+            assert mode in ("sensitive", "precise") and folder
+        except Exception:  # noqa: BLE001
+            return terr("err_need_folder", 400)
+        if not config.enterprise_allows_path(folder):
+            return terr("err_folder_not_allowed", 403)
+        root = Path(folder)
+        if not root.is_dir():
+            return terr("err_folder_not_found", 404)
+        pol = config.enterprise()
+        exts = {".txt", ".md", ".text", ".docx", ".pdf"}
+        if pol.get('require_license') and not licensing.public_state()['licensed']:
+            return terr('err_license_required',403)
+        try:
+            files = []
+            for p in root.rglob('*'):
+                if core.folder_cancel.is_set():
+                    break
+                if p.is_file() and p.suffix.lower() in exts and config.enterprise_allows_path(str(p)):
+                    files.append(p)
+                    if len(files) >= int(pol.get('max_batch_files',200)):
+                        break
+            files.sort()
+        except OSError as e:
+            base = ui18n.tr("err_cannot_read_folder", ui18n.resolve_lang(load_settings()))
+            return err("%s: %s" % (base, e), 400)
+        try:
+            folder_id = int(body["folder_id"]) if str(body.get("folder_id") or "").isdigit() else None
+        except Exception:  # noqa: BLE001
+            folder_id = None
+        items, done, errors = [], 0, 0
+        for p in files:
+            if core.folder_cancel.is_set():
+                break
+            row: dict = {"file": str(p), "name": p.name}
+            try:
+                with p.open('rb') as document:
+                    data = document.read(MAX_UPLOAD+1)
+                if len(data) > MAX_UPLOAD:
+                    row.update(status="skipped", error="file is too large (max 20 MB)")
+                    items.append(row)
+                    continue
+                text = extract(p.name, data).replace("\r\n", "\n").replace("\r", "\n").strip()
+                n = len(text.split())
+                if not text or n < config.MIN_WORDS or (config.MAX_WORDS and n > config.MAX_WORDS):
+                    row.update(status="skipped", words=n, error="need at least %d words (now %d)" % (config.MIN_WORDS, n))
+                    items.append(row)
+                    continue
+                res = core.engine.run(text, mode, None, cancel=core.folder_cancel)
+                hid = None
+                if not pol.get("disable_history") and load_settings().get('save_history', True):
+                    try:
+                        hid = history.add(text, res, mode, title=p.name[:200], filename=p.name[:200], folder_id=folder_id)
+                    except Exception:  # noqa: BLE001
+                        hid = None
+                row.update(status="ok", words=n, verdict=res.get("verdict"), history_id=hid)
+                done += 1
+            except Cancelled:
+                row.update(status="cancelled")
+                items.append(row)
+                break
+            except Exception as e:  # noqa: BLE001 — один битый файл не останавливает папку
+                row.update(status="error", error="%s: %s" % (type(e).__name__, str(e)[:200]))
+                errors += 1
+            items.append(row)
+        try:
+            history.audit("batch_folder", "папка: %s, файлов: %d, ok: %d, ошибок: %d" % (folder, len(items), done, errors))
+        except Exception:  # noqa: BLE001
+            pass
+        return {"status": "cancelled" if core.folder_cancel.is_set() else "ok", "folder": str(root), "files": len(items), "done": done, "errors": errors, "items": items}
 
     @api.post("/api/compare/matrix")
     def compare_matrix(body: dict):
@@ -287,11 +689,11 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         try:
             ids = [int(x) for x in body["ids"]][:60]
         except Exception:  # noqa: BLE001
-            return err("bad request")
+            return terr("err_bad_request")
         checks = [history.get(i) for i in ids]
         checks = [c for c in checks if c]
         if len(checks) < 2:
-            return err("pick at least two checks", 400)
+            return terr("err_pick_two", 400)
         m = analytics.similarity_matrix([c["text"] for c in checks])
         pairs = sorted(({"a": checks[i]["id"], "b": checks[j]["id"], "overlap": m[i][j]} for i in range(len(checks)) for j in range(i + 1, len(checks))), key=lambda x: -x["overlap"])
         items = [{"id": c["id"], "title": c["title"], "verdict": c["result"].get("verdict"), "authorship": (c["result"].get("authorship") or {}).get("label"),
@@ -303,26 +705,40 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         try:
             a, b = history.get(int(body["a"])), history.get(int(body["b"]))
         except Exception:  # noqa: BLE001
-            return err("bad request")
+            return terr("err_bad_request")
         if not a or not b:
-            return err("check not found", 404)
+            return terr("err_check_not_found", 404)
         return history.compare(a, b)
 
     @api.post("/api/license/activate")
     def lic_activate(body: dict):
         try:
-            return {"license": licensing.activate(str(body.get("key", "")))}
+            st = licensing.activate(str(body.get("key", "")))
+            try:
+                history.audit("license_activate", "ключ: %s" % st.get("key_hint", ""))
+            except Exception:  # noqa: BLE001
+                pass
+            return {"license": st}
         except licensing.LicenseError as e:
             return err(str(e), 422)
 
     @api.post("/api/license/remove")
     def lic_remove():
         licensing.deactivate_local()
+        try:
+            history.audit("license_remove", "ключ удалён с этого компьютера")
+        except Exception:  # noqa: BLE001
+            pass
         return {"license": licensing.public_state()}
 
     @api.post("/api/settings")
     def settings(body: dict):
+        with core.settings_lock:
+            return _settings(body)
+
+    def _settings(body: dict):
         cur = load_settings()
+        need_reload = False  # смена устройства/карты требует выгрузки движка — тяжёлая операция, уходит в фон
         if body.get("sentences") in ("auto", "hybrid", "context", "smooth", "full", "windows"):
             cur["sentences"] = body["sentences"]
         if isinstance(body.get("history_retention_days"), int) and not isinstance(body.get("history_retention_days"), bool) and 0 <= body["history_retention_days"] <= 3650:
@@ -333,39 +749,138 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             cur["preload"] = body["preload"]
         if isinstance(body.get("gpu_index"), int) and not isinstance(body.get("gpu_index"), bool) and 0 <= body["gpu_index"] <= 7:
             if cur.get("gpu_index", 0) != body["gpu_index"]:
-                core.engine.unload()
+                need_reload = True
             cur["gpu_index"] = body["gpu_index"]
         if body.get("device") in ("auto", "cpu", "cuda"):
             if cur.get("device") != body["device"]:
-                core.engine.unload()
+                need_reload = True
             cur["device"] = body["device"]
+        # Персонализация интерфейса (задача D) + язык (задача E): только локально, дефолты в load_settings()
+        if body.get("theme") in UI_THEMES:
+            cur["theme"] = body["theme"]
+        if body.get("accent") in UI_ACCENTS:
+            cur["accent"] = body["accent"]
+        if body.get("density") in UI_DENSITIES:
+            cur["density"] = body["density"]
+        if body.get("font_scale") in UI_FONT_SCALES:
+            cur["font_scale"] = body["font_scale"]
+        if isinstance(body.get("font_scale"), str) and body["font_scale"].isdigit() and int(body["font_scale"]) in UI_FONT_SCALES:
+            cur["font_scale"] = int(body["font_scale"])
+        if body.get("radius") in UI_RADII:
+            cur["radius"] = body["radius"]
+        if body.get("sidebar") in UI_SIDEBARS:
+            cur["sidebar"] = body["sidebar"]
+        if body.get("language") in UI_LANGUAGES:
+            cur["language"] = body["language"]
         save_settings(cur)
-        if cur.get("preload", True):
-            core.preload()  # switched on (or the device changed): load now
-        return {"settings": cur}
+        # Тяжёлое (выгрузка движка, загрузка моделей) — в фоне, ответ сразу; прогресс виден через /api/status (dev_loading)
+        preload_on = isinstance(body.get("preload"), bool) and bool(body["preload"])
+        if need_reload or preload_on:
+            def _bg():
+                try:
+                    if need_reload:
+                        core.engine.unload()
+                    core.preload()  # switched on (or the device changed): load now, in a thread
+                except Exception:  # noqa: BLE001
+                    pass
+            threading.Thread(target=_bg, daemon=True).start()
+            return {"settings": cur, "reloading": True}
+        return {"settings": cur, "reloading": False}
 
     @api.post("/api/app/update")
     def app_update():
-        """Download the new installer named in the signed manifest, check its hash and run it silently; the app closes."""
+        """Фоновая загрузка инсталлера в staging (проверка хеша). Инсталлер сразу не запускается:
+        ставится update_pending, UI показывает баннер «Перезапустите для обновления»."""
         ins = (core.manifest or {}).get("installer")
         if not ins or not core.update or not core.update.get("app_new"):
-            return err("no application update available", 409)
-        if core.installer_job["phase"] == "downloading":
-            return err("already downloading", 409)
+            return terr("err_no_update", 409)
+        with core.installer_lock:
+            if core.installer_job["phase"] in ("downloading", "launching"):
+                return terr("err_already_downloading", 409)
+            st = updater.staged_installer()
+            if st and st["version"] == str(ins.get("version", "")):
+                try:
+                    updater.verify_staged_installer(st)
+                except updater.UpdateError:
+                    st = None
+                if st:
+                    core.update_pending = {"version": st["version"], "staging": st["staging"]}
+                    core.installer_job.update(phase="pending")
+                    return {"status": "pending", "action": "restart", "version": st["version"]}
+            core.installer_cancel.clear()
+            core.installer_job.update(phase="downloading", done=0, total=int(ins.get("size") or 0), error="")
+            manifest_raw, signature = core.manifest_raw, core.manifest.get('_signature')
 
         def work():
             try:
-                core.installer_job.update(phase="downloading", done=0, total=int(ins.get("size") or 0), error="")
-                path = updater.download_installer(ins, lambda d, t: core.installer_job.update(done=d, total=t or core.installer_job["total"]))
-                core.installer_job["phase"] = "launching"
-                launch_installer(path)
-                time.sleep(0.5)
-                os._exit(0)
+                path = updater.download_installer(ins, lambda d, t: core.installer_job.update(done=d, total=t or core.installer_job["total"]),
+                                                  cancel=core.installer_cancel, version=str(ins.get("version", "")), manifest_raw=manifest_raw, signature=signature)
+                core.installer_job.update(phase="pending", done=int(ins.get("size") or 0))
+                core.update_pending = {"version": str(ins.get("version", "")), "staging": str(path.parent)}
+                (config.data_dir() / "update_launch.log").write_text("staged %s, ждёт перезапуска\n" % path, encoding="utf-8")
             except Exception as e:  # noqa: BLE001
-                core.installer_job.update(phase="error", error=str(e))
-                (config.data_dir() / "update_launch.log").write_text("error: %s: %s\n" % (type(e).__name__, e), encoding="utf-8")
+                if type(e).__name__ == "_Cancelled":
+                    core.installer_job.update(phase="cancelled", error="загрузка отменена")
+                else:
+                    core.installer_job.update(phase="error", error=str(e))
+                    (config.data_dir() / "update_launch.log").write_text("error: %s: %s\n" % (type(e).__name__, e), encoding="utf-8")
 
         threading.Thread(target=work, daemon=True).start()
         return {"status": "started"}
+
+    @api.post("/api/app/restart")
+    def app_restart(body: dict | None = None):
+        """Перезапуск с установкой: запускает скачанный инсталлер (он сам закроет и заново откроет приложение) и завершает процесс."""
+        if os.environ.get("LINDA_DEV") == "1" and not config.DEV_INSTALLER_ENABLED:
+            return err("Dev: production installers are disabled; use the isolated update tests.", 409)
+        if core.job.running():
+            return terr('err_download_running',409)
+        if core.engine.lock.locked() or core.folder_lock.locked():
+            return err('Finish or cancel the active analysis before restarting.', 409)
+        st = updater.staged_installer()
+        if not st:
+            return terr("err_no_update", 409)
+
+        def go():
+            try:
+                time.sleep(0.6)  # дать UI получить ответ
+                updater.verify_staged_installer(st)
+                launch_installer(Path(st["path"]))
+                time.sleep(0.5)
+                os._exit(0)
+            except Exception as e:
+                core.installer_job.update(phase="error", error=str(e))
+
+        with core.installer_lock:
+            if core.installer_job["phase"] in ("launching", "downloading"):
+                return terr("err_already_downloading", 409)
+            with core.checks_lock:
+                if core.active_requests or core.engine.lock.locked() or core.folder_lock.locked():
+                    return err('Finish or cancel the active operation before restarting.', 409)
+                if body is not None and 'draft' in body:
+                    try:
+                        restart_draft.save(body['draft'])
+                    except (OSError, ValueError) as error:
+                        return err(str(error), 403 if isinstance(error, PermissionError) else 400)
+                core.installer_job.update(phase="launching", error="")
+        threading.Thread(target=go, daemon=True).start()
+        return {"status": "restarting", "version": st["version"]}
+
+    @api.get('/api/draft/resume')
+    def resume_draft():
+        return {'draft':restart_draft.read()}
+
+    @api.post('/api/draft/ack')
+    def acknowledge_draft(body: dict):
+        restored = restart_draft.acknowledge(body.get('id'))
+        if restored:
+            history.audit('draft_restore', str(body.get('id'))[:64])
+        return {'status':'ok','restored':restored}
+
+    @api.post("/api/app/cancel")
+    def app_cancel():
+        """Отмена фоновой загрузки инсталлера (без зависаний)."""
+        core.installer_cancel.set()
+        return {"status": "ok"}
 
     return api
