@@ -178,3 +178,44 @@ header.top { background:var(--bg) !important; backdrop-filter:none !important; b
 .rv { opacity:1 !important; transform:none !important; }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; } }
 @media(max-width:600px) { h1,.prose h1 { font-size:2.4rem; overflow-wrap:anywhere; } .wrap { padding:0 18px; } }
+
+/* Local proposal: retain the existing grid, palette, typography and content. */
+html { scroll-padding-top:88px; }
+body { overflow-wrap:break-word; }
+.tile,nav.main a.dl,.hero h1 em { background-image:none !important; }
+.hero h1 em { color:var(--accent); }
+details,.burger,.langsel,header.top.open nav.main a { border-radius:0 !important; }
+.more>details { background:transparent; border:0; padding:0; margin:0; }
+nav.main a[aria-current=page],.more-menu a[aria-current=page] { color:white!important; border-bottom-color:var(--accent); background:#202631; }
+.skip-link { position:fixed;left:16px;top:-100px;z-index:100;background:white;color:#111;padding:12px 18px;font-weight:600; }
+.skip-link:focus { top:12px; }
+.release-strip { margin-top:32px;display:flex;gap:24px;justify-content:space-between;align-items:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding-top:24px;padding-bottom:24px; }
+.release-kicker { display:block;color:var(--mut);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px; }
+.release-strip strong { font-size:1.45rem;font-weight:400; }
+.release-strip p { margin:6px 0 0;color:var(--mut);max-width:720px; }
+.release-link { color:white;flex:none;padding:12px 0;border-bottom:2px solid var(--accent); }
+.release-page { padding-top:48px; }
+.release-page h1 { font-size:clamp(2rem,5vw,3.6rem);font-weight:300;letter-spacing:-.04em;line-height:1.1;margin:0 0 18px; }
+.release-current { border:1px solid var(--line);border-left:4px solid var(--cobalt);padding:28px;max-width:960px; }
+.release-heading { display:flex;align-items:center;justify-content:space-between;gap:24px; }
+.release-heading h2 { font-size:2.8rem;margin:0 0 6px; }
+.release-heading h2:after { display:none; }
+.release-heading time { color:var(--mut);font-variant-numeric:tabular-nums; }
+.release-summary { font-size:1.1rem;max-width:720px;margin:24px 0;color:#ddd; }
+.release-details { border:0;border-top:1px solid var(--line);padding:16px 0 0;margin:0;background:transparent!important; }
+.release-details summary { font-weight:500;font-size:1rem; }
+.release-changes { padding-left:22px;margin-top:20px;max-width:800px; }
+.release-changes li { margin-bottom:14px;color:#d2d2d2;line-height:1.65; }
+.archive-title { font-size:2rem;margin-top:56px; }
+.release-archive { border:0;border-top:1px solid var(--line);background:transparent!important;padding:18px 0;margin:0;max-width:960px; }
+.release-archive summary { display:list-item;font-size:1rem; }
+.release-archive summary time { font-size:.8rem;color:var(--mut);margin-right:20px; }
+.release-archive p { max-width:800px;line-height:1.7; }
+.shot a { display:block; }
+.shot img { aspect-ratio:auto;object-fit:contain; }
+.shot a:focus-visible { outline-offset:-4px; }
+@media(max-width:700px) { .release-strip,.release-heading { flex-direction:column;align-items:flex-start;gap:18px; } .release-current { padding:20px; } .release-heading .btn { width:100%; } .release-heading { align-items:stretch; } .release-archive summary time { display:block;margin-bottom:6px; } .hero { padding-top:32px; } }
+@media(max-width:400px) { .brand img { height:32px; } .langbox label { display:none; } header.top .wrap { gap:10px; } }
+
+.hero { background:none!important;border-radius:0!important; }
+nav.main a.dl { background:var(--cobalt)!important; }
