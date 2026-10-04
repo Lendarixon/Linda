@@ -1,16 +1,20 @@
-"""Build only the isolated Dev executable; no production paths or signing material."""
+"""Build the production executable from the published desktop and core sources."""
 import os
 import subprocess
 import sys
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
+core_root = root if (root/'linda_pro').is_dir() else root.parent
+if not (core_root/'linda_pro').is_dir():
+    raise SystemExit('Missing linda_pro core source next to the desktop directory')
 os.environ.update(OMP_NUM_THREADS='6', MKL_NUM_THREADS='6', OPENBLAS_NUM_THREADS='6')
 args = [sys.executable, '-m', 'PyInstaller', '--noconfirm', '--name', 'Linda-Pro', '--noconsole', '--onedir',
         '--distpath', str(root/'dist'), '--workpath', str(root/'build'), '--specpath', str(root/'build'),
-        '--icon', str(root/'assets/linda.ico')]
-for relative in ('web', 'assets', 'linda_desktop/data', 'linda_pro/_vendor/aidetector/patterns'):
+        '--icon', str(root/'assets/linda.ico'), '--paths', str(core_root)]
+for relative in ('web', 'assets', 'linda_desktop/data'):
     args += ['--add-data', f'{root/relative};{relative}']
+args += ['--add-data', f'{core_root/"linda_pro/_vendor/aidetector/patterns"};linda_pro/_vendor/aidetector/patterns']
 for module in ('uvicorn','linda_pro','linda_desktop','transformers.models.deberta_v2','transformers.models.deberta','onnx'):
     args += ['--collect-submodules', module]
 for module in ('webview','lightgbm','pythonnet','onnxruntime'):
