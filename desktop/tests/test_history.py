@@ -125,7 +125,7 @@ def test_folders_sort_bulk_and_retention(home):
     c = history.add("old one.", res(["human"]), "sensitive")
     import sqlite3
     from linda_desktop import config
-    with sqlite3.connect(str(config.data_dir() / "history.db")) as con:
+    with history._db() as con:
         con.execute("UPDATE checks SET ts = ts - 86400 * 40 WHERE id = ?", (c,))
     assert history.purge_older_than(30) == 1 and history.delete_many([999]) == 0
 

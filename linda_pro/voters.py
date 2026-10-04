@@ -19,6 +19,18 @@ def clean_text(text: str) -> str:
     return prepare_for_voter("compare", text, "en")
 
 
+CANCEL = None  # callable -> bool: приложение ставит на время проверки; True = прервать между пакетами
+
+
+class Cancelled(Exception):
+    """Проверка прервана (пользователь вставил новый текст или нажал отмену)."""
+
+
+def check_cancel() -> None:
+    if CANCEL is not None and CANCEL():
+        raise Cancelled()
+
+
 class FastSeqCls:
     """Transformer classifier (DeBERTa). Long text is sliced into windows of `max_len` tokens with full coverage, text score is
     the average logit difference "AI minus human" across windows. Model body in bf16 (on GPU), head in fp32."""
@@ -41,6 +53,8 @@ class FastSeqCls:
         self.device = self.device_pref or ("cuda" if torch.cuda.is_available() else "cpu")
         self.tok = AutoTokenizer.from_pretrained(str(self.model_dir))
         self.model = AutoModelForSequenceClassification.from_pretrained(str(self.model_dir)).to(self.device).eval()
+        if self.device == "cpu":  # 2.0 weights ship as fp16 (half the download); the CPU runs fp32
+            self.model = self.model.float()
         self.args = set(inspect.signature(self.model.forward).parameters)
 
     def close(self) -> None:
@@ -86,6 +100,7 @@ class FastSeqCls:
         order = sorted(range(len(wins)), key=lambda j: len(wins[j]))
         z = np.zeros(len(wins))
         for b in range(0, len(order), self.batch):
+            check_cancel()
             idx = order[b: b + self.batch]
             enc = tok.pad({"input_ids": [wins[j] for j in idx]}, return_tensors="pt", pad_to_multiple_of=32)
             enc = {k: v.to(self.device) for k, v in enc.items() if k in self.args}

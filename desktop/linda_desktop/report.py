@@ -182,6 +182,8 @@ def _pdf_fonts(pdf) -> str:
         ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
          "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
     ]
+    font_dir = __import__('pathlib').Path(os.environ.get('WINDIR', r'C:\Windows')) / 'Fonts'
+    cands = [(str(font_dir/'segoeui.ttf'),str(font_dir/'segoeuib.ttf')),(str(font_dir/'arial.ttf'),str(font_dir/'arialbd.ttf'))]+cands
     for reg, bold in cands:
         if os.path.isfile(reg):
             try:
@@ -250,7 +252,7 @@ def _to_pdf_bytes_fpdf(rep: dict, lang: str | None = None) -> bytes:
     """Красивый PDF-отчёт A4: шапка, вердикт-плашка, шкала, векторные графики
     (rect/line средствами fpdf), таблица метрик, подозрительные предложения,
     пояснения, блок организации, колонтитулы. Многостраничный, с переносами."""
-    if not pdf_available():
+    if importlib.util.find_spec('fpdf') is None:
         raise RuntimeError("PDF-библиотека не установлена: используйте печать HTML-отчёта (Печать → сохранить PDF)")
     from fpdf import FPDF
 
@@ -324,6 +326,8 @@ def _to_pdf_bytes_fpdf(rep: dict, lang: str | None = None) -> bytes:
     pdf.set_margins(15, 15, 15)
     fam = _pdf_fonts(pdf)
     uni = fam != "Helvetica"
+    if not uni and lang in ('ru','pl'):
+        raise RuntimeError('Windows Unicode fonts are unavailable; restore Segoe UI or Arial')
     S = (lambda s: str(s if s is not None else "")) if uni else _latin
     pdf._fam = fam  # type: ignore[attr-defined]
     pdf._head_txt = S("Linda-Pro %s  ·  %s" % (ver, date_s))  # type: ignore[attr-defined]
@@ -390,7 +394,9 @@ def _to_pdf_bytes_fpdf(rep: dict, lang: str | None = None) -> bytes:
     pdf.set_fill_color(230, 230, 230)
     pdf.rect(bx, by, bw, bh, style="F")
     pdf.set_fill_color(*vc)
-    pdf.rect(bx, by, bw * pct / 100, bh, style="F")
+    probability = rep.get('p_ai')
+    probability = max(0.0,min(1.0,float(probability))) if probability is not None else pct/100
+    pdf.rect(bx, by, bw * probability, bh, style="F")
     pdf.set_draw_color(0, 0, 0)
     pdf.rect(bx, by, bw, bh, style="D")
     pdf.set_xy(bx, by + bh + 1)
@@ -487,15 +493,14 @@ def _to_pdf_bytes_fpdf(rep: dict, lang: str | None = None) -> bytes:
         pdf.cell(62, 7, S(k), border=1, fill=True)
         pdf.set_font(fam, "", 10)
         pdf.multi_cell(0, 7, S(v), border=1, fill=True, new_x="LMARGIN", new_y="NEXT")
-    voters_ln = "Essay-D: %s  ·  Multi-D: %s  ·  Stylo-D: %s" % (
-        voters.get("linda_essay"), voters.get("linda_multi_v2"), voters.get("stylo7c"))
+    voters_ln = '  ·  '.join('%s: %s' % (name,value) for name,value in voters.items())
     pdf.set_font(fam, "", 9)
     pdf.multi_cell(0, 5, S(voters_ln), new_x="LMARGIN", new_y="NEXT")
     pdf.ln(2)
 
     # --- самые подозрительные предложения с подсветкой ---
     h1(T("pdf_susp"))
-    top = sorted(sents, key=lambda s: -float(s.get("p_ai") or 0))[:8]
+    top = sorted([s for s in sents if s.get('label')=='ai'], key=lambda s: -float(s.get("p_ai") or 0))[:8]
     pdf.set_font(fam, "", 10)
     if not top or max(float(s.get("p_ai") or 0) for s in top) < 0.38:
         pdf.multi_cell(0, 6, S(T("pdf_no_susp")), new_x="LMARGIN", new_y="NEXT")
@@ -537,6 +542,8 @@ def _to_pdf_bytes_fpdf(rep: dict, lang: str | None = None) -> bytes:
     except Exception:  # noqa: BLE001
         pass
 
+    from .report_native_sections import append_sections
+    append_sections(pdf,rep,lang,fam,S,h1,need)
     out = pdf.output()
     return bytes(out)
 
@@ -647,12 +654,10 @@ def to_html(rep: dict, lang: str | None = None) -> str:
     return report_pdf.render_html(rep, lang if lang in report_pdf.LANGS else "ru", toolbar=True)
 
 
+def pdf_export(rep: dict, lang: str | None = None) -> tuple[bytes, str]:
+    """Bundled native renderer; no external browser or silent layout fallback."""
+    return _to_pdf_bytes_fpdf(rep,lang), 'native'
+
+
 def to_pdf_bytes(rep: dict, lang: str | None = None) -> bytes:
-    """PDF-отчёт: безголовый Edge/Chrome из HTML с графиками; без браузера — простой PDF через fpdf."""
-    lg = lang if lang in report_pdf.LANGS else "ru"
-    try:
-        return report_pdf.to_pdf_bytes(rep, lg)
-    except Exception:  # noqa: BLE001 — любой сбой браузера: запасной путь
-        if importlib.util.find_spec("fpdf") is None:
-            raise RuntimeError("PDF export needs Microsoft Edge or Chrome")
-        return _to_pdf_bytes_fpdf(rep, lang)
+    return pdf_export(rep, lang)[0]

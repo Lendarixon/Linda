@@ -3,7 +3,7 @@ import threading
 import time
 import pytest
 from fastapi.testclient import TestClient
-from linda_desktop import app as app_mod, config, restart_draft
+from linda_desktop import app as app_mod, config, restart_draft, protected_storage
 from test_update_restart import _stage
 
 def test_draft_roundtrip_and_stale_ack_cannot_delete_new_text(repo):
@@ -30,9 +30,9 @@ def test_oversize_and_expired_drafts_are_not_restored(repo):
         restart_draft.save('x'*(restart_draft.MAX_CHARS+1))
     restart_draft.save('Old text')
     path = config.data_dir()/'restart-draft.json'
-    record = json.loads(path.read_text())
+    record = json.loads(protected_storage.unprotect(path.read_bytes(), 'restart-draft').decode('utf-8'))
     record['ts'] = time.time()-86401
-    path.write_text(json.dumps(record))
+    protected_storage.atomic_write(path, protected_storage.protect(json.dumps(record).encode('utf-8'), 'restart-draft'))
     assert restart_draft.read() is None and not path.exists()
 
 def test_restart_draft_write_failure_keeps_app_running(repo, monkeypatch):

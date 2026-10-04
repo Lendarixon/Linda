@@ -83,7 +83,9 @@ def main(args=None):
         return 2
     filename, source, target = args
     try:
-        limit_memory()
+        # The broker sets resource limits before resuming an AppContainer worker.
+        if os.environ.get('LINDA_DOCUMENT_SANDBOX') != '1':
+            limit_memory()
         path = Path(source)
         if path.stat().st_size>MAX_INPUT:
             raise ValueError('Document exceeds the supported input limit')

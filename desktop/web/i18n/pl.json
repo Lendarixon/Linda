@@ -12,7 +12,7 @@
   "a_confirm_clear": "Wyczyścić dziennik audytu na tym komputerze?",
   "a_empty": "Na razie pusto.",
   "a_load_fail": "Nie udało się wczytać:",
-  "a_note": "Dziennik audytu jest przechowywany tylko na tym komputerze. Stare wpisy są usuwane automatycznie po upływie okresu przechowywania.",
+  "a_note": "Dziennik audytu jest szyfrowany, a jego integralność sprawdzana na tym komputerze. Ręczne czyszczenie nie jest dostępne. Wygasłe wpisy są automatycznie usuwane zgodnie z polityką przechowywania organizacji.",
   "a_refresh": "Odśwież",
   "accent_cobalt": "Niebieski",
   "accent_green": "Zielony",
@@ -65,7 +65,7 @@
   "banner_models_updating": "Aktualizuję modele… {pct}",
   "banner_new_models": "Dostępna aktualizacja modeli {ver}{size}{notes}.",
   "banner_new_required": "Nowe modele wymagają nowej wersji aplikacji ({ver}).",
-  "banner_offline": "Brak połączenia z serwerem aktualizacji: {err}",
+  "banner_offline": "Nie udało się sprawdzić aktualizacji: {err}",
   "banner_restart_ready": "Aktualizacja {ver} pobrana. Uruchom aplikację ponownie, aby ją zainstalować.",
   "banner_restarting": "Instaluję aktualizację, aplikacja uruchomi się ponownie sama…",
   "banner_too_old": "Ta wersja aplikacji nie obsługuje obecnych modeli. Zaktualizuj najpierw aplikację.",
@@ -502,5 +502,7 @@
   "ui_wait_operation": "Najpierw zakończ lub anuluj bieżącą analizę lub przesyłanie.",
   "ui_restart_no_draft": "Zapisywanie historii jest wyłączone. Wpisany tekst nie zostanie przywrócony po aktualizacji. Kontynuować?",
   "ui_heatmap_unavailable": "Podświetlanie zdań i udziały autorstwa są niedostępne dla wybranego modelu. Brak podświetlenia nie oznacza, że tekst został napisany przez człowieka.",
-  "err_precise_requires_ensemble": "Tryb precyzyjny wymaga wszystkich trzech modeli. Dla wybranego modelu użyj trybu czułego."
+  "err_precise_requires_ensemble": "Tryb precyzyjny wymaga wszystkich trzech modeli. Dla wybranego modelu użyj trybu czułego.",
+  "banner_store_required": "Aby używać nowych modeli, zaktualizuj Linda-Pro przez Microsoft Store: otwórz Bibliotekę → Pobierz aktualizacje, a następnie uruchom Linda-Pro ponownie. Ta wersja nie używa instalatora EXE.",
+  "error_update_path": "Folder modeli zawiera łącze poza profilem. Użyj zwykłego folderu wewnątrz profilu Linda-Pro."
 }

@@ -57,8 +57,6 @@ def main(argv: list[str] | None = None) -> int:
     if worker_args and worker_args[0]=='--document-worker':
         from .document_worker import main as document_main
         return document_main(worker_args[1:])
-    # Every supported source entry point in this checkout must select Dev data.
-    # Importing the runner configures paths without starting a second window.
     argv = sys.argv[1:] if argv is None else argv
     # Повторный запуск не должен заменять файлы работающей первой копии.
     if not _single_instance():
@@ -77,6 +75,13 @@ def main(argv: list[str] | None = None) -> int:
         log = open(config.data_dir() / "app.log", "a", encoding="utf-8", buffering=1)
         sys.stdout = sys.stdout or log
         sys.stderr = sys.stderr or log
+    def recover_document_jobs():
+        try:
+            from .document_sandbox import cleanup_stale
+            cleanup_stale(config.data_dir() / '_document_spool')
+        except OSError:
+            print('Document scratch recovery deferred; retry on next document import.', file=sys.stderr)
+    threading.Thread(target=recover_document_jobs, daemon=True).start()
     import uvicorn
 
     from .app import Core, create_app
@@ -107,9 +112,12 @@ def main(argv: list[str] | None = None) -> int:
 
             webview.settings["ALLOW_DOWNLOADS"] = True  # без этого WebView2 молча отменяет скачивание отчётов (PDF/HTML/CSV/JSON/MD)
 
-            webview.create_window(f"{config.APP_NAME} {config.APP_VERSION}", url, width=1360, height=900, min_size=(980, 640), text_select=True)
+            window = webview.create_window(f"{config.APP_NAME} {config.APP_VERSION}", url, width=1360, height=900, min_size=(980, 640), text_select=True, background_color='#0d0f14')
+            if os.name == 'nt':
+                from .window_recovery import install
+                install(window)
             webview.start(private_mode=False, storage_path=str(config.data_dir() / "webview"),
-                          icon=str(config.resource_dir() / "assets" / "linda-dev.ico"))
+                          icon=str(config.resource_dir() / "assets" / ("linda-dev.ico" if config.APP_NAME == 'Linda-Pro Dev' else "linda.ico")))
             server.should_exit = True
             return 0
         except Exception:  # noqa: BLE001

@@ -1,10 +1,7 @@
 """Bounded process isolation for document parsing. No model/app imports."""
 import json
-import os
 from pathlib import Path
-import subprocess
 import sys
-import tempfile
 import threading
 
 from .document_worker import MAX_INPUT, MAX_TEXT
@@ -34,22 +31,12 @@ def extract(filename, content):
     if not _slots.acquire(timeout=TIMEOUT):
         raise ValueError('Document parser is busy; try again')
     try:
-        with tempfile.TemporaryDirectory(prefix='linda-document-') as directory:
+        from .document_sandbox import scratch_job
+        with scratch_job() as directory:
             source, target = Path(directory)/'input', Path(directory)/'output.json'
             source.write_bytes(content)
-            env = dict(os.environ,OMP_NUM_THREADS='1',MKL_NUM_THREADS='1',OPENBLAS_NUM_THREADS='1')
-            flags = subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0
-            with subprocess.Popen(_command('document'+ext,source,target),cwd=Path(__file__).resolve().parents[1],
-                                  env=env,stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
-                                  creationflags=flags) as process:
-                try:
-                    process.wait(timeout=TIMEOUT)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait()
-                    raise ValueError('Document parsing timed out') from None
-                if process.returncode:
-                    raise ValueError('Document parser stopped unexpectedly')
+            from .document_sandbox import parse_worker
+            parse_worker('document'+ext,source,target,TIMEOUT)
             if not target.is_file() or target.stat().st_size>MAX_TEXT*2+2048:
                 raise ValueError('Document parser returned an invalid response')
             try:

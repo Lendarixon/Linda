@@ -4,8 +4,7 @@
 Вёрстка — обычный HTML/CSS (А4, переносы страниц, колонтитул), графики рисуются SVG без внешних библиотек:
 шкала вероятности, доли авторства, вероятность ИИ по ходу текста, скрипичный график (распределение вероятности ИИ
 по предложениям у людей, у ИИ и у этого текста), карта структуры, диапазоны структурных признаков.
-PDF делает Microsoft Edge в безголовом режиме (он есть на каждой Windows 10/11, ничего не ставим); если Edge
-не найден — report.py откатывается на простой PDF через fpdf. Текст отчёта на ru/pl/en; всё считается локально."""
+PDF строится встроенной fpdf2 без Edge/Chrome и без переключения на старую вёрстку. Текст отчёта на ru/pl/en; всё считается локально."""
 from __future__ import annotations
 
 import html
@@ -453,37 +452,11 @@ def render_html(rep: dict, lang: str = "ru", toolbar: bool = False) -> str:
     }
 
 
-def find_browser() -> str | None:
-    """Edge (есть на каждой Windows 10/11) или Chrome — для печати в PDF."""
-    cands = []
-    for base in (os.environ.get("ProgramFiles(x86)"), os.environ.get("ProgramFiles"), os.environ.get("LOCALAPPDATA")):
-        if base:
-            cands += [Path(base) / "Microsoft/Edge/Application/msedge.exe", Path(base) / "Google/Chrome/Application/chrome.exe"]
-    for c in cands:
-        if c.is_file():
-            return str(c)
-    return shutil.which("msedge") or shutil.which("chrome") or shutil.which("chromium")
-
-
 def pdf_available() -> bool:
-    return find_browser() is not None
+    import importlib.util
+    return importlib.util.find_spec('fpdf') is not None
 
 
-def to_pdf_bytes(rep: dict, lang: str = "ru", timeout: int = 90) -> bytes:
-    """HTML -> PDF через безголовый Edge/Chrome. Бросает RuntimeError, если браузера нет или он не справился."""
-    exe = find_browser()
-    if not exe:
-        raise RuntimeError("no browser for PDF")
-    tmp = Path(tempfile.mkdtemp(prefix="linda_pdf_"))
-    try:
-        src, out = tmp / "report.html", tmp / "report.pdf"
-        src.write_text(render_html(rep, lang), encoding="utf-8")
-        cmd = [exe, "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", "--disable-extensions",
-               "--user-data-dir=%s" % (tmp / "profile"), "--no-pdf-header-footer", "--print-to-pdf=%s" % out, src.as_uri()]
-        flags = 0x08000000 if os.name == "nt" else 0  # CREATE_NO_WINDOW
-        subprocess.run(cmd, timeout=timeout, capture_output=True, creationflags=flags)
-        if not out.is_file() or out.stat().st_size < 2000:
-            raise RuntimeError("browser produced no PDF")
-        return out.read_bytes()
-    finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+def to_pdf_bytes(rep: dict, lang: str = 'ru', timeout: int = 90) -> bytes:
+    from .report import _to_pdf_bytes_fpdf
+    return _to_pdf_bytes_fpdf(rep,lang)

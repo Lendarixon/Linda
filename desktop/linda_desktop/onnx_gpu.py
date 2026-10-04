@@ -82,6 +82,9 @@ class OnnxSeqCls:
         so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
         so.log_severity_level = 3
         self.sess = ort.InferenceSession(str(onnx_path), sess_options=so, providers=[("DmlExecutionProvider", {"device_id": self.device_id}), "CPUExecutionProvider"])
+        if 'DmlExecutionProvider' not in self.sess.get_providers():
+            self.sess = None
+            raise RuntimeError('DirectML session is unavailable; GPU inference was not started')
 
     def close(self) -> None:
         self.sess = None

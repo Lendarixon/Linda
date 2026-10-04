@@ -32,6 +32,8 @@ MAX_UPLOAD = 20_000_000
 def launch_installer(path: Path) -> None:
     """A detached helper waits for this PID to exit, installs silently, and relaunches.
     A failed installer brings the existing executable back; logs stay in the data folder."""
+    if config.is_store_package():
+        raise RuntimeError('Store packages are updated through Microsoft Store')
     log = config.data_dir() / "update_setup.log"
     note = config.data_dir() / "update_launch.log"
     failure = config.data_dir() / 'update_failure.json'
@@ -510,11 +512,12 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
                     _lang = ui18n.resolve_lang(load_settings())
                 except Exception:  # noqa: BLE001
                     _lang = ui18n.DEFAULT_LANG
-                data = report.to_pdf_bytes(rep, _lang)
+                data, renderer = report.pdf_export(rep, _lang)
             except RuntimeError as e:
                 return err(str(e), 501)
             return Response(data, media_type="application/pdf",
-                            headers={"Content-Disposition": 'attachment; filename="%s.pdf"' % base})
+                            headers={"Content-Disposition": 'attachment; filename="%s.pdf"' % base,
+                                     'X-Linda-PDF-Renderer': renderer})
         return rep
 
     @api.get("/api/report/{check_id}")
@@ -570,23 +573,20 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
     @api.get("/api/audit")
     def audit_list(action: str = "", limit: int = 200, offset: int = 0):
         """Журнал аудита (локально): новые события первыми."""
+        from . import secure_audit
         days = config.enterprise().get("audit_retention_days", 0) or 0
-        if days:  # чистка старых записей по политике хранения
-            try:
-                import sqlite3 as _sq
-
-                with history._LOCK, _sq.connect(str(config.data_dir() / "history.db")) as _con:
-                    _con.execute("CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL NOT NULL, action TEXT NOT NULL, detail TEXT NOT NULL DEFAULT '')")
-                    _con.execute("DELETE FROM audit WHERE ts < ?", (time.time() - days * 86400,))
-                    _con.commit()
-            except Exception:  # noqa: BLE001
-                pass
-        return {"items": history.audit_list(action, limit, offset)}
+        try:
+            history._migrate_audit()
+            secure_audit.retention(days)
+            return {"items": history.audit_list(action, limit, offset),
+                    "integrity": secure_audit.integrity_info()}
+        except secure_audit.AuditIntegrityError:
+            return err('Audit integrity verification failed. The journal has not been reset.',409)
 
     @api.delete("/api/audit")
     def audit_delete():
-        """Очистить журнал аудита (сама очистка фиксируется новой записью)."""
-        return {"status": "ok", "deleted": history.audit_clear()}
+        """Protected journal has no manual clearing endpoint."""
+        return err('The protected audit journal cannot be cleared from the application.',403)
 
     @api.post("/api/batch_folder")
     def batch_folder(body: dict):
@@ -791,6 +791,8 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
     def app_update():
         """Фоновая загрузка инсталлера в staging (проверка хеша). Инсталлер сразу не запускается:
         ставится update_pending, UI показывает баннер «Перезапустите для обновления»."""
+        if config.is_store_package():
+            return err('Application updates are managed by Microsoft Store.',409)
         ins = (core.manifest or {}).get("installer")
         if not ins or not core.update or not core.update.get("app_new"):
             return terr("err_no_update", 409)
@@ -831,6 +833,8 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
     @api.post("/api/app/restart")
     def app_restart(body: dict | None = None):
         """Перезапуск с установкой: запускает скачанный инсталлер (он сам закроет и заново откроет приложение) и завершает процесс."""
+        if config.is_store_package():
+            return err('Application updates are managed by Microsoft Store.',409)
         if os.environ.get("LINDA_DEV") == "1" and not config.DEV_INSTALLER_ENABLED:
             return err("Dev: production installers are disabled; use the isolated update tests.", 409)
         if core.job.running():
@@ -869,6 +873,26 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
     @api.get('/api/draft/resume')
     def resume_draft():
         return {'draft':restart_draft.read()}
+
+    draft_revisions = {}
+    @api.post('/api/draft/save')
+    def save_session_draft(body: dict):
+        client, revision = body.get('client_id'), body.get('revision')
+        if not isinstance(client,str) or not 1 <= len(client) <= 80 or type(revision) is not int or revision < 0:
+            return err('Invalid draft revision.',400)
+        with core.settings_lock:
+            if revision <= draft_revisions.get(client,-1):
+                return {'status':'stale'}
+            try:
+                restart_draft.save(body.get('text'))
+            except PermissionError as exc:
+                return err(str(exc),403)
+            except ValueError as exc:
+                return err(str(exc),400)
+            if len(draft_revisions) >= 128 and client not in draft_revisions:
+                draft_revisions.pop(next(iter(draft_revisions)))
+            draft_revisions[client] = revision
+            return {'status':'ok'}
 
     @api.post('/api/draft/ack')
     def acknowledge_draft(body: dict):

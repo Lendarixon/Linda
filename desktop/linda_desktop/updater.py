@@ -519,6 +519,8 @@ def download_installer(info: dict, progress=None, cancel: threading.Event | None
 
     Качает в Linda-Setup.exe.part, после проверки хеша переименовывает в .exe и пишет INSTALLER_READY.
     Применение — только при перезапуске, сразу инсталлер не запускается."""
+    if config.is_store_package():
+        raise UpdateError('Application updates are managed by Microsoft Store / Windows package deployment')
     url = info["url"]
     if not url.startswith("https://") and not os.environ.get("LINDA_ALLOW_HTTP"):
         raise UpdateError("installer url must be https")
@@ -577,7 +579,10 @@ def update_status(manifest: dict) -> dict:
            "weights_update": bool(inst) and vtuple(manifest["version"]) > vtuple(inst), "weights_missing": not is_complete(),
            "app_required": vtuple(manifest.get("min_app", "0")) > vtuple(config.APP_VERSION), "app_new": False, "installer": None}
     ins = manifest.get("installer")
-    if ins and vtuple(ins.get("version", "0")) > vtuple(config.APP_VERSION):
+    packaged = config.is_store_package()
+    if packaged:
+        out['distribution'] = 'store'
+    if not packaged and ins and vtuple(ins.get("version", "0")) > vtuple(config.APP_VERSION):
         out["app_new"] = True
         out["installer"] = {"version": ins["version"], "size": ins.get("size", 0)}
     if out["weights_update"] or out["weights_missing"]:
@@ -588,6 +593,8 @@ def update_status(manifest: dict) -> dict:
 def staged_installer(root: Path | None = None) -> dict | None:
     """Скачанный и проверенный инсталлер новее установленной версии: {"version", "path", "staging"}.
     Устаревшие папки staging (версия не новее текущей) удаляются: это наши временные файлы."""
+    if config.is_store_package():
+        return None
     base = staging_root(root)
     if not base.is_dir():
         return None
@@ -617,6 +624,8 @@ def staged_installer(root: Path | None = None) -> dict | None:
 
 def verify_staged_installer(st: dict) -> None:
     """После паузы между скачиванием и перезапуском файл мог повредиться."""
+    if config.is_store_package():
+        raise UpdateError('EXE installers are not supported in Windows packages')
     path = Path(st['path'])
     meta = json.loads((path.parent / INSTALLER_READY_NAME).read_text(encoding='utf-8'))
     try:

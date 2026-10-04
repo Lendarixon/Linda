@@ -202,10 +202,9 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
       <div class="cab-row">
         <select class="cab-sel" id="aAction"><option value="" data-i18n="a_action_all">All actions</option><option value="detect" data-i18n="a_action_checks">Checks</option><option value="report_export" data-i18n="a_action_exports">Report exports</option><option value="batch_folder" data-i18n="a_action_batch">Folder batches</option><option value="license_activate" data-i18n="a_action_lic">Licence activations</option><option value="history_delete" data-i18n="a_action_del">Deletions</option></select>
         <button class="cab-btn" id="aGo" data-i18n="a_refresh">Refresh</button>
-        <button class="cab-btn danger" id="aClear" data-i18n="a_clear">Clear log</button>
       </div>
       <table class="cab-tbl"><thead><tr><th data-i18n="a_col_date">Date</th><th data-i18n="a_col_action">Action</th><th data-i18n="a_col_details">Details</th></tr></thead><tbody id="aBody"></tbody></table>
-      <p class="cab-note" data-i18n="a_note">The audit log is stored only on this computer. Old entries are deleted automatically after the retention period.</p>
+      <p class="cab-note" data-i18n="a_note">The local audit log is encrypted and checked for integrity. Manual clearing is unavailable. Old entries are removed according to the organisation's retention policy.</p>
     </div>
   </div>
 </div>
@@ -618,7 +617,6 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
     } catch (e) { $('aBody').innerHTML = '<tr><td colspan="3" class="cab-note">' + T('a_load_fail') + esc(e.message) + '</td></tr>'; }
   }
   $('aGo').onclick = loadAudit; $('aAction').onchange = loadAudit;
-  $('aClear').onclick = async () => { if (confirm(T('a_confirm_clear'))) { try { await api('/api/audit', { method: 'DELETE' }); } catch (e) { alert(e.message); } loadAudit(); } };
 
   document.addEventListener('linda-i18n', e => { try { if (!window.LINDA_LANG) return; if (window._cabLang === window.LINDA_LANG && !(e && e.detail && e.detail.force)) return; window._cabLang = window.LINDA_LANG; if ($('cabViewer')?.classList.contains('open') && V && V.id) { renderDoc(); renderSide(); if (V.title) $('vTitle').textContent = V.title; } else if ($('cabView')?.classList.contains('open')) { showPane(window._cabPane || 'hist'); } } catch (err) { console.error('[cabinet] i18n update failed', err); } });
   window.openLindaCabinet = openCab;

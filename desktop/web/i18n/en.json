@@ -12,7 +12,7 @@
   "a_confirm_clear": "Clear the audit log on this computer?",
   "a_empty": "Still empty.",
   "a_load_fail": "Could not load:",
-  "a_note": "The audit log is stored only on this computer. Old entries are deleted automatically after the retention period.",
+  "a_note": "The audit log is encrypted and checked for integrity on this computer. Manual clearing is unavailable. Expired entries are removed automatically according to the organisation's retention policy.",
   "a_refresh": "Refresh",
   "accent_cobalt": "Blue",
   "accent_green": "Green",
@@ -65,7 +65,7 @@
   "banner_models_updating": "Updating models… {pct}",
   "banner_new_models": "Model update {ver} is available{size}{notes}.",
   "banner_new_required": "A new version of the app ({ver}) is required to use the latest models.",
-  "banner_offline": "Cannot reach the update server: {err}",
+  "banner_offline": "Could not check for updates: {err}",
   "banner_restart_ready": "Update {ver} is downloaded. Restart the app to install it.",
   "banner_restarting": "Installing the update; the app will restart by itself…",
   "banner_too_old": "This version of the app is too old for the current models. Please update the app first.",
@@ -502,5 +502,7 @@
   "ui_wait_operation": "Finish or cancel the current check or upload first.",
   "ui_restart_no_draft": "History storage is disabled. The entered text will not be restored after the update. Continue?",
   "ui_heatmap_unavailable": "Sentence highlighting and authorship shares are unavailable for the selected model. Missing highlighting does not mean the text was written by a human.",
-  "err_precise_requires_ensemble": "Precise mode requires all three models. Use sensitive mode for the selected model."
+  "err_precise_requires_ensemble": "Precise mode requires all three models. Use sensitive mode for the selected model.",
+  "banner_store_required": "To use the new models, update Linda-Pro through Microsoft Store: open Library → Get updates, then restart Linda-Pro. This edition does not use the EXE installer.",
+  "error_update_path": "The model directory links outside the profile. Use a normal directory inside the Linda-Pro profile."
 }

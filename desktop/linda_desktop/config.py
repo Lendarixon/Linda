@@ -36,10 +36,50 @@ MAX_WORDS = None  # верхнего предела длины нет (рань�
 MIN_WORDS = 20
 
 
+def package_family_name() -> str | None:
+    """Ask Windows for actual package identity; an environment flag cannot fake it.
+
+    None means an unpackaged process. Unexpected Windows API errors fail closed:
+    silently treating a Store installation as EXE would enable the wrong updater.
+    """
+    if os.name != 'nt':
+        return None
+    import ctypes
+    from ctypes import wintypes
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    query = kernel.GetCurrentPackageFamilyName
+    query.argtypes = [ctypes.POINTER(wintypes.UINT), wintypes.LPWSTR]
+    query.restype = wintypes.LONG
+    size = wintypes.UINT(0)
+    result = query(ctypes.byref(size), None)
+    if result == 15700:  # APPMODEL_ERROR_NO_PACKAGE
+        return None
+    if result != 122 or not 1 < size.value <= 512:  # ERROR_INSUFFICIENT_BUFFER
+        raise RuntimeError(f'Cannot determine Windows package identity ({result})')
+    value = ctypes.create_unicode_buffer(size.value)
+    result = query(ctypes.byref(size), value)
+    if result:
+        raise RuntimeError(f'Cannot read Windows package identity ({result})')
+    family = value.value
+    if not family or any(c in family for c in ('/', '\\', ':')) or family in ('.', '..'):
+        raise RuntimeError('Invalid Windows package family name')
+    return family
+
+
+def is_store_package() -> bool:
+    """Packaged installations use Windows-managed app updates, including sideloads."""
+    return package_family_name() is not None
+
+
 def data_dir() -> Path:
-    """%LOCALAPPDATA%\\Linda-Pro (LINDA_HOME overrides, for tests)."""
+    """Separate packaged LocalState from legacy EXE data; tests may override it."""
     env = os.environ.get("LINDA_HOME")
-    base = Path(env) if env else Path(os.environ.get("LOCALAPPDATA") or Path.home() / ".local" / "share") / APP_NAME
+    if env:
+        base = Path(env)
+    else:
+        local = Path(os.environ.get("LOCALAPPDATA") or Path.home() / ".local" / "share")
+        family = package_family_name()
+        base = local / 'Packages' / family / 'LocalState' if family else local / APP_NAME
     base.mkdir(parents=True, exist_ok=True)
     return base
 

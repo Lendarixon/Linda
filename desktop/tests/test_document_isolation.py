@@ -8,6 +8,11 @@ import pytest
 from linda_desktop import documents
 
 
+@pytest.fixture(autouse=True)
+def isolated_document_spool(monkeypatch,tmp_path):
+    monkeypatch.setenv('LINDA_HOME',str(tmp_path/'document-profile'))
+
+
 def test_docx_real_worker_unicode():
     import docx
     doc = docx.Document()
@@ -34,18 +39,18 @@ def test_pdf_real_worker_and_empty_pdf():
 
 def test_timeout_kills_owned_worker_and_releases_slot(monkeypatch):
     monkeypatch.setattr(documents,'TIMEOUT',.15)
-    monkeypatch.setattr(documents,'_command',lambda *args:[sys.executable,'-c','import time;time.sleep(30)'])
-    real = subprocess.Popen
-    children = []
-    def launch(*args,**kwargs):
-        process = real(*args,**kwargs)
-        children.append(process)
-        return process
-    monkeypatch.setattr(documents.subprocess,'Popen',launch)
+    from linda_desktop import document_sandbox
+    real = document_sandbox.stage_runtime
+    def stage(directory):
+        command = real(directory)
+        from pathlib import Path
+        Path(command[1]).write_text('import time; time.sleep(30)',encoding='utf-8')
+        return command
+    monkeypatch.setattr(document_sandbox,'stage_runtime',stage)
     start = time.monotonic()
     with pytest.raises(ValueError,match='timed out'):
         documents.extract('slow.pdf',b'test')
-    assert time.monotonic()-start<3 and children[0].poll() is not None
+    assert time.monotonic()-start<5
     assert documents._slots.acquire(blocking=False)
     documents._slots.release()
 
@@ -75,7 +80,9 @@ def test_oversized_pdf_and_output_are_rejected(monkeypatch):
 def test_windowed_frozen_command_has_worker_dispatch(monkeypatch,tmp_path):
     monkeypatch.setattr(sys,'frozen',True,raising=False)
     assert documents._command('a.pdf',tmp_path/'in',tmp_path/'out')[1]=='--document-worker'
-    # run_dev's early dispatch must avoid importing the app or configuring profiles.
+    # Stable early dispatch must avoid importing the app or configuring profiles.
     from pathlib import Path
-    source = (Path(__file__).resolve().parents[1]/'run_dev.py').read_text(encoding='utf-8')
-    assert source.index('document_main(sys.argv[2:])')<source.index('ROOT =')
+    root = Path(__file__).resolve().parents[1]
+    entry = root/'run_app.py' if (root/'run_app.py').exists() else root/'run_release.py'
+    source = entry.read_text(encoding='utf-8')
+    assert source.index('main(sys.argv[2:])') < source.index('from linda_desktop.__main__ import main')

@@ -13,8 +13,10 @@ import sqlite3
 import threading
 import time
 import zlib
+from pathlib import Path
 
 from . import config
+from . import protected_storage
 
 _LOCK = threading.Lock()
 SCHEMA = """CREATE TABLE IF NOT EXISTS checks (
@@ -25,9 +27,31 @@ SCHEMA = """CREATE TABLE IF NOT EXISTS checks (
 @contextlib.contextmanager
 def _db():
     """Open, commit and always close the connection (the plain `with sqlite3.connect()` only commits)."""
-    con = sqlite3.connect(str(config.data_dir() / "history.db"))
-    con.row_factory = sqlite3.Row
-    try:
+    path=config.data_dir() / 'history.db'
+    with protected_storage.storage_lock(path):
+      con = sqlite3.connect(':memory:')
+      con.row_factory = sqlite3.Row
+      previous=None
+      legacy=False
+      try:
+        if path.exists():
+            stored=path.read_bytes()
+            if stored.startswith(protected_storage.MAGIC):
+                previous=protected_storage.unprotect(stored,'history-db')
+                con.deserialize(previous)
+            elif stored.startswith(b'SQLite format 3\x00'):
+                if any(Path(str(path)+suffix).exists() and Path(str(path)+suffix).stat().st_size for suffix in ('-wal','-journal')):
+                    raise ValueError('Close the previous application and checkpoint its history before migration')
+                old=sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)
+                try: old.backup(con)
+                finally: old.close()
+                previous=con.serialize()
+                legacy=True
+            else:
+                raise ValueError('History is damaged; it has not been overwritten')
+        con.execute('PRAGMA temp_store=MEMORY')
+        con.execute('PRAGMA journal_mode=MEMORY')
+        con.execute('PRAGMA secure_delete=ON')
         con.execute(SCHEMA)
         con.execute("CREATE TABLE IF NOT EXISTS folders (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, color TEXT, ts REAL NOT NULL)")
         con.execute("CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL NOT NULL, action TEXT NOT NULL, detail TEXT NOT NULL DEFAULT '')")
@@ -35,35 +59,45 @@ def _db():
             con.execute("ALTER TABLE checks ADD COLUMN folder_id INTEGER")
         yield con
         con.commit()
-    finally:
+        if legacy:
+            con.execute('VACUUM')
+        snapshot=con.serialize()
+        if previous is None or legacy or snapshot!=previous:
+            protected=protected_storage.protect(snapshot,'history-db')
+            if protected_storage.unprotect(protected,'history-db')!=snapshot:
+                raise ValueError('Protected history verification failed')
+            protected_storage.atomic_write(path,protected)
+      finally:
         con.close()
 
 
-def audit(action: str, detail: str = "") -> int:
-    """Записать событие в журнал аудита (для корпоративных клиентов): кто/что/когда, локально."""
+def _migrate_audit():
+    from . import secure_audit
+    if not (config.data_dir()/'history.db').exists():
+        return
     with _LOCK, _db() as con:
-        cur = con.execute("INSERT INTO audit (ts, action, detail) VALUES (?,?,?)",
-                          (time.time(), str(action)[:60], str(detail)[:2000]))
-        return int(cur.lastrowid)
+        old=[dict(row) for row in con.execute('SELECT id,ts,action,detail FROM audit ORDER BY id')]
+        if old:
+            secure_audit.migrate_legacy(old)
+            con.execute('DELETE FROM audit')
+            con.commit()
+            con.execute('VACUUM')
+
+
+def audit(action: str, detail: str = "") -> int:
+    from . import secure_audit
+    _migrate_audit()
+    return secure_audit.append(action,detail)
 
 
 def audit_list(action: str = "", limit: int = 200, offset: int = 0) -> list[dict]:
-    """Прочитать журнал аудита: новые первыми. action='' — все действия."""
-    sql, args = "SELECT id, ts, action, detail FROM audit", []
-    if action:
-        sql += " WHERE action = ?"
-        args.append(action)
-    sql += " ORDER BY id DESC LIMIT ? OFFSET ?"
-    with _LOCK, _db() as con:
-        return [dict(r) for r in con.execute(sql, (*args, min(max(int(limit), 1), 1000), max(int(offset), 0)))]
+    from . import secure_audit
+    _migrate_audit()
+    return secure_audit.list_entries(action,limit,offset)
 
 
 def audit_clear() -> int:
-    """Очистить журнал аудита (действие само фиксируется отдельной записью после очистки)."""
-    with _LOCK, _db() as con:
-        n = con.execute("DELETE FROM audit").rowcount
-    audit("audit_clear", "журнал очищен (%d записей)" % n)
-    return n
+    raise PermissionError('The audit journal cannot be cleared from the application')
 
 
 def _pack(obj) -> bytes:
@@ -208,12 +242,8 @@ def delete(check_id: int) -> bool:
 def clear() -> int:
     with _LOCK, _db() as con:
         n = con.execute("DELETE FROM checks").rowcount
-    with _LOCK:
-        con = sqlite3.connect(str(config.data_dir() / "history.db"), isolation_level=None)
-        try:
-            con.execute("VACUUM")  # give the disk space back
-        finally:
-            con.close()
+        con.commit()
+        con.execute('VACUUM')
     return n
 
 

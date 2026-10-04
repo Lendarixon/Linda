@@ -104,6 +104,11 @@ class Engine:
             if pool is not None:
                 pool.clear()
             self.dets = None
+            # Factory caches form cycles; release GPU sessions on device changes.
+            import gc
+            gc.collect()
+            self.device = pick_device(load_settings().get('device','auto'))
+            self.gpu_error = ''
             self.state = {"phase": "idle", "error": ""}
 
     def _routed_detectors(self, table_path: Path, settings: dict) -> dict:
