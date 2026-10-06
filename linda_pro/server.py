@@ -56,6 +56,7 @@ def make_detectors(device: str | None = None) -> dict[str, LindaPro]:
             cache[key] = _Resident(base._default_factory(key))
         return cache[key]
 
+    factory._cache = cache  # engine closes only already-loaded residents, never instantiates unloaded ones
     base._factory = factory
     precise = LindaPro(mode="precise", device=device, voter_factory=factory)
     return {"sensitive": base, "precise": precise}

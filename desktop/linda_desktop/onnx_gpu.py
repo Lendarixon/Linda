@@ -54,8 +54,11 @@ def export(model_dir: Path, out_dir: Path, max_len: int, fp16: bool = False) -> 
 class OnnxSeqCls:
     """Drop-in replacement of FastSeqCls (margins / close) that runs on the GPU through DirectML."""
 
-    def __init__(self, model_dir: str | Path, cache_dir: str | Path, device_id: int = 0, fp16: bool = False):
+    def __init__(self, model_dir: str | Path, cache_dir: str | Path, device_id: int = 0, fp16: bool = False,
+                 max_batch: int | None = None, allow_export: bool = True):
         self.fp16 = fp16
+        self.max_batch = None if max_batch is None else max(1, int(max_batch))
+        self.allow_export = bool(allow_export)
         self.model_dir = Path(model_dir)
         self.cache = Path(cache_dir) / self.model_dir.name
         self.device_id = device_id
@@ -72,10 +75,12 @@ class OnnxSeqCls:
         m = json.loads(meta.read_text(encoding="utf-8")) if meta.exists() else {}
         ok = onnx_path.exists() and m.get("max_len") == self.max_len and m.get("dtype", "fp32") == ("fp16" if self.fp16 else "fp32")
         if not ok:
+            if not self.allow_export:
+                raise RuntimeError('Prebuilt ONNX graph or matching metadata is missing; runtime export is disabled')
             export(self.model_dir, self.cache, self.max_len, fp16=self.fp16)
         self.tok = AutoTokenizer.from_pretrained(str(self.model_dir))
         so = ort.SessionOptions()
-        so.intra_op_num_threads = 6
+        so.intra_op_num_threads = 4
         so.inter_op_num_threads = 1
         so.add_session_config_entry('session.intra_op.allow_spinning','0')
         so.enable_mem_pattern = False
@@ -111,9 +116,11 @@ class OnnxSeqCls:
         z = np.zeros(len(wins))
         from linda_pro.voters import check_cancel
 
-        for b in range(0, len(wins), MAX_BATCH):
+        instance_batch = getattr(self, 'max_batch', None)
+        batch = instance_batch if instance_batch is not None else MAX_BATCH
+        for b in range(0, len(wins), batch):
             check_cancel()
-            chunk = wins[b: b + MAX_BATCH]
+            chunk = wins[b: b + batch]
             ids = np.full((len(chunk), L), pad, dtype=np.int64)
             mask = np.zeros((len(chunk), L), dtype=np.int64)
             for r, w in enumerate(chunk):

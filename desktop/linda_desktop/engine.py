@@ -16,6 +16,12 @@ from .sentences import split_sentences_with_offsets
 
 ALL_MODELS = ("linda_essay", "linda_multi_v2", "stylo7c")
 
+# 1.3-beta language split: EN is strictly the classic 1.1 ensemble
+# (Essay-D + Multi-D + Stylo-D with the original windowed calibration);
+# PL/RU go through calibration/routing.json. Never mix both GPU pools at once.
+CLASSIC_LANG = "en"
+ROUTED_LANGS = ("pl", "ru")
+
 
 def _sig(m: float, c: float, s: float) -> float:
     return 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, (m - c) / s))))
@@ -84,12 +90,15 @@ class Engine:
         self.state = {"phase": "idle", "error": ""}
         self.gpu: dict | None = None  # filled by probe_gpu() in the background (importing torch takes a moment)
         self.gpu_error = ""
+        self._backend: str | None = None  # None = nothing loaded yet (or manually injected dets in tests); 'classic' | 'routed'
+        self._routed_lang: str | None = None  # last routed language fully loaded (pool holds its voices)
 
     def probe_gpu(self) -> None:
         self.gpu = gpu_probe()
 
     def calibration_file(self) -> Path | None:
-        files = sorted((config.data_dir() / "calibration").glob("*.json"))
+        # Classic 1.1 calibration only: routing.json is a language table, not a calibration.
+        files = sorted(p for p in (config.data_dir() / "calibration").glob("*.json") if p.name != "routing.json")
         return files[0] if files else None
 
     def routing_file(self) -> Path | None:
@@ -98,12 +107,57 @@ class Engine:
         p = Path(env) if env else config.data_dir() / "calibration" / "routing.json"
         return p if p.exists() else None
 
+    def merged_table(self) -> bool:
+        """True, если routing.json — таблица merged-ансамбля 1.3 (kind=merged): тогда английский идёт тем же путём, что PL/RU, на общих голосах."""
+        p = self.routing_file()
+        if p is None:
+            return False
+        try:
+            return json.loads(p.read_text(encoding="utf-8")).get("kind") == "merged"
+        except Exception:  # noqa: BLE001
+            return False
+
+    def _close_dets(self, dets: dict | None) -> None:
+        """Release voters/sessions of a backend before another backend loads (no simultaneous GPU pools)."""
+        if not dets:
+            return
+        for det in dets.values():
+            try:
+                pool = getattr(det, "pool", None)
+                if pool is not None and hasattr(pool, "clear"):
+                    pool.clear()
+                    continue
+                close = getattr(det, "close", None)
+                if callable(close):
+                    try:
+                        close()
+                    except Exception:  # noqa: BLE001 — unloading must not fail the switch
+                        pass
+                    continue
+                # Classic residents: close only already-loaded voters, never instantiate unloaded ones.
+                cache = getattr(getattr(det, "_factory", None), "_cache", None)
+                if isinstance(cache, dict):
+                    for v in list(cache.values()):
+                        try:
+                            inner = getattr(v, "_v", v)
+                            fn = getattr(inner, "close", None) or getattr(v, "close", None)
+                            if callable(fn):
+                                fn()
+                        except Exception:  # noqa: BLE001
+                            pass
+                    try:
+                        cache.clear()
+                    except Exception:  # noqa: BLE001
+                        pass
+            except Exception:  # noqa: BLE001 — unloading must not fail the switch
+                pass
+
     def unload(self) -> None:
         with self.lock:
-            pool = getattr(getattr(self.dets, "get", lambda k: None)("sensitive"), "pool", None) if self.dets else None
-            if pool is not None:
-                pool.clear()
+            self._close_dets(self.dets)
             self.dets = None
+            self._backend = None
+            self._routed_lang = None
             # Factory caches form cycles; release GPU sessions on device changes.
             import gc
             gc.collect()
@@ -135,14 +189,16 @@ class Engine:
         pool = ModelPool(make, table.get("size_mb_fp16", {"essay": 870, "multi": 560}), budget)
         return {"sensitive": RoutedLindaPro(table, make, "sensitive", budget, pool=pool), "precise": RoutedLindaPro(table, make, "precise", budget, pool=pool)}
 
-    def _ensure_routed(self, table_path: Path) -> dict:
+    def _ensure_routed(self, table_path: Path, lang: str = "en") -> dict:
         self.state = {"phase": "loading", "error": ""}
         settings = load_settings()
         self.device = pick_device(settings.get("device", "auto"))
         self.gpu_error = ""
         dets = self._routed_detectors(table_path, settings)
         try:  # warm up one transformer now so that a broken GPU path falls back to the CPU here, not in the middle of an analysis
-            first = next(k for k in dets["sensitive"].tier("en")["voters"] if not k.startswith("stylo"))
+            want = lang if lang in ("en", "pl", "ru") else "en"
+            tier = dets["sensitive"].tier(want)
+            first = next(k for k in tier["voters"] if not k.startswith("stylo"))
             dets["sensitive"].pool.get(first).margins(["Warm up."])
         except Exception as e:  # noqa: BLE001
             if self.device != "dml":
@@ -152,18 +208,12 @@ class Engine:
             dets["sensitive"].pool.clear()
             dets = self._routed_detectors(table_path, settings)
         self.dets = dets
+        self._backend = "routed"
         self.state = {"phase": "ready", "error": ""}
         return dets
 
-    def ensure_loaded(self) -> dict:
-        if self.dets is not None:
-            return self.dets
-        rt = self.routing_file()
-        if rt is not None:
-            return self._ensure_routed(rt)
-        cal = self.calibration_file()
-        if cal is None:
-            raise RuntimeError("model files are not installed yet")
+    def _ensure_classic(self, cal: Path) -> dict:
+        """EN strictly classic 1.1: Essay-D + Multi-D + Stylo-D with the original windowed calibration."""
         self.state = {"phase": "loading", "error": ""}
         import linda_pro.core as core
         from linda_pro.server import make_detectors
@@ -175,7 +225,7 @@ class Engine:
         try:
             import torch
 
-            torch.set_num_threads(max(1, min(6, (__import__("os").cpu_count() or 4) - 1)))
+            torch.set_num_threads(max(1, min(4, (__import__("os").cpu_count() or 4) - 1)))
         except Exception:  # noqa: BLE001
             pass
         self.gpu_error = ""
@@ -199,9 +249,94 @@ class Engine:
             self.state = {"phase": "loading", "error": "", "note": ""}
             dets = make_detectors("cpu")
             self._load_voters(dets)
-        self.dets = dets
+        self.dets = self._maybe_en_rescue(dets, settings)
+        self._backend = "classic"
         self.state = {"phase": "ready", "error": ""}
+        return self.dets
+
+    def _maybe_en_rescue(self, dets: dict, settings: dict | None = None) -> dict:
+        """1.3 opt-in Essay-I rescue for the EN sensitive detector, OFF unless data_dir()/calibration/en_rescue.json
+        sets enabled=true. Missing/disabled file -> the classic detectors are returned untouched (identical behaviour).
+        Precise, PL/RU and the custom-ensemble path are not modified."""
+        try:
+            from linda_pro import rescue
+
+            cfg = rescue.read_config(config.data_dir())
+            if not cfg.get("enabled"):
+                return dets
+            settings = settings if settings is not None else load_settings()
+            device = self.device
+            onnx_cls = None
+            if device == "dml":
+                try:
+                    from . import onnx_gpu
+
+                    onnx_cls = onnx_gpu.OnnxSeqCls
+                except Exception:  # noqa: BLE001 — no ONNX path: the rescue uses the CPU voter
+                    onnx_cls = None
+            factory = rescue.default_i_factory(config.data_dir(), device,
+                                               int(settings.get("gpu_index", 0) or 0), onnx_cls=onnx_cls)
+            return rescue.wrap_rescue(dets, factory, thr=rescue.threshold_of(cfg),
+                                      batch=int(cfg.get("i_batch", rescue.CPU_BATCH) or rescue.CPU_BATCH))
+        except Exception as e:  # noqa: BLE001 — a broken opt-in must never break classic analysis
+            self.gpu_error = self.gpu_error or f"en_rescue: {type(e).__name__}: {e}"
+            return dets
+
+    def ensure_for_language(self, lang: str) -> dict:
+        """Load the backend for one language, unloading the previous pools/sessions first (no simultaneous GPU)."""
+        target = "classic" if (lang == CLASSIC_LANG and not self.merged_table()) else "routed"
+        if self.dets is not None and self._backend is not None and self._backend != target:
+            self._close_dets(self.dets)  # unload previous pools/sessions before loading next
+            self.dets = None
+            self._routed_lang = None
+        if target == "classic":
+            if self.dets is not None and self._backend == "classic":
+                return self.dets
+            cal = self.calibration_file()
+            if cal is None:
+                raise RuntimeError("model files are not installed yet")
+            return self._ensure_classic(cal)
+        # routed (pl/ru): same pool for both, but unload previous language voices before loading next
+        if self.dets is not None and self._backend == "routed" and self._routed_lang is not None and self._routed_lang != lang and not getattr(self.dets["sensitive"], "shared_voices", False):
+            try:
+                self.dets["sensitive"].pool.clear()
+            except Exception:  # noqa: BLE001
+                pass
+            self._routed_lang = None
+        if self.dets is not None and self._backend == "routed":
+            if self._routed_lang is None or getattr(self.dets["sensitive"], "shared_voices", False):
+                self._routed_lang = lang
+            return self.dets
+        rt = self.routing_file()
+        if rt is None:
+            # No routing table means the PL/RU pack is not installed: fail loudly, never fake it with EN classic.
+            raise RuntimeError(f"language pack '{lang}' is not installed yet")
+        dets = self._ensure_routed(rt, lang)
+        self._backend = "routed"
+        self._routed_lang = lang
         return dets
+
+    def ensure_loaded(self, language: str | None = None, text: str | None = None) -> dict:
+        """Compatibility: zero-arg call keeps working (tests, preload). EN defaults to classic 1.1."""
+        if self.dets is not None and language is None and text is None:
+            return self.dets
+        if language is None and text is not None:
+            try:
+                from linda_pro.routed import detect_language as _dl
+                language = _dl(text)
+            except Exception:  # noqa: BLE001
+                language = CLASSIC_LANG
+        if language is None:
+            # Legacy default: classic EN when its calibration exists, else routed.
+            if self.dets is not None:
+                return self.dets
+            if self.calibration_file() is not None or self.merged_table():
+                return self.ensure_for_language(CLASSIC_LANG)
+            rt = self.routing_file()
+            if rt is not None:
+                return self._ensure_routed(rt, CLASSIC_LANG)
+            raise RuntimeError("model files are not installed yet")
+        return self.ensure_for_language(language)
 
     def _load_voters(self, dets: dict) -> None:
         if getattr(dets["sensitive"], "routed", False):
@@ -232,6 +367,7 @@ class Engine:
                 voters[key] = _Resident(StyloVoter(d) if key == "stylo7c" else onnx_gpu.OnnxSeqCls(d, cache_dir, idx))
             return voters[key]
 
+        factory._cache = voters  # close only already-loaded residents, never instantiate unloaded ones
         base = LindaPro(mode="sensitive", voter_factory=factory)
         base._factory = factory
         return {"sensitive": base, "precise": LindaPro(mode="precise", voter_factory=factory)}
@@ -351,7 +487,17 @@ class Engine:
                 raise ValueError('Unknown model selection')
             if mode == 'precise' and len(chosen_models) < len(ALL_MODELS):
                 raise ValueError('Precise mode requires all models.')
-            dets = self.ensure_loaded()
+            if self.dets is not None and self._backend is None:
+                dets = self.ensure_loaded()  # manually injected detectors (tests): keep legacy behaviour
+            else:
+                try:
+                    from linda_pro.routed import detect_language as _detect_lang
+                    _lang = _detect_lang(text)
+                except Exception:  # noqa: BLE001
+                    _lang = CLASSIC_LANG
+                if _lang not in ("en", "pl", "ru"):
+                    _lang = CLASSIC_LANG
+                dets = self.ensure_for_language(_lang)
             det = dets[mode]
             if getattr(det,'routed',False) and len(chosen_models)<3:
                 raise ValueError('This routed calibration requires all models; select all models.')

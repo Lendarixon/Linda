@@ -71,6 +71,7 @@ class ModelPool:
 
 class RoutedLindaPro:
     routed = True
+    window_words, max_windows = WINDOW_WORDS, MAX_WINDOWS
 
     def __init__(self, routing: str | Path | dict, voice_maker, mode: str = "sensitive", budget_mb: int = 2600, pool: ModelPool | None = None, tier: str | None = None):
         if mode not in ("sensitive", "precise"):
@@ -80,6 +81,8 @@ class RoutedLindaPro:
         self.tier_pref = tier
         self.pool = pool or ModelPool(voice_maker, self.table.get("size_mb_fp16", {"essay": 870, "multi": 560}), budget_mb)
         self.cur_lang = "en"
+        # merged-таблица: одни и те же модели обслуживают все языки, при смене языка их не выгружаем
+        self.shared_voices = self.table.get("kind") == "merged"
         self.voters: list[str] = []  # совместимость с движком: заранее ничего не грузим
 
     # --- совместимость с engine.py -----------------------------------------------------------------
@@ -120,13 +123,24 @@ class RoutedLindaPro:
             texts = [texts]
         out: list[dict | None] = [None] * len(texts)
         langs = [detect_language(t) for t in texts]
+        first = True
         for lang in dict.fromkeys(langs):
+            if not first and not self.shared_voices:
+                self.pool.clear()  # unload previous language voices/sessions before loading next (no simultaneous GPU)
+            first = False
             idx = [i for i, x in enumerate(langs) if x == lang]
             for i, r in zip(idx, self._detect_lang(lang, [texts[i] for i in idx])):
                 out[i] = r
         if texts:
             self.cur_lang = langs[-1]
         return out  # type: ignore[return-value]
+
+    def close(self) -> None:
+        """Unload all pooled voices/sessions."""
+        try:
+            self.pool.clear()
+        except Exception:  # noqa: BLE001
+            pass
 
     def _detect_lang(self, lang: str, texts: list[str]) -> list[dict]:
         self.cur_lang = lang
@@ -151,7 +165,11 @@ class RoutedLindaPro:
         res = []
         for i in range(len(texts)):
             agg = {k: (raw[k][i] if k.startswith("stylo") else top25(raw[k][i])) for k in t["voters"]}
-            score = sum((agg[k] - t["z"][k][0]) / t["z"][k][1] for k in t["voters"]) / len(t["voters"])
+            wts = t.get("weights")  # merged-таблица: заморозка DEV с весами голосов; без поля — среднее z, как в 2.0
+            if wts:
+                score = sum(float(wts.get(k, 0.0)) * (agg[k] - t["z"][k][0]) / t["z"][k][1] for k in t["voters"])
+            else:
+                score = sum((agg[k] - t["z"][k][0]) / t["z"][k][1] for k in t["voters"]) / len(t["voters"])
             ai, hi = (t["thr_p03"], t["thr_sensitive"]) if self.mode == "precise" else (t["thr_sensitive"], t["thr_p5"])
             verdict = "ai" if score > ai else "uncertain" if score > hi else "human"
             thr_w = t["heat"]["essay"]["win_thr_1"]

@@ -1,0 +1,179 @@
+{
+ "version": "merged-dhi-20261005",
+ "kind": "merged",
+ "note": "score = sum_k w_k * (agg_k - mu_k) / sd_k; agg = top25 of window margins (stylo: whole text); sensitive: ai > thr_sensitive (frozen DEV rule); uncertain > thr_p5; precise: ai > thr_p03, uncertain > thr_sensitive",
+ "voice_dirs": {
+  "essay_m": "essay_dhi_25_25_50_20261005",
+  "multi_m": "multi_dhi_25_25_50_20261005",
+  "stylo_d": "stylo_d"
+ },
+ "size_mb_fp16": {
+  "essay": 870,
+  "multi": 560,
+  "stylo": 0
+ },
+ "languages": {
+  "en": {
+   "n_dev_human": 1330,
+   "tiers": {
+    "full": {
+     "config": "w0.8-0.0-0.2_off_off",
+     "voters": [
+      "essay_m",
+      "multi_m",
+      "stylo_d"
+     ],
+     "mode": "top25",
+     "z": {
+      "essay_m": [
+       6.44760656146677,
+       8.101093254026011
+      ],
+      "multi_m": [
+       6.119251796666769,
+       6.110728044598359
+      ],
+      "stylo_d": [
+       2.059398278024117,
+       3.7414825736853303
+      ]
+     },
+     "weights": {
+      "essay_m": 0.8,
+      "multi_m": 0.0,
+      "stylo_d": 0.2
+     },
+     "thr_sensitive": 0.0025973241035734534,
+     "thr_p5": -0.31268077781469145,
+     "thr_p1": 0.04495844515665846,
+     "thr_p03": 0.2009852268416583,
+     "heat": {
+      "essay": {
+       "voter": "essay_m",
+       "thr_5": 4.46669921875,
+       "thr_05": 8.480351562500001,
+       "thr_1": 7.445078125000002,
+       "win_thr_1": 7.4182812500000015
+      },
+      "multi": {
+       "voter": "multi_m",
+       "thr_5": 8.216666666666665,
+       "thr_05": 9.606484375,
+       "thr_1": 9.36662109375,
+       "win_thr_1": 9.3656640625
+      }
+     },
+     "dev_fpr_at_sensitive": 0.012781954887218045
+    }
+   }
+  },
+  "pl": {
+   "n_dev_human": 1013,
+   "tiers": {
+    "full": {
+     "config": "equal-weight mean (essay/multi/style = 1/3)",
+     "voters": [
+      "essay_m",
+      "multi_m",
+      "stylo_d"
+     ],
+     "mode": "top25",
+     "z": {
+      "essay_m": [
+       10.13577477894132,
+       2.761042237216264
+      ],
+      "multi_m": [
+       9.744632052684176,
+       1.1196466527811981
+      ],
+      "stylo_d": [
+       1.8002636854172864,
+       1.6875031372328095
+      ]
+     },
+     "weights": {
+      "essay_m": 0.3333333333333333,
+      "multi_m": 0.3333333333333333,
+      "stylo_d": 0.3333333333333333
+     },
+     "thr_sensitive": -0.6269542789781266,
+     "thr_p5": -1.7013852122744606,
+     "thr_p1": -0.9871017275754568,
+     "thr_p03": -0.09356067225509525,
+     "heat": {
+      "essay": {
+       "voter": "essay_m",
+       "thr_5": 3.958105468749996,
+       "thr_05": 8.277851562499997,
+       "thr_1": 6.9137499999999985,
+       "win_thr_1": 6.779218750000009
+      },
+      "multi": {
+       "voter": "multi_m",
+       "thr_5": 8.212890625,
+       "thr_05": 9.592812499999999,
+       "thr_1": 9.256874999999999,
+       "win_thr_1": 9.233652343750002
+      }
+     },
+     "dev_fpr_at_sensitive": 0.005923000987166831
+    }
+   }
+  },
+  "ru": {
+   "n_dev_human": 611,
+   "tiers": {
+    "full": {
+     "config": "equal-weight mean (essay/multi/style = 1/3)",
+     "voters": [
+      "essay_m",
+      "multi_m",
+      "stylo_d"
+     ],
+     "mode": "top25",
+     "z": {
+      "essay_m": [
+       8.954716866888807,
+       3.457197363268015
+      ],
+      "multi_m": [
+       9.702737946779001,
+       1.2334567270184675
+      ],
+      "stylo_d": [
+       4.105892831703304,
+       1.581435125801988
+      ]
+     },
+     "weights": {
+      "essay_m": 0.3333333333333333,
+      "multi_m": 0.3333333333333333,
+      "stylo_d": 0.3333333333333333
+     },
+     "thr_sensitive": -0.693136049181177,
+     "thr_p5": -2.0717570311663844,
+     "thr_p1": -0.9504455535444798,
+     "thr_p03": -0.575645576479983,
+     "heat": {
+      "essay": {
+       "voter": "essay_m",
+       "thr_5": 1.69921875,
+       "thr_05": 6.129296875000005,
+       "thr_1": 4.3900390625,
+       "win_thr_1": 4.289485677083328
+      },
+      "multi": {
+       "voter": "multi_m",
+       "thr_5": 5.933430989583334,
+       "thr_05": 9.195345052083335,
+       "thr_1": 8.717480468749995,
+       "win_thr_1": 8.308398437499996
+      }
+     },
+     "dev_fpr_at_sensitive": 0.006546644844517185
+    }
+   }
+  }
+ }
+}
