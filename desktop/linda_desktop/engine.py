@@ -766,7 +766,7 @@ DEFAULT_SETTINGS = {
     "preload": True,
     "theme": "dark", "accent": "cobalt", "density": "comfortable",
     "font_scale": 100, "radius": "square", "sidebar": "left",
-    "language": "ru", "ui_mode": "simple", "tour_done": False,
+    "language": "ru", "ui_mode": "simple", "tour_done": False, "auto_models": True,
 }
 
 

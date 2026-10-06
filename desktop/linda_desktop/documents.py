@@ -22,10 +22,19 @@ def extract(filename, content):
         raise ValueError('Document exceeds the supported input limit')
     ext = Path(filename).suffix.lower()
     if ext in ('.txt','.md','.text',''):
+        head = content[:4096]
+        utf16 = head.startswith((b'\xff\xfe', b'\xfe\xff'))
+        if b'\x00' in head and not utf16:  # NUL-байты вне UTF-16: это не текст (например, .exe под видом .txt)
+            raise ValueError('not a text file')
+        if utf16:
+            return content.decode('utf-16', errors='replace').lstrip('\ufeff')
         try:
             return content.decode('utf-8-sig')
         except UnicodeDecodeError:
-            return content.decode('cp1252',errors='replace')
+            try:
+                return content.decode('cp1251')  # старые русские файлы Windows; cp1252 для них давал бы кракозябры
+            except UnicodeDecodeError:
+                return content.decode('cp1252',errors='replace')
     if ext not in ('.pdf','.docx'):
         raise ValueError('Supported formats: .txt, .md, .docx, .pdf')
     if not _slots.acquire(timeout=TIMEOUT):

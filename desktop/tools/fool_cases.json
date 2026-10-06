@@ -1,0 +1,492 @@
+[
+ {
+  "id": 1,
+  "area": "Input Validation",
+  "do": "Submit empty text",
+  "input": "",
+  "expect": "Validation error: Text cannot be empty; analysis blocked"
+ },
+ {
+  "id": 2,
+  "area": "Input Validation",
+  "do": "Submit whitespace-only string",
+  "input": "   \\t   \\n  ",
+  "expect": "Validation error: Text contains no readable content"
+ },
+ {
+  "id": 3,
+  "area": "Length Boundary",
+  "do": "Submit single word",
+  "input": "Detection",
+  "expect": "Validation error: Minimum word threshold not met (min 20 words)"
+ },
+ {
+  "id": 4,
+  "area": "Length Boundary",
+  "do": "Submit minimum boundary text of 25 words",
+  "input": "The rapid advancement of artificial intelligence models requires comprehensive verification tools to differentiate machine generated text from human writing across multiple languages and various communication channels.",
+  "expect": "Successful analysis with confidence score and language detection EN"
+ },
+ {
+  "id": 5,
+  "area": "Stress Testing",
+  "do": "Submit large text payload of 10k words",
+  "input": "word*10000",
+  "expect": "Successful analysis within performance SLA (<5s), memory remains stable"
+ },
+ {
+  "id": 6,
+  "area": "Stress Testing",
+  "do": "Submit maximum payload limit of 5MB",
+  "input": "a*5242880",
+  "expect": "Payload accepted or rejected cleanly with 413 Payload Too Large; no UI freeze or crash"
+ },
+ {
+  "id": 7,
+  "area": "Charset Handling",
+  "do": "Submit emoji-only content",
+  "input": "😀🤖🚀🔥🎉👍🧠📝🔍💡🎯✨",
+  "expect": "Validation error: Insufficient linguistic content for analysis"
+ },
+ {
+  "id": 8,
+  "area": "Language Support",
+  "do": "Submit Arabic RTL script",
+  "input": "تعتبر تقنيات الذكاء الاصطناعي من أهم التطورات التكنولوجية في العصر الحديث حيث تساهم في تحسين الإنتاجية وتطوير الخدمات في مختلف القطاعات الحيوية حول العالم.",
+  "expect": "Unsupported language warning or graceful out-of-scope detection score"
+ },
+ {
+  "id": 9,
+  "area": "Language Support",
+  "do": "Submit Simplified Chinese text",
+  "input": "人工智能技术的快速发展正在深刻地改变着各行各业的运作模式，从自动驾驶到自然语言处理，技术的边界不断被拓展与突破。",
+  "expect": "Unsupported language warning or fallback handling without UI breakage"
+ },
+ {
+  "id": 10,
+  "area": "Language Support",
+  "do": "Submit Greek text",
+  "input": "Η τεχνητή νοημοσύνη αναπτύσσεται ραγδαία και επηρεάζει καθοριστικά όλους τους τομείς της σύγχρονης επιστήμης και της καθημερινής ζωής στον πλανήτη.",
+  "expect": "Unsupported language warning; UI correctly displays Greek typography"
+ },
+ {
+  "id": 11,
+  "area": "Evasion & Adversarial",
+  "do": "Submit mixed Cyrillic and Latin homoglyphs",
+  "input": "Thіs tеxt соntаіns mіхеd сhаrасtеrs dеsіgnеd tо соnfusе thе аlgоrіthm.",
+  "expect": "Homoglyph/mixed-script warning flagged; normalized text analyzed correctly"
+ },
+ {
+  "id": 12,
+  "area": "Input Validation",
+  "do": "Submit numeric-only content",
+  "input": "18293849182391283912839182391283918239182391823918239128391823",
+  "expect": "Validation error: No alphabetic text detected"
+ },
+ {
+  "id": 13,
+  "area": "Input Validation",
+  "do": "Submit punctuation-only content",
+  "input": "!@#$%^&*()_+-=[]{}|;':\\\",./<>?~`",
+  "expect": "Validation error: No readable sentences detected"
+ },
+ {
+  "id": 14,
+  "area": "Content Classification",
+  "do": "Submit Python source code",
+  "input": "def detect_ai(text: str) -> float:\\n    tokens = tokenize(text)\\n    return model.predict(tokens)",
+  "expect": "Classified as source code; prompt indicating code detection is unsupported"
+ },
+ {
+  "id": 15,
+  "area": "Security / XSS",
+  "do": "Submit malicious HTML script payload",
+  "input": "<script>alert(1)</script><b>Valid looking text content for analyzer</b>",
+  "expect": "HTML tags sanitized/escaped; no script execution in local web UI"
+ },
+ {
+  "id": 16,
+  "area": "Security / Injection",
+  "do": "Submit SQL injection payload string",
+  "input": "' OR '1'='1'; DROP TABLE analyses; -- Regular text follows to pad length.",
+  "expect": "String treated strictly as raw text; database operations unaffected"
+ },
+ {
+  "id": 17,
+  "area": "Input Parsing",
+  "do": "Submit raw JSON payload into text field",
+  "input": "{\\\"detector\\\": \\\"Linda-Pro\\\", \\\"status\\\": \\\"active\\\", \\\"payload\\\": \\\"sample text\\\"}",
+  "expect": "Treated as plain text; structured syntax does not crash JSON parser"
+ },
+ {
+  "id": 18,
+  "area": "Layout & UI Boundary",
+  "do": "Submit a single 100,000-character word without spaces",
+  "input": "a*100000",
+  "expect": "UI wraps or truncates visually without horizontal overflow; no browser crash"
+ },
+ {
+  "id": 19,
+  "area": "Sanitization",
+  "do": "Submit control characters and null bytes",
+  "input": "Text\\x00with\\x07control\\x08chars\\x1band\\x0bnull\\x00bytes.",
+  "expect": "Control characters stripped cleanly; analysis proceeds on clean text"
+ },
+ {
+  "id": 20,
+  "area": "Sanitization",
+  "do": "Submit zero-width unicode characters",
+  "input": "T\\u200Bh\\u200Ci\\u200Ds\\uFEFF text contains invisible characters.",
+  "expect": "Zero-width characters removed during preprocessing; normalized score produced"
+ },
+ {
+  "id": 21,
+  "area": "Whitespace Handling",
+  "do": "Submit newline characters only",
+  "input": "\\n*500",
+  "expect": "Validation error: Input contains no words"
+ },
+ {
+  "id": 22,
+  "area": "Formatting",
+  "do": "Submit text using CRLF line breaks",
+  "input": "First line.\\r\\nSecond line.\\r\\nThird line.\\r\\nFourth line.",
+  "expect": "CRLF normalized to LF; paragraphs segmented accurately"
+ },
+ {
+  "id": 23,
+  "area": "Layout & UI Boundary",
+  "do": "Submit single extremely long line of valid sentences",
+  "input": "(\\\"This is a very long continuous line without linebreaks. \\\")*200",
+  "expect": "Text wraps cleanly in UI textarea and report view; no horizontal blowout"
+ },
+ {
+  "id": 24,
+  "area": "Input Validation",
+  "do": "Submit list of URLs only",
+  "input": "https://example.com/test https://google.com/search?q=ai https://openai.com",
+  "expect": "Flagged as URL list with insufficient narrative body text"
+ },
+ {
+  "id": 25,
+  "area": "Language Support",
+  "do": "Submit multilingual text containing EN, RU, PL",
+  "input": "Artificial intelligence is transforming society. Искусственный интеллект меняет наш мир каждый день. Sztuczna inteligencja rozwija się bardzo dynamicznie w Polsce.",
+  "expect": "Multilingual flag triggered; per-segment language breakdown displayed"
+ },
+ {
+  "id": 26,
+  "area": "Language Support",
+  "do": "Submit standard Ukrainian text",
+  "input": "Штучний інтелект активно впроваджується в сучасні технологічні процеси, допомагаючи автоматизувати рутинну роботу та приймати складні аналітичні рішення.",
+  "expect": "Language identified as UKR; processed or reported as related unsupported script"
+ },
+ {
+  "id": 27,
+  "area": "Language Support",
+  "do": "Submit standard German text with umlauts",
+  "input": "Künstliche Intelligenz verändert die moderne Arbeitswelt grundlegend und bietet innovative Lösungen für komplexe gesellschaftliche Herausforderungen.",
+  "expect": "Language detected as DE; processed or flagged as out of primary trio (RU/PL/EN)"
+ },
+ {
+  "id": 28,
+  "area": "Adversarial Repetition",
+  "do": "Submit single sentence repeated 500 times",
+  "input": "(\\\"The quick brown fox jumps over the lazy dog. \\\")*500",
+  "expect": "Repetition/low-perplexity anomaly detected and flagged as artificial"
+ },
+ {
+  "id": 29,
+  "area": "Formatting",
+  "do": "Submit Markdown formatted table",
+  "input": "| Metric | Value |\\\\n|---|---|\\\\n| Accuracy | 99% |\\\\n| Speed | 12ms |",
+  "expect": "Markdown parsed cleanly without breaking analysis engine"
+ },
+ {
+  "id": 30,
+  "area": "Formatting",
+  "do": "Submit LaTeX mathematical formulas",
+  "input": "The formula is: \\\\frac{-b \\\\pm \\\\sqrt{b^2 - 4ac}}{2a} where \\\\sum_{i=1}^n x_i = 100.",
+  "expect": "LaTeX syntax ignored or stripped; non-math narrative evaluated"
+ },
+ {
+  "id": 31,
+  "area": "Content Classification",
+  "do": "Submit Base64 encoded binary string",
+  "input": "SGVsZG8gd29ybGQgdGhpcyBpcyBhIGJhc2U2NCBlbmNvZGVkIHN0cmluZyBmb3IgdGVzdGluZyBwdXJwb3NlcyBvbmx5Lg==",
+  "expect": "Input recognized as encoded/gibberish; appropriate low-confidence warning"
+ },
+ {
+  "id": 32,
+  "area": "Content Classification",
+  "do": "Submit rhyming poetic text",
+  "input": "Two roads diverged in a yellow wood,\\\\nAnd sorry I could not travel both\\\\nAnd be one traveler, long I stood\\\\nAnd looked down one as far as I could.",
+  "expect": "Poetic meter analyzed; human likelihood assessed with rhyme/meter note"
+ },
+ {
+  "id": 33,
+  "area": "Formatting",
+  "do": "Submit text in ALL CAPS",
+  "input": "THIS IS A FULLY CAPITALIZED TEXT SUBMITTED TO VERIFY THAT CASING DOES NOT IMPACT THE AI DETECTION SCORE HEURISTICS NEGATIVELY.",
+  "expect": "Processed correctly without case-sensitivity skew; returns valid score"
+ },
+ {
+  "id": 34,
+  "area": "Domain Text",
+  "do": "Submit standard software license agreement text",
+  "input": "Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \\\"Software\\\"), to deal in the Software without restriction...",
+  "expect": "Identified as standard legal boilerplate; high probability of human/templated origin"
+ },
+ {
+  "id": 35,
+  "area": "Functional / Russian",
+  "do": "Submit standard 150-word Russian paragraph",
+  "input": "Искусственный интеллект стал неотъемлемой частью современной технологической экосистемы, оказывая глубокое влияние на науку, образование и промышленное производство. С каждым годом алгоритмы машинного обучения становятся всё более совершенными, позволяя решать задачи, которые ранее считались исключительной прерогативой человеческого разума. Например, автоматический анализ больших данных, распознавание сложных медицинских изображений и создание реалистичных текстов теперь выполняются за считанные секунды. Однако развитие таких систем влечёт за собой новые этические и практические вызовы. Специалистам необходимо разрабатывать надёжные методы верификации контента, предотвращать дезинформацию и обеспечивать прозрачность принимаемых алгоритмических решений. Программа Linda-Pro создана именно для того, чтобы предоставить пользователям удобный и точный инструмент проверки текстов на предмет машинной генерации в локальном окружении, обеспечивая полную конфиденциальность и высокую скорость обработки информации на русском, польском и английском языках без передачи данных на сторонние серверы.",
+  "expect": "Language detected as RU; successful AI vs Human classification score displayed"
+ },
+ {
+  "id": 1,
+  "area": "file",
+  "do": "Upload renamed executable",
+  "input": "malicious.exe renamed to sample.txt",
+  "expect": "File validation fails based on MIME/magic bytes; analysis rejected"
+ },
+ {
+  "id": 2,
+  "area": "file",
+  "do": "Upload empty file",
+  "input": "empty.txt (0 bytes)",
+  "expect": "Error shown: file is empty; analysis blocked"
+ },
+ {
+  "id": 3,
+  "area": "file",
+  "do": "Upload corrupted DOCX",
+  "input": "broken_header.docx with truncated ZIP headers",
+  "expect": "Parser error handled gracefully; displays invalid document format message"
+ },
+ {
+  "id": 4,
+  "area": "file",
+  "do": "Upload corrupted PDF",
+  "input": "malformed.pdf with missing EOF marker",
+  "expect": "PDF extraction error trapped; UI shows unreadable file warning"
+ },
+ {
+  "id": 5,
+  "area": "file",
+  "do": "Upload encrypted document",
+  "input": "protected.pdf with user password set",
+  "expect": "Displays prompt or error indicating password-protected files are unsupported"
+ },
+ {
+  "id": 6,
+  "area": "file",
+  "do": "Upload files at and exceeding size limits",
+  "input": "21 MB file and 25 MB file (limit: 20 MB)",
+  "expect": "Both uploads rejected with clear max-file-size exceeded notification"
+ },
+ {
+  "id": 7,
+  "area": "file",
+  "do": "Upload file with non-ASCII spaces",
+  "input": "отчет по проверке текста.docx",
+  "expect": "Path handled properly; file successfully parsed and analyzed"
+ },
+ {
+  "id": 8,
+  "area": "file",
+  "do": "Upload file with long filename",
+  "input": "A string of 300 alphanumeric characters + .txt",
+  "expect": "Filename truncated visually in UI without overflow; backend processes correctly"
+ },
+ {
+  "id": 9,
+  "area": "file",
+  "do": "Upload decompression bomb",
+  "input": "zipbomb.docx containing high-ratio nested compressed stream",
+  "expect": "Extraction terminates safely when expansion limit exceeded; app remains responsive"
+ },
+ {
+  "id": 10,
+  "area": "file",
+  "do": "Upload unsupported image format",
+  "input": "photo.jpg",
+  "expect": "Rejected by file picker filter or rejected on drop with unsupported format error"
+ },
+ {
+  "id": 11,
+  "area": "file",
+  "do": "Drag and drop directory",
+  "input": "Directory dropped onto file dropzone",
+  "expect": "Drop event ignored or displays error that folders cannot be uploaded directly"
+ },
+ {
+  "id": 12,
+  "area": "file",
+  "do": "Drag and drop multiple files",
+  "input": "doc1.docx and doc2.docx dropped simultaneously",
+  "expect": "App processes first file or prompts single-file mode without crashing"
+ },
+ {
+  "id": 13,
+  "area": "ui",
+  "do": "Trigger rapid analyze requests",
+  "input": "Double-click Analyze button and rapid 20-click burst",
+  "expect": "Button debounced/disabled after first click; exactly one analysis job queued"
+ },
+ {
+  "id": 14,
+  "area": "ui",
+  "do": "Switch application locale mid-task",
+  "input": "Change UI language RU -> PL -> EN while analysis is active",
+  "expect": "Interface text updates smoothly; ongoing background task completes uninterrupted"
+ },
+ {
+  "id": 15,
+  "area": "ui",
+  "do": "Toggle results display view mid-task",
+  "input": "Switch between simple and detailed views during active scanning",
+  "expect": "View toggles correctly without resetting progress bar or dropping analysis state"
+ },
+ {
+  "id": 16,
+  "area": "ui",
+  "do": "Shrink application window",
+  "input": "Resize desktop window to minimum possible dimensions (e.g., 200x200px)",
+  "expect": "UI elements collapse/scroll gracefully; no crashing or unreadable overlapping text"
+ },
+ {
+  "id": 17,
+  "area": "ui",
+  "do": "Dismiss onboarding via keyboard",
+  "input": "Press Escape key during product tour",
+  "expect": "Tour modal closes immediately; focus returns to main dashboard"
+ },
+ {
+  "id": 18,
+  "area": "ui",
+  "do": "Bypass onboarding via button",
+  "input": "Click 'Skip tour' button on step 1",
+  "expect": "Tour dismissed; tour completion flag persisted in local storage"
+ },
+ {
+  "id": 19,
+  "area": "folder",
+  "do": "Set models folder to unwritable path",
+  "input": "Directory with read-only permissions",
+  "expect": "Settings validation warns folder is read-only; prevents download/save of models"
+ },
+ {
+  "id": 20,
+  "area": "folder",
+  "do": "Set models folder to disconnected drive",
+  "input": "Non-existent drive path Z:\\models",
+  "expect": "Validation error: drive or path not found; previous setting retained"
+ },
+ {
+  "id": 21,
+  "area": "folder",
+  "do": "Set models folder to network share",
+  "input": "UNC path \\\\server\\share\\models",
+  "expect": "Validates SMB connection; proceeds if reachable or throws connection timeout"
+ },
+ {
+  "id": 22,
+  "area": "folder",
+  "do": "Set models folder to filesystem root",
+  "input": "C:\\",
+  "expect": "Warns user about restricted root directory; requires specific subfolder"
+ },
+ {
+  "id": 23,
+  "area": "folder",
+  "do": "Set models folder with Cyrillic path",
+  "input": "C:\\Пользователи\\Модели ИИ",
+  "expect": "Path accepted and correctly resolved using UTF-8 without mojibake"
+ },
+ {
+  "id": 24,
+  "area": "folder",
+  "do": "Set models folder with very long path",
+  "input": "Valid filesystem path exceeding 300 characters",
+  "expect": "Handled via extended-length path prefix (\\\\?\\) or warns path exceeds limit"
+ },
+ {
+  "id": 25,
+  "area": "folder",
+  "do": "Reselect existing models path",
+  "input": "Select directory currently configured as models folder",
+  "expect": "No-op or quick confirmation; does not trigger redundant re-download"
+ },
+ {
+  "id": 26,
+  "area": "update",
+  "do": "Check updates without connectivity",
+  "input": "Initiate updater with network adapter disabled",
+  "expect": "Fails gracefully with 'No internet connection' notice; app functions normally"
+ },
+ {
+  "id": 27,
+  "area": "update",
+  "do": "Process corrupted update manifest",
+  "input": "update.json containing malformed JSON / random bytes",
+  "expect": "Manifest parser error caught; update aborted without crashing"
+ },
+ {
+  "id": 28,
+  "area": "update",
+  "do": "Validate update package signature",
+  "input": "Update binary with mismatched cryptographic signature",
+  "expect": "Signature verification fails; installer deleted immediately and update aborted"
+ },
+ {
+  "id": 29,
+  "area": "update",
+  "do": "Interrupt binary download",
+  "input": "Terminate updater process or drop network at 50% download",
+  "expect": "Partially downloaded file cleaned up; resume or retry available on next launch"
+ },
+ {
+  "id": 30,
+  "area": "api",
+  "do": "Request detection without payload",
+  "input": "POST /api/detect with {}",
+  "expect": "HTTP 400 Bad Request with validation error listing required fields"
+ },
+ {
+  "id": 31,
+  "area": "api",
+  "do": "Send invalid field types",
+  "input": "POST /api/detect with {\"text\": 123456}",
+  "expect": "HTTP 422 Unprocessable Entity specifying text field must be a string"
+ },
+ {
+  "id": 32,
+  "area": "api",
+  "do": "Send excessively large payload",
+  "input": "POST /api/detect with 100MB JSON body",
+  "expect": "HTTP 413 Payload Too Large returned before server memory exhaustion"
+ },
+ {
+  "id": 33,
+  "area": "api",
+  "do": "Access protected route with bad token",
+  "input": "GET /api/status with Authorization: Bearer invalid_secret",
+  "expect": "HTTP 401 Unauthorized returned"
+ },
+ {
+  "id": 34,
+  "area": "api",
+  "do": "Poll non-existent job ID",
+  "input": "GET /api/jobs/uuid-that-does-not-exist",
+  "expect": "HTTP 404 Not Found with error message"
+ },
+ {
+  "id": 35,
+  "area": "api",
+  "do": "Attempt path traversal via open_path",
+  "input": "POST /api/open_path with {\"path\": \"../../../../Windows/System32/calc.exe\"}",
+  "expect": "HTTP 403 Forbidden; path traversal blocked outside designated app directories"
+ }
+]

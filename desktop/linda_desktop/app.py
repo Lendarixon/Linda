@@ -7,6 +7,7 @@ import base64
 import asyncio
 import io
 import json
+import re
 import os
 import secrets
 import subprocess
@@ -83,6 +84,8 @@ class Core:
         self.engine = Engine()
         self.job = updater.Job()
         self.job.apply_lock = self.engine.lock
+        self.job.before_apply = self.engine.unload
+        self._auto_tried: str | None = None
         self.job.on_done = lambda m: (self.engine.unload(), self.preload())  # new weights: drop the old ones and, if enabled, load the new ones right away
         self.manifest: dict | None = None
         self.manifest_raw: bytes = b""
@@ -143,6 +146,24 @@ class Core:
         except Exception as e:  # noqa: BLE001
             self.update_error = str(e)
         self.checked_at = time.time()
+        try:
+            self._maybe_auto_models()
+        except Exception:  # noqa: BLE001 — automatic update is best effort
+            pass
+
+    def _maybe_auto_models(self) -> None:
+        """A new weights version appeared (a release with new models): download and apply it in the background, once per version, if the user did not switch it off,
+        the app itself is new enough and the models disk has room. The old models stay in use until the new ones are verified; the progress shows in the banner."""
+        up, m = self.update, self.manifest
+        if not up or not m or not up.get("weights_update") or up.get("app_required") or not updater.is_complete():
+            return
+        if not load_settings().get("auto_models", True) or self.job.running() or self.move.busy() or self._auto_tried == m.get("version"):
+            return
+        need = float(up.get("bytes_to_download") or 0)
+        if need and models_location.free_gb(Path(config.models_root())) * 2**30 < need * 1.15 + 1.5 * 2**30:
+            return  # not enough room: the banner still offers the manual update with an explanation
+        self._auto_tried = m.get("version")
+        self.job.start(m, self.manifest_raw)
 
     def preload(self) -> bool:
         """Optional explicit background warmup. Default CPU loading is on demand."""
@@ -376,8 +397,16 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         try:
             text = (await run_in_threadpool(extract, filename, content)).replace("\r\n", "\n").replace("\r", "\n").strip()
         except Exception as e:  # noqa: BLE001
-            base = ui18n.tr("err_could_not_read", ui18n.resolve_lang(load_settings()))
-            return err(base + (": " + str(e) if isinstance(e, ValueError) else ": " + type(e).__name__))
+            lang = ui18n.resolve_lang(load_settings())
+            base = ui18n.tr("err_could_not_read", lang)
+            if isinstance(e, ValueError) and str(e) == "not a text file":
+                return err(ui18n.tr("err_not_text", lang), 400)
+            if isinstance(e, ValueError) and str(e).startswith("Supported formats"):
+                return err(base + ": " + ui18n.tr("err_format", lang), 400)
+            # не показываем имена внутренних исключений (BadZipFile, KeyError, PdfReadError): понятная причина вместо них
+            msg = str(e)
+            internal = not isinstance(e, ValueError) or re.fullmatch(r"[A-Za-z_.]*(Error|File|Exception|Warning)", msg) is not None  # BadZipFile, PdfReadError, KeyError...
+            return err(base + ": " + (ui18n.tr("err_file_corrupt", lang) if internal else msg))
         if not text:
             return terr("err_no_text")
         return {"status": "ok", "filename": filename, "text": text, "words": len(text.split()), "chars": len(text)}
@@ -497,6 +526,11 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             return terr("err_bad_request")
         if mode == 'precise' and models and len(set(models)) < 3:
             return terr("err_precise_requires_ensemble", 400)
+        letters = [c for c in text if c.isalpha()]
+        if len(letters) >= 20:
+            known = sum(1 for c in letters if c.isascii() or "À" <= c <= "ſ" or "Ѐ" <= c <= "ӿ")
+            if known / len(letters) < 0.5:  # арабский, китайский, греческий...: модели не знают этих языков, честный вердикт невозможен
+                return terr("err_lang_unsupported", 400)
         n = len(text.split())
         if n < config.MIN_WORDS or (config.MAX_WORDS and n > config.MAX_WORDS):
             return terr("err_text_min", 400, config.MIN_WORDS, n)
@@ -645,6 +679,16 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         if fmt == "csv":
             return PlainTextResponse(report.to_csv(rep), media_type="text/csv; charset=utf-8",
                                      headers={"Content-Disposition": 'attachment; filename="%s.csv"' % base})
+        if fmt == "pdf_short":
+            if not report.pdf_available():
+                return terr("err_no_pdf", 501)
+            from . import report_short
+
+            try:
+                data = report_short.to_short_pdf_bytes(rep, ui18n.resolve_lang(load_settings()))
+            except RuntimeError as e:
+                return err(str(e), 501)
+            return Response(data, media_type="application/pdf", headers={"Content-Disposition": 'attachment; filename="%s_short.pdf"' % base})
         if fmt == "pdf":
             if not report.pdf_available():
                 return terr("err_no_pdf", 501)
@@ -915,6 +959,8 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             cur["language"] = body["language"]
         if body.get("ui_mode") in ("simple", "expert"):
             cur["ui_mode"] = body["ui_mode"]
+        if isinstance(body.get("auto_models"), bool):
+            cur["auto_models"] = body["auto_models"]
         if isinstance(body.get("tour_done"), bool):
             cur["tour_done"] = body["tour_done"]
         save_settings(cur)

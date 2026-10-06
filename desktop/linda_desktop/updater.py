@@ -371,6 +371,27 @@ def apply_pending(root: Path | None = None) -> dict:
     return res
 
 
+def prune_stale(root: Path | None = None) -> list[str]:
+    """After a successful weights update: remove what the new manifest no longer owns but the file-level cleanup cannot see: ONNX caches of voices whose model folder is gone
+    (old exports are ~1 GB each) and empty folders. Best effort, never raises."""
+    root = Path(root or config.models_root())
+    removed: list[str] = []
+    try:
+        models, onnx = root / "models", root / "onnx"
+        if models.is_dir():
+            for d in sorted(models.iterdir()):
+                if d.is_dir() and not any(d.rglob("*")):
+                    d.rmdir()
+        if onnx.is_dir():
+            for d in sorted(onnx.iterdir()):
+                if d.is_dir() and not (models / d.name).is_dir():
+                    shutil.rmtree(d, ignore_errors=True)
+                    removed.append(f"onnx/{d.name}")
+    except Exception:  # noqa: BLE001
+        pass
+    return removed
+
+
 class Job:
     """Background download with progress; cancel() stops it between chunks (partial files are kept for resuming)."""
 
@@ -433,9 +454,15 @@ class Job:
             _verify_staged(manifest, staging, root)  # повторная проверка хеша каждого файла
             (staging / READY_NAME).write_text(json.dumps({"version": manifest["version"], "ts": time.time()}), encoding="utf-8")
             self._set(phase="applying", file="")
+            if getattr(self, "before_apply", None):
+                try:
+                    self.before_apply()  # release the files of the old models (the engine must not hold them open while they are replaced)
+                except Exception:  # noqa: BLE001
+                    pass
             with _apply_guard(self.apply_lock, self._cancel):
                 _apply_staged(manifest, staging, root, raw)
             (staging / READY_NAME).unlink(missing_ok=True)
+            prune_stale(root)
             self._set(phase="finishing", file="")
             self._set(phase="done", done=self.state["total"], file="")
             if self.on_done:
