@@ -19,11 +19,12 @@ ap.add_argument("pack")
 ap.add_argument("out")
 ap.add_argument("--installer-file")
 ap.add_argument("--installer-url")
+ap.add_argument("--min-app", default="")  # по умолчанию = версия приложения; для обновления без новых весов можно оставить прежнюю
 a = ap.parse_args()
 log = json.loads((ROOT / "CHANGELOG.json").read_text(encoding="utf-8"))
 cur = log[0]
 version_app = cur["version"]
-ns = argparse.Namespace(src=a.pack, version="1.3.0", min_app=version_app, notes=cur["notes"]["en"], notes_ru=cur["notes"]["ru"], notes_pl=cur["notes"]["pl"], notes_en=cur["notes"]["en"],
+ns = argparse.Namespace(src=a.pack, version="1.3.0", min_app=a.min_app or version_app, notes=cur["notes"]["en"], notes_ru=cur["notes"]["ru"], notes_pl=cur["notes"]["pl"], notes_en=cur["notes"]["en"],
                         title_ru=cur["title"]["ru"], title_pl=cur["title"]["pl"], title_en=cur["title"]["en"], changelog_json="", installer_url=a.installer_url,
                         installer_file=a.installer_file, installer_version=version_app, out=a.out)
 mm.build(ns)

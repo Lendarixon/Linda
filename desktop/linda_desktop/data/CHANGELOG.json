@@ -1,5 +1,19 @@
 [
   {
+    "version": "2.0.3.0",
+    "date": "2026-10-06",
+    "title": {
+      "ru": "Проще и нагляднее: полосы прогресса, быстрые настройки, автовыбор видеокарты",
+      "en": "Simpler and clearer: progress bars, quick settings, automatic GPU choice",
+      "pl": "Prościej i czytelniej: paski postępu, szybkie ustawienia, automatyczny wybór karty"
+    },
+    "notes": {
+      "ru": "• Окно настроек больше не скрывается под верхней панелью.\n• Видеокарта выбирается автоматически надёжнее: дискретная карта определяется по объёму видеопамяти, самая мощная идёт первой.\n• Полосы прогресса при загрузке и чтении файла, анализе, пакетной проверке и сравнении документов.\n• Язык интерфейса переключается кнопками RU / PL / EN в шапке; у настроек появилась иконка шестерёнки; тема, размер шрифта и выбор устройства вынесены в левую панель.\n• Выбор режима и моделей убран в сворачиваемый блок «Для опытных»: по умолчанию экран проще.\n• Список изменений в программе показывает только номера и названия обновлений со ссылкой на полный список.\n• Кнопка «Проверить обновления» перенесена в раздел обновлений.",
+      "en": "• The settings window no longer hides under the top bar.\n• Automatic graphics-card choice is more reliable: a discrete card is recognised by its video memory and the most powerful one comes first.\n• Progress bars for file upload and reading, analysis, batch checks and document comparison.\n• The interface language switches with RU / PL / EN buttons in the header; settings got a gear icon; theme, font size and device choice moved to the left panel.\n• Analysis mode and model choice moved into a collapsible Advanced block, so the default screen is simpler.\n• The in-app change list shows only version numbers and titles with a link to the full list.\n• The Check for updates button moved to the updates section.",
+      "pl": "• Okno ustawień nie chowa się już pod górnym paskiem.\n• Automatyczny wybór karty graficznej jest pewniejszy: karta dyskretna jest rozpoznawana po pamięci wideo, najmocniejsza jest pierwsza.\n• Paski postępu przy wczytywaniu i odczycie pliku, analizie, sprawdzaniu wsadowym i porównywaniu dokumentów.\n• Język interfejsu przełączają przyciski RU / PL / EN w nagłówku; ustawienia mają ikonę koła zębatego; motyw, rozmiar czcionki i wybór urządzenia przeniesiono do lewego panelu.\n• Wybór trybu i modeli przeniesiono do zwijanego bloku „Zaawansowane”: domyślny ekran jest prostszy.\n• Lista zmian w programie pokazuje tylko numery i tytuły aktualizacji z linkiem do pełnej listy.\n• Przycisk „Sprawdź aktualizacje” przeniesiono do sekcji aktualizacji."
+    }
+  },
+  {
     "version": "2.0.2.21",
     "date": "2026-10-06",
     "title": {

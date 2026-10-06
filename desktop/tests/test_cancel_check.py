@@ -71,6 +71,7 @@ def test_adapter_names_discrete_first(monkeypatch):
         stdout = "AMD Radeon(TM) Graphics\nAMD Radeon RX 9070 XT\nMicrosoft Basic Display Adapter\n"
     monkeypatch.setattr(engine.subprocess, "run", lambda *a, **k: R())
     monkeypatch.setattr(engine.os, "name", "nt")
+    monkeypatch.setattr(engine, "_registry_adapters", lambda: [])  # реестр пуст: запасной путь через PowerShell
     assert engine._adapter_names() == ["AMD Radeon RX 9070 XT", "AMD Radeon(TM) Graphics"]
 
 

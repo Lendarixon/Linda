@@ -149,7 +149,7 @@ th{background:#f0f2f8}.lb-ai{background:#fde2e4}.lb-uncertain{background:#fff3cd
 </dl>
 <p class="note">%(disclaimer)s Текст обработан локально на этом компьютере и никуда не отправлялся.</p>
 <h2>Оценки моделей (выше = ИИ)</h2>
-<p>Linda-Essay-D: <b>%(v_essay)s</b> · Linda-Multi-D: <b>%(v_multi)s</b> · Stylo-D: <b>%(v_stylo)s</b></p>
+<p>Linda-Essay 1.3: <b>%(v_essay)s</b> · Linda-Multi 1.3: <b>%(v_multi)s</b> · Stylo-D: <b>%(v_stylo)s</b></p>
 <h2>Аналитика текста</h2>
 <p>Средняя длина предложения: %(avg_sent)s слов · Burstiness: %(burst)s · Лексическое разнообразие: %(div)s · Штампы: %(stock)s</p>
 <h2>Структура (вне типичного для человека)</h2>

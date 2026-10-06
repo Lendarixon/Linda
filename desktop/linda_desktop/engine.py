@@ -30,21 +30,69 @@ def _sig(m: float, c: float, s: float) -> float:
 _DISCRETE = re.compile(r"\b(rtx|gtx|geforce|quadro|titan|tesla|radeon rx|radeon pro|radeon vii)\b|\barc\W*(tm\W*)?[ab]\d", re.I)
 
 
-def _adapter_names() -> list[str]:
-    """Names of the graphics adapters (Windows). Cosmetic: shown in the settings."""
+def _registry_adapters() -> list[tuple[str, int]]:
+    """(name, dedicated video memory in bytes) of every display adapter from the Windows registry: fast, needs no PowerShell and, unlike WMI AdapterRAM (32-bit, capped at 4 GB),
+    reports the real size of modern cards."""
     if os.name != "nt":
         return []
     try:
-        out = subprocess.run(["powershell", "-NoProfile", "-Command", "(Get-CimInstance Win32_VideoController).Name"], capture_output=True, text=True, timeout=20,
-                             creationflags=0x08000000).stdout
-        names = [l.strip() for l in out.splitlines() if l.strip() and "basic" not in l.lower()]
-        # DirectML нумерует адаптеры «мощные первыми» (device_id 0 = дискретная карта), а Windows перечисляет их в произвольном порядке:
-        # без сортировки пункт «RX 9070 XT» в списке мог означать встроенную графику (в 25 раз медленнее)
-        return sorted(names, key=lambda n: 0 if _DISCRETE.search(n) else 1)
+        import winreg
+
+        out: list[tuple[str, int]] = []
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}") as root:
+            i = 0
+            while True:
+                try:
+                    sub = winreg.EnumKey(root, i)
+                except OSError:
+                    break
+                i += 1
+                if not sub.isdigit():
+                    continue
+                try:
+                    with winreg.OpenKey(root, sub) as k:
+                        name = str(winreg.QueryValueEx(k, "DriverDesc")[0]).strip()
+                        try:
+                            mem = winreg.QueryValueEx(k, "HardwareInformation.qwMemorySize")[0]
+                            mem = int.from_bytes(mem, "little") if isinstance(mem, (bytes, bytearray)) else int(mem)
+                        except OSError:
+                            mem = 0
+                except OSError:
+                    continue
+                if name and "basic" not in name.lower() and "remote" not in name.lower() and "virtual" not in name.lower():
+                    out.append((name, mem))
+        return out
     except Exception:  # noqa: BLE001
         return []
 
 
+def _vram_by_name() -> dict[str, int]:
+    return {n: m for n, m in _registry_adapters()}
+
+
+def _adapter_names() -> list[str]:
+    """Names of the graphics adapters (Windows), the fastest first (DirectML numbers them "most powerful first", device_id 0 = the best card): discrete cards by video memory, then
+    integrated graphics. Source: the registry (fast, real memory sizes), PowerShell/WMI only when the registry has nothing. Shown in the settings and used to pick the card."""
+    rows = _registry_adapters() or [(n, 0) for n in _wmi_names()]
+    rows.sort(key=lambda r: (0 if (_DISCRETE.search(r[0]) or r[1] >= int(1.5 * 2**30)) else 1, -r[1]))
+    return [n for n, _ in rows]
+
+
+def _adapters() -> list[dict]:
+    """Adapters in selection order with discrete = a known discrete family name or at least 1.5 GB of dedicated video memory (integrated graphics reserve a few hundred MB)."""
+    vram = _vram_by_name()
+    return [{"name": n, "vram": vram.get(n, 0), "discrete": bool(_DISCRETE.search(n)) or vram.get(n, 0) >= int(1.5 * 2**30)} for n in _adapter_names()]
+
+
+def _wmi_names() -> list[str]:
+    if os.name != "nt":
+        return []
+    try:
+        out = subprocess.run(["powershell", "-NoProfile", "-Command", "(Get-CimInstance Win32_VideoController).Name"], capture_output=True, text=True, timeout=30,
+                             creationflags=0x08000000).stdout
+        return [l.strip() for l in out.splitlines() if l.strip() and "basic" not in l.lower()]
+    except Exception:  # noqa: BLE001
+        return []
 
 
 def gpu_probe() -> dict:
@@ -63,8 +111,11 @@ def gpu_probe() -> dict:
         from . import onnx_gpu
 
         if onnx_gpu.available():
-            names = _adapter_names()
-            return {"available": True, "backend": "DirectML", "name": ", ".join(names) or "DirectX 12 graphics card", "names": names, "discrete": any(_DISCRETE.search(n) for n in names)}
+            ads = _adapters()
+            names = [a["name"] for a in ads]
+            # Adapter list unavailable (registry and PowerShell blocked) while DirectML works: trust DirectML, it ranks the cards itself and puts the strongest first.
+            discrete = any(a["discrete"] for a in ads) if ads else True
+            return {"available": True, "backend": "DirectML", "name": ", ".join(names) or "DirectX 12 graphics card", "names": names, "discrete": discrete}
     except Exception:  # noqa: BLE001
         pass
     return none
@@ -92,6 +143,16 @@ class Engine:
         self.gpu_error = ""
         self._backend: str | None = None  # None = nothing loaded yet (or manually injected dets in tests); 'classic' | 'routed'
         self._routed_lang: str | None = None  # last routed language fully loaded (pool holds its voices)
+
+    _progress_cb = None  # callable(pct: float, phase: str) set for the duration of one run(); phase in load / scan / sent / done
+
+    def _emit(self, pct: float, phase: str) -> None:
+        cb = self._progress_cb
+        if cb is not None:
+            try:
+                cb(max(0.0, min(100.0, float(pct))), phase)
+            except Exception:  # noqa: BLE001 — a progress bar must never break an analysis
+                pass
 
     def probe_gpu(self) -> None:
         self.gpu = gpu_probe()
@@ -457,7 +518,7 @@ class Engine:
                     n += 1
         return n
 
-    def run(self, text: str, mode: str = "sensitive", models: list | None = None, cancellable: bool = False, cancel: threading.Event | None = None) -> dict:
+    def run(self, text: str, mode: str = "sensitive", models: list | None = None, cancellable: bool = False, cancel: threading.Event | None = None, progress=None) -> dict:
         """Одна проверка за раз. cancellable=True: её можно прервать (новый текст в окне одной проверки); пакетные проверки не отменяются."""
         from linda_pro import voters as _voters
 
@@ -469,12 +530,15 @@ class Engine:
                 if job["cancel"].is_set():
                     raise _voters.Cancelled()
                 _voters.CANCEL = job["cancel"].is_set
+                self._progress_cb = progress
                 try:
                     result = self._run_locked(text, mode, models)
                     _voters.check_cancel()
+                    self._emit(100, "done")
                     return result
                 finally:
                     _voters.CANCEL = None
+                    self._progress_cb = None
         finally:
             with self._jobs_lock:
                 if job in self._jobs:
@@ -482,6 +546,7 @@ class Engine:
 
     def _run_locked(self, text: str, mode: str = "sensitive", models: list | None = None) -> dict:
         if True:
+            self._emit(2, "load")
             chosen_models = list(dict.fromkeys(models or ALL_MODELS))
             if any(name not in ALL_MODELS for name in chosen_models):
                 raise ValueError('Unknown model selection')
@@ -499,6 +564,9 @@ class Engine:
                     _lang = CLASSIC_LANG
                 dets = self.ensure_for_language(_lang)
             det = dets[mode]
+            self._emit(8, "scan")
+            if hasattr(det, "progress"):
+                det.progress = self._emit  # routed detector reports voter / batch progress (8..55)
             if getattr(det,'routed',False) and len(chosen_models)<3:
                 raise ValueError('This routed calibration requires all models; select all models.')
             if len(chosen_models)==1:
@@ -506,6 +574,7 @@ class Engine:
                 return run_single(self,det,text,mode,chosen_models[0])
             res = det.detect([text])[0]
             R = det.rules
+            self._emit(55, "sent")
 
             def par(k, c, s):
                 r = R.get(k) or {}
@@ -521,10 +590,15 @@ class Engine:
             wspans = []  # (first word, after last word, essay margin, multi margin) of the windows used for colouring
             if gran == "context" and spans:
                 m_essay, m_multi = self._context_margins(det, spans)
+                self._emit(90, "sent")
             elif gran == "hybrid" and spans:
                 s_texts = [x.text for x in spans]
-                ie, im = det._factory("linda_essay").margins(s_texts), det._factory("linda_multi_v2").margins(s_texts)
+                ie = det._factory("linda_essay").margins(s_texts)
+                self._emit(65, "sent")
+                im = det._factory("linda_multi_v2").margins(s_texts)
+                self._emit(75, "sent")
                 ce, cm = self._context_margins(det, spans)
+                self._emit(92, "sent")
                 m_essay = [max(float(x), y) for x, y in zip(ie, ce)]  # sigmoid is monotone: the larger margin is the larger probability
                 m_multi = [max(float(x), y) for x, y in zip(im, cm)]
             elif full and spans:

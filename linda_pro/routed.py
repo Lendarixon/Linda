@@ -81,6 +81,7 @@ class RoutedLindaPro:
         self.tier_pref = tier
         self.pool = pool or ModelPool(voice_maker, self.table.get("size_mb_fp16", {"essay": 870, "multi": 560}), budget_mb)
         self.cur_lang = "en"
+        self.progress = None  # callable(pct, phase): the app shows a progress bar (8..55 % of a check belongs to the voters)
         # merged-таблица: одни и те же модели обслуживают все языки, при смене языка их не выгружаем
         self.shared_voices = self.table.get("kind") == "merged"
         self.voters: list[str] = []  # совместимость с движком: заранее ничего не грузим
@@ -147,8 +148,15 @@ class RoutedLindaPro:
         t = self.tier(lang)
         wins = [split_windows(x, WINDOW_WORDS, MAX_WINDOWS) for x in texts]
         raw: dict[str, list] = {}
-        for key in t["voters"]:  # строго по очереди: в памяти не больше бюджета
+        cb = self.progress
+        nv = max(1, len(t["voters"]))
+        for vi, key in enumerate(t["voters"]):  # строго по очереди: в памяти не больше бюджета
+            base, span = 8 + 47 * vi / nv, 47 / nv
+            if cb and key not in self.pool.items:
+                cb(base, "load")
             voter = self.pool.get(key)
+            if cb:
+                cb(base, "scan")
             if key.startswith("stylo"):
                 raw[key] = [float(voter.margins([clean_text(x)])[0]) for x in texts]
             else:
@@ -156,6 +164,8 @@ class RoutedLindaPro:
                 vals: list[float] = []
                 for b in range(0, len(flat), 32):
                     vals.extend(float(v) for v in voter.margins(flat[b: b + 32]))
+                    if cb:
+                        cb(base + span * min(1.0, (b + 32) / max(1, len(flat))), "scan")
                 per, k = [], 0
                 for ws in wins:
                     per.append(vals[k: k + len(ws)])

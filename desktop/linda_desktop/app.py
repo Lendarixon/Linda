@@ -100,6 +100,7 @@ class Core:
         self.active_checks = {}  # job_id -> (client_id, cancel event)
         self.active_requests = 0
         self.cancelled_checks = {}  # cancellation may arrive before the worker request
+        self.progress = {}  # job_id -> {pct, phase, ts}: progress of a running check, polled by the UI progress bar
         try:
             failed = json.loads((config.data_dir() / 'update_failure.json').read_text(encoding='utf-8'))
             if isinstance(failed, dict) and failed.get('error'):
@@ -287,6 +288,13 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             return terr("err_no_text")
         return {"status": "ok", "filename": file.filename or "file.txt", "text": text, "words": len(text.split()), "chars": len(text)}
 
+    @api.get("/api/progress/{job_id}")
+    def check_progress(job_id: str):
+        """Progress of a running check (job_id is the id the page sent with /api/detect)."""
+        if not valid_id(job_id):
+            return terr('err_bad_request', 400)
+        return core.progress.get(job_id) or {"pct": 0, "phase": "wait"}
+
     @api.post("/api/detect/cancel")
     def detect_cancel(body: dict | None = None):
         """Отмена идущей проверки из окна одного текста (вставили новый текст, прикрепили файл)."""
@@ -384,7 +392,25 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         if sup and not body.get('job_id'):
             core.engine.cancel_cancellable()
         try:
-            res = core.engine.run(text, mode, models, cancellable=sup, cancel=cancel)
+            jid = body.get('job_id') if valid_id(body.get('job_id')) else (body.get('progress_id') if valid_id(body.get('progress_id')) else None)
+
+            def report(pct, phase):
+                if jid:
+                    core.progress[jid] = {"pct": round(pct, 1), "phase": phase, "ts": time.monotonic()}
+                    if len(core.progress) > 200:  # stale entries of abandoned jobs
+                        for k in sorted(core.progress, key=lambda k: core.progress[k]["ts"])[:100]:
+                            core.progress.pop(k, None)
+
+            try:
+                try:
+                    res = core.engine.run(text, mode, models, cancellable=sup, cancel=cancel, progress=report)
+                except TypeError as e:  # an engine without progress support (tests, custom engines)
+                    if 'progress' not in str(e):
+                        raise
+                    res = core.engine.run(text, mode, models, cancellable=sup, cancel=cancel)
+            finally:
+                if jid:
+                    core.progress.pop(jid, None)
             if cancel.is_set():
                 raise Cancelled()
         except Cancelled:
