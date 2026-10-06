@@ -1,6 +1,21 @@
 [
  {
   "date": "2026-10-06",
+  "title": "Linda-Pro 2.0.3.4 — More reliable updates",
+  "text": "• Updates no longer fail if you open the app during installation: it shows a message and opens by itself when the update is done.\n• Launching the app again while its window is open brings that window to the front instead of opening a browser.",
+  "title_i18n": {
+   "ru": "Linda-Pro 2.0.3.4 — Надёжное обновление",
+   "en": "Linda-Pro 2.0.3.4 — More reliable updates",
+   "pl": "Linda-Pro 2.0.3.4 — Pewniejsze aktualizacje"
+  },
+  "text_i18n": {
+   "ru": "• Обновление больше не срывается, если открыть программу во время установки: она покажет сообщение и откроется сама после обновления.\n• Повторный запуск при уже открытом окне выводит окно на передний план и не открывает браузер.",
+   "en": "• Updates no longer fail if you open the app during installation: it shows a message and opens by itself when the update is done.\n• Launching the app again while its window is open brings that window to the front instead of opening a browser.",
+   "pl": "• Aktualizacja nie przerywa się już, gdy uruchomisz program w trakcie instalacji: pokaże komunikat i otworzy się sam po aktualizacji.\n• Ponowne uruchomienie przy otwartym oknie wysuwa to okno na wierzch i nie otwiera przeglądarki."
+  }
+ },
+ {
+  "date": "2026-10-06",
   "title": "Linda-Pro 2.0.3.3 — Tabs for several texts",
   "text": "• Tabs: keep several texts side by side (up to 8, the + button or Ctrl+T). Each tab has its own text, file and result, and switching loses nothing.\n• A check belongs to its own tab: while it runs you can type in another one, and when it finishes the tab shows a green dot. One check runs at a time.\n• A file from Explorer (“Check in Linda-Pro”) opens in a new tab and does not overwrite the current text.\n• Closing a tab whose check is running cancels that check.",
   "title_i18n": {
