@@ -132,7 +132,7 @@ def _safe_path(root: Path, rel: str) -> Path:
 
 
 def installed_manifest() -> dict | None:
-    p = config.data_dir() / "manifest.json"
+    p = config.models_root() / "manifest.json"
     try:
         m = json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
         if not isinstance(m, dict) or not isinstance(m.get('version'), str) or not isinstance(m.get('files'), list):
@@ -157,7 +157,7 @@ def sha256_file(path: Path) -> str:
 
 def files_to_fetch(manifest: dict, root: Path | None = None) -> list[dict]:
     """Entries that are missing or differ from the manifest. Files listed in the installed manifest with the same hash and size are trusted."""
-    root = root or config.data_dir()
+    root = root or config.models_root()
     old = {f["path"]: f for f in (installed_manifest() or {}).get("files", [])}
     todo = []
     for f in manifest["files"]:
@@ -174,7 +174,7 @@ def is_complete(manifest: dict | None = None, root: Path | None = None) -> bool:
     m = manifest or installed_manifest()
     if not m:
         return False
-    root = root or config.data_dir()
+    root = root or config.models_root()
     try:
         return all(_safe_path(root, f["path"]).is_file() and _safe_path(root, f["path"]).stat().st_size == f["size"] for f in m["files"])
     except (OSError, KeyError, TypeError, ValueError, UpdateError):  # unreadable or malformed state must not crash polling
@@ -191,7 +191,7 @@ ROLLBACK_LOG = "update_rollback.log"
 
 def staging_root(root: Path | None = None) -> Path:
     """Корень фоновых загрузок: <data>/staging."""
-    return (root or config.data_dir()) / "staging"
+    return (root or config.models_root()) / "staging"
 
 
 def staging_dir(version: str, root: Path | None = None) -> Path:
@@ -318,7 +318,7 @@ def apply_pending(root: Path | None = None) -> dict:
     """Применение при старте (до загрузки моделей): переносит READY-пакеты в data, чистит старый staging.
 
     Без сети, только файловые операции. При сбое — откат из backup, в ответе «Откат выполнен»."""
-    root = root or config.data_dir()
+    root = root or config.models_root()
     base = staging_root(root)
     res: dict = {"applied": [], "version": None, "removed": [], "rolled_back": False, "error": ""}
     if not base.is_dir():
@@ -403,7 +403,7 @@ class Job:
                 return False
             self._cancel.clear()
             self._set(phase="checking", file="", done=0, total=0, error="", speed=0.0, version=manifest["version"])
-            self._thread = threading.Thread(target=self._run, args=(manifest, raw, root or config.data_dir(), (base_url or config.BASE_URL).rstrip("/")), daemon=True)
+            self._thread = threading.Thread(target=self._run, args=(manifest, raw, root or config.models_root(), (base_url or config.BASE_URL).rstrip("/")), daemon=True)
             self._thread.start()
             return True
 

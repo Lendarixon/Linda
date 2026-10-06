@@ -57,9 +57,26 @@ def main(argv: list[str] | None = None) -> int:
     if worker_args and worker_args[0]=='--document-worker':
         from .document_worker import main as document_main
         return document_main(worker_args[1:])
+    # Every supported source entry point in this checkout must select Dev data.
+    # Importing the runner configures paths without starting a second window.
+    if config.APP_NAME != 'Linda-Pro Dev' and not config.is_store_package() and (config.resource_dir() / 'run_dev.py').is_file():
+        import run_dev  # noqa: F401
     argv = sys.argv[1:] if argv is None else argv
+    def _file_arg() -> str | None:
+        for a in argv:
+            if not a.startswith("-") and os.path.splitext(a)[1].lower() in (".docx", ".pdf", ".txt", ".md") and os.path.isfile(a):
+                return a
+        return None
+
     # Повторный запуск не должен заменять файлы работающей первой копии.
     if not _single_instance():
+        if _file_arg():
+            try:
+                from . import inbox
+
+                inbox.push(_file_arg())  # «Проверить в Linda-Pro» из проводника: работающая копия сама откроет файл
+            except Exception:  # noqa: BLE001
+                pass
         url = _running_url()
         if url:
             webbrowser.open(url)
@@ -101,6 +118,13 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     (config.data_dir() / "instance.json").write_text(json.dumps({"port": port, "pid": os.getpid()}), encoding="utf-8")
     core.background()
+    if _file_arg():
+        try:
+            from . import inbox
+
+            inbox.push(_file_arg())
+        except Exception:  # noqa: BLE001
+            pass
     url = f"http://127.0.0.1:{port}/"
     if "--no-ui" in argv:
         print(url, flush=True)

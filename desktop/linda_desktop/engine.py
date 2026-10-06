@@ -159,13 +159,13 @@ class Engine:
 
     def calibration_file(self) -> Path | None:
         # Classic 1.1 calibration only: routing.json is a language table, not a calibration.
-        files = sorted(p for p in (config.data_dir() / "calibration").glob("*.json") if p.name != "routing.json")
+        files = sorted(p for p in (config.models_root() / "calibration").glob("*.json") if p.name != "routing.json")
         return files[0] if files else None
 
     def routing_file(self) -> Path | None:
         """Linda-Pro 2.0: table 'language -> three voters + thresholds' (calibration/routing.json, or LINDA_ROUTING for development). Without it the 1.x single-ensemble path is used."""
         env = os.environ.get("LINDA_ROUTING")
-        p = Path(env) if env else config.data_dir() / "calibration" / "routing.json"
+        p = Path(env) if env else config.models_root() / "calibration" / "routing.json"
         return p if p.exists() else None
 
     def merged_table(self) -> bool:
@@ -232,7 +232,7 @@ class Engine:
         from linda_pro.voters import FastSeqCls, StyloVoter
 
         table = json.loads(table_path.read_text(encoding="utf-8"))
-        models, dirs, cache_dir = config.data_dir() / "models", table["voice_dirs"], config.data_dir() / "onnx"
+        models, dirs, cache_dir = config.models_root() / "models", table["voice_dirs"], config.models_root() / "onnx"
         idx = int(settings.get("gpu_index", 0) or 0)
         device = self.device
 
@@ -255,6 +255,12 @@ class Engine:
         settings = load_settings()
         self.device = pick_device(settings.get("device", "auto"))
         self.gpu_error = ""
+        try:
+            table = json.loads(table_path.read_text(encoding="utf-8"))
+            if self.device == "dml" and any(not (config.models_root() / "onnx" / d / "model.onnx").exists() for k, d in table["voice_dirs"].items() if not k.startswith("stylo")):
+                self.state = {"phase": "loading", "error": "", "note": "prepare_models"}  # one-time ONNX export on this computer
+        except Exception:  # noqa: BLE001 — cosmetic
+            pass
         dets = self._routed_detectors(table_path, settings)
         try:  # warm up one transformer now so that a broken GPU path falls back to the CPU here, not in the middle of an analysis
             want = lang if lang in ("en", "pl", "ru") else "en"
@@ -279,7 +285,7 @@ class Engine:
         import linda_pro.core as core
         from linda_pro.server import make_detectors
 
-        core.DEFAULT_MODELS = config.data_dir() / "models"
+        core.DEFAULT_MODELS = config.models_root() / "models"
         core.DEFAULT_CALIBRATION = cal
         settings = load_settings()
         self.device = pick_device(settings.get("device", "auto"))
@@ -322,7 +328,7 @@ class Engine:
         try:
             from linda_pro import rescue
 
-            cfg = rescue.read_config(config.data_dir())
+            cfg = rescue.read_config(config.models_root())
             if not cfg.get("enabled"):
                 return dets
             settings = settings if settings is not None else load_settings()
@@ -335,7 +341,7 @@ class Engine:
                     onnx_cls = onnx_gpu.OnnxSeqCls
                 except Exception:  # noqa: BLE001 — no ONNX path: the rescue uses the CPU voter
                     onnx_cls = None
-            factory = rescue.default_i_factory(config.data_dir(), device,
+            factory = rescue.default_i_factory(config.models_root(), device,
                                                int(settings.get("gpu_index", 0) or 0), onnx_cls=onnx_cls)
             return rescue.wrap_rescue(dets, factory, thr=rescue.threshold_of(cfg),
                                       batch=int(cfg.get("i_batch", rescue.CPU_BATCH) or rescue.CPU_BATCH))
@@ -399,6 +405,17 @@ class Engine:
             raise RuntimeError("model files are not installed yet")
         return self.ensure_for_language(language)
 
+    def warm_all(self, lang: str = "en") -> None:
+        """Warm up every transformer voice of the language (routed backend): the first real check then does not wait for the ONNX export / DirectML compile."""
+        dets = self.ensure_for_language(lang)
+        det = dets["sensitive"]
+        if not getattr(det, "routed", False):
+            return
+        for key in det.tier(lang)["voters"]:
+            if key.startswith("stylo"):
+                continue
+            det.pool.get(key).margins(["Warm up."])
+
     def _load_voters(self, dets: dict) -> None:
         if getattr(dets["sensitive"], "routed", False):
             return  # the pool loads voters lazily, per language
@@ -416,7 +433,7 @@ class Engine:
 
         from . import onnx_gpu
 
-        cache_dir = config.data_dir() / "onnx"
+        cache_dir = config.models_root() / "onnx"
         idx = int(settings.get("gpu_index", 0) or 0)
         if not (cache_dir / "linda_essay_d" / "model.onnx").exists():
             self.state = {"phase": "loading", "error": "", "note": "Preparing the GPU version of the models (one time, about a minute)..."}
@@ -433,8 +450,20 @@ class Engine:
         base._factory = factory
         return {"sensitive": base, "precise": LindaPro(mode="precise", voter_factory=factory)}
 
+    def planned_device(self) -> str:
+        """Device the next check will use: the loaded one, or (before the first load) the choice automatic mode would make."""
+        if self.dets is not None:
+            return self.device
+        g = self.gpu
+        pref = load_settings().get("device", "auto")
+        if pref == "cpu" or not g or not g.get("available"):
+            return "cpu"
+        if pref == "auto" and not g.get("discrete"):
+            return "cpu"
+        return "dml" if g.get("backend") == "DirectML" else "cuda"
+
     def info(self) -> dict:
-        return {"device": self.device, "phase": self.state["phase"], "error": self.state["error"], "note": self.state.get("note", ""), "gpu": self.gpu, "gpu_error": self.gpu_error}
+        return {"device": self.planned_device(), "phase": self.state["phase"], "error": self.state["error"], "note": self.state.get("note", ""), "gpu": self.gpu, "gpu_error": self.gpu_error}
 
     # Sentence labels. "ai" stays strict (about 1% of human sentences reach it); "uncertain" is the "possibly AI / mixed" band. A lone sentence is a much weaker
     # input than the ~300-word windows the models were calibrated on, so in the per-sentence mode the band starts lower (about 10% of human sentences fall into
@@ -728,16 +757,16 @@ def authorship(verdict: str | None, sentences: list[dict]) -> dict:
 UI_THEMES = ("dark", "light", "contrast")
 UI_ACCENTS = ("cobalt", "teal", "purple", "green", "orange")
 UI_DENSITIES = ("comfortable", "compact", "spacious")
-UI_FONT_SCALES = (90, 100, 110, 125)
+UI_FONT_SCALES = (90, 100, 110, 125, 150)
 UI_RADII = ("square", "soft", "round")
 UI_SIDEBARS = ("left", "right", "hidden")
 UI_LANGUAGES = ("ru", "pl", "en")
 
 DEFAULT_SETTINGS = {
-    "preload": False,
+    "preload": True,
     "theme": "dark", "accent": "cobalt", "density": "comfortable",
     "font_scale": 100, "radius": "square", "sidebar": "left",
-    "language": "ru",
+    "language": "ru", "ui_mode": "simple", "tour_done": False,
 }
 
 

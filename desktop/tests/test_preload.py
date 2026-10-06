@@ -24,10 +24,11 @@ def wait(calls, n=1, t=3.0):
         time.sleep(0.02)
 
 
-def test_preload_off_by_default_for_on_demand_loading(repo, monkeypatch):
+def test_preload_on_by_default_so_the_first_check_is_fast(repo, monkeypatch):
     core, calls = make(monkeypatch)
-    assert core.preload() is False
-    assert calls == []
+    assert core.preload() is True  # 2.0.3.1: models are warmed up in the background right after start
+    time.sleep(0.3)
+    assert calls
 
 
 def test_preload_can_be_switched_off(repo, monkeypatch):
@@ -53,7 +54,7 @@ def test_no_preload_without_models_and_bad_value_ignored(repo, monkeypatch):
     core, calls = make(monkeypatch, complete=False)
     assert core.preload() is False
     c = TestClient(create_app(core, token=TOKEN), headers={"x-linda-token": TOKEN})
-    assert c.post("/api/settings", json={"preload": "yes"}).json()["settings"]["preload"] is False
+    assert c.post("/api/settings", json={"preload": "yes"}).json()["settings"]["preload"] is True  # bad value ignored: the default stays
     time.sleep(0.2)
     assert calls == []
 

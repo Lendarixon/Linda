@@ -84,6 +84,59 @@ def data_dir() -> Path:
     return base
 
 
+_LOCATION_FILE = "models_location.json"
+
+
+def models_root() -> Path:
+    r"""Where the downloaded models live (models/, onnx/, calibration/, manifest.json, staging/): by default the data folder, or the folder the user chose
+    (installer page, first-run screen or Settings), remembered in data_dir()/models_location.json. LINDA_MODELS_HOME overrides it (tests, mirrors).
+    History, settings and the licence always stay in the data folder. If the chosen folder is unreachable (a disconnected drive) the data folder is used and
+    models_location_state() reports it, so the app asks again instead of failing."""
+    env = os.environ.get("LINDA_MODELS_HOME")
+    if env:
+        p = Path(env)
+        p.mkdir(parents=True, exist_ok=True)
+        return p
+    chosen = _chosen_models_root()
+    if chosen is not None:
+        try:
+            chosen.mkdir(parents=True, exist_ok=True)
+            return chosen
+        except OSError:
+            pass
+    return data_dir()
+
+
+def _chosen_models_root() -> Path | None:
+    try:
+        d = __import__("json").loads((data_dir() / _LOCATION_FILE).read_text(encoding="utf-8"))
+        p = Path(str(d.get("path") or ""))
+        return p if p.is_absolute() else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def models_location_state() -> dict:
+    """{'path': current root, 'default': data folder, 'custom': a folder was chosen, 'ok': the chosen folder is reachable}."""
+    chosen = _chosen_models_root()
+    ok = True
+    if chosen is not None:
+        try:
+            chosen.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            ok = False
+    return {"path": str(models_root()), "default": str(data_dir()), "custom": chosen is not None, "chosen": str(chosen) if chosen else "", "ok": ok}
+
+
+def set_models_root(path: "Path | str | None") -> None:
+    """Remember the models folder (None or the data folder itself = back to the default)."""
+    f = data_dir() / _LOCATION_FILE
+    if path is None or Path(path).resolve() == data_dir().resolve():
+        f.unlink(missing_ok=True)
+        return
+    f.write_text(__import__("json").dumps({"path": str(Path(path))}, ensure_ascii=False), encoding="utf-8")
+
+
 # Корпоративные политики (только чтение, без сети): значения по умолчанию,
 # поверх — %PROGRAMDATA%\Linda-Pro\enterprise.json (ставит админ), поверх —
 # enterprise.json в папке данных, старые policy.json читаются так же.

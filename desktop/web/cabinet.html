@@ -1,5 +1,11 @@
 <!-- Linda-Pro 1.2: local cabinet (history with folders), batch check, document comparison, full-view reader and text-structure view. Appended to index.html by the backend. Everything stays on this machine. -->
 <style>
+/* светлая тема: поверхности кабинета (были жёстко тёмными) */
+html[data-theme="light"] .vbox,html[data-theme="light"] .fold,html[data-theme="light"] .cab-in,html[data-theme="light"] .cab-sel,html[data-theme="light"] .chip,html[data-theme="light"] .cab-prog,html[data-theme="light"] .sh-pos,html[data-theme="light"] .auth-bar,html[data-theme="light"] .mx td.self{background:var(--bg-elevated)!important;color:var(--text)!important}
+html[data-theme="light"] .fold:hover{background:#dbe3f0!important}
+html[data-theme="light"] .cab-note,html[data-theme="light"] table th,html[data-theme="light"] .cab-tbl th{color:#4a5262!important}
+html[data-theme="light"] .vbig,html[data-theme="light"] table td,html[data-theme="light"] .vbox b{color:var(--text)!important}
+
 #cabBtns { display:inline-flex; gap:6px; margin-right:12px; }
 #cabBtns button { background:#2b2b2b; color:#fff; border:0; border-radius:0; text-transform:uppercase; letter-spacing:.1em; font-size:.75rem; padding:6px 12px; min-height:32px; font-weight:700; cursor:pointer; transition:background .15s, transform .08s; }
 #cabBtns button:hover { background:var(--cobalt); } #cabBtns button:active { transform:scale(.95); }

@@ -19,7 +19,7 @@ from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 from starlette.concurrency import run_in_threadpool
 
-from . import analytics, config, history, licensing, report, structure, updater, restart_draft
+from . import analytics, config, diagnostics, history, inbox, licensing, report, structure, updater, restart_draft, models_location
 from . import i18n as ui18n
 from .documents import extract
 from linda_pro.voters import Cancelled
@@ -100,6 +100,9 @@ class Core:
         self.active_checks = {}  # job_id -> (client_id, cancel event)
         self.active_requests = 0
         self.cancelled_checks = {}  # cancellation may arrive before the worker request
+        self.move = models_location.MoveJob()  # moving the downloaded models to another folder
+        self._preload_started = False
+        self.open_allowed = set()  # paths received through the inbox that the page may open
         self.progress = {}  # job_id -> {pct, phase, ts}: progress of a running check, polled by the UI progress bar
         try:
             failed = json.loads((config.data_dir() / 'update_failure.json').read_text(encoding='utf-8'))
@@ -109,10 +112,17 @@ class Core:
             pass
         try:  # порядок видеокарт в списке изменился (дискретные первыми, как в DirectML): старый номер мог указывать на встроенную графику
             _cur = load_settings()
+            changed = False
             if _cur.get("gpu_map") != 2:
                 _cur["gpu_map"] = 2
+                changed = True
                 if int(_cur.get("gpu_index", 0) or 0) != 0:
                     _cur["gpu_index"] = 0
+            if not _cur.get("preload_v2"):  # 2.0.3.1: warming the models up at start is the default now (the old stored "off" was never a deliberate choice)
+                _cur["preload_v2"] = True
+                _cur["preload"] = True
+                changed = True
+            if changed:
                 save_settings(_cur)
         except Exception:  # noqa: BLE001
             pass
@@ -145,6 +155,10 @@ class Core:
                     detectors = self.engine.ensure_loaded()
                     self.engine.state = {'phase':'loading','error':''}
                     self.engine._load_voters(detectors)
+                    try:
+                        self.engine.warm_all("en")  # routed backend: both transformer voices, so the first check is fast
+                    except Exception:  # noqa: BLE001 — warm-up is best effort
+                        pass
                     self.engine.state = {'phase':'ready','error':''}
             except Exception as e:  # noqa: BLE001
                 self.engine.state = {"phase": "error", "error": f"{type(e).__name__}: {e}"}
@@ -221,6 +235,12 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
     @api.get("/api/status")
     def status():
         ready = updater.is_complete()
+        if ready and not core._preload_started:  # models just downloaded / applied: warm them up in the background
+            core._preload_started = True
+            try:
+                core.preload()
+            except Exception:  # noqa: BLE001
+                pass
         pend = updater.pending_status()  # баннер «Перезапустите для обновления»
         rollback_msg = ""
         try:
@@ -238,7 +258,7 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
                 "download": core.job.snapshot(), "engine": core.engine.info(), "settings": load_settings(),
                 "installer_job": core.installer_job, "pending_restart": pend, "update_pending": core.update_pending,
                 "rollback": rollback_msg, "enterprise": config.enterprise(), "pdf_available": report.pdf_available(),
-                "changelog": chlog,
+                "changelog": chlog, "models_location": models_location.info(), "models_move": dict(core.move.state),
                 "buy": {"personal_team": config.BUY_URL_PERSONAL_TEAM, "org": config.BUY_URL_ORG, "email": config.CONTACT_EMAIL}}
 
     @api.post("/api/update/check")
@@ -254,9 +274,80 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             return err(core.update_error or ui18n.tr("err_cannot_reach", ui18n.resolve_lang(load_settings())), 502)
         if core.update and core.update.get("app_required"):
             return terr("err_app_too_old", 409)
+        need = float((core.update or {}).get("bytes_to_download") or 0)
+        free = models_location.free_gb(Path(config.models_root()))
+        if need and free * 2**30 < need * 1.15 + 1.5 * 2**30:  # models + a safety margin + the ONNX cache
+            return terr("err_no_space", 507, need * 1.15 / 2**30 + 1.5, free)
         if not core.job.start(core.manifest, core.manifest_raw):
             return terr("err_download_running", 409)
         return {"status": "started"}
+
+    @api.post("/api/diagnostics")
+    def diagnostics_zip():
+        """One ZIP for the support e-mail: versions, graphics cards, settings and log tails. Texts and history are not included."""
+        from fastapi.responses import Response
+
+        root = config.data_dir()
+        info = {"app_version": config.APP_VERSION, "installed_version": updater.installed_version(), "device": core.engine.device, "gpu": core.engine.gpu,
+                "gpu_error": core.engine.gpu_error, "models_location": models_location.info(), "settings": load_settings(), "update_error": core.update_error,
+                "log_files": [root / "app.log", root / "update_setup.log", root / "update_apply.log", root / "update_launch.log", root / "update_failure.json", Path(config.models_root()) / "update_apply.log"]}
+        data = diagnostics.build_zip(info)
+        return Response(content=data, media_type="application/zip", headers={"Content-Disposition": 'attachment; filename="linda-diagnostics.zip"'})
+
+    @api.post("/api/benchmark")
+    async def benchmark():
+        """How fast is a check on this computer: one fixed ~300-word text through the whole ensemble (not saved to the history)."""
+        if not updater.is_complete():
+            return terr("err_models_not_installed", 409)
+        words = ("Сегодня мы рассмотрим несколько вопросов, связанных с организацией работы небольшой команды. "
+                 "Во-первых, важно заранее договориться о ролях и сроках. Во-вторых, полезно вести общий список задач. ") * 9
+
+        def work():
+            t0 = time.time()
+            core.engine.run(words, "sensitive", None)
+            return {"seconds": round(time.time() - t0, 2), "words": len(words.split()), "device": core.engine.device, "gpu": core.engine.gpu}
+
+        try:
+            return await run_in_threadpool(work)
+        except Exception as e:  # noqa: BLE001
+            return err("%s: %s" % (type(e).__name__, e), 500)
+
+    @api.get("/api/models/location")
+    def models_loc():
+        return models_location.info()
+
+    @api.post("/api/models/browse")
+    async def models_browse(body: dict | None = None):
+        """Native folder dialog on this computer (the page cannot open one itself)."""
+        path = await run_in_threadpool(models_location.browse, str((body or {}).get("initial") or ""))
+        return {"path": path}
+
+    @api.post("/api/models/location")
+    def models_set_loc(body: dict):
+        """Choose where the models are kept. move=true copies the already downloaded models there first (progress in /api/status models_move)."""
+        lang = ui18n.resolve_lang(load_settings())
+        if core.job.snapshot().get("phase") in ("checking", "downloading", "verifying", "applying", "finishing") or core.move.busy():
+            return terr("err_download_running", 409)
+        raw = str(body.get("path") or "").strip()
+        new = Path(raw) if raw else Path(config.data_dir())  # empty = back to the default folder
+        old = Path(config.models_root())
+        if new.resolve() == old.resolve():
+            return models_location.info()
+        ok, key = models_location.validate(str(new))
+        if not ok:
+            return err(ui18n.tr(key, lang), 400)
+        if body.get("move") and models_location.info()["has_models"]:
+            core.move.start(old, new, before=core.engine.unload)
+            return {"status": "moving"}
+        config.set_models_root(new)
+        core.engine.unload()
+        core.manifest = None
+        core.update = None
+        try:
+            core.check_updates()
+        except Exception:  # noqa: BLE001
+            pass
+        return {"status": "ok", **models_location.info()}
 
     @api.post("/api/models/cancel")
     def cancel():
@@ -277,16 +368,40 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
 
     async def _upload(file):
         content = await file.read(MAX_UPLOAD + 1)
+        return await _extract_payload(file.filename or "file.txt", content)
+
+    async def _extract_payload(filename, content):
         if len(content) > MAX_UPLOAD:
             return terr("err_file_too_large", 413)
         try:
-            text = (await run_in_threadpool(extract, file.filename or "file.txt", content)).replace("\r\n", "\n").replace("\r", "\n").strip()
+            text = (await run_in_threadpool(extract, filename, content)).replace("\r\n", "\n").replace("\r", "\n").strip()
         except Exception as e:  # noqa: BLE001
             base = ui18n.tr("err_could_not_read", ui18n.resolve_lang(load_settings()))
             return err(base + (": " + str(e) if isinstance(e, ValueError) else ": " + type(e).__name__))
         if not text:
             return terr("err_no_text")
-        return {"status": "ok", "filename": file.filename or "file.txt", "text": text, "words": len(text.split()), "chars": len(text)}
+        return {"status": "ok", "filename": filename, "text": text, "words": len(text.split()), "chars": len(text)}
+
+    @api.get("/api/inbox")
+    def inbox_take():
+        """Files sent by 'Check in Linda-Pro' (Explorer menu / second start). Returned once; only these paths may be opened by /api/open_path."""
+        out = []
+        for p in inbox.take():
+            core.open_allowed.add(p)
+            out.append({"path": p, "name": Path(p).name})
+        return {"files": out}
+
+    @api.post("/api/open_path")
+    async def open_path(body: dict):
+        p = str(body.get("path") or "")
+        if p not in core.open_allowed:
+            return terr("err_bad_request", 403)
+        core.open_allowed.discard(p)
+        try:
+            content = await run_in_threadpool(Path(p).read_bytes)
+        except OSError:
+            return terr("err_could_not_read", 400)
+        return await _extract_payload(Path(p).name, content)
 
     @api.get("/api/progress/{job_id}")
     def check_progress(job_id: str):
@@ -798,6 +913,10 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             cur["sidebar"] = body["sidebar"]
         if body.get("language") in UI_LANGUAGES:
             cur["language"] = body["language"]
+        if body.get("ui_mode") in ("simple", "expert"):
+            cur["ui_mode"] = body["ui_mode"]
+        if isinstance(body.get("tour_done"), bool):
+            cur["tour_done"] = body["tour_done"]
         save_settings(cur)
         # Тяжёлое (выгрузка движка, загрузка моделей) — в фоне, ответ сразу; прогресс виден через /api/status (dev_loading)
         preload_on = isinstance(body.get("preload"), bool) and bool(body["preload"])
