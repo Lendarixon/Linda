@@ -1,6 +1,21 @@
 [
  {
   "date": "2026-10-06",
+  "title": "Linda-Pro 2.0.3.3 — Tabs for several texts",
+  "text": "• Tabs: keep several texts side by side (up to 8, the + button or Ctrl+T). Each tab has its own text, file and result, and switching loses nothing.\n• A check belongs to its own tab: while it runs you can type in another one, and when it finishes the tab shows a green dot. One check runs at a time.\n• A file from Explorer (“Check in Linda-Pro”) opens in a new tab and does not overwrite the current text.\n• Closing a tab whose check is running cancels that check.",
+  "title_i18n": {
+   "ru": "Linda-Pro 2.0.3.3 — Вкладки для нескольких текстов",
+   "en": "Linda-Pro 2.0.3.3 — Tabs for several texts",
+   "pl": "Linda-Pro 2.0.3.3 — Karty dla kilku tekstów"
+  },
+  "text_i18n": {
+   "ru": "• Вкладки: можно держать несколько текстов рядом (до 8, кнопка «+» или Ctrl+T). У каждой вкладки свой текст, файл и результат, переключение ничего не теряет.\n• Проверка привязана к своей вкладке: пока она идёт, можно печатать в другой, а когда закончится, у вкладки загорится зелёная точка. Одновременно идёт одна проверка.\n• Файл из проводника («Проверить в Linda-Pro») открывается в новой вкладке и не затирает текущий текст.\n• Закрытие вкладки с идущей проверкой её отменяет.",
+   "en": "• Tabs: keep several texts side by side (up to 8, the + button or Ctrl+T). Each tab has its own text, file and result, and switching loses nothing.\n• A check belongs to its own tab: while it runs you can type in another one, and when it finishes the tab shows a green dot. One check runs at a time.\n• A file from Explorer (“Check in Linda-Pro”) opens in a new tab and does not overwrite the current text.\n• Closing a tab whose check is running cancels that check.",
+   "pl": "• Karty: kilka tekstów obok siebie (do 8, przycisk + lub Ctrl+T). Każda karta ma własny tekst, plik i wynik, a przełączanie niczego nie gubi.\n• Sprawdzanie należy do swojej karty: gdy trwa, można pisać w innej, a po zakończeniu karta pokazuje zieloną kropkę. Naraz trwa jedno sprawdzanie.\n• Plik z Eksploratora („Sprawdź w Linda-Pro”) otwiera się w nowej karcie i nie nadpisuje bieżącego tekstu.\n• Zamknięcie karty z trwającym sprawdzaniem anuluje je."
+  }
+ },
+ {
+  "date": "2026-10-06",
   "title": "Linda-Pro 2.0.3.2 — Automatic model updates, protection against silly input, a short summary",
   "text": "• Automatic model updates: when a release brings new models they download in the background, are verified and replace the old ones (old files and caches are removed). On by default, can be turned off in Settings.\n• Protection against wrong input: texts in unsupported languages (Arabic, Chinese, Greek and others) get a clear message instead of a false verdict; a binary file renamed .txt is rejected; file errors are explained in plain words; Windows-1251 and UTF-16 files are read correctly; German and Ukrainian texts show a warning.\n• A one-page PDF summary for a teacher or editor: the verdict, what it means, the figures, the most suspicious sentences and a note that it is not proof.\n• 70 “silly” scenarios were tested (empty and huge texts, odd files, wrong paths, rapid clicks) with no failures.",
   "title_i18n": {
