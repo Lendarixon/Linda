@@ -1,4 +1,4 @@
-# Linda-Pro 1.0 — security and data-handling statement
+# Linda-Pro 1.3.1 — security and data-handling statement
 
 Scope: what this software does with your data and how to verify what you received. This is a technical statement by the vendor,
 **not** a third-party certification. Linda-Pro has no SOC 2, ISO 27001 or VPAT report at this time.

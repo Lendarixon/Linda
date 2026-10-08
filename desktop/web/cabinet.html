@@ -52,7 +52,7 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
 .cab-tbl th { text-align:left; color:var(--text-muted); font-size:.8rem; text-transform:uppercase; letter-spacing:.12em; padding:6px 8px; border-bottom:1px solid var(--border); user-select:none; white-space:nowrap; }
 .cab-tbl th.s { cursor:pointer; } .cab-tbl th.s:hover { color:#fff; } .cab-tbl th.cur { color:var(--accent); }
 .cab-tbl td { padding:7px 8px; border-bottom:1px solid var(--border); vertical-align:middle; }
-.cab-tbl tbody tr { animation:rowIn .3s ease both; } .cab-tbl tbody tr:hover td { background:var(--bg-card); } .cab-tbl tr[draggable=true] { cursor:grab; }
+.cab-tbl tbody tr { }  /* no entrance animation: the batch table is re-rendered on every progress poll and the rows would flicker */ .cab-tbl tbody tr:hover td { background:var(--bg-card); } .cab-tbl tr[draggable=true] { cursor:grab; }
 .cab-title { cursor:pointer; font-weight:600; max-width:340px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; vertical-align:bottom; }
 .cab-title:hover { color:var(--accent); text-decoration:underline; }
 .cab-badge { display:inline-block; padding:2px 8px; font-size:.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:.08em; }

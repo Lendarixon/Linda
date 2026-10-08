@@ -1,5 +1,33 @@
 [
   {
+    "version": "2.0.3.6",
+    "date": "2026-10-08",
+    "title": {
+      "ru": "Понятнее и удобнее",
+      "en": "Clearer and more convenient",
+      "pl": "Czytelniej i wygodniej"
+    },
+    "notes": {
+      "ru": "• После загрузки новых моделей программа предлагает «Перезапустить» вместо повторной кнопки «Обновить модели».\n• Старое сообщение о неудачной установке («Installer exit code 5») больше не показывается при каждом запуске, если эта версия уже установлена.\n• При проверке нескольких файлов строки таблицы больше не мигают.\n• Короткий текст (меньше 150 слов): над результатом заметное предупреждение, что оценка может быть неточной.\n• Правую панель результатов можно растянуть или сузить за разделитель между текстом и результатом (двойной щелчок — вернуть).\n• Окно загрузок встроенного браузера больше не закрывает кнопки сверху справа.",
+      "en": "• After new models are downloaded the app now offers “Restart” instead of showing the “Update models” button again.\n• An old failed-install message (“Installer exit code 5”) is no longer shown at every start once that version is installed.\n• Rows of the batch table no longer flicker while several files are being checked.\n• Short text (under 150 words): a clear warning above the result that the estimate may be inaccurate.\n• The results panel can be widened or narrowed by dragging the divider between the text and the results (double-click resets it).\n• The built-in downloads flyout no longer covers the buttons at the top right.",
+      "pl": "• Po pobraniu nowych modeli program proponuje „Uruchom ponownie” zamiast ponownie pokazywać przycisk aktualizacji modeli.\n• Stary komunikat o nieudanej instalacji („Installer exit code 5”) nie jest już pokazywany przy każdym uruchomieniu, gdy ta wersja jest już zainstalowana.\n• Wiersze tabeli nie migają już podczas sprawdzania kilku plików.\n• Krótki tekst (poniżej 150 słów): wyraźne ostrzeżenie nad wynikiem, że ocena może być niedokładna.\n• Panel wyników można poszerzyć lub zwęzić przeciągając separator między tekstem a wynikami (podwójne kliknięcie przywraca).\n• Okno pobierania wbudowanej przeglądarki nie zasłania już przycisków w prawym górnym rogu."
+    }
+  },
+  {
+    "version": "2.0.3.4",
+    "date": "2026-10-06",
+    "title": {
+      "ru": "Надёжное обновление",
+      "en": "More reliable updates",
+      "pl": "Pewniejsze aktualizacje"
+    },
+    "notes": {
+      "ru": "• Обновление больше не срывается, если открыть программу во время установки: она покажет сообщение и откроется сама после обновления.\n• Повторный запуск при уже открытом окне выводит окно на передний план и не открывает браузер.",
+      "en": "• Updates no longer fail if you open the app during installation: it shows a message and opens by itself when the update is done.\n• Launching the app again while its window is open brings that window to the front instead of opening a browser.",
+      "pl": "• Aktualizacja nie przerywa się już, gdy uruchomisz program w trakcie instalacji: pokaże komunikat i otworzy się sam po aktualizacji.\n• Ponowne uruchomienie przy otwartym oknie wysuwa to okno na wierzch i nie otwiera przeglądarki."
+    }
+  },
+  {
     "version": "2.0.3.3",
     "date": "2026-10-06",
     "title": {

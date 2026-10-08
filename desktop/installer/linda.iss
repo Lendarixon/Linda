@@ -10,7 +10,7 @@
   #define AppName "Linda-Pro"
 #endif
 #ifndef AppVersion
-  #define AppVersion "2.0.3.3"
+  #define AppVersion "2.0.3.6"
 #endif
 
 [Setup]

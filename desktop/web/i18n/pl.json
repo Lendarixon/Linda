@@ -598,5 +598,8 @@
   "v_mode_line": "tryb {mode} · {words} słów · {date}",
   "v_multi": "Multi",
   "v_unc_n": "{n} niepewnych",
-  "v_verdict": "Werdykt"
+  "v_verdict": "Werdykt",
+  "banner_models_restart": "Modele {ver} zostały pobrane. Uruchom program ponownie, aby ich użyć.",
+  "btn_models_restart": "Uruchom ponownie",
+  "verdict_short_warn": "Krótki tekst ({n} słów, mniej niż {min}): wynik może być niedokładny. Do wiarygodnej oceny potrzeba co najmniej 150–200 słów."
 }

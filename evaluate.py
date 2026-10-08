@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from linda_pro import LindaPro  # noqa: E402
+from linda_pro import load_detector  # noqa: E402
 
 
 def auroc(y, s):
@@ -48,7 +48,7 @@ def main():
     y = [x[1] for x in items]
     if sum(y) < 5 or len(y) - sum(y) < 5:
         sys.exit("need at least 5 texts of each class (recommended 100+), >= %d words each" % a.min_words)
-    res = LindaPro(mode=a.mode).detect([x[0] for x in items])
+    res = load_detector(a.mode).detect([x[0] for x in items])
     ens = [r["ens_z"] for r in res]
     ess = [r["essay"] for r in res]
     ver = [r["verdict"] for r in res]

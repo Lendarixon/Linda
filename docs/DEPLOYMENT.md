@@ -1,4 +1,4 @@
-# Linda-Pro 1.0 — deployment guide (on-premises, English texts)
+# Linda-Pro 1.3.1 — deployment guide (on-premises; English, Polish, Russian)
 
 Everything runs inside your infrastructure. No network calls at inference time, no telemetry, no accounts.
 
@@ -9,8 +9,8 @@ Everything runs inside your infrastructure. No network calls at inference time, 
 | CPU | 8 cores, x86-64 | any modern desktop CPU |
 | RAM | 16 GB | 32 GB |
 | GPU | none (see note on CPU below) | AMD Radeon RX 9070 XT, 16 GB (ROCm PyTorch) |
-| GPU memory | — | peak 4.9 GB allocated, ~5.9 GB reserved (all three voters resident) |
-| Disk | 4 GB | package 2.7 GB (Essay v3 1.6 GB, Multi v2 1.1 GB, stylometry < 0.1 GB) |
+| GPU memory | - | about 1.6 GB resident (the two merged networks, half precision) |
+| Disk | 4 GB | package 2.9 GB (Essay-M 1.7 GB, Multi-M 1.1 GB, stylometry < 0.1 GB) |
 | Python | 3.10+ | 3.13 |
 
 NVIDIA CUDA GPUs use the same code path (`device="cuda"`); we have measured only the AMD card above.
@@ -80,5 +80,5 @@ A verdict is a screening signal and must not be the sole basis for a decision ab
 
 * **Updating:** the package is versioned (`VERSION`); a new release replaces the folder, calibration and models together.
 * **Monitoring:** `GET /health`. Watch GPU memory; run one service process per GPU.
-* **Language coverage:** English only in this release. Russian/Polish are not supported in Linda-Pro 1.0.
+* **Language coverage:** English, Polish and Russian (the language is detected automatically; other languages are not validated).
 * **Known limits:** paraphrasing/humanizer tools reduce recall; machine translation of English text is detected poorly.

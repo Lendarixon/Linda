@@ -38,6 +38,7 @@ def launch_installer(path: Path) -> None:
     log = config.data_dir() / "update_setup.log"
     note = config.data_dir() / "update_launch.log"
     failure = config.data_dir() / 'update_failure.json'
+    lock = config.data_dir() / 'installing.lock'
     ready = path.parent / updater.INSTALLER_READY_NAME
     # Encoded PowerShell avoids cmd metacharacter expansion in paths. The helper
     # waits for the actual app PID, rather than guessing how long shutdown takes.
@@ -52,13 +53,16 @@ $owner = {os.getpid()}
 $note = {literal(note)}
 try {{
     if (Get-Process -Id $owner -ErrorAction SilentlyContinue) {{ Wait-Process -Id $owner -Timeout 60 -ErrorAction Stop }}
+    [IO.File]::WriteAllText({literal(lock)}, [string][DateTimeOffset]::UtcNow.ToUnixTimeSeconds())
     $setup = Start-Process -FilePath {literal(path)} -ArgumentList @({','.join(literal(a) for a in arguments)}) -PassThru -WindowStyle Hidden
     $setup.WaitForExit()
+    Remove-Item -LiteralPath {literal(lock)} -ErrorAction SilentlyContinue
     if ($setup.ExitCode -ne 0) {{ throw "Installer exit code $($setup.ExitCode)" }}
     Remove-Item -LiteralPath {literal(failure)} -ErrorAction SilentlyContinue
     Add-Content -LiteralPath $note -Value 'Installer finished successfully' -Encoding UTF8
 }} catch {{
     $failureMessage = $_.Exception.Message
+    Remove-Item -LiteralPath {literal(lock)} -ErrorAction SilentlyContinue
     Add-Content -LiteralPath $note -Value $failureMessage -Encoding UTF8
     if (Test-Path -LiteralPath {literal(ready)}) {{ Move-Item -LiteralPath {literal(ready)} -Destination {literal(path.parent / 'INSTALLER_FAILED')} -Force }}
     $failureJson = @{{version={literal(path.parent.name)};error=$failureMessage;ts=[DateTimeOffset]::UtcNow.ToUnixTimeSeconds()}} | ConvertTo-Json
@@ -108,8 +112,12 @@ class Core:
         self.open_allowed = set()  # paths received through the inbox that the page may open
         self.progress = {}  # job_id -> {pct, phase, ts}: progress of a running check, polled by the UI progress bar
         try:
-            failed = json.loads((config.data_dir() / 'update_failure.json').read_text(encoding='utf-8'))
-            if isinstance(failed, dict) and failed.get('error'):
+            _ff = config.data_dir() / 'update_failure.json'
+            failed = json.loads(_ff.read_text(encoding='utf-8'))
+            _vt = lambda v: tuple(int(x) for x in str(v).split('.') if x.isdigit())  # noqa: E731
+            if isinstance(failed, dict) and failed.get('version') and _vt(failed['version']) <= _vt(config.APP_VERSION):
+                _ff.unlink()  # the failed update is already installed (or older): the old error must not be shown at every start
+            elif isinstance(failed, dict) and failed.get('error'):
                 self.installer_job.update(phase='error', error=str(failed['error'])[:2000])
         except (OSError, ValueError):
             pass
@@ -1060,6 +1068,44 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
                 core.installer_job.update(phase="launching", error="")
         threading.Thread(target=go, daemon=True).start()
         return {"status": "restarting", "version": st["version"]}
+
+    @api.post("/api/models/restart")
+    def models_restart(body: dict | None = None):
+        """Перезапуск приложения для применения скачанных весов (staging/<версия>/READY применяется при старте). Установщик не нужен."""
+        if config.is_store_package() or not getattr(sys, "frozen", False):
+            return err("Restart is available in the installed application only.", 409)
+        if not updater.pending_status():
+            return terr("err_no_update", 409)
+        if core.job.running():
+            return terr('err_download_running', 409)
+        with core.checks_lock:
+            if core.active_requests or core.engine.lock.locked() or core.folder_lock.locked():
+                return err('Finish or cancel the active operation before restarting.', 409)
+            if body is not None and 'draft' in body:
+                try:
+                    restart_draft.save(body['draft'])
+                except (OSError, ValueError) as error:
+                    return err(str(error), 403 if isinstance(error, PermissionError) else 400)
+        exe = sys.executable
+        pid = os.getpid()
+
+        def go():
+            time.sleep(0.6)  # let the UI receive the answer
+            literal = lambda value: "'" + str(value).replace("'", "''") + "'"  # noqa: E731
+            script = (f"$p = {pid}; if (Get-Process -Id $p -ErrorAction SilentlyContinue) {{ Wait-Process -Id $p -Timeout 60 -ErrorAction SilentlyContinue }}; "
+                      f"Start-Process -FilePath {literal(exe)}")
+            encoded = base64.b64encode(script.encode("utf-16-le")).decode()
+            ps = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "WindowsPowerShell" / "v1.0" / "powershell.exe"
+            try:
+                subprocess.Popen([str(ps), "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-EncodedCommand", encoded],
+                                 creationflags=0x08000000 | 0x00000200, close_fds=True)
+            except OSError:
+                return  # could not schedule the relaunch: stay open rather than closing the app for good
+            time.sleep(0.5)
+            os._exit(0)
+
+        threading.Thread(target=go, daemon=True).start()
+        return {"status": "restarting"}
 
     @api.get('/api/draft/resume')
     def resume_draft():

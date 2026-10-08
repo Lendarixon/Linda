@@ -7,8 +7,8 @@ authors:
     given-names: Vladyslav
 repository-code: "https://github.com/Lendarixon/Linda"
 license: CC-BY-NC-4.0
-version: "1.1.0"
-date-released: "2026-10-01"
+version: "1.3.1"
+date-released: "2026-10-08"
 preferred-citation:
   type: report
   title: "Linda-Pro 1.1: retraining a local AI-text detector against AI humanizers"

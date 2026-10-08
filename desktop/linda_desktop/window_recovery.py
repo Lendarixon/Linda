@@ -95,6 +95,17 @@ def install(window):
                 host.FormClosed += closed
                 # Keep Python delegates alive for the lifetime of the host.
                 host._linda_restore_recovery = (state,timer,repaint,changed,closed)
+                def dock_downloads(sender=None, args=None):
+                    try:  # the built-in download flyout (top-right by default) covered the Back / export buttons
+                        core = control.CoreWebView2
+                        if core is not None:
+                            core.DefaultDownloadDialogCornerAlignment = type(core.DefaultDownloadDialogCornerAlignment)(2)  # BottomLeft
+                    except Exception:
+                        log.exception('WebView2 download flyout alignment failed')
+
+                dock_downloads()
+                control.CoreWebView2InitializationCompleted += dock_downloads
+                host._linda_dock_downloads = dock_downloads
                 log.info('WebView2 restore recovery attached')
 
             host.BeginInvoke(Action(attach))

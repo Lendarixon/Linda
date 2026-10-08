@@ -598,5 +598,8 @@
   "v_mode_line": "{mode} mode · {words} words · {date}",
   "v_multi": "Multi",
   "v_unc_n": "{n} uncertain",
-  "v_verdict": "Verdict"
+  "v_verdict": "Verdict",
+  "banner_models_restart": "Models {ver} are downloaded. Restart the app to switch to them.",
+  "btn_models_restart": "Restart",
+  "verdict_short_warn": "Short text ({n} words, fewer than {min}): the result may be inaccurate. For a reliable estimate use at least 150–200 words."
 }
