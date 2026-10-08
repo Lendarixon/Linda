@@ -52,14 +52,14 @@ lindapro.support@proton.me — describe the use case, volume and languages.
 
 ## Citation
 
-The technical report for version 1.3.1 is being published on Zenodo; its DOI will be added here. Earlier reports: version 1.1, DOI [10.5281/zenodo.23080472](https://doi.org/10.5281/zenodo.23080472); version 1.0, DOI [10.5281/zenodo.23072494](https://doi.org/10.5281/zenodo.23072494):
+If you use Linda-Pro, please cite the technical report for version 1.3.1 (Zenodo, DOI [10.5281/zenodo.23242014](https://doi.org/10.5281/zenodo.23242014)). Earlier reports: version 1.1, [10.5281/zenodo.23080472](https://doi.org/10.5281/zenodo.23080472); version 1.0, [10.5281/zenodo.23072494](https://doi.org/10.5281/zenodo.23072494).
 
 ```bibtex
-@techreport{manzyuk2026lindapro11,
-  title     = {Linda-Pro 1.1: retraining a local AI-text detector against AI humanizers},
+@techreport{manzyuk2026lindapro131,
+  title     = {Linda-Pro 1.3.1: a local ensemble detector of AI-generated text in English, Polish and Russian},
   author    = {Manzyuk, Vladyslav},
   year      = {2026},
   publisher = {Zenodo},
-  doi       = {10.5281/zenodo.23080472}
+  doi       = {10.5281/zenodo.23242014}
 }
 ```
