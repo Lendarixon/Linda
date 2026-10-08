@@ -165,6 +165,11 @@ section{padding-top:clamp(40px,6vw,84px);padding-bottom:clamp(24px,4vw,56px)}
 .shot img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top}
 .shot figcaption{padding:10px 14px;font-size:.85rem;color:var(--mut);border-top:1px solid var(--line)}
 .hero h1{font-size:clamp(2rem,4vw,3.9rem)!important;text-wrap:balance}
+.panel .big{font-size:clamp(2.2rem,4vw,3.2rem);font-weight:300;letter-spacing:-.03em;line-height:1;margin-bottom:8px}
+.shot a{cursor:zoom-in}
+#lb{position:fixed;inset:0;z-index:1000;background:rgba(5,8,14,.94);display:none;align-items:center;justify-content:center;padding:56px 12px 12px}
+#lb.on{display:flex}#lb img{max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+#lb button{position:absolute;top:10px;right:10px;width:48px;height:48px;border:0;border-radius:50%;background:#fff;color:#111;font-size:26px;line-height:1;cursor:pointer;font-weight:700}
 /* Плоский Metro для тестового сайта. */
 body { background:var(--bg) !important; background-image:none !important; }
 header.top { background:var(--bg) !important; backdrop-filter:none !important; box-shadow:none !important; }
