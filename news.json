@@ -1,6 +1,21 @@
 [
  {
   "date": "2026-10-09",
+  "title": "Linda-Pro 2.0.4.1 — Fixes: closing, restarting and updating",
+  "text": "• Closing the window no longer leaves the program hanging in the Task Manager; a new launch ends an old hung copy by itself and no longer opens its old interface.\n• Loading the models into memory at start no longer blocks the restart for an update (\"finish the check\" with no check running) or the applying of new models.\n• Error messages of the update buttons stay on screen longer.",
+  "title_i18n": {
+   "ru": "Linda-Pro 2.0.4.1 — Исправления: закрытие, перезапуск и обновление",
+   "en": "Linda-Pro 2.0.4.1 — Fixes: closing, restarting and updating",
+   "pl": "Linda-Pro 2.0.4.1 — Poprawki: zamykanie, restart i aktualizacja"
+  },
+  "text_i18n": {
+   "ru": "• Закрытое окно больше не оставляет программу висеть в диспетчере задач; новый запуск сам завершает старую зависшую копию и не открывает её старый интерфейс.\n• Загрузка моделей в память при запуске больше не мешает перезапуску для обновления («Завершите проверку» без всякой проверки) и применению новых моделей.\n• Сообщения об ошибках кнопки обновления остаются на экране дольше.",
+   "en": "• Closing the window no longer leaves the program hanging in the Task Manager; a new launch ends an old hung copy by itself and no longer opens its old interface.\n• Loading the models into memory at start no longer blocks the restart for an update (\"finish the check\" with no check running) or the applying of new models.\n• Error messages of the update buttons stay on screen longer.",
+   "pl": "• Zamknięcie okna nie zostawia już programu wiszącego w Menedżerze zadań; nowe uruchomienie samo kończy starą zawieszoną kopię i nie otwiera jej starego interfejsu.\n• Ładowanie modeli do pamięci przy starcie nie blokuje już restartu do aktualizacji („zakończ sprawdzanie”, choć nic nie jest sprawdzane) ani zastosowania nowych modeli.\n• Komunikaty o błędach przycisków aktualizacji pozostają na ekranie dłużej."
+  }
+ },
+ {
+  "date": "2026-10-09",
   "title": "Linda-Pro 2.0.4.0 — Version 2.4: Linda-Pro Lite, two sets and two verdicts",
   "text": "• New, improved Linda-Pro Lite (about 0.3 GB): retrained on texts rewritten by stealth humanizers, without Llama; it finds disguised AI text better and runs on any processor.\n• New \"Both sets\" mode (Settings > Models): next to the Linda-Pro verdict the app shows the Lite verdict for comparison.\n• With only Linda-Pro Lite installed, the interface shows only it: no rows or buttons for the Essay and Multi models; model names in reports (PDF, Markdown) match the installed set.\n• Choice of set in the installer and in Settings; the graphics-card choice is kept.",
   "title_i18n": {
