@@ -1,5 +1,20 @@
 [
  {
+  "date": "2026-10-09",
+  "title": "Linda-Pro 2.0.3.7 — Linda-Pro Lite: a light set for any computer",
+  "text": "• Two model sets: Linda-Pro (the most accurate, best with a graphics card) and Linda-Pro Lite (about 0.3 GB, runs on any processor, a 3,800-word text in seconds). Choose either one or both during installation and later in Settings (\"Models\").\n• Lite finds noticeably fewer AI texts after \"humanizers\" than Linda-Pro (10-14 points lower in our measurements, much lower on deliberately disguised texts); use Linda-Pro for an important text.\n• On a computer without a graphics card the app uses Lite by itself. Models download automatically.",
+  "title_i18n": {
+   "ru": "Linda-Pro 2.0.3.7 — Linda-Pro Lite: лёгкий набор для любых компьютеров",
+   "en": "Linda-Pro 2.0.3.7 — Linda-Pro Lite: a light set for any computer",
+   "pl": "Linda-Pro 2.0.3.7 — Linda-Pro Lite: lekki zestaw dla każdego komputera"
+  },
+  "text_i18n": {
+   "ru": "• Два набора моделей: Linda-Pro (самая точная, лучше с видеокартой) и Linda-Pro Lite (около 0,3 ГБ, работает на любом процессоре, текст на 3 800 слов за секунды). При установке и позже в настройках («Модели») можно выбрать любой из них или оба.\n• Lite находит заметно меньше ИИ-текстов после «гуманизаторов», чем Linda-Pro (на 10–14 пунктов в наших замерах, на текстах с маскировкой — сильно меньше); для важного текста берите Linda-Pro.\n• Если на компьютере нет видеокарты, приложение само использует Lite. Модели скачиваются автоматически.",
+   "en": "• Two model sets: Linda-Pro (the most accurate, best with a graphics card) and Linda-Pro Lite (about 0.3 GB, runs on any processor, a 3,800-word text in seconds). Choose either one or both during installation and later in Settings (\"Models\").\n• Lite finds noticeably fewer AI texts after \"humanizers\" than Linda-Pro (10-14 points lower in our measurements, much lower on deliberately disguised texts); use Linda-Pro for an important text.\n• On a computer without a graphics card the app uses Lite by itself. Models download automatically.",
+   "pl": "• Dwa zestawy modeli: Linda-Pro (najdokładniejszy, najlepiej z kartą graficzną) i Linda-Pro Lite (około 0,3 GB, działa na każdym procesorze, tekst 3800 słów w kilka sekund). Podczas instalacji i później w ustawieniach („Modele”) można wybrać jeden z nich lub oba.\n• Lite znajduje wyraźnie mniej tekstów AI po „humanizerach” niż Linda-Pro (o 10–14 punktów w naszych pomiarach, przy celowo zamaskowanych tekstach znacznie mniej); do ważnego tekstu użyj Linda-Pro.\n• Na komputerze bez karty graficznej aplikacja sama używa Lite. Modele pobierają się automatycznie."
+  }
+ },
+ {
   "date": "2026-10-08",
   "title": "Linda-Pro 2.0.3.6 — Clearer and more convenient",
   "text": "• After new models are downloaded the app now offers “Restart” instead of showing the “Update models” button again.\n• An old failed-install message (“Installer exit code 5”) is no longer shown at every start once that version is installed.\n• Rows of the batch table no longer flicker while several files are being checked.\n• Short text (under 150 words): a clear warning above the result that the estimate may be inaccurate.\n• The results panel can be widened or narrowed by dragging the divider between the text and the results (double-click resets it).\n• The built-in downloads flyout no longer covers the buttons at the top right.",
