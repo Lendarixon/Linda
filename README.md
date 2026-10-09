@@ -7,6 +7,40 @@ Weights live on Hugging Face: [Lindarixon/Linda-Pro](https://huggingface.co/Lind
 ## Windows app (no Python needed)
 Download **Linda-Setup.exe** from the [releases page](https://github.com/Lendarixon/Linda/releases/latest), install it and start it: the app downloads the models once (about 2.9 GB), then works offline, highlights the AI-looking passages and updates its models by itself. Free for personal non-commercial use; a commercial licence key ($10 person, $30 team of 10, $500 per year organization) covers the app, the command line and the models together ([how licensing works](LICENSING.md)). Source of the app: [desktop/](desktop).
 
+<!-- lite:start -->
+## Two versions: Linda-Pro and Linda-Pro Lite
+The same app, two sets of models. Install either one or both; the installer asks, and Settings let you change it later (the app also works with only one of them).
+* **Linda-Pro Lite**: a small, fast model for any computer, including old laptops without a graphics card. Slightly less accurate.
+* **Linda-Pro**: the full ensemble, the most accurate; best with a modern graphics card.
+Not sure? Take Lite: it runs everywhere, and Linda-Pro can be added later.
+
+| | Linda-Pro | Linda-Pro Lite |
+|---|---|---|
+| Texts rewritten by 16 "humanizers" (HumanizerBench), found | 81.0% | 68.2% |
+| Newer humanizer texts (Oct 2026), found | 84.0% | 74.1% |
+| Texts of three unseen AI generators, found | 95.5% | 81.4% |
+| Polish AI texts found (false alarms) | 79.4% (1.4%) | 75.4% (2.0%) |
+| Russian AI texts found (false alarms) | 80.3% (0.6%) | 74.6% (1.7%) |
+| False alarms, non-native exam essays (TOEFL) | 5.5% | 2.2% |
+| False alarms, human texts of a mixed set (MAGE) | 2.0% | 0.4% |
+| Check of a 3,800-word text | 1-3 s with a modern graphics card; minutes on a processor alone | about 1-5 s on one ordinary processor (measured 1.2 s on a Ryzen 7, 4 threads) |
+| Download | about 2.9 GB | about 0.3 GB |
+| Graphics card | recommended | not needed |
+
+Recommended computer:
+
+| | Linda-Pro Lite | Linda-Pro |
+|---|---|---|
+| System | Windows 10 / 11, 64-bit | Windows 10 / 11, 64-bit |
+| Processor | any 4-core processor from about 2017 | 4 cores or more |
+| Memory (RAM) | 4 GB (8 GB is comfortable) | 8 GB (16 GB recommended) |
+| Graphics card | not needed | DirectX 12 card with 4 GB of video memory or more; works without it, but slowly |
+| Free disk space | 2 GB | 6 GB (an SSD is better) |
+
+Our own measurements on public test sets (English, Polish, Russian), not an independent audit; one calibration rule for both versions. The full Linda-Pro needed 226 s for a 3,800-word text on an office Ryzen 5 PRO 2400GE; Lite is expected to take a few seconds there (not measured on that processor yet).
+Lite weights have their own repository: [Lindarixon/Linda-Pro-Lite](https://huggingface.co/Lindarixon/Linda-Pro-Lite). From Python: `python download_models.py --set lite`, then `python -m linda_pro file.txt --lite`.
+<!-- lite:end -->
+
 ## Speed
 The whole ensemble on one text, measured on one machine (AMD Ryzen 7 7800X3D, 6 CPU threads; GPU: AMD Radeon RX 9070 XT through DirectML in the Windows app). Older laptops are slower. Scores on CPU and GPU differ slightly (about 0.1 on a scale where the AI line is near 0); verdicts matched on our checks.
 

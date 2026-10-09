@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """load_detector(): the detector that matches the weights on disk.
 
-Version 1.3.x weights (calibration/routing.json with kind "merged" and the folders it names) give a RoutedLindaPro (English, Polish and Russian,
-one decision rule per language). Without them the older single-language LindaPro (1.1 weights) is used."""
+Version 1.3.x weights (calibration/routing.json with kind "merged") give a RoutedLindaPro for English, Polish and Russian. Two sets exist:
+  * Linda-Pro (tier "full"): the large ensemble (folders essay_dhi_* and multi_dhi_*), best accuracy, a graphics card helps;
+  * Linda-Pro Lite (tier "speed"): one small model (folder linda_speed_*) plus stylometry, runs on any CPU in seconds.
+With both installed the full tier is used unless tier="lite" is asked for; with only one installed that one is used. Without 1.3.x weights the older LindaPro (1.1) is used."""
 from __future__ import annotations
 
 import json
@@ -19,35 +21,45 @@ def _routing(root: Path) -> dict | None:
         table = json.loads(p.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
-    if table.get("kind") != "merged":
-        return None
-    dirs = table.get("voice_dirs") or {}
-    if not dirs or not all((root / "models" / d).is_dir() for d in dirs.values()):
-        return None
-    return table
+    return table if table.get("kind") == "merged" else None
 
 
-def load_detectors(root: str | Path | None = None, device: str | None = None) -> dict:
-    """{"sensitive": detector, "precise": detector}; both share one model pool, so the weights are loaded once."""
+def available_tiers(root: Path, table: dict) -> dict:
+    dirs, models = table.get("voice_dirs") or {}, root / "models"
+    full = all(k in dirs and (models / dirs[k]).is_dir() for k in ("essay_m", "multi_m", "stylo_d"))
+    lite = "speed_s" in dirs and (models / dirs["speed_s"] / "model.onnx").is_file() and all("speed" in table["languages"][lg]["tiers"] for lg in table["languages"])
+    return {"full": full, "lite": lite}
+
+
+def load_detectors(root: str | Path | None = None, device: str | None = None, tier: str | None = None) -> dict:
+    """{"sensitive": detector, "precise": detector}; both share one model pool, so the weights are loaded once. tier: None (best installed), "full" or "lite"."""
     root = Path(root) if root else PKG_ROOT
     table = _routing(root)
-    if table is None:
+    have = available_tiers(root, table) if table else {"full": False, "lite": False}
+    if not (have["full"] or have["lite"]):
         return {"sensitive": LindaPro(mode="sensitive", device=device), "precise": LindaPro(mode="precise", device=device)}
+    use_lite = have["lite"] and (tier == "lite" or not have["full"])
+    if tier == "full" and not have["full"]:
+        raise FileNotFoundError("Linda-Pro (full) weights are not installed; run download_models.py or use tier='lite'")
     from .routed import ModelPool, RoutedLindaPro
-    from .voters import FastSeqCls, StyloVoter
+    from .voters import FastSeqCls, SpeedOnnx, StyloVoter
 
     dirs = table["voice_dirs"]
     models = root / "models"
 
     def make_voice(key: str):
-        if key == "stylo_d":
-            return StyloVoter(models / dirs["stylo_d"])
+        if key.startswith("stylo_l_"):
+            return StyloVoter(models / dirs[key], key[-2:])
+        if key.startswith("stylo"):
+            return StyloVoter(models / dirs[key])
+        if key.startswith("speed_s"):
+            return SpeedOnnx(models / dirs[key])
         return FastSeqCls(models / dirs[key], device=device)
 
-    pool = ModelPool(make_voice, {"essay": 870, "multi": 560, "stylo": 0}, budget_mb=2600)
+    pool = ModelPool(make_voice, {"essay": 870, "multi": 560, "stylo": 0, "speed": 560}, budget_mb=2600)
     table_path = root / "calibration" / "routing.json"
-    return {m: RoutedLindaPro(table_path, make_voice, mode=m, pool=pool) for m in ("sensitive", "precise")}
+    return {m: RoutedLindaPro(table_path, make_voice, mode=m, pool=pool, tier="speed" if use_lite else None) for m in ("sensitive", "precise")}
 
 
-def load_detector(mode: str = "sensitive", root: str | Path | None = None, device: str | None = None):
-    return load_detectors(root, device)[mode]
+def load_detector(mode: str = "sensitive", root: str | Path | None = None, device: str | None = None, tier: str | None = None):
+    return load_detectors(root, device, tier)[mode]
