@@ -16,11 +16,11 @@ Not sure? Take Lite: it runs everywhere, and Linda-Pro can be added later.
 
 | | Linda-Pro | Linda-Pro Lite |
 |---|---|---|
-| Texts rewritten by 16 "humanizers" (HumanizerBench), found | 81.0% | 68.2% |
-| Newer humanizer texts (Oct 2026), found | 84.0% | 74.1% |
-| Texts of three unseen AI generators, found | 95.5% | 81.4% |
-| Polish AI texts found (false alarms) | 79.4% (1.4%) | 75.4% (2.0%) |
-| Russian AI texts found (false alarms) | 80.3% (0.6%) | 74.6% (1.7%) |
+| Texts rewritten by 16 "humanizers" (HumanizerBench), found | 81.0% | 69.4% |
+| Newer humanizer texts (Oct 2026), found | 84.0% | 75.8% |
+| Texts of three unseen AI generators, found | 95.5% | 83.0% |
+| Polish AI texts found (false alarms) | 79.4% (1.4%) | 72.2% (1.5%) |
+| Russian AI texts found (false alarms) | 80.3% (0.6%) | 77.3% (1.2%) |
 | False alarms, non-native exam essays (TOEFL) | 5.5% | 2.2% |
 | False alarms, human texts of a mixed set (MAGE) | 2.0% | 0.4% |
 | Check of a 3,800-word text | 1-3 s with a modern graphics card; minutes on a processor alone | about 1-5 s on one ordinary processor (measured 1.2 s on a Ryzen 7, 4 threads) |
