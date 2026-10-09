@@ -1,6 +1,21 @@
 [
  {
   "date": "2026-10-09",
+  "title": "Linda-Pro 2.0.4.0 — Version 2.4: Linda-Pro Lite, two sets and two verdicts",
+  "text": "• New, improved Linda-Pro Lite (about 0.3 GB): retrained on texts rewritten by stealth humanizers, without Llama; it finds disguised AI text better and runs on any processor.\n• New \"Both sets\" mode (Settings > Models): next to the Linda-Pro verdict the app shows the Lite verdict for comparison.\n• With only Linda-Pro Lite installed, the interface shows only it: no rows or buttons for the Essay and Multi models; model names in reports (PDF, Markdown) match the installed set.\n• Choice of set in the installer and in Settings; the graphics-card choice is kept.",
+  "title_i18n": {
+   "ru": "Linda-Pro 2.0.4.0 — Версия 2.4: Linda-Pro Lite, два набора и два вердикта",
+   "en": "Linda-Pro 2.0.4.0 — Version 2.4: Linda-Pro Lite, two sets and two verdicts",
+   "pl": "Linda-Pro 2.0.4.0 — Wersja 2.4: Linda-Pro Lite, dwa zestawy i dwa werdykty"
+  },
+  "text_i18n": {
+   "ru": "• Новый, улучшенный Linda-Pro Lite (около 0,3 ГБ): модель дообучена на текстах, переписанных «стелс»-гуманайзерами, без Llama; лучше находит замаскированный ИИ-текст, работает на любом процессоре.\n• Новый режим «Оба набора» (Настройки → Модели): рядом с вердиктом Linda-Pro показывается вердикт Lite для сравнения.\n• Если установлен только Linda-Pro Lite, интерфейс показывает только его: без строк и кнопок моделей Essay и Multi; в отчётах (PDF, Markdown) названия моделей совпадают с установленным набором.\n• Выбор набора при установке и в настройках, выбор видеокарты сохранён.",
+   "en": "• New, improved Linda-Pro Lite (about 0.3 GB): retrained on texts rewritten by stealth humanizers, without Llama; it finds disguised AI text better and runs on any processor.\n• New \"Both sets\" mode (Settings > Models): next to the Linda-Pro verdict the app shows the Lite verdict for comparison.\n• With only Linda-Pro Lite installed, the interface shows only it: no rows or buttons for the Essay and Multi models; model names in reports (PDF, Markdown) match the installed set.\n• Choice of set in the installer and in Settings; the graphics-card choice is kept.",
+   "pl": "• Nowy, ulepszony Linda-Pro Lite (około 0,3 GB): douczony na tekstach przepisanych przez „stealth” humanizery, bez Llama; lepiej wykrywa zamaskowany tekst AI i działa na każdym procesorze.\n• Nowy tryb „Oba zestawy” (Ustawienia > Modele): obok werdyktu Linda-Pro aplikacja pokazuje werdykt Lite dla porównania.\n• Gdy zainstalowany jest tylko Linda-Pro Lite, interfejs pokazuje tylko jego: bez wierszy i przycisków modeli Essay i Multi; nazwy modeli w raportach (PDF, Markdown) odpowiadają zainstalowanemu zestawowi.\n• Wybór zestawu w instalatorze i w ustawieniach; wybór karty graficznej zachowany."
+  }
+ },
+ {
+  "date": "2026-10-09",
   "title": "Linda-Pro 2.0.3.7 — Linda-Pro Lite: a light set for any computer",
   "text": "• Two model sets: Linda-Pro (the most accurate, best with a graphics card) and Linda-Pro Lite (about 0.3 GB, runs on any processor, a 3,800-word text in seconds). Choose either one or both during installation and later in Settings (\"Models\").\n• Lite finds noticeably fewer AI texts after \"humanizers\" than Linda-Pro (10-14 points lower in our measurements, much lower on deliberately disguised texts); use Linda-Pro for an important text.\n• On a computer without a graphics card the app uses Lite by itself. Models download automatically.",
   "title_i18n": {
