@@ -197,7 +197,7 @@
  {
   "date": "2026-10-01",
   "title": "Linda-Pro 1.1: retrained against AI humanizers",
-  "text": "The three detectors were retrained on real outputs of AI humanizer tools. On the public HumanizerBench set (not used for training) the share of humanized texts flagged as AI rose from 31% to 70%; false flags on TOEFL exam essays fell from 8.8% to 4.4%. The technical report (DOI 10.5281/zenodo.23080472) lists the data, tests and caveats."
+  "text": "The three detectors were retrained on real outputs of AI humanizer tools. On the public HumanizerBench set (not used for training) the share of humanized texts flagged as AI rose from 31% to 70%; false flags on TOEFL exam essays fell from 8.8% to 4.4%. The technical report (DOI 10.5281/zenodo.23261670) lists the data, tests and caveats."
  },
  {
   "date": "2026-10-01",
