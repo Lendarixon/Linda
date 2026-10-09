@@ -9,11 +9,11 @@
 <meta property="og:url" content="https://lendarixon.github.io/Linda/results.html"><meta property="og:image" content="https://lendarixon.github.io/Linda/assets/logo_square.png"><meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary"><meta name="twitter:title" content="Results and benchmarks - Linda-Pro"><meta name="twitter:description" content="Linda-Pro: a local AI-text detector. Runs on your computer, no uploads. Free for personal use; catches 81% of humanizer-rewritten texts.">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Linda-Pro", "operatingSystem": "Windows 10/11", "applicationCategory": "UtilitiesApplication", "inLanguage": "en", "description": "Linda-Pro: a local AI-text detector. Runs on your computer, no uploads. Free for personal use; catches 81% of humanizer-rewritten texts.", "offers": [{"@type": "Offer", "price": "0", "priceCurrency": "USD"}, {"@type": "Offer", "price": "10", "priceCurrency": "USD"}]}</script>
-<link rel="icon" href="assets/linda.png"><link rel="stylesheet" href="site.css?v=0d7d321f"></head><body>
+<link rel="icon" href="assets/linda.png"><link rel="stylesheet" href="site.css?v=a91de73c"></head><body>
 <a class="skip-link" href="#main-content">Skip to content</a>
 <header class="top" id="topbar"><div class="wrap"><a class="brand" href="index.html"><img src="assets/logo_wordmark.png" alt="Linda-Pro" height="42"></a>
 <button class="burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="main-nav">&#9776;</button>
-<nav class="main" id="main-nav" aria-label="Main"><a href="index.html#how">How it works</a><a href="index.html#pricing">Pricing</a><a href="business.html">For business</a><a href="faq.html">FAQ</a><a class="dl" href="https://github.com/Lendarixon/Linda/releases/latest">Download</a><span class="more"><details><summary>More &#9662;</summary><span class="more-menu"><a href="results.html" aria-current="page">Results</a><a href="developers.html">Developers</a><a href="memo.html">If the score is high</a><a href="licensing.html">Licensing</a><a href="updates.html">Updates</a></span></details></span></nav><span class="langbox"><label for="langsel">Language:</label><select class="langsel" id="langsel" aria-label="Language"><option value="en">EN</option><option value="ru">RU</option><option value="pl">PL</option></select><noscript><a href="results-ru.html">RU</a> <a href="results-pl.html">PL</a></noscript></span></div></header>
+<nav class="main" id="main-nav" aria-label="Main"><a href="index.html#how">How it works</a><a href="index.html#pricing">Pricing</a><a href="business.html">For business</a><a href="faq.html">FAQ</a><a class="dl" href="https://apps.microsoft.com/detail/9NP66G69BQPN">Download</a><span class="more"><details><summary>More &#9662;</summary><span class="more-menu"><a href="results.html" aria-current="page">Results</a><a href="developers.html">Developers</a><a href="memo.html">If the score is high</a><a href="licensing.html">Licensing</a><a href="updates.html">Updates</a></span></details></span></nav><span class="langbox"><label for="langsel">Language:</label><select class="langsel" id="langsel" aria-label="Language"><option value="en">EN</option><option value="ru">RU</option><option value="pl">PL</option></select><noscript><a href="results-ru.html">RU</a> <a href="results-pl.html">PL</a></noscript></span></div></header>
 <main id="main-content" tabindex="-1">
 <section id="trust"><div class="wrap"><p class="sec-no">03 — why trust it</p><h2>honest numbers, your texts stay yours</h2><p class="sub">Nothing here is invented for marketing: every figure below comes from the results section and the open technical report.</p>
 <div class="grid g3">
@@ -55,6 +55,7 @@
 
 <div class="panel c-steel" style="margin-top:26px"><h3>Russian and Polish: what changed in 1.3.1</h3><p>Russian and Polish now run on the same models as English. On our held-out test sets (350 AI + 350 human texts per language) the verdict “AI” catches about 79% (Polish) and 80% (Russian) of AI texts at 1.4% and 0.6% false alarms (version 1.1: 39% and 57%; Polish false alarms were 0.9% in 1.3). Texts rewritten by another model are caught less often (Gemini-rewritten: Polish 56%, Russian 59%). The sets are small, so expect ±5 points. We did not compare Russian or Polish against other detectors.</p></div>
 
+
 <h3 style="font-weight:300;font-size:1.8rem;letter-spacing:-.03em;margin:44px 0 6px">How fast is it</h3>
 <p class="sub" style="margin-bottom:14px">The whole check on one text in the Windows app. Test computer: Ryzen 7 7800X3D processor, Radeon RX 9070 XT graphics. Older laptops are slower.</p>
 <div class="tiles spd">
@@ -63,7 +64,7 @@
 <div class="tile c-cobalt"><span class="cap">processor, quick look</span><span class="lbl" style="font-size:1.25rem;font-weight:300">0.8 s<br>2.7 s<br>8.4 s</span></div>
 <div class="tile c-steel"><span class="cap">processor, careful look</span><span class="lbl" style="font-size:1.25rem;font-weight:300">2.1 s<br>5.7 s<br>20 s</span></div></div>
 <p class="note" style="margin-top:8px">CPU: 6 threads. Model loading at start takes 5–10 s. The GPU runs the models in half precision, so scores differ slightly from the CPU (about 0.1 on a scale where the AI line is near 0); verdicts matched on our checks. Measured on version 1.3; 1.3.1 has the same architecture.</p>
-<div class="btns" style="margin-top:22px;max-width:640px"><a class="btn acc" href="https://github.com/Lendarixon/Linda/releases/latest">Download free for Windows</a><a class="btn sec" href="index.html#pricing">Pricing</a></div>
+<div class="btns" style="margin-top:22px;max-width:640px"><a class="btn acc" href="https://apps.microsoft.com/detail/9NP66G69BQPN">Download free for Windows</a><a class="btn sec" href="index.html#pricing">Pricing</a></div>
 </div></section>
 
 <section id="news"><div class="wrap"><p class="sec-no">10 — news</p><h2>news & updates</h2><p class="sub">Release notes and model updates.</p>
