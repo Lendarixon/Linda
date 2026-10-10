@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/brand/readme_banner.png" alt="Linda-Pro - local AI-text detector" width="100%"></p>
+
 # Linda — local AI-text detector (English, Polish, Russian)
 
 Free for personal non-commercial use, **paid for commercial use** - one licence covers the app, the command-line tools and the models ([LICENSING.md](LICENSING.md), [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md), contact lindapro.support@proton.me). Runs on your machine: no cloud, no API.

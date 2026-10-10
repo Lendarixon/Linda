@@ -1,5 +1,19 @@
 [
   {
+    "version": "2.0.5.2",
+    "date": "2026-10-10",
+    "title": {
+      "ru": "Новый логотип и иконки",
+      "en": "New logo and icons",
+      "pl": "Nowe logo i ikony"
+    },
+    "notes": {
+      "ru": "• Новый логотип в стиле Metro: плитка с тремя строками текста, кусок средней подсвечен — как разметка ИИ в самом приложении.\n• Новая иконка приложения, установщика и меню «Пуск».\n• Логотип в шапке приложения теперь подстраивается под светлую и тёмную тему и под выбранный цвет акцента.\n• Проверка текста, модели и вердикты не изменились.",
+      "en": "• New Metro-style logo: a tile with three lines of text, part of the middle one highlighted, just like the AI marking in the app itself.\n• New icon for the app, the installer and the Start menu.\n• The logo in the app header now follows the light/dark theme and the chosen accent colour.\n• Checking, models and verdicts are unchanged.",
+      "pl": "• Nowe logo w stylu Metro: kafelek z trzema wierszami tekstu, fragment środkowego podświetlony — tak jak oznaczanie AI w samej aplikacji.\n• Nowa ikona aplikacji, instalatora i menu Start.\n• Logo w nagłówku aplikacji dopasowuje się teraz do jasnego/ciemnego motywu i wybranego koloru akcentu.\n• Sprawdzanie, modele i werdykty bez zmian."
+    }
+  },
+  {
     "version": "2.0.5.1",
     "date": "2026-10-10",
     "title": {
