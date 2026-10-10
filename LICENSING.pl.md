@@ -1,6 +1,8 @@
-# Licencjonowanie Linda-Pro na jednej stronie
+# Licencjonowanie Linda na jednej stronie
 
-Linda-Pro to jeden produkt, który możesz pobrać na dwa sposoby. Zasady są te same dla obu.
+Linda nazywała się wcześniej Linda-Pro; obejmuje detektory Linda Assay (dawniej Linda-Pro) i Linda Loupe (dawniej Linda-Pro Lite). Licencje kupione pod starą nazwą pozostają ważne.
+
+Linda to jeden produkt, który możesz pobrać na dwa sposoby. Zasady są te same dla obu.
 
 | | Co otrzymujesz | Skąd |
 |---|---|---|
@@ -19,7 +21,7 @@ Pobierz je z Hugging Face lub GitHuba albo pozwól aplikacji to zrobić. Bez rej
 Kupujesz **licencję na komercyjne używanie oprogramowania**. Jedna licencja obejmuje **wszystko razem**: aplikację (interfejs), narzędzia wiersza poleceń i pakiet oraz modele i kalibrację.
 Modeli nie kupuje się osobno, a interfejs nie jest licencjonowany osobno od modeli.
 
-Użytek komercyjny to używanie Linda-Pro do pracy zarobkowej lub dla klientów, wewnątrz firmy, szkoły, uczelni lub innej organizacji (na przykład sprawdzanie składanych prac przez personel), w produkcie lub usłudze, którą sprzedajesz, albo każdy inny użytek przynoszący pieniądze lub wspierający działalność organizacji.
+Użytek komercyjny to używanie Linda do pracy zarobkowej lub dla klientów, wewnątrz firmy, szkoły, uczelni lub innej organizacji (na przykład sprawdzanie składanych prac przez personel), w produkcie lub usłudze, którą sprzedajesz, albo każdy inny użytek przynoszący pieniądze lub wspierający działalność organizacji.
 
 | Licencja | Cena | Kto | Urządzenia | Aktualizacje |
 |---|---|---|---|---|
@@ -28,9 +30,9 @@ Użytek komercyjny to używanie Linda-Pro do pracy zarobkowej lub dla klientów,
 | **Organization / University** | 500 $ rocznie | jedna organizacja w jednej siedzibie | do 200 | przez cały rok licencji, w tym nowe wersje modeli |
 
 * **Jak otrzymać.** Po płatności otrzymujesz klucz licencyjny e-mailem. Wpisz go w aplikacji (okno Licence): powiadomienie o licencji zniknie. Narzędzia wiersza poleceń nie sprawdzają kluczy; licencja obowiązuje je tak samo, a klucz jest Twoim dowodem zakupu.
-* **Zasada wersji.** Klucz Personal lub Team jest wieczysty dla wersji 1.x. Nowa wersja główna (2.0) może wymagać nowego klucza lub uaktualnienia. Licencja Organization obowiązuje przez opłacony rok; po jego zakończeniu bez odnowienia użytek komercyjny Linda-Pro na jej podstawie ustaje.
+* **Zasada wersji.** Klucz Personal lub Team jest wieczysty dla wersji 1.x. Nowa wersja główna (2.0) może wymagać nowego klucza lub uaktualnienia. Licencja Organization obowiązuje przez opłacony rok; po jego zakończeniu bez odnowienia użytek komercyjny Linda na jej podstawie ustaje.
 * **Nic nie jest zablokowane.** Aplikacja działa tak samo bez klucza; klucz to prawne pozwolenie, nie przełącznik techniczny.
-* **Nie wchodzą w te licencje:** prawa wyłączne, integracja OEM / white-label z innym produktem, hosting Linda-Pro jako usługi lub API dla stron trzecich, redystrybucja modeli, kalibracja indywidualna na Twoich tekstach. Są uzgadniane indywidualnie: napisz na lindapro.support@proton.me, podając przypadek użycia, wolumen i wdrożenie.
+* **Nie wchodzą w te licencje:** prawa wyłączne, integracja OEM / white-label z innym produktem, hosting Linda jako usługi lub API dla stron trzecich, redystrybucja modeli, kalibracja indywidualna na Twoich tekstach. Są uzgadniane indywidualnie: napisz na lindapro.support@proton.me, podając przypadek użycia, wolumen i wdrożenie.
 
 ## 3. Szybkie pytania
 
