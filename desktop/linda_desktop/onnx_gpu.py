@@ -25,7 +25,7 @@ def available() -> bool:
         return False
 
 
-def export(model_dir: Path, out_dir: Path, max_len: int, fp16: bool = False) -> Path:
+def export(model_dir: Path, out_dir: Path, max_len: int, fp16: bool = False, tokens: bool = False) -> Path:
     """Export model_dir (HF sequence classifier) to out_dir/model.onnx for sequences of exactly max_len tokens (batch is dynamic).
     fp16=True halves the weights (Essay ~0.87 GB instead of 1.7 GB): the 2.0 voters have to fit a 4 GB card; the inputs stay int64, the logits are cast to float32 on read."""
     import torch
@@ -34,20 +34,35 @@ def export(model_dir: Path, out_dir: Path, max_len: int, fp16: bool = False) -> 
     out_dir.mkdir(parents=True, exist_ok=True)
     model = AutoModelForSequenceClassification.from_pretrained(str(model_dir)).eval()
     model = model.half() if fp16 else model.float()
+    if tokens:
+        class TokenGraph(torch.nn.Module):
+            def __init__(self, classifier):
+                super().__init__()
+                self.model = classifier
+
+            def forward(self, input_ids, attention_mask):
+                m = self.model
+                h = m.base_model(input_ids=input_ids, attention_mask=attention_mask, return_dict=False)[0]
+                return m.classifier(m.dropout(m.pooler(h))), h
+
+        model = TokenGraph(model).eval()
     ids = torch.ones((1, max_len), dtype=torch.long)
     ids[0, 0] = 1
     mask = torch.ones((1, max_len), dtype=torch.long)
-    target = out_dir / "model.onnx"
-    tmp = out_dir / "model.onnx.part"
+    target = out_dir / ("model_tok.onnx" if tokens else "model.onnx")
+    tmp = target.with_suffix(".onnx.part")
     kw = dict(input_names=["input_ids", "attention_mask"], output_names=["logits"],
               dynamic_axes={"input_ids": {0: "batch"}, "attention_mask": {0: "batch"}, "logits": {0: "batch"}}, opset_version=17)
+    if tokens:
+        kw["output_names"].append("last_hidden_state")
+        kw["dynamic_axes"]["last_hidden_state"] = {0: "batch"}
     with torch.no_grad():
         try:
             torch.onnx.export(model, (ids, mask), str(tmp), dynamo=False, **kw)  # the TorchScript exporter is the reliable one for DeBERTa
         except TypeError:  # older torch without the dynamo switch
             torch.onnx.export(model, (ids, mask), str(tmp), **kw)
     tmp.replace(target)
-    (out_dir / "meta.json").write_text(json.dumps({"max_len": max_len, "source": str(model_dir.name), "dtype": "fp16" if fp16 else "fp32"}), encoding="utf-8")
+    (out_dir / ("meta_tok.json" if tokens else "meta.json")).write_text(json.dumps({"max_len": max_len, "source": str(model_dir.name), "dtype": "fp16" if fp16 else "fp32"}), encoding="utf-8")
     return target
 
 
@@ -65,6 +80,7 @@ class OnnxSeqCls:
         args = self.model_dir / "train_args.json"
         self.max_len = int(json.loads(args.read_text(encoding="utf-8")).get("max_len", 256)) if args.exists() else 256
         self.sess = None
+        self.tok_sess = None
 
     def _load(self) -> None:
         import onnxruntime as ort
@@ -93,6 +109,52 @@ class OnnxSeqCls:
 
     def close(self) -> None:
         self.sess = None
+        self.tok_sess = None
+
+    @property
+    def has_token_scores(self):
+        return (self.model_dir / "tok_head.npz").is_file()
+
+    def _load_tokens(self):
+        import onnxruntime as ort
+        from transformers import AutoTokenizer
+
+        path = self.cache / "model_tok.onnx"
+        meta = self.cache / "meta_tok.json"
+        m = json.loads(meta.read_text(encoding="utf-8")) if meta.exists() else {}
+        if not (path.exists() and m.get("max_len") == self.max_len
+                and m.get("dtype") == ("fp16" if self.fp16 else "fp32")):
+            if not self.allow_export:
+                raise RuntimeError("Token ONNX graph missing; runtime export is disabled")
+            export(self.model_dir, self.cache, self.max_len, fp16=self.fp16, tokens=True)
+        if not hasattr(self, "tok"):
+            self.tok = AutoTokenizer.from_pretrained(str(self.model_dir))
+        so = ort.SessionOptions()
+        so.intra_op_num_threads, so.inter_op_num_threads = 4, 1
+        so.add_session_config_entry("session.intra_op.allow_spinning", "0")
+        so.enable_mem_pattern = False
+        so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+        so.log_severity_level = 3
+        sess = ort.InferenceSession(str(path), sess_options=so,
+            providers=[("DmlExecutionProvider", {"device_id": self.device_id}), "CPUExecutionProvider"])
+        if "DmlExecutionProvider" not in sess.get_providers():
+            raise RuntimeError("DirectML token session is unavailable")
+        self.tok_sess = sess
+
+    def token_scores(self, text):
+        from linda_pro.voters import pro_token_scores
+        if not self.has_token_scores:
+            raise ValueError("Missing tok_head.npz")
+        if self.tok_sess is None:
+            self._load_tokens()
+
+        def hidden(seq):
+            ids = np.full((1, self.max_len), self.tok.pad_token_id, dtype=np.int64)
+            mask = np.zeros_like(ids)
+            ids[0, :len(seq)], mask[0, :len(seq)] = seq, 1
+            return self.tok_sess.run(["last_hidden_state"], {"input_ids": ids, "attention_mask": mask})[0][0]
+
+        return pro_token_scores(self, text, hidden)
 
     def _windows(self, ids: list[int]) -> list[list[int]]:
         n = self.max_len - 2

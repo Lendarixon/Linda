@@ -1,5 +1,89 @@
 [
   {
+    "version": "2.0.5.1",
+    "date": "2026-10-10",
+    "title": {
+      "ru": "Linda-Pro Lite: разметка вдвое быстрее",
+      "en": "Linda-Pro Lite: highlighting twice as fast",
+      "pl": "Linda-Pro Lite: podświetlanie dwa razy szybsze"
+    },
+    "notes": {
+      "ru": "• Linda-Pro Lite берёт оценки токенов для разметки из тех же проходов модели, что считают вердикт, и дочитывает только остальной текст: разметка примерно в 2 раза быстрее (наш замер: 2,1 → 1,0 с на 1 000 слов на 4 потоках), точность разметки не ниже прежней (на смешанных текстах 85% верных меток слов, ложная метка «ИИ» у 3% человеческих слов).\n• Вердикты не изменились.",
+      "en": "• Linda-Pro Lite takes the token scores for highlighting from the same model passes that compute the verdict and reads only the rest of the text: highlighting is about 2x faster (our measurement: 2.1 -> 1.0 s per 1,000 words on 4 threads) with no loss of highlighting accuracy (85% of words labelled correctly on mixed texts, false AI mark on 3% of human words).\n• Verdicts are unchanged.",
+      "pl": "• Linda-Pro Lite bierze oceny tokenów do podświetlania z tych samych przebiegów modelu, które liczą werdykt, i doczytuje tylko resztę tekstu: podświetlanie ok. 2 razy szybsze (nasz pomiar: 2,1 -> 1,0 s na 1000 słów przy 4 wątkach) bez utraty dokładności (85% poprawnych etykiet słów na tekstach mieszanych, fałszywe AI u 3% słów ludzkich).\n• Werdykty bez zmian."
+    }
+  },
+  {
+    "version": "2.0.5.0",
+    "date": "2026-10-10",
+    "title": {
+      "ru": "Версия 2.5: разметка по токенам — точнее при той же скорости",
+      "en": "Version 2.5: token-level highlighting, more accurate at the same speed",
+      "pl": "Wersja 2.5: podświetlanie na poziomie tokenów, dokładniejsze przy tej samej szybkości"
+    },
+    "notes": {
+      "ru": "• Разметка предложений теперь строится по токенам за тот же проход модели, что и вердикт, а не повторными прогонами по кускам текста. Linda-Pro Lite размечает текст в 3 800 слов примерно за 4–6 с на современном процессоре вместо огромных однородных кусков в 2.0.4.x.\n• Точность разметки на смешанных текстах «человек + ИИ» с известной границей (наш замер, EN/RU/PL): Linda-Pro — верная метка у 90% слов (2.0.4.x: 90% ценой многих повторных прогонов), Linda-Pro Lite — 88% (2.0.4.x: 67%); у человеческих слов ложная метка «ИИ» около 3%.\n• Вердикт и его точность не изменились: модели те же, пороги те же.\n• Если документ в целом «неясно», а ИИ отмечен почти во всём тексте, в блоке «Авторство» пишется «ИИ»; если не отмечено ничего — «неясно», а не «смешанное».\n• Прокрутка текста больше не пропадает после смены набора моделей.\n• Быстрее открываются история и сравнение документов.",
+      "en": "• Sentence highlighting is now computed from tokens in the same model pass as the verdict instead of repeated passes over pieces of the text. Linda-Pro Lite highlights a 3,800-word text in about 4-6 s on a modern processor, without the huge uniform blocks of 2.0.4.x.\n• Highlighting accuracy on mixed human + AI texts with a known boundary (our measurement, EN/RU/PL): Linda-Pro labels 90% of words correctly (2.0.4.x: 90% at the cost of many repeated passes), Linda-Pro Lite 88% (2.0.4.x: 67%); about 3% of human words get a false \"AI\" mark.\n• The verdict and its accuracy are unchanged: same models, same thresholds.\n• If the document as a whole is \"unclear\" but AI is marked in almost all of the text, the Authorship box says \"AI\"; if nothing is marked it says \"unclear\" instead of \"mixed\".\n• Text scrolling no longer stops working after the model set is changed.\n• History and document comparison open faster.",
+      "pl": "• Podświetlanie zdań liczone jest teraz z tokenów w tym samym przebiegu modelu co werdykt, zamiast wielokrotnych przebiegów po fragmentach tekstu. Linda-Pro Lite podświetla tekst 3800 słów w ok. 4-6 s na nowoczesnym procesorze, bez ogromnych jednolitych bloków z 2.0.4.x.\n• Dokładność podświetlania na tekstach mieszanych człowiek + AI ze znaną granicą (nasz pomiar, EN/RU/PL): Linda-Pro - poprawna etykieta 90% słów (2.0.4.x: 90% kosztem wielu przebiegów), Linda-Pro Lite - 88% (2.0.4.x: 67%); ok. 3% słów ludzkich dostaje fałszywe oznaczenie „AI”.\n• Werdykt i jego dokładność bez zmian: te same modele, te same progi.\n• Gdy dokument jako całość jest „niejasny”, a AI zaznaczono prawie w całym tekście, blok „Autorstwo” pokazuje „AI”; gdy nic nie zaznaczono - „niejasne” zamiast „mieszane”.\n• Przewijanie tekstu nie przestaje działać po zmianie zestawu modeli.\n• Historia i porównanie dokumentów otwierają się szybciej."
+    }
+  },
+  {
+    "version": "2.0.4.2",
+    "date": "2026-10-10",
+    "title": {
+      "ru": "Честнее вердикт и разметка предложений",
+      "en": "A more honest verdict and sentence highlighting",
+      "pl": "Uczciwszy werdykt i podświetlanie zdań"
+    },
+    "notes": {
+      "ru": "• Linda-Pro Lite: исправлена разметка предложений. Раньше почти весь текст окрашивался как «возможно ИИ» — и у людей, и у ИИ-текстов, — а предложений «ИИ» не было вовсе. Теперь в ИИ-текстах около 9 из 10 слов отмечены «ИИ», у людей — 0–3%.\n• Вердикт больше не спорит с разметкой: если программа говорит «написан человеком», а заметная часть текста (от четверти слов) отмечена как ИИ, вердикт становится «неясно».\n• Linda-Pro Lite осторожнее: если модель Lite видит признаки ИИ выше своего порога, а общий балл ниже, вердикт «неясно», а не «человек» (так ИИ-текст с ручной правкой больше не выдаётся за человеческий). В режиме «Оба набора» это действует и на вердикт Lite.\n• Зона «возможно ИИ» в разметке Lite стала шире и начинается там же, где зона «неясно» у вердикта.",
+      "en": "• Linda-Pro Lite: sentence highlighting is fixed. Before, almost the whole text was coloured \"possibly AI\" for human and AI texts alike, and no sentence was ever marked \"AI\". Now about 9 in 10 words of AI texts are marked \"AI\", and 0-3% of words in human texts.\n• The verdict no longer contradicts the highlighting: if the app says \"written by a human\" while a noticeable part of the text (a quarter of the words or more) is marked AI, the verdict becomes \"unclear\".\n• Linda-Pro Lite is more careful: when the Lite model sees AI above its own threshold but the combined score is lower, the verdict is \"unclear\" instead of \"human\" (an AI text edited by hand is no longer passed off as human). In the \"Both sets\" mode this also applies to the Lite verdict.\n• The \"possibly AI\" band of Lite highlighting is wider and starts where the \"unclear\" zone of the verdict starts.",
+      "pl": "• Linda-Pro Lite: poprawione podświetlanie zdań. Wcześniej prawie cały tekst był oznaczany jako „możliwe AI” — zarówno u ludzi, jak i w tekstach AI — a żadne zdanie nie dostawało oznaczenia „AI”. Teraz w tekstach AI około 9 na 10 słów jest oznaczonych „AI”, u ludzi 0–3%.\n• Werdykt nie przeczy już podświetleniu: jeśli program mówi „napisany przez człowieka”, a znaczna część tekstu (co najmniej ćwierć słów) jest oznaczona jako AI, werdykt zmienia się na „niejasne”.\n• Linda-Pro Lite jest ostrożniejsza: gdy model Lite widzi AI powyżej własnego progu, a łączny wynik jest niższy, werdykt brzmi „niejasne”, a nie „człowiek” (tekst AI poprawiony ręcznie nie uchodzi już za ludzki). W trybie „Oba zestawy” dotyczy to też werdyktu Lite.\n• Pasmo „możliwe AI” w podświetleniu Lite jest szersze i zaczyna się tam, gdzie strefa „niejasne” werdyktu."
+    }
+  },
+  {
+    "version": "2.0.4.1",
+    "date": "2026-10-09",
+    "title": {
+      "ru": "Исправления: закрытие, перезапуск и обновление",
+      "en": "Fixes: closing, restarting and updating",
+      "pl": "Poprawki: zamykanie, restart i aktualizacja"
+    },
+    "notes": {
+      "ru": "• Закрытое окно больше не оставляет программу висеть в диспетчере задач; новый запуск сам завершает старую зависшую копию и не открывает её старый интерфейс.\n• Загрузка моделей в память при запуске больше не мешает перезапуску для обновления («Завершите проверку» без всякой проверки) и применению новых моделей.\n• Сообщения об ошибках кнопки обновления остаются на экране дольше.",
+      "en": "• Closing the window no longer leaves the program hanging in the Task Manager; a new launch ends an old hung copy by itself and no longer opens its old interface.\n• Loading the models into memory at start no longer blocks the restart for an update (\"finish the check\" with no check running) or the applying of new models.\n• Error messages of the update buttons stay on screen longer.",
+      "pl": "• Zamknięcie okna nie zostawia już programu wiszącego w Menedżerze zadań; nowe uruchomienie samo kończy starą zawieszoną kopię i nie otwiera jej starego interfejsu.\n• Ładowanie modeli do pamięci przy starcie nie blokuje już restartu do aktualizacji („zakończ sprawdzanie”, choć nic nie jest sprawdzane) ani zastosowania nowych modeli.\n• Komunikaty o błędach przycisków aktualizacji pozostają na ekranie dłużej."
+    }
+  },
+  {
+    "version": "2.0.4.0",
+    "date": "2026-10-09",
+    "title": {
+      "ru": "Версия 2.4: Linda-Pro Lite, два набора и два вердикта",
+      "en": "Version 2.4: Linda-Pro Lite, two sets and two verdicts",
+      "pl": "Wersja 2.4: Linda-Pro Lite, dwa zestawy i dwa werdykty"
+    },
+    "notes": {
+      "ru": "• Новый, улучшенный Linda-Pro Lite (около 0,3 ГБ): модель дообучена на текстах, переписанных «стелс»-гуманайзерами, без Llama; лучше находит замаскированный ИИ-текст, работает на любом процессоре.\n• Новый режим «Оба набора» (Настройки → Модели): рядом с вердиктом Linda-Pro показывается вердикт Lite для сравнения.\n• Если установлен только Linda-Pro Lite, интерфейс показывает только его: без строк и кнопок моделей Essay и Multi; в отчётах (PDF, Markdown) названия моделей совпадают с установленным набором.\n• Выбор набора при установке и в настройках, выбор видеокарты сохранён.",
+      "en": "• New, improved Linda-Pro Lite (about 0.3 GB): retrained on texts rewritten by stealth humanizers, without Llama; it finds disguised AI text better and runs on any processor.\n• New \"Both sets\" mode (Settings > Models): next to the Linda-Pro verdict the app shows the Lite verdict for comparison.\n• With only Linda-Pro Lite installed, the interface shows only it: no rows or buttons for the Essay and Multi models; model names in reports (PDF, Markdown) match the installed set.\n• Choice of set in the installer and in Settings; the graphics-card choice is kept.",
+      "pl": "• Nowy, ulepszony Linda-Pro Lite (około 0,3 GB): douczony na tekstach przepisanych przez „stealth” humanizery, bez Llama; lepiej wykrywa zamaskowany tekst AI i działa na każdym procesorze.\n• Nowy tryb „Oba zestawy” (Ustawienia > Modele): obok werdyktu Linda-Pro aplikacja pokazuje werdykt Lite dla porównania.\n• Gdy zainstalowany jest tylko Linda-Pro Lite, interfejs pokazuje tylko jego: bez wierszy i przycisków modeli Essay i Multi; nazwy modeli w raportach (PDF, Markdown) odpowiadają zainstalowanemu zestawowi.\n• Wybór zestawu w instalatorze i w ustawieniach; wybór karty graficznej zachowany."
+    }
+  },
+  {
+    "version": "2.0.3.7",
+    "date": "2026-10-09",
+    "title": {
+      "ru": "Linda-Pro Lite: лёгкий набор для любых компьютеров",
+      "en": "Linda-Pro Lite: a light set for any computer",
+      "pl": "Linda-Pro Lite: lekki zestaw dla każdego komputera"
+    },
+    "notes": {
+      "ru": "• Два набора моделей: Linda-Pro (самая точная, лучше с видеокартой) и Linda-Pro Lite (около 0,3 ГБ, работает на любом процессоре, текст на 3 800 слов за секунды). При установке и позже в настройках («Модели») можно выбрать любой из них или оба.\n• Lite находит заметно меньше ИИ-текстов после «гуманизаторов», чем Linda-Pro (на 10–14 пунктов в наших замерах, на текстах с маскировкой — сильно меньше); для важного текста берите Linda-Pro.\n• Если на компьютере нет видеокарты, приложение само использует Lite. Модели скачиваются автоматически.",
+      "en": "• Two model sets: Linda-Pro (the most accurate, best with a graphics card) and Linda-Pro Lite (about 0.3 GB, runs on any processor, a 3,800-word text in seconds). Choose either one or both during installation and later in Settings (\"Models\").\n• Lite finds noticeably fewer AI texts after \"humanizers\" than Linda-Pro (10-14 points lower in our measurements, much lower on deliberately disguised texts); use Linda-Pro for an important text.\n• On a computer without a graphics card the app uses Lite by itself. Models download automatically.",
+      "pl": "• Dwa zestawy modeli: Linda-Pro (najdokładniejszy, najlepiej z kartą graficzną) i Linda-Pro Lite (około 0,3 GB, działa na każdym procesorze, tekst 3800 słów w kilka sekund). Podczas instalacji i później w ustawieniach („Modele”) można wybrać jeden z nich lub oba.\n• Lite znajduje wyraźnie mniej tekstów AI po „humanizerach” niż Linda-Pro (o 10–14 punktów w naszych pomiarach, przy celowo zamaskowanych tekstach znacznie mniej); do ważnego tekstu użyj Linda-Pro.\n• Na komputerze bez karty graficznej aplikacja sama używa Lite. Modele pobierają się automatycznie."
+    }
+  },
+  {
     "version": "2.0.3.6",
     "date": "2026-10-08",
     "title": {

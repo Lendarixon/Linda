@@ -138,6 +138,11 @@ SORTS = {"date": "ts", "title": "title COLLATE NOCASE", "ai": "ai_share", "words
 
 def list_checks(q: str = "", verdict: str = "", limit: int = 200, offset: int = 0, folder: int | None = None, sort: str = "date", order: str = "desc") -> list[dict]:
     """folder: None = everything, 0 = not in any folder, N = that folder."""
+    with _LOCK, _db() as con:
+        return _list_checks(con, q, verdict, limit, offset, folder, sort, order)
+
+
+def _list_checks(con, q, verdict, limit, offset, folder, sort, order):
     sql, args = f"SELECT {LIST_COLS} FROM checks", []
     where = []
     if q:
@@ -154,16 +159,19 @@ def list_checks(q: str = "", verdict: str = "", limit: int = 200, offset: int = 
     if where:
         sql += " WHERE " + " AND ".join(where)
     sql += f" ORDER BY {SORTS.get(sort, 'ts')} {'ASC' if order == 'asc' else 'DESC'}, id DESC LIMIT ? OFFSET ?"
-    with _LOCK, _db() as con:
-        return [dict(r) for r in con.execute(sql, (*args, int(limit), int(offset)))]
+    return [dict(r) for r in con.execute(sql, (*args, int(limit), int(offset)))]
 
 
 def folders() -> list[dict]:
     """Folders with the number of checks in each, plus the virtual counts for 'all' and 'unsorted'."""
     with _LOCK, _db() as con:
-        rows = [dict(r) for r in con.execute("SELECT f.id, f.name, f.color, (SELECT COUNT(*) FROM checks c WHERE c.folder_id = f.id) AS n FROM folders f ORDER BY f.name COLLATE NOCASE")]
-        total = con.execute("SELECT COUNT(*) FROM checks").fetchone()[0]
-        unsorted = con.execute("SELECT COUNT(*) FROM checks WHERE folder_id IS NULL").fetchone()[0]
+        return _folders(con)
+
+
+def _folders(con):
+    rows = [dict(r) for r in con.execute("SELECT f.id, f.name, f.color, (SELECT COUNT(*) FROM checks c WHERE c.folder_id = f.id) AS n FROM folders f ORDER BY f.name COLLATE NOCASE")]
+    total = con.execute("SELECT COUNT(*) FROM checks").fetchone()[0]
+    unsorted = con.execute("SELECT COUNT(*) FROM checks WHERE folder_id IS NULL").fetchone()[0]
     return {"folders": rows, "total": int(total), "unsorted": int(unsorted)}
 
 
@@ -221,6 +229,25 @@ def purge_older_than(days: int) -> int:
 def get(check_id: int) -> dict | None:
     with _LOCK, _db() as con:
         r = con.execute("SELECT * FROM checks WHERE id = ?", (int(check_id),)).fetchone()
+    return _decode_check(r)
+
+
+def get_many(check_ids: list[int]) -> list[dict | None]:
+    """One database snapshot; keep requested order, missing IDs and duplicates."""
+    ids = [int(i) for i in check_ids]
+    if not ids:
+        return []
+    with _LOCK, _db() as con:
+        rows = {}
+        unique = list(dict.fromkeys(ids))
+        for start in range(0, len(unique), 900):
+            batch = unique[start:start + 900]
+            rows.update((r["id"], r) for r in con.execute(
+                f"SELECT * FROM checks WHERE id IN ({','.join('?' * len(batch))})", batch))
+    return [_decode_check(rows.get(i)) for i in ids]
+
+
+def _decode_check(r):
     if r is None:
         return None
     d = {k: r[k] for k in r.keys() if k not in ("text", "result")}
@@ -249,8 +276,22 @@ def clear() -> int:
 
 def stats() -> dict:
     with _LOCK, _db() as con:
-        r = con.execute("SELECT COUNT(*) n, SUM(verdict='ai') ai, SUM(verdict='uncertain') unc, SUM(verdict='human') hum, SUM(words) words FROM checks").fetchone()
+        return _stats(con)
+
+
+def _stats(con):
+    r = con.execute("SELECT COUNT(*) n, SUM(verdict='ai') ai, SUM(verdict='uncertain') unc, SUM(verdict='human') hum, SUM(words) words FROM checks").fetchone()
     return {k: int(r[k] or 0) for k in r.keys()}
+
+
+def list_snapshot(q: str = "", verdict: str = "", limit: int = 200, offset: int = 0, folder: int | None = None,
+                  sort: str = "date", order: str = "desc", retention_days: int = 0) -> dict:
+    """List, global counts and folders after retention, under one lock and connection."""
+    with _LOCK, _db() as con:
+        if retention_days > 0:
+            con.execute("DELETE FROM checks WHERE ts < ?", (time.time() - retention_days * 86400,))
+        return {"items": _list_checks(con, q, verdict, limit, offset, folder, sort, order),
+                "stats": _stats(con), **_folders(con)}
 
 
 def _norm(s: str) -> str:

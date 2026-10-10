@@ -7,6 +7,7 @@ so the view uses a small logistic "structure score" instead; reference built by 
 from __future__ import annotations
 
 import math
+from collections import Counter
 import re
 from pathlib import Path
 
@@ -86,7 +87,7 @@ def features(text: str) -> dict[str, float]:
         "paren": text.count("(") * per100, "question": sum(1 for s in sents if s.endswith("?")) / len(sents), "exclaim": sum(1 for s in sents if s.endswith("!")) / len(sents),
         "quotes": (text.count('"') + text.count("«") + text.count("“")) * per100, "digits": len(re.findall(r"\d+", text)) * per100,
         "first_person": len(_FIRST.findall(text)) * per100, "second_person": len(_SECOND.findall(text)) * per100,
-        "opener_div": len(set(firsts)) / len(firsts), "opener_rep": max((firsts.count(w) for w in set(firsts)), default=0) / len(firsts),
+        "opener_div": len(set(firsts)) / len(firsts), "opener_rep": max(Counter(firsts).values(), default=0) / len(firsts),
         "stock_opener": sum(1 for s in sent_low if s.startswith(_OPENERS)) / len(sents), "concl_last": 1.0 if any(c in last for c in _CONCL) else 0.0,
         "comma_per_sent": text.count(",") / len(sents), "triads": len(_TRIAD.findall(text)) * 100.0 / len(sents),
         "contrast": len(_CONTRAST.findall(text)) * 1000.0 / nw, "mattr": _mattr(ws), "word_len": sum(map(len, ws)) / len(ws) if ws else 0.0,
@@ -122,10 +123,24 @@ def layout(text: str, sentences: list[dict] | None = None) -> list[dict]:
     if len(pars) == 1 and text.count("\n") >= 3:
         pars = [(m.start(), m.end(), m.group()) for m in re.finditer(r"[^\n]+", text) if m.group().strip()]
     out = []
+    ordered = list(enumerate(sentences or []))
+    unordered = any(ordered[i][1].get("start", -1) > ordered[i + 1][1].get("start", -1) for i in range(len(ordered) - 1))
+    if unordered:
+        ordered.sort(key=lambda item: item[1].get("start", -1))
+    first = 0
     for a, b, t in pars:
         row = {"words": len(t.split()), "kind": "list" if _LIST.match(t) else ("heading" if len(t.split()) <= 12 and not t.rstrip().endswith((".", "!", "?", "…")) else "text")}
         if sentences:
-            row["sentences"] = [{"label": s["label"], "p_ai": s["p_ai"], "words": len(s["text"].split())} for s in sentences if a <= s.get("start", -1) < b]
+            while first < len(ordered) and ordered[first][1].get("start", -1) < a:
+                first += 1
+            end = first
+            while end < len(ordered) and ordered[end][1].get("start", -1) < b:
+                end += 1
+            group = ordered[first:end]
+            if unordered:
+                group.sort(key=lambda item: item[0])  # preserve input order within each paragraph
+            row["sentences"] = [{"label": s["label"], "p_ai": s["p_ai"], "words": len(s["text"].split())} for _, s in group]
+            first = end
         out.append(row)
     return out
 

@@ -106,6 +106,8 @@ class Core:
         self.checks_lock = threading.Lock()
         self.active_checks = {}  # job_id -> (client_id, cancel event)
         self.active_requests = 0
+        self.first_check_pending = False
+        self.preloading = False
         self.cancelled_checks = {}  # cancellation may arrive before the worker request
         self.move = models_location.MoveJob()  # moving the downloaded models to another folder
         self._preload_started = False
@@ -154,6 +156,7 @@ class Core:
         except Exception as e:  # noqa: BLE001
             self.update_error = str(e)
         self.checked_at = time.time()
+        self.first_check_pending = False
         try:
             self._maybe_auto_models()
         except Exception:  # noqa: BLE001 — automatic update is best effort
@@ -179,6 +182,16 @@ class Core:
             return False
 
         def work():
+            t_wait = time.time()
+            while self.first_check_pending and time.time() - t_wait < 25:
+                time.sleep(0.5)
+            try:
+                pending = bool(self.manifest) and bool(updater.files_to_fetch(self.manifest))
+            except Exception:
+                pending = False
+            if self.job.running() or pending:
+                return
+            self.preloading = True
             try:
                 with self.engine.lock:
                     detectors = self.engine.ensure_loaded()
@@ -191,12 +204,15 @@ class Core:
                     self.engine.state = {'phase':'ready','error':''}
             except Exception as e:  # noqa: BLE001
                 self.engine.state = {"phase": "error", "error": f"{type(e).__name__}: {e}"}
+            finally:
+                self.preloading = False
 
         threading.Thread(target=work, daemon=True).start()
         return True
 
     def background(self) -> None:
         threading.Thread(target=self.engine.probe_gpu, daemon=True).start()
+        self.first_check_pending = True
         self.preload()
 
         def loop():
@@ -286,6 +302,7 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
                 "license": licensing.public_state(), "update": core.update, "update_error": core.update_error,
                 "download": core.job.snapshot(), "engine": core.engine.info(), "settings": load_settings(),
                 "installer_job": core.installer_job, "pending_restart": pend, "update_pending": core.update_pending,
+                "model_sets": {"selected": updater.selected_sets(), "info": updater.set_info(core.manifest or _raw_installed()), "recommend": "pro" if (core.engine.gpu or {}).get("discrete") else "lite"},
                 "rollback": rollback_msg, "enterprise": config.enterprise(), "pdf_available": report.pdf_available(),
                 "changelog": chlog, "models_location": models_location.info(), "models_move": dict(core.move.state),
                 "buy": {"personal_team": config.BUY_URL_PERSONAL_TEAM, "org": config.BUY_URL_ORG, "email": config.CONTACT_EMAIL}}
@@ -294,6 +311,32 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
     def check():
         core.check_updates()
         return {"update": core.update, "error": core.update_error}
+
+    def _raw_installed():
+        try:
+            return json.loads((Path(config.models_root()) / "manifest.json").read_text(encoding="utf-8"))
+        except Exception:
+            return None
+
+    @api.post("/api/models/sets")
+    def models_sets(body: dict):
+        """Choose which model sets this computer keeps: Linda-Pro, Linda-Pro Lite or both. Removing a set deletes its files, adding one downloads it."""
+        sets = updater._valid_sets((body or {}).get("sets"))
+        if not sets:
+            return err("choose at least one set", 400)
+        if core.job.running() or core.move.busy() or (core.engine.lock.locked() and not core.preloading) or core.folder_lock.locked():
+            return terr("err_download_running", 409)
+        with core.settings_lock:
+            cur = load_settings()
+            cur["model_sets"] = sets
+            save_settings(cur)
+        core.engine.unload()
+        updater.remove_unselected()
+        core.manifest = None
+        core.check_updates()
+        if core.manifest is not None and (core.update or {}).get("weights_missing"):
+            core.job.start(core.manifest, core.manifest_raw)
+        return {"status": "ok", "sets": sets}
 
     @api.post("/api/models/download")
     def download():
@@ -592,10 +635,8 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
     @api.get("/api/history")
     def hist_list(q: str = "", verdict: str = "", limit: int = 200, offset: int = 0, folder: str = "", sort: str = "date", order: str = "desc"):
         days = int(load_settings().get("history_retention_days", 0) or 0)
-        if days:
-            history.purge_older_than(days)
         fo = int(folder) if folder.isdigit() else None  # "" = all, "0" = not in a folder
-        return {"items": history.list_checks(q, verdict, min(max(limit, 1), 1000), max(offset, 0), fo, sort, order), "stats": history.stats(), **history.folders()}
+        return history.list_snapshot(q, verdict, min(max(limit, 1), 1000), max(offset, 0), fo, sort, order, days)
 
     @api.post("/api/history/folders")
     def folder_add(body: dict):
@@ -883,7 +924,7 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             ids = [int(x) for x in body["ids"]][:60]
         except Exception:  # noqa: BLE001
             return terr("err_bad_request")
-        checks = [history.get(i) for i in ids]
+        checks = history.get_many(ids)
         checks = [c for c in checks if c]
         if len(checks) < 2:
             return terr("err_pick_two", 400)
@@ -944,6 +985,10 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             if cur.get("gpu_index", 0) != body["gpu_index"]:
                 need_reload = True
             cur["gpu_index"] = body["gpu_index"]
+        if body.get("quality") in ("auto", "pro", "lite", "full", "speed", "both"):
+            if cur.get("quality", "auto") != body["quality"]:
+                need_reload = True
+            cur["quality"] = body["quality"]
         if body.get("device") in ("auto", "cpu", "cuda"):
             if cur.get("device") != body["device"]:
                 need_reload = True
@@ -1038,7 +1083,7 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             return err("Dev: production installers are disabled; use the isolated update tests.", 409)
         if core.job.running():
             return terr('err_download_running',409)
-        if core.engine.lock.locked() or core.folder_lock.locked():
+        if (core.engine.lock.locked() and not core.preloading) or core.folder_lock.locked():
             return err('Finish or cancel the active analysis before restarting.', 409)
         st = updater.staged_installer()
         if not st:
@@ -1058,7 +1103,7 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             if core.installer_job["phase"] in ("launching", "downloading"):
                 return terr("err_already_downloading", 409)
             with core.checks_lock:
-                if core.active_requests or core.engine.lock.locked() or core.folder_lock.locked():
+                if core.active_requests or (core.engine.lock.locked() and not core.preloading) or core.folder_lock.locked():
                     return err('Finish or cancel the active operation before restarting.', 409)
                 if body is not None and 'draft' in body:
                     try:
@@ -1079,7 +1124,7 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         if core.job.running():
             return terr('err_download_running', 409)
         with core.checks_lock:
-            if core.active_requests or core.engine.lock.locked() or core.folder_lock.locked():
+            if core.active_requests or (core.engine.lock.locked() and not core.preloading) or core.folder_lock.locked():
                 return err('Finish or cancel the active operation before restarting.', 409)
             if body is not None and 'draft' in body:
                 try:

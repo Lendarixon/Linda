@@ -1,5 +1,7 @@
 """Single legacy voter: same calibrated thresholds, no other model execution."""
 import numpy as np
+import re
+from bisect import bisect_left
 from linda_pro.core import split_windows, top25
 from linda_pro.voters import clean_text, check_cancel
 from .sentences import split_sentences_with_offsets
@@ -44,15 +46,16 @@ def run(engine, det, text, mode, name):
         values = direct if gran=='full' else contextual if gran=='context' else [max(a,b) for a,b in zip(direct,contextual)]
     else:
         covers = [(a,b,score) for (_,a,b),score in zip(windows,margins)]
+        positions = [(m.start(),m.end()) for m in re.finditer(r'\S+',text)]
         if gran=='smooth' and spans:
-            positions = [(m.start(),m.end()) for m in __import__('re').finditer(r'\S+',text)]
             intervals = engine._smooth_windows(word_count)
             if len(intervals)>1:
                 texts = [clean_text(text[positions[a][0]:positions[b-1][1]]) for a,b in intervals]
                 covers = [(a,b,float(v)) for (a,b),v in zip(intervals,voter.margins(texts))]
         values = []
+        word_starts = [a for a, _ in positions]
         for span in spans:
-            point = len(text[:span.start].split())+max(1,len(span.text.split()))//2
+            point = bisect_left(word_starts, span.start)+max(1,len(span.text.split()))//2
             cover = [w for w in covers if w[0]<=point<w[1]] or [min(covers,key=lambda w:abs((w[0]+w[1])/2-point))]
             values.append(sum(w[2] for w in cover)/len(cover))
     check_cancel()

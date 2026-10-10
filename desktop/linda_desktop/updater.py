@@ -103,7 +103,7 @@ def get_manifest(base_url: str | None = None) -> tuple[dict, bytes]:
     except Exception as e:  # noqa: BLE001
         raise UpdateError("update manifest is malformed") from e
     m['_signature'] = sig.decode('ascii').strip()
-    return m, raw
+    return effective(m), raw
 
 
 def validate_manifest(m: dict) -> None:
@@ -131,13 +131,108 @@ def _safe_path(root: Path, rel: str) -> Path:
     return path
 
 
+SETS = ('pro', 'lite')
+
+
+def _valid_sets(value) -> list[str] | None:
+    if isinstance(value, list) and value and all(x in SETS for x in value):
+        return [x for x in SETS if x in value]
+    return None
+
+
+def selected_sets() -> list[str]:
+    """The sets this computer keeps: the user's choice (settings.json), else the installer's choice, else what is already on the disk, else Linda-Pro."""
+    for name, key in (('settings.json', 'model_sets'), ('installer_choice.json', 'model_sets')):
+        try:
+            got = _valid_sets(json.loads((config.data_dir() / name).read_text(encoding='utf-8')).get(key))
+            if got:
+                return got
+        except Exception:
+            pass
+    root = config.models_root() / 'models'
+    present = []
+    try:
+        if any(root.glob('essay_dhi*')) or any(root.glob('linda_essay*')):
+            present.append('pro')
+        if any(root.glob('linda_speed*')):
+            present.append('lite')
+    except OSError:
+        pass
+    return present or ['pro']
+
+
+def wanted(entry: dict, sets: list[str] | None = None) -> bool:
+    s = entry.get('set', 'shared')
+    return s == 'shared' or s in (sets or selected_sets())
+
+
+def effective(m: dict) -> dict:
+    """The manifest as this computer sees it: only the files of the selected sets (all_files keeps the whole list for sizes)."""
+    out = dict(m)
+    out['all_files'] = m.get('all_files', m['files'])
+    sel = selected_sets()
+    out['files'] = [f for f in out['all_files'] if wanted(f, sel)]
+    return out
+
+
+def set_info(m: dict | None) -> dict:
+    """{set: {"size": bytes, "installed": bool}} from a manifest (all files, not only the selected ones)."""
+    out = {s: {'size': 0, 'installed': False, 'files': 0} for s in (*SETS, 'shared')}
+    if not m:
+        return out
+    root = config.models_root()
+    for f in m.get('all_files', m.get('files', [])):
+        s = f.get('set', 'shared')
+        if s in out:
+            out[s]['size'] += int(f.get('size', 0)); out[s]['files'] += 1
+        elif s == 'shared':
+            pass
+    for s in SETS:
+        fs = [f for f in m.get('all_files', m.get('files', [])) if f.get('set') == s]
+        try:
+            out[s]['installed'] = bool(fs) and all(_safe_path(root, f['path']).is_file() and _safe_path(root, f['path']).stat().st_size == f['size'] for f in fs)
+        except (OSError, UpdateError):
+            out[s]['installed'] = False
+    return out
+
+
+def remove_unselected(root: Path | None = None) -> list[str]:
+    """Deletes the files of the sets that are not selected any more (listed in the installed manifest)."""
+    root = root or config.models_root()
+    p = root / 'manifest.json'
+    removed = []
+    try:
+        m = json.loads(p.read_text(encoding='utf-8'))
+    except Exception:
+        return removed
+    sel = selected_sets()
+    dirs = set()
+    for f in m.get('files', []):
+        if wanted(f, sel):
+            continue
+        try:
+            t = _safe_path(root, f['path'])
+            if t.is_file():
+                t.unlink()
+                removed.append(f['path'])
+                dirs.add(t.parent)
+        except (OSError, UpdateError):
+            pass
+    for d in sorted(dirs, key=lambda x: len(x.parts), reverse=True):
+        try:
+            d.rmdir()
+        except OSError:
+            pass
+    return removed
+
+
 def installed_manifest() -> dict | None:
     p = config.models_root() / "manifest.json"
     try:
         m = json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
         if not isinstance(m, dict) or not isinstance(m.get('version'), str) or not isinstance(m.get('files'), list):
             return None
-        return m
+        return effective(m)
     except Exception:  # noqa: BLE001
         return None
 
@@ -335,7 +430,7 @@ def apply_pending(root: Path | None = None) -> dict:
         try:
             staged_raw = (d / "manifest.json").read_bytes()
             verify_signature(staged_raw, (d / 'manifest.json.sig').read_bytes())
-            m = json.loads(staged_raw.decode('utf-8'))
+            m = effective(json.loads(staged_raw.decode('utf-8')))
         except Exception as e:  # noqa: BLE001
             res["error"] = f"bad staged manifest in {d.name}: {e}"
             continue

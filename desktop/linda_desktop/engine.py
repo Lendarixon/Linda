@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from bisect import bisect_left
 import numpy as np
 import math
 import os
@@ -25,6 +26,32 @@ ROUTED_LANGS = ("pl", "ru")
 
 def _sig(m: float, c: float, s: float) -> float:
     return 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, (m - c) / s))))
+
+
+def _smooth_lite_tokens(text, scores, radius=64):
+    """Average local evidence across disjoint inference edges, within paragraphs.
+
+    A quarter of the 254-token context on either side suppresses chunk-edge
+    spikes without mixing paragraphs (including mixed authorship boundaries).
+    This only aggregates existing scores; it never reads tokens again.
+    """
+    if not scores:
+        return scores
+    values = np.asarray([z for _, _, z in scores], dtype=np.float64)
+    if not np.isfinite(values).all():
+        raise ValueError("Nonfinite token scores")
+    kernel = np.ones(2 * radius + 1) / (2 * radius + 1)
+    ends = [m.end() for m in re.finditer(r"\n\s*\n", text)] + [len(text) + 1]
+    first = 0
+    for end in ends:
+        last = first
+        while last < len(scores) and scores[last][0] < end:
+            last += 1
+        if last > first:
+            values[first:last] = np.convolve(
+                np.pad(values[first:last], (radius, radius), mode="edge"), kernel, mode="valid")
+        first = last
+    return [(a, b, float(z)) for (a, b, _), z in zip(scores, values)]
 
 
 _DISCRETE = re.compile(r"\b(rtx|gtx|geforce|quadro|titan|tesla|radeon rx|radeon pro|radeon vii)\b|\barc\W*(tm\W*)?[ab]\d", re.I)
@@ -229,17 +256,31 @@ class Engine:
     def _routed_detectors(self, table_path: Path, settings: dict) -> dict:
         """2.0: per-language voters through one model pool (VRAM budget); fp16 ONNX on DirectML, torch on the CPU."""
         from linda_pro.routed import ModelPool, RoutedLindaPro
-        from linda_pro.voters import FastSeqCls, StyloVoter
+        from linda_pro.voters import FastSeqCls, SpeedOnnx, StyloTVoter, StyloVoter
 
         table = json.loads(table_path.read_text(encoding="utf-8"))
         models, dirs, cache_dir = config.models_root() / "models", table["voice_dirs"], config.models_root() / "onnx"
         idx = int(settings.get("gpu_index", 0) or 0)
         device = self.device
 
+        quality = {"full": "pro", "speed": "lite"}.get(settings.get("quality", "auto"), settings.get("quality", "auto"))
+        has_lite = "speed_s" in dirs and (models / dirs["speed_s"] / "model.onnx").is_file() and all("speed" in table["languages"][lg]["tiers"] for lg in table["languages"])
+        has_pro = all(k in dirs and (models / dirs[k]).is_dir() for k in ("essay_m", "multi_m"))
+        self.have_pro, self.have_lite = has_pro, has_lite
+        both = quality == "both" and has_pro and has_lite
+        self.both = both
+        self.tier = "speed" if has_lite and not both and (not has_pro or quality == "lite" or (quality == "auto" and device != "dml")) else "full"
+
         def make(key: str):
             d = models / dirs[key]
+            if key.startswith("stylo_l_"):
+                return StyloVoter(d, key[-2:])
             if key.startswith("stylo"):
                 return StyloVoter(d)
+            if key.startswith("speed_t_"):
+                return StyloTVoter(d, key[-2:])
+            if key.startswith("speed"):
+                return SpeedOnnx(d)
             if device == "dml":
                 from . import onnx_gpu
 
@@ -248,7 +289,12 @@ class Engine:
 
         budget = int(settings.get("vram_budget_mb", 2600 if device == "dml" else 9000))
         pool = ModelPool(make, table.get("size_mb_fp16", {"essay": 870, "multi": 560}), budget)
-        return {"sensitive": RoutedLindaPro(table, make, "sensitive", budget, pool=pool), "precise": RoutedLindaPro(table, make, "precise", budget, pool=pool)}
+        tier = "speed" if self.tier == "speed" else None
+        out = {"sensitive": RoutedLindaPro(table, make, "sensitive", budget, pool=pool, tier=tier), "precise": RoutedLindaPro(table, make, "precise", budget, pool=pool, tier=tier)}
+        if both:
+            out["alt_sensitive"] = RoutedLindaPro(table, make, "sensitive", budget, pool=pool, tier="speed")
+            out["alt_precise"] = RoutedLindaPro(table, make, "precise", budget, pool=pool, tier="speed")
+        return out
 
     def _ensure_routed(self, table_path: Path, lang: str = "en") -> dict:
         self.state = {"phase": "loading", "error": ""}
@@ -257,7 +303,7 @@ class Engine:
         self.gpu_error = ""
         try:
             table = json.loads(table_path.read_text(encoding="utf-8"))
-            if self.device == "dml" and any(not (config.models_root() / "onnx" / d / "model.onnx").exists() for k, d in table["voice_dirs"].items() if not k.startswith("stylo")):
+            if self.device == "dml" and any(not (config.models_root() / "onnx" / d / "model.onnx").exists() for k, d in table["voice_dirs"].items() if k in ("essay_m", "multi_m") and (config.models_root() / "models" / d).is_dir()):
                 self.state = {"phase": "loading", "error": "", "note": "prepare_models"}  # one-time ONNX export on this computer
         except Exception:  # noqa: BLE001 — cosmetic
             pass
@@ -421,7 +467,10 @@ class Engine:
             return  # the pool loads voters lazily, per language
         for key in dets["sensitive"].voters:  # load every voter now, not on the first request
             v = dets["sensitive"]._factory(key)
-            load = getattr(getattr(v, "_v", v), "_load", None)
+            inner = getattr(v, "_v", v)
+            if getattr(inner, "model", None) is not None or getattr(inner, "sess", None) is not None:
+                continue
+            load = getattr(inner, "_load", None)
             if callable(load):
                 load()
 
@@ -462,8 +511,19 @@ class Engine:
             return "cpu"
         return "dml" if g.get("backend") == "DirectML" else "cuda"
 
+    @staticmethod
+    def _installed_set(name: str) -> bool:
+        """Is this model set on the disk right now (not what the loaded engine saw when it started)?"""
+        root = Path(config.models_root()) / "models"
+        try:
+            if name == "pro":
+                return any(root.glob("essay_dhi*")) or any(root.glob("linda_essay*"))
+            return any((d / "model.onnx").is_file() for d in root.glob("linda_speed*"))
+        except OSError:
+            return False
+
     def info(self) -> dict:
-        return {"device": self.planned_device(), "phase": self.state["phase"], "error": self.state["error"], "note": self.state.get("note", ""), "gpu": self.gpu, "gpu_error": self.gpu_error}
+        return {"tier": getattr(self, "tier", "full"), "have_pro": self._installed_set("pro"), "have_lite": self._installed_set("lite"), "device": self.planned_device(), "phase": self.state["phase"], "error": self.state["error"], "note": self.state.get("note", ""), "gpu": self.gpu, "gpu_error": self.gpu_error}
 
     # Sentence labels. "ai" stays strict (about 1% of human sentences reach it); "uncertain" is the "possibly AI / mixed" band. A lone sentence is a much weaker
     # input than the ~300-word windows the models were calibrated on, so in the per-sentence mode the band starts lower (about 10% of human sentences fall into
@@ -472,29 +532,65 @@ class Engine:
     # (ai, uncertain) thresholds per mode. Hybrid: about 1% and 5% of human sentences reach them (measured on dev essays, whole-human vs whole-AI documents).
     THRESHOLDS = {"hybrid": (0.72, 0.45), "full": (0.58, 0.25)}
 
+    # Lite (tier "speed"): по умолчанию каждое предложение оценивается в окружении ~120 слов (режим context), «ИИ» с p 0,80, «возможно ИИ» с 0,35.
+    # Замер 10.10 (tools/seg_eval.py + seg_pick.py; 132 текста EN/RU/PL, из них 72 смешанных «человек + ИИ» с известной границей): у человеческих
+    # слов 2,9% «ИИ» + 4,5% «возможно», у ИИ-слов 77,8% «ИИ» + 10,6% «возможно», верная метка слова в смешанных текстах 88,4%. Прежние окна
+    # ~300 слов (2.0.4.2, smooth 0,80/0,50): 12,5% человеческих слов «ИИ», 55,5% ИИ-слов, 66,5% — и разметка огромными кусками.
+    THRESHOLDS_LITE = {"context": (0.80, 0.35), "smooth": (0.80, 0.50), "windows": (0.80, 0.50)}
+    # Замер 10.10, tools/tok_eval_engine.py, 132 текста EN/RU/PL: speed reuse + усреднение внутри абзаца —
+    # 2,95% человеческих слов «ИИ», recall ИИ-слов 70,93%, mixed word accuracy 84,94% (baseline: 2,93% / 69,22% / 84,40%).
+    # CPU, 4 потока: 0,92 с / 1000 слов против baseline 2,13 с; подбор оставил speed ai=0,815 / uncertain=0,35.
+    # full (слой Essay) — 2,9% / 83,4% / 90,4%. Вероятность Pro: сигмоида от токенного слоя (center/scale из tok_head.npz), отсюда другие числа порогов
+    THRESHOLDS_TOKENS = {"speed": (0.815, 0.35), "full": (0.20, 0.10)}
+    CONTEXT_ANCHORS_LITE = 150  # как у Pro на GPU: напрямую не больше 150 предложений (~0,1 с на контекст на 4 потоках CPU), остальные интерполируются
+    # Lite: напрямую оценивается одно предложение примерно на каждые 40 слов. Замер 10.10 (seg_eval): верная метка слова 88,1% против 88,4%
+    # при оценке каждого предложения, а прогонов в 2,7 раза меньше (1 000 слов ~2–3 с, 12 000 слов ~15 с на 4 потоках)
+    LITE_ANCHOR_WORDS = 40
+    # Вердикт «человек», а размечено как ИИ не меньше этой доли слов -> вердикт «неясно» (разметка и вердикт не спорят друг с другом).
+    # Замер 10.10 (dev, Lite): людей в «неясно» добавляется 0–0,8%, ИИ-текстов, ушедших в «человек», ловится 1,7–2%.
+    CONSISTENCY_AI_SHARE = 0.25
+
     def thresholds(self, gran: str) -> tuple[float, float]:
+        if gran == "tokens":
+            return self.THRESHOLDS_TOKENS[getattr(self, "tier", "full")]
+        if getattr(self, "tier", "full") == "speed" and gran in self.THRESHOLDS_LITE:
+            return self.THRESHOLDS_LITE[gran]
         return self.THRESHOLDS.get(gran, (self.AI_THR, self.UNCERTAIN_THR_WINDOW))
 
     def _context_margins(self, det, spans) -> tuple[list[float], list[float]]:
         """Margins of Essay and Multi for every sentence scored in its context (~CONTEXT_WORDS words); between the directly scored anchor sentences the margin is interpolated."""
         from linda_pro.voters import clean_text
 
-        anchors, ctx = self._sentence_contexts([x.text for x in spans], self.CONTEXT_ANCHORS_CPU if self.device == "cpu" else self.CONTEXT_ANCHORS_GPU)
+        lite = getattr(self, "tier", "full") == "speed"
+        cap = self.CONTEXT_ANCHORS_LITE if lite else self.CONTEXT_ANCHORS_CPU if self.device == "cpu" else self.CONTEXT_ANCHORS_GPU
+        anchors, ctx = self._sentence_contexts([x.text for x in spans], cap, self.LITE_ANCHOR_WORDS if lite else 0)
         ctx = [clean_text(t) for t in ctx]
-        ae = det._factory("linda_essay").margins(ctx)
-        am = det._factory("linda_multi_v2").margins(ctx)
+        fe, fm = det._factory("linda_essay"), det._factory("linda_multi_v2")
+        ae = fe.margins(ctx)
+        am = ae if fm is fe else fm.margins(ctx)  # у Lite оба имени — одна модель: не считать контексты дважды
         idx = list(range(len(spans)))
         return [float(v) for v in np.interp(idx, anchors, ae)], [float(v) for v in np.interp(idx, anchors, am)]
 
     CONTEXT_WORDS = 120                   # size of the neighbourhood scored for each sentence
     CONTEXT_ANCHORS_GPU, CONTEXT_ANCHORS_CPU = 150, 40  # how many sentences are scored directly; the rest are interpolated between them
 
-    def _sentence_contexts(self, sents: list[str], max_anchors: int) -> tuple[list[int], list[str]]:
-        """Anchor sentence indices and, for each, the text of the sentence plus neighbours (alternately left and right) up to CONTEXT_WORDS words."""
+    def _sentence_contexts(self, sents: list[str], max_anchors: int, every_words: int = 0) -> tuple[list[int], list[str]]:
+        """Anchor sentence indices and, for each, the text of the sentence plus neighbours (alternately left and right) up to CONTEXT_WORDS words.
+        every_words > 0: an anchor about every that many words (then thinned evenly to max_anchors)."""
         n = len(sents)
         wc = [len(x.split()) for x in sents]
-        step = max(1, -(-n // max_anchors))
-        anchors = list(range(0, n, step))
+        if every_words > 0:
+            anchors, acc = [0], 0
+            for i in range(1, n):
+                acc += wc[i - 1]
+                if acc >= every_words:
+                    anchors.append(i)
+                    acc = 0
+            if len(anchors) > max_anchors:
+                anchors = [anchors[int(round(k))] for k in np.linspace(0, len(anchors) - 1, max_anchors)]
+        else:
+            step = max(1, -(-n // max_anchors))
+            anchors = list(range(0, n, step))
         if anchors[-1] != n - 1:
             anchors.append(n - 1)
         texts = []
@@ -516,13 +612,28 @@ class Engine:
     CPU_SMOOTH_MAX_WORDS = 700  # automatic mode on a CPU: sliding windows up to this length (about 10 s), longer texts use the fast block colouring
     SMOOTH_WINDOW, SMOOTH_MIN_STEP, SMOOTH_MAX_WINDOWS = 300, 75, 16
 
-    def sentence_mode(self, nwords: int = 0) -> str:
-        """hybrid (default) = every sentence is scored alone AND in its context and the higher score counts: a lone strongly-AI sentence still lights up, and a whole AI text is no longer shown as human
+    def sentence_mode(self, nwords: int = 0, det=None, allow_tokens: bool = True) -> str:
+        """auto prefers calibrated tokens from the main voter, falling back to the legacy modes below.
+        hybrid = every sentence is scored alone AND in its context and the higher score counts: a lone strongly-AI sentence still lights up, and a whole AI text is no longer shown as human
         sentence by sentence (alone, a sentence is too short for models calibrated on ~300-word windows: on whole-AI essays it flagged about a quarter of the sentences, the context score about 95%);
         context = every sentence is scored together with its neighbours (~CONTEXT_WORDS words around it), so the colour changes sentence by sentence and boundaries are found to the sentence;
         smooth = sliding ~300-word windows (the scale the models are calibrated on; boundaries accurate to ~100 words); windows = fast, one score per ~300-word block;
         full = every single sentence on its own (experimental: one sentence is much less reliable than a window)."""
         s = load_settings().get("sentences", "auto")
+        if s in ("auto", "tokens") and allow_tokens and det is not None:
+            from linda_pro.voters import Cancelled
+            try:
+                voter = det._factory("linda_essay")
+                if callable(getattr(voter, "token_scores", None)) and getattr(voter, "has_token_scores", True):
+                    return "tokens"
+            except Cancelled:
+                raise
+            except Exception:
+                pass  # capability probing may fail too; preserve legacy fallback
+        if s == "tokens":
+            s = "auto"
+        if s == "auto" and getattr(self, "tier", "full") == "speed":
+            return "context"  # Lite: предложение в окружении ~120 слов (см. THRESHOLDS_LITE), а не окна ~300 слов
         if s == "auto":
             # hybrid оценивает КАЖДОЕ предложение отдельно (на GPU каждое добивается до полного окна), для сотен тысяч слов это минуты и часы;
             # длинные тексты считаем по ~150 опорным предложениям в контексте с интерполяцией — вердикт тот же, подсветка чуть грубее
@@ -574,6 +685,20 @@ class Engine:
                     self._jobs.remove(job)
 
     def _run_locked(self, text: str, mode: str = "sensitive", models: list | None = None) -> dict:
+        res = self._run_locked_main(text, mode, models)
+        dets = self.dets or {}
+        alt = dets.get("alt_" + mode)
+        if alt is not None and getattr(self, "both", False) and isinstance(res, dict):
+            try:
+                self._emit(96, "sent")
+                a = alt.detect([text])[0]
+                lite_widen(a, alt.rules, mode, True)
+                res["alt"] = {"set": "lite", "verdict": a.get("verdict"), "p_ai": verdict_probability(a, alt.rules)}
+            except Exception as exc:
+                res["alt"] = {"set": "lite", "error": str(exc)[:120]}
+        return res
+
+    def _run_locked_main(self, text: str, mode: str = "sensitive", models: list | None = None) -> dict:
         if True:
             self._emit(2, "load")
             chosen_models = list(dict.fromkeys(models or ALL_MODELS))
@@ -602,19 +727,72 @@ class Engine:
                 from .single_model import run as run_single
                 return run_single(self,det,text,mode,chosen_models[0])
             res = det.detect([text])[0]
+            known_tokens = res.pop("_lite_token_scores", [])
             R = det.rules
+            lite_widen(res, R, mode, getattr(self, "tier", "full") == "speed")
             self._emit(55, "sent")
 
             def par(k, c, s):
+                # центр сигмоиды — порог 5% ложных, ширина — половина расстояния до порога 0,5%. Раньше ширина зажималась снизу 1,0: для Pro
+                # (логиты, ширина 0,7–2) почти без разницы, а у Lite (ширина 0,06–0,6) все вероятности сжимались к 0,4–0,5 и почти весь текст
+                # выходил «возможно ИИ» — и у людей, и у ИИ (2.0.4.1: ИИ-тексты EN 0% «ИИ» / 97% «возможно»)
                 r = R.get(k) or {}
-                return (r["thr_5"], max(1.0, (r["thr_05"] - r["thr_5"]) / 2.0)) if "thr_5" in r and "thr_05" in r else (c, s)
+                return (r["thr_5"], max(1e-3, (r["thr_05"] - r["thr_5"]) / 2.0)) if "thr_5" in r and "thr_05" in r else (c, s)
 
             pe_c, pe_s, pm_c, pm_s, ps_c, ps_s = (*par("essay", 6.5, 2.8), *par("multi", 2.5, 2.5), *par("stylo", 1.5, 1.5))
             spans = split_sentences_with_offsets(text)
             selected = set(models) if models else set(ALL_MODELS)
             nwords = len(text.split())
             gran = self.sentence_mode(nwords)
+            # Pro retains legacy consistency labels. Lite uses its token evidence
+            # for consistency, avoiding a second read through sentence contexts.
+            token_rows = None
+            lite_reuse = False
+            if gran in ("hybrid", "context") and Engine.sentence_mode(self, nwords, det) == "tokens" and spans:
+                from linda_pro.voters import Cancelled, SpeedOnnx, load_token_head
+                try:
+                    voter = det._factory("linda_essay")
+                    reuse = getattr(voter, "token_scores_reuse", None)
+                    tokens = reuse(text, known_tokens) if getattr(self, "tier", "full") == "speed" and callable(reuse) else voter.token_scores(text)
+                    lite_reuse = getattr(self, "tier", "full") == "speed" and isinstance(voter, SpeedOnnx) and callable(reuse)
+                    # Byte-level Unicode tokens can share character offsets.
+                    # Keep their tokenizer order rather than sorting by score;
+                    # Lite smoothing operates on the ordered token sequence.
+                    scores = sorted(((int(a), int(b), float(z)) for a, b, z in tokens if b > a),
+                                    key=(lambda token: (token[0], token[1])) if lite_reuse else None)
+                    if lite_reuse:
+                        scores = _smooth_lite_tokens(text, scores)
+                    if getattr(self, "tier", "full") == "speed":
+                        center, scale = pe_c, pe_s
+                    else:
+                        head = load_token_head(voter.model_dir)
+                        center, scale = float(head["center"]), float(head["scale"])
+                    token_rows = []
+                    first = 0
+                    for span in spans:
+                        # Offsets are ordered: scan only the tokens touching this
+                        # sentence, including a token crossing its boundary.
+                        while first < len(scores) and scores[first][1] <= span.start:
+                            first += 1
+                        values = []
+                        j = first
+                        while j < len(scores) and scores[j][0] < span.end:
+                            if scores[j][1] > span.start:
+                                values.append(scores[j][2])
+                            j += 1
+                        if not values or not np.isfinite(values).all():
+                            raise ValueError("Missing or invalid sentence token scores")
+                        mean = sum(values) / len(values)
+                        token_rows.append((mean, _sig(mean, center, scale)))
+                except Cancelled:
+                    raise
+                except Exception:  # unavailable graph/head/output: use legacy colouring
+                    token_rows = None
+                    lite_reuse = False
+            if token_rows is not None and (lite_reuse or res.get("verdict") != "human"):
+                gran = "windows"  # Lite uses existing evidence for consistency too.
             full = gran in ("hybrid", "full", "context")  # all of them give one margin per sentence
+            word_positions = [(m.start(), m.end()) for m in re.finditer(r"\S+", text)] if not full else []
             m_essay = m_multi = None
             wspans = []  # (first word, after last word, essay margin, multi margin) of the windows used for colouring
             if gran == "context" and spans:
@@ -642,7 +820,7 @@ class Engine:
                 else:
                     from linda_pro.voters import clean_text
 
-                    pos = [(m.start(), m.end()) for m in re.finditer(r"\S+", text)]
+                    pos = word_positions
                     wt = [clean_text(text[pos[a][0]: pos[b - 1][1]]) for a, b in wins]
                     ce = det._factory("linda_essay").margins(wt)
                     cm = det._factory("linda_multi_v2").margins(wt)
@@ -651,6 +829,7 @@ class Engine:
                 wspans = [(w["first_word"], w["last_word"], w["essay"], w.get("multi", w["essay"])) for w in res["windows"]]
             thr_ai, thr_unc = self.thresholds(gran)
             sentences, cnt = [], {"ai": 0, "uncertain": 0, "human": 0}
+            word_starts = [a for a, _ in word_positions]
             for i, s in enumerate(spans):
                 if full:
                     me = float(m_essay[i]) if i < len(m_essay) else 0.0
@@ -659,7 +838,7 @@ class Engine:
                     probs = ([pe] if "linda_essay" in selected else []) + ([pm] if "linda_multi_v2" in selected else []) or [pe, pm]
                     p_ai = sum(probs) / len(probs)
                 else:
-                    wi = len(text[: s.start].split())
+                    wi = bisect_left(word_starts, s.start)
                     c = wi + max(1, len(s.text.split())) // 2  # the word in the middle of the sentence
                     cover = [w for w in wspans if w[0] <= c < w[1]] or [min(wspans, key=lambda w: abs((w[0] + w[1]) / 2 - c))]
                     me = sum(w[2] for w in cover) / len(cover)  # average over the windows that cover the sentence
@@ -672,13 +851,28 @@ class Engine:
                 sentences.append({"start": s.start, "end": s.end, "text": s.text, "essay_margin": round(me, 2), "multi_margin": round(mm, 2),
                                   "essay_prob": round(pe, 3), "multi_prob": round(pm, 3), "p_ai": round(p_ai, 3), "label": lbl})
             res["sentences"] = sentences
+            if not lite_reuse and res.get("verdict") == "human" and authorship("human", sentences)["ai_share"] >= self.CONSISTENCY_AI_SHARE:
+                res["verdict"] = "uncertain"
+                res["verdict_raised_by"] = "sentences"
+            if token_rows is not None:
+                gran = "tokens"
+                thr_ai, thr_unc = self.thresholds(gran)
+                cnt = {"ai": 0, "uncertain": 0, "human": 0}
+                for sentence, (mean, p) in zip(sentences, token_rows):
+                    label = "ai" if p >= thr_ai else "uncertain" if p >= thr_unc else "human"
+                    sentence.update(essay_margin=round(mean, 2), multi_margin=round(mean, 2),
+                                    essay_prob=round(p, 3), multi_prob=round(p, 3), p_ai=round(p, 3), label=label)
+                    cnt[label] += 1
+                if lite_reuse and res.get("verdict") == "human" and authorship("human", sentences)["ai_share"] >= self.CONSISTENCY_AI_SHARE:
+                    res["verdict"] = "uncertain"
+                    res["verdict_raised_by"] = "sentences"
             try:
                 res["p_ai"] = verdict_probability(res, R)
             except Exception:  # noqa: BLE001 — отображение не должно ронять проверку
                 pass
             res["authorship"] = authorship(res.get("verdict"), sentences)
             res["sentence_stats"] = {"total": len(sentences), **cnt, "ai_pct": round(cnt["ai"] / len(sentences) * 100) if sentences else 0,
-                                     "granularity": {"hybrid": "hybrid", "full": "sentence", "context": "context", "smooth": "smooth", "windows": "window"}[gran],
+                                     "granularity": {"tokens": "tokens", "hybrid": "hybrid", "full": "sentence", "context": "context", "smooth": "smooth", "windows": "window"}[gran],
                                      "thresholds": {"ai": thr_ai, "uncertain": thr_unc}}
             if models and len(models) < 3:
                 chosen = [m for m in models if m in det.mean]
@@ -705,6 +899,16 @@ class Engine:
             res['heatmap_available'] = True
             res['ai_share'] = res['authorship']['ai_share']
             return res
+
+
+def lite_widen(res: dict, rules: dict, mode: str, is_lite: bool) -> None:
+    """Lite, чувствительный режим: вердикт — общий балл модели и стилометрии, и сильная стилометрия «человека» перекрывала модель
+    (ИИ-текст с ручной правкой выходил «человек», хотя модель Lite одна была выше своего порога 5%). Как у Pro (Essay ИЛИ ансамбль):
+    модель Lite выше порога 5% -> не меньше «неясно». Замер 10.10 на dev: людей в «неясно» +2,4% EN, +0,8% RU, 0% PL; в «ИИ» не добавляет."""
+    e = (rules or {}).get("essay") or {}
+    if is_lite and mode == "sensitive" and res.get("verdict") == "human" and "thr_5" in e and float(res.get("essay", -1e9)) >= e["thr_5"]:
+        res["verdict"] = "uncertain"
+        res["verdict_raised_by"] = "lite_model"
 
 
 def verdict_probability(res: dict, rules: dict) -> float:
@@ -746,7 +950,9 @@ def authorship(verdict: str | None, sentences: list[dict]) -> dict:
     if verdict == "ai":
         label = "ai" if ai + unc >= 0.5 else "mixed"
     elif verdict == "uncertain":
-        label = "mixed"
+        # документ целиком у порога, а ни один кусок ~120 слов не отмечен: «смешанное» утверждало бы то, чего разметка не видит
+        # «неясно» у документа, но разметка почти целиком ИИ (>=70% слов): вердикт не трогаем (цифры ложных обвинений), а авторство говорит как есть
+        label = "ai" if ai >= 0.7 else "mixed" if ai + unc >= 0.05 else "uncertain"
     else:
         label = "mixed" if ai >= 0.35 and n_ai >= 5 else "human"
     return {"label": label, "ai_share": round(ai, 4), "uncertain_share": round(unc, 4), "human_share": round(hum, 4)}
@@ -767,6 +973,8 @@ DEFAULT_SETTINGS = {
     "theme": "dark", "accent": "cobalt", "density": "comfortable",
     "font_scale": 100, "radius": "square", "sidebar": "left",
     "language": "ru", "ui_mode": "simple", "tour_done": False, "auto_models": True,
+    "quality": "auto",
+    "model_sets": None,
 }
 
 

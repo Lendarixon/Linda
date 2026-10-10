@@ -19,6 +19,43 @@ import webbrowser
 from . import config
 
 
+def _take_over_stale() -> bool:
+    """The copy that holds the mutex is older than this one (left over from before an update) or has lost its window (hung after the window was closed):
+    end it, so that the new launch does not just open the old copy's page in a browser or do nothing."""
+    if os.name != "nt":
+        return False
+    try:
+        d = json.loads((config.data_dir() / "instance.json").read_text(encoding="utf-8"))
+        pid = int(d.get("pid") or 0)
+    except Exception:
+        return False
+    if not pid or pid == os.getpid():
+        return False
+    stale = d.get("version") != config.APP_VERSION
+    if not stale and d.get("mode") == "window" and not _focus_window():
+        stale = True
+    if not stale:
+        return False
+    import ctypes
+    import subprocess
+    # Завершаем устаревший экземпляр.
+    subprocess.run(["taskkill", "/PID", str(pid), "/F", "/T"], capture_output=True, timeout=20, creationflags=134217728)
+    time.sleep(1.0)
+    try:
+        ctypes.windll.kernel32.CloseHandle(_mutex_handle)
+    except Exception:
+        pass
+    for _ in range(25):
+        if _single_instance():
+            return True
+        try:
+            ctypes.windll.kernel32.CloseHandle(_mutex_handle)
+        except Exception:
+            pass
+        time.sleep(0.4)
+    return False
+
+
 def _free_port() -> int:
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
@@ -52,6 +89,40 @@ def _running_url() -> str | None:
         return None
 
 
+def _focus_window() -> bool:
+    """Повторный запуск: вывести окно работающей копии на передний план. False — окна нет (режим браузера)."""
+    if os.name != "nt":
+        return False
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        u = ctypes.windll.user32
+        pid = json.loads((config.data_dir() / "instance.json").read_text(encoding="utf-8")).get("pid")
+        found = []
+
+        @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+        def cb(h, _):
+            p = wintypes.DWORD()
+            u.GetWindowThreadProcessId(h, ctypes.byref(p))
+            if p.value == pid and u.IsWindowVisible(h) and u.GetWindowTextLengthW(h) > 0:
+                buf = ctypes.create_unicode_buffer(256)
+                u.GetWindowTextW(h, buf, 256)
+                if buf.value.startswith(config.APP_NAME):
+                    found.append(h)
+            return True
+
+        u.EnumWindows(cb, 0)
+        if not found:
+            return False
+        if u.IsIconic(found[0]):
+            u.ShowWindow(found[0], 9)
+        u.SetForegroundWindow(found[0])
+        return True
+    except Exception:
+        return False
+
+
 def main(argv: list[str] | None = None) -> int:
     worker_args = sys.argv[1:] if argv is None else argv
     if worker_args and worker_args[0]=='--document-worker':
@@ -69,7 +140,17 @@ def main(argv: list[str] | None = None) -> int:
         return None
 
     # Повторный запуск не должен заменять файлы работающей первой копии.
-    if not _single_instance():
+    try:
+        lk = config.data_dir() / "installing.lock"
+        if lk.is_file() and time.time() - int(lk.read_text().strip() or 0) < 900:
+            if os.name == "nt":
+                import ctypes
+                ctypes.windll.user32.MessageBoxW(0, "Linda-Pro обновляется. Программа откроется сама через минуту.\nLinda-Pro is updating and will open by itself in a minute.", config.APP_NAME, 64)
+            return 0
+    except Exception:
+        pass
+
+    if not _single_instance() and not _take_over_stale():
         if _file_arg():
             try:
                 from . import inbox
@@ -78,7 +159,7 @@ def main(argv: list[str] | None = None) -> int:
             except Exception:  # noqa: BLE001
                 pass
         url = _running_url()
-        if url:
+        if url and not _focus_window():
             webbrowser.open(url)
         return 0
     # Применение фонового обновления ДО загрузки моделей и FastAPI (как в Claude).
@@ -116,7 +197,7 @@ def main(argv: list[str] | None = None) -> int:
         server.should_exit = True
         print("Linda-Pro: local server did not start", file=sys.stderr)
         return 1
-    (config.data_dir() / "instance.json").write_text(json.dumps({"port": port, "pid": os.getpid()}), encoding="utf-8")
+    (config.data_dir() / "instance.json").write_text(json.dumps({"port": port, "pid": os.getpid(), "version": config.APP_VERSION, "mode": "browser" if "--browser" in argv or "--no-ui" in argv else "window"}), encoding="utf-8")
     core.background()
     if _file_arg():
         try:
@@ -143,7 +224,8 @@ def main(argv: list[str] | None = None) -> int:
             webview.start(private_mode=False, storage_path=str(config.data_dir() / "webview"),
                           icon=str(config.resource_dir() / "assets" / ("linda-dev.ico" if config.APP_NAME == 'Linda-Pro Dev' else "linda.ico")))
             server.should_exit = True
-            return 0
+            time.sleep(0.5)
+            os._exit(0)
         except Exception:  # noqa: BLE001
             pass
     webbrowser.open(url)

@@ -70,7 +70,7 @@ def build_report(text: str, result: dict, meta: dict | None = None) -> dict:
         "verdict": result.get("verdict"), "verdict_ru": VERDICT_RU.get(result.get("verdict"), ""),
         "pct": pct, "p_ai":result.get('p_ai'),"ai_share": round(ai_w / tot, 4) if result.get('heatmap_available',True) else None,
         "heatmap_available":result.get('heatmap_available',True),"analysis_scope":result.get('analysis_scope','ensemble'),"models_used":result.get('models_used'),"models_executed":result.get('models_executed'),
-        "authorship": auth, "voters": result.get("voters"), "ens_z": result.get("ens_z"),
+        "authorship": auth, "voters": result.get("voters"), "lite": "Linda-Speed" in str((result.get("routing") or {}).get("config") or ""), "ens_z": result.get("ens_z"),
         "sentences": sents, "analytics": an,
         "structure_reference": st.get("reference"), "structure_notable": notable[:12], "structure_layout": (st.get("layout") or [])[:60],
         "disclaimer": DISCLAIMER_RU, "text": text,
@@ -149,7 +149,7 @@ th{background:#f0f2f8}.lb-ai{background:#fde2e4}.lb-uncertain{background:#fff3cd
 </dl>
 <p class="note">%(disclaimer)s Текст обработан локально на этом компьютере и никуда не отправлялся.</p>
 <h2>Оценки моделей (выше = ИИ)</h2>
-<p>Linda-Essay 1.3: <b>%(v_essay)s</b> · Linda-Multi 1.3: <b>%(v_multi)s</b> · Stylo-D: <b>%(v_stylo)s</b></p>
+<p>%(v_names)s</p>
 <h2>Аналитика текста</h2>
 <p>Средняя длина предложения: %(avg_sent)s слов · Burstiness: %(burst)s · Лексическое разнообразие: %(div)s · Штампы: %(stock)s</p>
 <h2>Структура (вне типичного для человека)</h2>
@@ -164,7 +164,7 @@ th{background:#f0f2f8}.lb-ai{background:#fde2e4}.lb-uncertain{background:#fff3cd
         "verdict_ru": _esc(rep.get("verdict_ru")), "verdict": _esc(rep.get("verdict")),
         "ai_share": "%.1f%%" % ((rep.get("ai_share") or 0) * 100),
         "disclaimer": _esc(rep.get("disclaimer")),
-        "v_essay": _esc(voters.get("linda_essay")), "v_multi": _esc(voters.get("linda_multi_v2")), "v_stylo": _esc(voters.get("stylo7c")),
+        "v_names": ("Linda-Pro Lite: <b>%s</b> · Stylo-D: <b>%s</b>" % (_esc(voters.get("linda_essay")), _esc(voters.get("stylo7c")))) if rep.get("lite") else ("Linda-Essay 1.3: <b>%s</b> · Linda-Multi 1.3: <b>%s</b> · Stylo-D: <b>%s</b>" % (_esc(voters.get("linda_essay")), _esc(voters.get("linda_multi_v2")), _esc(voters.get("stylo7c")))),
         "avg_sent": _esc(an.get("avg_sentence_words")), "burst": _esc(an.get("burstiness")),
         "div": _esc(an.get("lexical_diversity")), "stock": _esc(stock or "—"),
         "notable": notable or "<li>Всё в пределах типичного для человека.</li>",
@@ -493,7 +493,8 @@ def _to_pdf_bytes_fpdf(rep: dict, lang: str | None = None) -> bytes:
         pdf.cell(62, 7, S(k), border=1, fill=True)
         pdf.set_font(fam, "", 10)
         pdf.multi_cell(0, 7, S(v), border=1, fill=True, new_x="LMARGIN", new_y="NEXT")
-    voters_ln = '  ·  '.join('%s: %s' % (name,value) for name,value in voters.items())
+    _vn = {"linda_essay": "Linda-Pro Lite", "stylo7c": "Stylo-D"} if rep.get("lite") else {}
+    voters_ln = '  ·  '.join('%s: %s' % (_vn.get(name, name), value) for name, value in voters.items() if not (rep.get("lite") and name == "linda_multi_v2"))
     pdf.set_font(fam, "", 9)
     pdf.multi_cell(0, 5, S(voters_ln), new_x="LMARGIN", new_y="NEXT")
     pdf.ln(2)

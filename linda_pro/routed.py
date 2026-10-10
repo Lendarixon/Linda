@@ -13,12 +13,44 @@ import re
 from pathlib import Path
 
 from .core import MAX_WINDOWS, WINDOW_WORDS, split_windows, top25
-from .voters import clean_text
+from .voters import SpeedOnnx, clean_text
 
 COMPAT = {"essay": "linda_essay", "multi": "linda_multi_v2", "stylo": "stylo7c"}
 _PL_LETTERS = re.compile(r"[ąćęłńśźż]", re.I)
 _PL_WORDS = re.compile(r"\b(się|jest|nie|oraz|który|która|które|dla|jak|ale|czy|przez|tylko|może|tego|tym)\b", re.I)
 _EN_WORDS = re.compile(r"\b(the|and|of|to|is|that|with|for|are|this|which|have)\b", re.I)
+
+
+def _map_window_tokens(text, window, cleaned, scores, words):
+    """Map unchanged window tokens back through split_windows' word joining.
+
+    A changed cleaning result or even one inexact token span discards the whole
+    window. The marking pass will read those tokens from the original instead.
+    """
+    raw, first, last = window
+    if cleaned != raw or not 0 <= first <= last <= len(words):
+        return []
+    original = raw == text and first == 0 and last == len(words)
+    if not original:
+        selected = words[first:last]
+        if " ".join(text[a:b] for a, b in selected) != raw:
+            return []
+        boundaries = [None] * (len(raw) + 1)
+        pos = 0
+        for a, b in selected:
+            boundaries[pos:pos + b - a + 1] = range(a, b + 1)
+            pos += b - a + 1
+    mapped = []
+    for a, b, *value in scores:
+        if not 0 <= a < b <= len(raw):
+            return []
+        # A short document's window is already the original string. Avoid an
+        # identity lookup table proportional to its character count.
+        start, end = (a, b) if original else (boundaries[a], boundaries[b])
+        if start is None or end is None or text[start:end] != raw[a:b]:
+            return []
+        mapped.append((start, end, *value))
+    return mapped
 
 
 def detect_language(text: str) -> str:
@@ -148,6 +180,8 @@ class RoutedLindaPro:
         t = self.tier(lang)
         wins = [split_windows(x, WINDOW_WORDS, MAX_WINDOWS) for x in texts]
         raw: dict[str, list] = {}
+        known = [[] for _ in texts]
+        word_offsets = None
         cb = self.progress
         nv = max(1, len(t["voters"]))
         for vi, key in enumerate(t["voters"]):  # строго по очереди: в памяти не больше бюджета
@@ -162,8 +196,15 @@ class RoutedLindaPro:
             else:
                 flat = [clean_text(w[0]) for ws in wins for w in ws]
                 vals: list[float] = []
+                capture = self.tier_pref == "speed" and isinstance(voter, SpeedOnnx)
+                tokens = []
                 for b in range(0, len(flat), 32):
-                    vals.extend(float(v) for v in voter.margins(flat[b: b + 32]))
+                    if capture:
+                        margins, batch_tokens = voter.margins_with_token_scores(flat[b: b + 32])
+                        tokens.extend(batch_tokens)
+                    else:
+                        margins = voter.margins(flat[b: b + 32])
+                    vals.extend(float(v) for v in margins)
                     if cb:
                         cb(base + span * min(1.0, (b + 32) / max(1, len(flat))), "scan")
                 per, k = [], 0
@@ -171,6 +212,14 @@ class RoutedLindaPro:
                     per.append(vals[k: k + len(ws)])
                     k += len(ws)
                 raw[key] = per
+                if capture and key == t["heat"]["essay"]["voter"]:
+                    if word_offsets is None:
+                        word_offsets = [[(m.start(), m.end()) for m in re.finditer(r"\S+", x)] for x in texts]
+                    k = 0
+                    for i, ws in enumerate(wins):
+                        for window in ws:
+                            known[i].extend(_map_window_tokens(texts[i], window, flat[k], tokens[k], word_offsets[i]))
+                            k += 1
         ke, km, ks = t["heat"]["essay"]["voter"], t["heat"]["multi"]["voter"], self._stylo_key(t)
         res = []
         for i in range(len(texts)):
@@ -189,4 +238,6 @@ class RoutedLindaPro:
             res.append({"verdict": verdict, "mode": self.mode, "essay": float(agg[ke]), "ens_z": float(score), "score": float(score), "ai_share": float(share), "windows": wl,
                         "voters": {COMPAT["essay"]: agg[ke], COMPAT["multi"]: agg[km], COMPAT["stylo"]: agg[ks]}, "n_windows": len(wl),
                         "language": lang, "routing": {"voters": list(t["voters"]), "config": t.get("config", "")}})
+            if self.tier_pref == "speed":
+                res[-1]["_lite_token_scores"] = known[i]
         return res

@@ -14,6 +14,11 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(1, str(Path(__file__).resolve().parents[2]))
 
+# Previous --basetemp runs left scratch directories here. They contain no
+# suite tests and can have Windows ACLs belonging to a different run account.
+# Ignore them before pytest tries to enumerate their contents.
+collect_ignore_glob = ["runtime_temp_*"]
+
 
 class Repo:
     """A fake model repository served over HTTP with Range support and optional fault injection."""

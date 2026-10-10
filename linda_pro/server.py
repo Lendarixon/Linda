@@ -48,10 +48,6 @@ class _Resident:
 
 
 def make_detectors(device: str | None = None) -> dict[str, LindaPro]:
-    from .loader import _routing, load_detectors
-    from .core import PKG_ROOT
-    if _routing(PKG_ROOT) is not None:  # 1.3.x weights: routed English/Polish/Russian detector
-        return load_detectors(device=device)
     cache: dict[str, _Resident] = {}
     base = LindaPro(mode="sensitive", device=device)
 

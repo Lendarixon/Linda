@@ -5,19 +5,17 @@ import json
 import sys
 from pathlib import Path
 
-from .loader import load_detector
+from .core import LindaPro
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(prog="linda_pro", description="Linda-Pro: AI-text detector (English, Polish, Russian)")
+    ap = argparse.ArgumentParser(prog="linda_pro", description="Linda-Pro: AI-text detector (English)")
     ap.add_argument("files", nargs="+", help="text files (UTF-8)")
     ap.add_argument("--mode", choices=["sensitive", "precise"], default="sensitive")
     ap.add_argument("--windows", action="store_true", help="print per-window scores")
     ap.add_argument("--json", action="store_true", help="print raw JSON")
-    ap.add_argument("--lite", action="store_true", help="use Linda-Pro Lite (the small fast model) even if the full Linda-Pro is installed")
-    ap.add_argument("--root", default=None, help="folder with models/ and calibration/ (default: next to the package)")
     a = ap.parse_args(argv)
-    det = load_detector(a.mode, root=a.root, tier="lite" if a.lite else None)
+    det = LindaPro(mode=a.mode)
     texts = [Path(f).read_text(encoding="utf-8", errors="replace") for f in a.files]
     res = det.detect(texts)
     if a.json:

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Linda-Pro: local AI text detector (English, Polish, Russian). See README.md."""
+"""Linda-Pro: local AI text detector (English). See README.md."""
 from .core import LindaPro, split_windows, top25, verdict
-from .loader import load_detector, load_detectors
 
-__version__ = "1.3.1"
-__all__ = ["LindaPro", "load_detector", "load_detectors", "split_windows", "top25", "verdict", "__version__"]
+__version__ = "1.1.0"
+__all__ = ["LindaPro", "split_windows", "top25", "verdict", "__version__"]
