@@ -1,6 +1,21 @@
 [
  {
   "date": "2026-10-10",
+  "title": "Linda-Pro 2.0.5.2 — New logo and icons",
+  "text": "• New Metro-style logo: a tile with three lines of text, part of the middle one highlighted, just like the AI marking in the app itself.\n• New icon for the app, the installer and the Start menu.\n• The logo in the app header now follows the light/dark theme and the chosen accent colour.\n• Checking, models and verdicts are unchanged.",
+  "title_i18n": {
+   "ru": "Linda-Pro 2.0.5.2 — Новый логотип и иконки",
+   "en": "Linda-Pro 2.0.5.2 — New logo and icons",
+   "pl": "Linda-Pro 2.0.5.2 — Nowe logo i ikony"
+  },
+  "text_i18n": {
+   "ru": "• Новый логотип в стиле Metro: плитка с тремя строками текста, кусок средней подсвечен — как разметка ИИ в самом приложении.\n• Новая иконка приложения, установщика и меню «Пуск».\n• Логотип в шапке приложения теперь подстраивается под светлую и тёмную тему и под выбранный цвет акцента.\n• Проверка текста, модели и вердикты не изменились.",
+   "en": "• New Metro-style logo: a tile with three lines of text, part of the middle one highlighted, just like the AI marking in the app itself.\n• New icon for the app, the installer and the Start menu.\n• The logo in the app header now follows the light/dark theme and the chosen accent colour.\n• Checking, models and verdicts are unchanged.",
+   "pl": "• Nowe logo w stylu Metro: kafelek z trzema wierszami tekstu, fragment środkowego podświetlony — tak jak oznaczanie AI w samej aplikacji.\n• Nowa ikona aplikacji, instalatora i menu Start.\n• Logo w nagłówku aplikacji dopasowuje się teraz do jasnego/ciemnego motywu i wybranego koloru akcentu.\n• Sprawdzanie, modele i werdykty bez zmian."
+  }
+ },
+ {
+  "date": "2026-10-10",
   "title": "Linda-Pro 2.0.5.1 — Linda-Pro Lite: highlighting twice as fast",
   "text": "• Linda-Pro Lite takes the token scores for highlighting from the same model passes that compute the verdict and reads only the rest of the text: highlighting is about 2x faster (our measurement: 2.1 -> 1.0 s per 1,000 words on 4 threads) with no loss of highlighting accuracy (85% of words labelled correctly on mixed texts, false AI mark on 3% of human words).\n• Verdicts are unchanged.",
   "title_i18n": {
