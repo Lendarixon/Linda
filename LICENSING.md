@@ -1,6 +1,8 @@
-# Linda-Pro licensing in one page
+# Linda licensing in one page
 
-Linda-Pro is one product that you can get in two ways. The rules are the same for both.
+Linda was formerly named Linda-Pro; it includes the detectors Linda Assay (formerly Linda-Pro) and Linda Loupe (formerly Linda-Pro Lite). Licences bought under the old name stay valid.
+
+Linda is one product that you can get in two ways. The rules are the same for both.
 
 | | What you get | Where from |
 |---|---|---|
@@ -19,7 +21,7 @@ Download them from Hugging Face or GitHub, or let the app do it. No registration
 You buy a **licence to use the software commercially**. One licence covers **everything together**: the app (interface), the command-line tools and package, and the models and calibration.
 You do not buy the models separately, and the interface is not licensed separately from the models.
 
-Commercial use means using Linda-Pro for paid work or for clients, inside a company, school, university or other organization's operations (for example staff checking submitted work), in a product or service you sell, or any other use that earns money or supports an organization's business.
+Commercial use means using Linda for paid work or for clients, inside a company, school, university or other organization's operations (for example staff checking submitted work), in a product or service you sell, or any other use that earns money or supports an organization's business.
 
 | Licence | Price | Who | Devices | Updates |
 |---|---|---|---|---|
@@ -28,9 +30,9 @@ Commercial use means using Linda-Pro for paid work or for clients, inside a comp
 | **Organization / University** | $500 per year | one organization at one site | up to 200 | for the whole licence year, including new model versions |
 
 * **How you get it.** After payment you receive a licence key by e-mail. Enter it in the app (Licence dialog): the licence notice disappears. The command-line tools do not check keys; the licence applies to them in the same way, and the key is your proof of purchase.
-* **Version rule.** A Personal or Team key is perpetual for the 1.x versions. A new major version (2.0) may need a new key or an upgrade. The Organization licence is valid for the paid year; when it ends, commercial use of Linda-Pro under it ends unless renewed.
+* **Version rule.** A Personal or Team key is perpetual for the 1.x versions. A new major version (2.0) may need a new key or an upgrade. The Organization licence is valid for the paid year; when it ends, commercial use of Linda under it ends unless renewed.
 * **Nothing is locked.** The app works the same without a key; the key is the legal permission, not a technical switch.
-* **Not included in these licences:** exclusive rights, OEM / white-label integration into another product, hosting Linda-Pro as a service or API for third parties, redistribution of the models, custom calibration on your texts. These are agreed individually: write to lindapro.support@proton.me with your use case, volume and deployment.
+* **Not included in these licences:** exclusive rights, OEM / white-label integration into another product, hosting Linda as a service or API for third parties, redistribution of the models, custom calibration on your texts. These are agreed individually: write to lindapro.support@proton.me with your use case, volume and deployment.
 
 ## 3. Quick questions
 
