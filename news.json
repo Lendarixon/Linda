@@ -1,6 +1,21 @@
 [
  {
   "date": "2026-10-10",
+  "title": "Linda-Pro 2.0.5.1 — Linda-Pro Lite: highlighting twice as fast",
+  "text": "• Linda-Pro Lite takes the token scores for highlighting from the same model passes that compute the verdict and reads only the rest of the text: highlighting is about 2x faster (our measurement: 2.1 -> 1.0 s per 1,000 words on 4 threads) with no loss of highlighting accuracy (85% of words labelled correctly on mixed texts, false AI mark on 3% of human words).\n• Verdicts are unchanged.",
+  "title_i18n": {
+   "ru": "Linda-Pro 2.0.5.1 — Linda-Pro Lite: разметка вдвое быстрее",
+   "en": "Linda-Pro 2.0.5.1 — Linda-Pro Lite: highlighting twice as fast",
+   "pl": "Linda-Pro 2.0.5.1 — Linda-Pro Lite: podświetlanie dwa razy szybsze"
+  },
+  "text_i18n": {
+   "ru": "• Linda-Pro Lite берёт оценки токенов для разметки из тех же проходов модели, что считают вердикт, и дочитывает только остальной текст: разметка примерно в 2 раза быстрее (наш замер: 2,1 → 1,0 с на 1 000 слов на 4 потоках), точность разметки не ниже прежней (на смешанных текстах 85% верных меток слов, ложная метка «ИИ» у 3% человеческих слов).\n• Вердикты не изменились.",
+   "en": "• Linda-Pro Lite takes the token scores for highlighting from the same model passes that compute the verdict and reads only the rest of the text: highlighting is about 2x faster (our measurement: 2.1 -> 1.0 s per 1,000 words on 4 threads) with no loss of highlighting accuracy (85% of words labelled correctly on mixed texts, false AI mark on 3% of human words).\n• Verdicts are unchanged.",
+   "pl": "• Linda-Pro Lite bierze oceny tokenów do podświetlania z tych samych przebiegów modelu, które liczą werdykt, i doczytuje tylko resztę tekstu: podświetlanie ok. 2 razy szybsze (nasz pomiar: 2,1 -> 1,0 s na 1000 słów przy 4 wątkach) bez utraty dokładności (85% poprawnych etykiet słów na tekstach mieszanych, fałszywe AI u 3% słów ludzkich).\n• Werdykty bez zmian."
+  }
+ },
+ {
+  "date": "2026-10-10",
   "title": "Linda-Pro 2.0.5.0 — Version 2.5: token-level highlighting, more accurate at the same speed",
   "text": "• Sentence highlighting is now computed from tokens in the same model pass as the verdict instead of repeated passes over pieces of the text. Linda-Pro Lite highlights a 3,800-word text in about 4-6 s on a modern processor, without the huge uniform blocks of 2.0.4.x.\n• Highlighting accuracy on mixed human + AI texts with a known boundary (our measurement, EN/RU/PL): Linda-Pro labels 90% of words correctly (2.0.4.x: 90% at the cost of many repeated passes), Linda-Pro Lite 88% (2.0.4.x: 67%); about 3% of human words get a false \"AI\" mark.\n• The verdict and its accuracy are unchanged: same models, same thresholds.\n• If the document as a whole is \"unclear\" but AI is marked in almost all of the text, the Authorship box says \"AI\"; if nothing is marked it says \"unclear\" instead of \"mixed\".\n• Text scrolling no longer stops working after the model set is changed.\n• History and document comparison open faster.",
   "title_i18n": {
