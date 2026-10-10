@@ -25,12 +25,12 @@ Commercial use means using Linda for paid work or for clients, inside a company,
 
 | Licence | Price | Who | Devices | Updates |
 |---|---|---|---|---|
-| **Personal** | $10, one-off | one person (freelancer, consultant, small business owner) | up to 3 | free within version 1.x |
-| **Team** | $30, one-off | up to 10 people | up to 20 | free within version 1.x |
+| **Personal** | $10, one-off | one person (freelancer, consultant, small business owner) | up to 3 | fixes for the purchased version; new features may need a separate licence |
+| **Team** | $30, one-off | up to 10 people | up to 20 | fixes for the purchased version; new features may need a separate licence |
 | **Organization / University** | $500 per year | one organization at one site | up to 200 | for the whole licence year, including new model versions |
 
 * **How you get it.** After payment you receive a licence key by e-mail. Enter it in the app (Licence dialog): the licence notice disappears. The command-line tools do not check keys; the licence applies to them in the same way, and the key is your proof of purchase.
-* **Version rule.** A Personal or Team key is perpetual for the 1.x versions. A new major version (2.0) may need a new key or an upgrade. The Organization licence is valid for the paid year; when it ends, commercial use of Linda under it ends unless renewed.
+* **Version rule.** A Personal or Team key is perpetual: the version you bought and its fixes keep working. New features and new models may be released only under separate licences or as a paid upgrade. The Organization licence is valid for the paid year and includes all updates released in that year; when it ends, commercial use of Linda under it ends unless renewed.
 * **Nothing is locked.** The app works the same without a key; the key is the legal permission, not a technical switch.
 * **Not included in these licences:** exclusive rights, OEM / white-label integration into another product, hosting Linda as a service or API for third parties, redistribution of the models, custom calibration on your texts. These are agreed individually: write to lindapro.support@proton.me with your use case, volume and deployment.
 
