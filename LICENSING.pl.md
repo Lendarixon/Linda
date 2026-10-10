@@ -25,12 +25,12 @@ Użytek komercyjny to używanie Linda do pracy zarobkowej lub dla klientów, wew
 
 | Licencja | Cena | Kto | Urządzenia | Aktualizacje |
 |---|---|---|---|---|
-| **Personal** | 10 $, jednorazowo | jedna osoba (freelancer, konsultant, właściciel małej firmy) | do 3 | bezpłatnie w ramach wersji 1.x |
-| **Team** | 30 $, jednorazowo | do 10 osób | do 20 | bezpłatnie w ramach wersji 1.x |
+| **Personal** | 10 $, jednorazowo | jedna osoba (freelancer, konsultant, właściciel małej firmy) | do 3 | poprawki kupionej wersji; nowe funkcje mogą wymagać osobnej licencji |
+| **Team** | 30 $, jednorazowo | do 10 osób | do 20 | poprawki kupionej wersji; nowe funkcje mogą wymagać osobnej licencji |
 | **Organization / University** | 500 $ rocznie | jedna organizacja w jednej siedzibie | do 200 | przez cały rok licencji, w tym nowe wersje modeli |
 
 * **Jak otrzymać.** Po płatności otrzymujesz klucz licencyjny e-mailem. Wpisz go w aplikacji (okno Licence): powiadomienie o licencji zniknie. Narzędzia wiersza poleceń nie sprawdzają kluczy; licencja obowiązuje je tak samo, a klucz jest Twoim dowodem zakupu.
-* **Zasada wersji.** Klucz Personal lub Team jest wieczysty dla wersji 1.x. Nowa wersja główna (2.0) może wymagać nowego klucza lub uaktualnienia. Licencja Organization obowiązuje przez opłacony rok; po jego zakończeniu bez odnowienia użytek komercyjny Linda na jej podstawie ustaje.
+* **Zasada wersji.** Klucz Personal lub Team jest wieczysty: kupiona wersja i jej poprawki działają zawsze. Nowe funkcje i nowe modele mogą być wydawane tylko w ramach osobnych licencji lub jako płatna aktualizacja. Licencja Organization obowiązuje przez opłacony rok i obejmuje wszystkie aktualizacje wydane w tym roku; po jego zakończeniu bez odnowienia użytek komercyjny Linda na jej podstawie ustaje.
 * **Nic nie jest zablokowane.** Aplikacja działa tak samo bez klucza; klucz to prawne pozwolenie, nie przełącznik techniczny.
 * **Nie wchodzą w te licencje:** prawa wyłączne, integracja OEM / white-label z innym produktem, hosting Linda jako usługi lub API dla stron trzecich, redystrybucja modeli, kalibracja indywidualna na Twoich tekstach. Są uzgadniane indywidualnie: napisz na lindapro.support@proton.me, podając przypadek użycia, wolumen i wdrożenie.
 
