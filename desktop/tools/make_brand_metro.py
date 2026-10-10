@@ -45,19 +45,20 @@ def icon(s):
     mark(ImageDraw.Draw(im), 0, 0, s)
     return im
 
-def wordmark(h, bg=None, text=WHITE, accent=CYAN):
-    """Знак + «linda pro» (тонкое + полужирное), высота h. bg=None - прозрачный фон."""
+def wordmark(h, bg=None, text=WHITE, sub=None, accent=CYAN):
+    """Знак + «linda» (бренд), высота h; sub - имя продукта полужирным акцентом («assay», «loupe»). bg=None - прозрачный фон."""
     fl, fs = font(LIGHT, round(h * 0.9)), font(SEMI, round(h * 0.9))
-    w1 = fl.getlength("linda ")
-    w2 = fs.getlength("pro")
+    w1 = fl.getlength("linda" + (" " if sub else ""))
+    w2 = fs.getlength(sub) if sub else 0
     gap = round(h * 0.32)
     W = h + gap + int(w1 + w2) + round(h * 0.08)
     im = Image.new("RGBA", (W, h), (bg + (255,)) if bg else (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
     mark(d, 0, 0, h)
-    base = round(h * 0.82)  # базовая линия текста
-    d.text((h + gap, base), "linda ", font=fl, fill=text, anchor="ls")
-    d.text((h + gap + w1, base), "pro", font=fs, fill=accent, anchor="ls")
+    base = round(h * 0.82)
+    d.text((h + gap, base), "linda" + (" " if sub else ""), font=fl, fill=text, anchor="ls")
+    if sub:
+        d.text((h + gap + w1, base), sub, font=fs, fill=accent, anchor="ls")
     return im
 
 
@@ -66,12 +67,7 @@ def square(s=512):
     d = ImageDraw.Draw(im)
     m = round(s * 0.36)
     mark(d, (s - m) // 2, round(s * 0.17), m)
-    fl, fs = font(LIGHT, round(s * 0.16)), font(SEMI, round(s * 0.16))
-    w = fl.getlength("linda ") + fs.getlength("pro")
-    x = (s - w) / 2
-    y = round(s * 0.80)
-    d.text((x, y), "linda ", font=fl, fill=WHITE, anchor="ls")
-    d.text((x + fl.getlength("linda "), y), "pro", font=fs, fill=CYAN, anchor="ls")
+    d.text((s / 2, round(s * 0.80)), "linda", font=font(LIGHT, round(s * 0.18)), fill=WHITE, anchor="ms")
     return im
 
 
@@ -87,12 +83,16 @@ def og():
     d = ImageDraw.Draw(im)
     d.rectangle((0, 0, 1199, 9), fill=CYAN)
     mark(d, 80, 110, 192)
-    fl, fs = font(LIGHT, 120), font(SEMI, 120)
-    d.text((320, 232), "linda ", font=fl, fill=WHITE, anchor="ls")
-    d.text((320 + fl.getlength("linda "), 232), "pro", font=fs, fill=CYAN, anchor="ls")
+    d.text((320, 232), "linda", font=font(LIGHT, 130), fill=WHITE, anchor="ls")
     d.text((82, 400), "Was this text written by AI?", font=font(LIGHT, 46), fill=WHITE, anchor="ls")
     d.text((82, 456), "Local detector for English, Russian and Polish. Your texts stay on your PC.", font=font(REG, 27), fill=MUTED, anchor="ls")
-    d.text((1120, 560), "lendarixon.github.io/Linda", font=font(REG, 24), fill=MUTED, anchor="rs")
+    x = 80
+    for tag, name, col in (("As", "Linda Assay", COBALT), ("Lp", "Linda Loupe", TEAL)):
+        d.rectangle((x, 518, x + 55, 573), fill=col)
+        d.text((x + 28, 556), tag, font=font(SEMI, 26), fill=WHITE, anchor="ms")
+        d.text((x + 70, 556), name, font=font(REG, 26), fill=WHITE, anchor="ls")
+        x += 290
+    d.text((1120, 556), "lendarixon.github.io/Linda", font=font(REG, 24), fill=MUTED, anchor="rs")
     return im
 
 
@@ -101,19 +101,16 @@ def banner():
     d = ImageDraw.Draw(im)
     d.rectangle((0, 0, 1279, 7), fill=CYAN)
     mark(d, 72, 92, 144)
-    fl, fs = font(LIGHT, 96), font(SEMI, 96)
-    d.text((260, 178), "linda ", font=fl, fill=WHITE, anchor="ls")
-    d.text((260 + fl.getlength("linda "), 178), "pro", font=fs, fill=CYAN, anchor="ls")
-    d.text((264, 228), "Local AI-text detector  ·  EN / RU / PL  ·  runs on your PC", font=font(REG, 28), fill=MUTED, anchor="ls")
+    d.text((260, 178), "linda", font=font(LIGHT, 104), fill=WHITE, anchor="ls")
+    d.text((264, 228), "Local AI-text detector  ·  Linda Assay  ·  Linda Loupe  ·  EN / RU / PL", font=font(REG, 28), fill=MUTED, anchor="ls")
     return im
 
 
 def wizard_big():
     im = Image.new("RGB", (164, 314), BG)
     d = ImageDraw.Draw(im)
-    mark(d, 42, 92, 80)
-    d.text((82, 214), "linda", font=font(LIGHT, 40), fill=WHITE, anchor="ms")
-    d.text((82, 250), "pro", font=font(SEMI, 30), fill=CYAN, anchor="ms")
+    mark(d, 42, 100, 80)
+    d.text((82, 226), "linda", font=font(LIGHT, 44), fill=WHITE, anchor="ms")
     return im
 
 
@@ -122,7 +119,6 @@ def wizard_small():
     ic = icon(48)
     im.paste(ic, (3, 5), ic)
     return im
-
 
 def build():
     OUT.mkdir(exist_ok=True)
@@ -141,7 +137,9 @@ def build():
     avatar().save(OUT / "avatar_512.png")
     wordmark(120).save(OUT / "logo_wordmark.png")            # прозрачный фон, для тёмной шапки сайта
     wordmark(120, bg=BG).save(OUT / "logo_wordmark_dark.png")
-    wordmark(120, text=(20, 24, 33), accent=(11, 108, 171)).save(OUT / "logo_wordmark_light.png")
+    wordmark(120, text=(20, 24, 33)).save(OUT / "logo_wordmark_light.png")
+    wordmark(120, sub="assay", accent=(27, 161, 226)).save(OUT / "wordmark_assay.png")
+    wordmark(120, sub="loupe", accent=TEAL).save(OUT / "wordmark_loupe.png")
     og().save(OUT / "og_image.png")
     banner().save(OUT / "readme_banner.png")
     wizard_big().save(OUT / "wizard.bmp")

@@ -108,7 +108,7 @@ def _focus_window() -> bool:
             if p.value == pid and u.IsWindowVisible(h) and u.GetWindowTextLengthW(h) > 0:
                 buf = ctypes.create_unicode_buffer(256)
                 u.GetWindowTextW(h, buf, 256)
-                if buf.value.startswith(config.APP_NAME):
+                if buf.value.startswith((config.APP_NAME, config.APP_NAME.replace("Linda-Pro", "Linda"))):
                     found.append(h)
             return True
 
@@ -145,7 +145,7 @@ def main(argv: list[str] | None = None) -> int:
         if lk.is_file() and time.time() - int(lk.read_text().strip() or 0) < 900:
             if os.name == "nt":
                 import ctypes
-                ctypes.windll.user32.MessageBoxW(0, "Linda-Pro обновляется. Программа откроется сама через минуту.\nLinda-Pro is updating and will open by itself in a minute.", config.APP_NAME, 64)
+                ctypes.windll.user32.MessageBoxW(0, "Linda обновляется. Программа откроется сама через минуту.\nLinda is updating and will open by itself in a minute.", config.APP_NAME.replace("Linda-Pro", "Linda"), 64)
             return 0
     except Exception:
         pass
@@ -195,7 +195,7 @@ def main(argv: list[str] | None = None) -> int:
         time.sleep(0.1)
     if not server.started:
         server.should_exit = True
-        print("Linda-Pro: local server did not start", file=sys.stderr)
+        print("Linda: local server did not start", file=sys.stderr)
         return 1
     (config.data_dir() / "instance.json").write_text(json.dumps({"port": port, "pid": os.getpid(), "version": config.APP_VERSION, "mode": "browser" if "--browser" in argv or "--no-ui" in argv else "window"}), encoding="utf-8")
     core.background()
@@ -217,7 +217,7 @@ def main(argv: list[str] | None = None) -> int:
 
             webview.settings["ALLOW_DOWNLOADS"] = True  # без этого WebView2 молча отменяет скачивание отчётов (PDF/HTML/CSV/JSON/MD)
 
-            window = webview.create_window(f"{config.APP_NAME} {config.APP_VERSION}", url, width=1360, height=900, min_size=(980, 640), text_select=True, background_color='#0d0f14')
+            window = webview.create_window(f"{config.APP_NAME.replace('Linda-Pro', 'Linda')} {config.APP_VERSION}", url, width=1360, height=900, min_size=(980, 640), text_select=True, background_color='#0d0f14')
             if os.name == 'nt':
                 from .window_recovery import install
                 install(window)
@@ -229,7 +229,7 @@ def main(argv: list[str] | None = None) -> int:
         except Exception:  # noqa: BLE001
             pass
     webbrowser.open(url)
-    print("Linda-Pro is running at", url, "- close this window to quit")
+    print("Linda is running at", url, "- close this window to quit")
     try:
         while True:
             time.sleep(3600)

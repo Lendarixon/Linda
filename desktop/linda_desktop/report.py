@@ -127,7 +127,7 @@ def _to_html_legacy(rep: dict) -> str:
                         for f in (rep.get("structure_notable") or []))
     voters = rep.get("voters") or {}
     return """<!doctype html><html lang="ru"><head><meta charset="utf-8">
-<title>Отчёт Linda-Pro — %(title)s</title>
+<title>Отчёт Linda — %(title)s</title>
 <style>
 body{font-family:'Segoe UI',Arial,sans-serif;max-width:900px;margin:0 auto;padding:24px;color:#111}
 h1{font-size:1.4rem}h2{font-size:1.1rem;margin-top:26px;border-bottom:2px solid #0050ef;padding-bottom:4px}
@@ -139,7 +139,7 @@ th{background:#f0f2f8}.lb-ai{background:#fde2e4}.lb-uncertain{background:#fff3cd
 @media print{.toolbar{display:none}body{padding:0}}
 </style></head><body>
 <div class="toolbar"><button onclick="window.print()">🖨 Печать / сохранить PDF</button></div>
-<h1>Отчёт о проверке текста — Linda-Pro %(app_version)s</h1>
+<h1>Отчёт о проверке текста — Linda %(app_version)s</h1>
 <dl class="meta">
 <dt>Документ</dt><dd>%(title)s</dd><dt>Файл</dt><dd>%(filename)s</dd>
 <dt>Дата</dt><dd>%(generated_at)s</dd><dt>Проверка №</dt><dd>%(id)s</dd>
@@ -164,7 +164,7 @@ th{background:#f0f2f8}.lb-ai{background:#fde2e4}.lb-uncertain{background:#fff3cd
         "verdict_ru": _esc(rep.get("verdict_ru")), "verdict": _esc(rep.get("verdict")),
         "ai_share": "%.1f%%" % ((rep.get("ai_share") or 0) * 100),
         "disclaimer": _esc(rep.get("disclaimer")),
-        "v_names": ("Linda-Pro Lite: <b>%s</b> · Stylo-D: <b>%s</b>" % (_esc(voters.get("linda_essay")), _esc(voters.get("stylo7c")))) if rep.get("lite") else ("Linda-Essay 1.3: <b>%s</b> · Linda-Multi 1.3: <b>%s</b> · Stylo-D: <b>%s</b>" % (_esc(voters.get("linda_essay")), _esc(voters.get("linda_multi_v2")), _esc(voters.get("stylo7c")))),
+        "v_names": ("Linda Loupe: <b>%s</b> · Stylo-D: <b>%s</b>" % (_esc(voters.get("linda_essay")), _esc(voters.get("stylo7c")))) if rep.get("lite") else ("Linda-Essay 1.3: <b>%s</b> · Linda-Multi 1.3: <b>%s</b> · Stylo-D: <b>%s</b>" % (_esc(voters.get("linda_essay")), _esc(voters.get("linda_multi_v2")), _esc(voters.get("stylo7c")))),
         "avg_sent": _esc(an.get("avg_sentence_words")), "burst": _esc(an.get("burstiness")),
         "div": _esc(an.get("lexical_diversity")), "stock": _esc(stock or "—"),
         "notable": notable or "<li>Всё в пределах типичного для человека.</li>",
@@ -316,7 +316,7 @@ def _to_pdf_bytes_fpdf(rep: dict, lang: str | None = None) -> bytes:
                 self.set_y(-15)
                 self.set_font(self._fam, size=8)
                 self.set_text_color(120, 120, 120)
-                self.cell(0, 8, "Linda-Pro %s  |  %s  |  %d/{nb}" % (ver, date_s, self.page_no()), align="C")
+                self.cell(0, 8, "Linda %s  |  %s  |  %d/{nb}" % (ver, date_s, self.page_no()), align="C")
             except Exception:  # noqa: BLE001
                 pass
 
@@ -330,7 +330,7 @@ def _to_pdf_bytes_fpdf(rep: dict, lang: str | None = None) -> bytes:
         raise RuntimeError('Windows Unicode fonts are unavailable; restore Segoe UI or Arial')
     S = (lambda s: str(s if s is not None else "")) if uni else _latin
     pdf._fam = fam  # type: ignore[attr-defined]
-    pdf._head_txt = S("Linda-Pro %s  ·  %s" % (ver, date_s))  # type: ignore[attr-defined]
+    pdf._head_txt = S("Linda %s  ·  %s" % (ver, date_s))  # type: ignore[attr-defined]
     pdf.add_page()
 
     def h1(t: str):
@@ -346,7 +346,7 @@ def _to_pdf_bytes_fpdf(rep: dict, lang: str | None = None) -> bytes:
 
     # --- фирменная шапка ---
     pdf.set_font(fam, "B" if uni else "", 18)
-    pdf.cell(0, 10, S("Linda-Pro"), new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 10, S("Linda"), new_x="LMARGIN", new_y="NEXT")
     pdf.set_font(fam, "", 10)
     pdf.set_text_color(90, 90, 90)
     pdf.cell(0, 6, S("%s  ·  v%s  ·  %s  ·  lang:%s" % (T("pdf_title"), ver, date_s, lang)),
@@ -493,7 +493,7 @@ def _to_pdf_bytes_fpdf(rep: dict, lang: str | None = None) -> bytes:
         pdf.cell(62, 7, S(k), border=1, fill=True)
         pdf.set_font(fam, "", 10)
         pdf.multi_cell(0, 7, S(v), border=1, fill=True, new_x="LMARGIN", new_y="NEXT")
-    _vn = {"linda_essay": "Linda-Pro Lite", "stylo7c": "Stylo-D"} if rep.get("lite") else {}
+    _vn = {"linda_essay": "Linda Loupe", "stylo7c": "Stylo-D"} if rep.get("lite") else {}
     voters_ln = '  ·  '.join('%s: %s' % (_vn.get(name, name), value) for name, value in voters.items() if not (rep.get("lite") and name == "linda_multi_v2"))
     pdf.set_font(fam, "", 9)
     pdf.multi_cell(0, 5, S(voters_ln), new_x="LMARGIN", new_y="NEXT")

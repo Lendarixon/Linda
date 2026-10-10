@@ -6,8 +6,10 @@
 ;   require_license, audit_retention_days, max_batch_files, allowed_dirs) — читается приложением при старте.
 #ifdef TestInstall
   #define AppName "Linda-Pro (test)"
+  #define DisplayAppName "Linda (test)"
 #else
   #define AppName "Linda-Pro"
+  #define DisplayAppName "Linda"
 #endif
 #ifndef AppVersion
   #define AppVersion "2.0.5.2"
@@ -20,13 +22,13 @@ AppId={{E57A11B0-7E57-4E57-9E57-7E57E57E57E5}
 #else
 AppId={{B6D1E7F4-5E1C-4B8E-9D2A-4C8F0A11D0A1}
 #endif
-AppName={#AppName}
+AppName={#DisplayAppName}
 AppVersion={#AppVersion}
 AppPublisher=Linda
 AppPublisherURL=https://github.com/Lendarixon/Linda
 AppSupportURL=mailto:lindapro.support@proton.me
 DefaultDirName={autopf}\{#AppName}
-DefaultGroupName={#AppName}
+DefaultGroupName={#DisplayAppName}
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 DisableProgramGroupPage=yes
@@ -55,11 +57,11 @@ Name: "polish"; MessagesFile: "compiler:Languages\Polish.isl"
 [CustomMessages]
 english.ModelsTitle=Models folder
 english.ModelsDesc=Where should the detector models be stored?
-english.ModelsSub=The models take from 0.7 GB (Lite) to about 3.7 GB (both versions); the cache needs some more. You can choose another drive. Click Next to continue.
+english.ModelsSub=The models take from 0.7 GB (Linda Loupe) to about 3.7 GB (both versions); the cache needs some more. You can choose another drive. Click Next to continue.
 english.ModelsLow=There is not enough free space on this drive (about 6 GB needed). Choose another folder?
 english.ModelsRel=Please choose a folder on this computer (for example D:\Linda).
-english.CtxMenu=Check in Linda-Pro
-english.CtxMenuTask=Add "Check in Linda-Pro" to the Explorer context menu (.docx, .pdf, .txt, .md)
+english.CtxMenu=Check in Linda
+english.CtxMenuTask=Add "Check in Linda" to the Explorer context menu (.docx, .pdf, .txt, .md)
 english.CtxMenuGroup=Explorer:
 english.UninstallModels=Also delete the downloaded models, settings and licence key (about 3 GB) from this computer?
 russian.ModelsTitle=Папка для моделей
@@ -67,8 +69,8 @@ russian.ModelsDesc=Где хранить модели детектора?
 russian.ModelsSub=Модели занимают около 3 ГБ (с кэшем до 6 ГБ). Можно выбрать другой диск. Нажмите «Далее», чтобы продолжить.
 russian.ModelsLow=На этом диске мало места (нужно около 6 ГБ). Выбрать другую папку?
 russian.ModelsRel=Укажите папку на этом компьютере (например, D:\Linda).
-russian.CtxMenu=Проверить в Linda-Pro
-russian.CtxMenuTask=Добавить «Проверить в Linda-Pro» в меню проводника (.docx, .pdf, .txt, .md)
+russian.CtxMenu=Проверить в Linda
+russian.CtxMenuTask=Добавить «Проверить в Linda» в меню проводника (.docx, .pdf, .txt, .md)
 russian.CtxMenuGroup=Проводник:
 russian.UninstallModels=Удалить также скачанные модели, настройки и ключ лицензии (около 3 ГБ) с этого компьютера?
 polish.ModelsTitle=Folder modeli
@@ -76,28 +78,28 @@ polish.ModelsDesc=Gdzie przechowywać modele detektora?
 polish.ModelsSub=Modele zajmują około 3 GB (z pamięcią podręczną do 6 GB). Możesz wybrać inny dysk. Kliknij Dalej, aby kontynuować.
 polish.ModelsLow=Na tym dysku jest za mało miejsca (potrzeba około 6 GB). Wybrać inny folder?
 polish.ModelsRel=Podaj folder na tym komputerze (na przykład D:\Linda).
-polish.CtxMenu=Sprawdź w Linda-Pro
-polish.CtxMenuTask=Dodaj „Sprawdź w Linda-Pro” do menu Eksploratora (.docx, .pdf, .txt, .md)
+polish.CtxMenu=Sprawdź w Linda
+polish.CtxMenuTask=Dodaj „Sprawdź w Linda” do menu Eksploratora (.docx, .pdf, .txt, .md)
 polish.CtxMenuGroup=Eksplorator:
 polish.UninstallModels=Usunąć także pobrane modele, ustawienia i klucz licencji (około 3 GB) z tego komputera?
 
 english.SetsTitle=What to install
-english.SetsDesc=Linda-Pro comes in two versions. Choose what to put on this computer.
-english.SetsSub=Not sure? Choose Lite. You can add or remove either version later in Settings.
-english.SetsLite=Linda-Pro Lite (about 0.7 GB): light and fast, works on any computer, even without a graphics card. Slightly less accurate.
-english.SetsPro=Linda-Pro (about 3 GB): the most accurate; best with a modern graphics card, slow on a weak computer.
+english.SetsDesc=Linda comes in two versions. Choose what to put on this computer.
+english.SetsSub=Not sure? Choose Linda Loupe. You can add or remove either version later in Settings.
+english.SetsLite=Linda Loupe (about 0.7 GB): light and fast, works on any computer, even without a graphics card. Slightly less accurate.
+english.SetsPro=Linda Assay (about 3 GB): the most accurate; best with a modern graphics card, slow on a weak computer.
 english.SetsBoth=Both (about 3.7 GB): the app picks the suitable one by itself.
 russian.SetsTitle=Что установить
-russian.SetsDesc=Linda-Pro выпускается в двух версиях. Выберите, что поставить на этот компьютер.
-russian.SetsSub=Не уверены? Выберите Lite. Любую версию можно добавить или убрать позже в настройках.
-russian.SetsLite=Linda-Pro Lite (около 0,7 ГБ): лёгкая и быстрая, работает на любом компьютере, даже без видеокарты. Чуть менее точная.
-russian.SetsPro=Linda-Pro (около 3 ГБ): самая точная; лучше всего с современной видеокартой, на слабом компьютере медленная.
+russian.SetsDesc=Linda выпускается в двух версиях. Выберите, что поставить на этот компьютер.
+russian.SetsSub=Не уверены? Выберите Linda Loupe. Любую версию можно добавить или убрать позже в настройках.
+russian.SetsLite=Linda Loupe (около 0,7 ГБ): лёгкая и быстрая, работает на любом компьютере, даже без видеокарты. Чуть менее точная.
+russian.SetsPro=Linda Assay (около 3 ГБ): самая точная; лучше всего с современной видеокартой, на слабом компьютере медленная.
 russian.SetsBoth=Обе (около 3,7 ГБ): программа сама выберет подходящую.
 polish.SetsTitle=Co zainstalować
-polish.SetsDesc=Linda-Pro występuje w dwóch wersjach. Wybierz, co zainstalować na tym komputerze.
-polish.SetsSub=Nie jesteś pewien? Wybierz Lite. Każdą wersję można później dodać lub usunąć w ustawieniach.
-polish.SetsLite=Linda-Pro Lite (około 0,7 GB): lekka i szybka, działa na każdym komputerze, nawet bez karty graficznej. Nieco mniej dokładna.
-polish.SetsPro=Linda-Pro (około 3 GB): najdokładniejsza; najlepsza z nowoczesną kartą graficzną, na słabym komputerze wolna.
+polish.SetsDesc=Linda występuje w dwóch wersjach. Wybierz, co zainstalować na tym komputerze.
+polish.SetsSub=Nie jesteś pewien? Wybierz Linda Loupe. Każdą wersję można później dodać lub usunąć w ustawieniach.
+polish.SetsLite=Linda Loupe (około 0,7 GB): lekka i szybka, działa na każdym komputerze, nawet bez karty graficznej. Nieco mniej dokładna.
+polish.SetsPro=Linda Assay (około 3 GB): najdokładniejsza; najlepsza z nowoczesną kartą graficzną, na słabym komputerze wolna.
 polish.SetsBoth=Obie (około 3,7 GB): program sam wybierze odpowiednią.
 
 [Tasks]
@@ -107,9 +109,14 @@ Name: "ctxmenu"; Description: "{cm:CtxMenuTask}"; GroupDescription: "{cm:CtxMenu
 [Files]
 Source: "..\dist\Linda-Pro\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
+[InstallDelete]
+; 2.0.5.2: продукт переименован в Linda - убрать ярлыки со старым именем
+Type: files; Name: "{autoprograms}\{#AppName}.lnk"
+Type: files; Name: "{autodesktop}\{#AppName}.lnk"
+
 [Icons]
-Name: "{autoprograms}\{#AppName}"; Filename: "{app}\Linda-Pro.exe"
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\Linda-Pro.exe"; Tasks: desktopicon
+Name: "{autoprograms}\{#DisplayAppName}"; Filename: "{app}\Linda-Pro.exe"
+Name: "{autodesktop}\{#DisplayAppName}"; Filename: "{app}\Linda-Pro.exe"; Tasks: desktopicon
 
 [Registry]
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.docx\shell\LindaPro"; ValueType: string; ValueName: ""; ValueData: "{cm:CtxMenu}"; Flags: uninsdeletekey; Tasks: ctxmenu
@@ -126,7 +133,7 @@ Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.md\shell\LindaPro"
 Root: HKCU; Subkey: "Software\Classes\SystemFileAssociations\.md\shell\LindaPro\command"; ValueType: string; ValueName: ""; ValueData: """{app}\Linda-Pro.exe"" ""%1"""; Tasks: ctxmenu
 
 [Run]
-Filename: "{app}\Linda-Pro.exe"; Description: "Start Linda-Pro"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\Linda-Pro.exe"; Description: "Start Linda"; Flags: nowait postinstall skipifsilent
 ; silent self-update of the app passes /RELAUNCH=1 so the new version starts by itself
 Filename: "{app}\Linda-Pro.exe"; Flags: nowait; Check: ShouldRelaunch
 

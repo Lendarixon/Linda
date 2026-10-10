@@ -52,8 +52,8 @@ T = {
         "t3": "Сравните с прежними работами этого автора и историей версий документа (Google Docs, Word).",
         "t4": "Для спорных случаев запустите проверку ещё раз на полной версии текста: длинные тексты оцениваются надёжнее коротких.",
         "method": "О методе и ограничениях",
-        "me": "Linda-Pro оценивает текст ансамблем из нескольких моделей и анализом стиля; результат — вероятность, а не доказательство. Точность зависит от языка, длины и жанра: русский и польский поддерживаются хуже английского, а тексты новых ИИ-моделей и ИИ-тексты, пропущенные через «очеловечиватели», распознаются хуже. Текст обработан локально на этом компьютере и никуда не отправлялся.",
-        "page": "Страница", "of": "из", "footer": "Linda-Pro — локальный детектор ИИ-текста",
+        "me": "Linda оценивает текст ансамблем из нескольких моделей и анализом стиля; результат — вероятность, а не доказательство. Точность зависит от языка, длины и жанра: русский и польский поддерживаются хуже английского, а тексты новых ИИ-моделей и ИИ-тексты, пропущенные через «очеловечиватели», распознаются хуже. Текст обработан локально на этом компьютере и никуда не отправлялся.",
+        "page": "Страница", "of": "из", "footer": "Linda — локальный детектор ИИ-текста",
         "sec_summary": "Итог", "sec_charts": "Графики", "sec_text": "Текст",
         "print": "Печать / сохранить PDF", "untitled": "без названия",
     },
@@ -88,8 +88,8 @@ T = {
         "t3": "Porównaj z wcześniejszymi pracami autora i historią wersji dokumentu (Google Docs, Word).",
         "t4": "W spornych przypadkach uruchom sprawdzenie ponownie na pełnej wersji tekstu: długie teksty ocenia się pewniej niż krótkie.",
         "method": "O metodzie i ograniczeniach",
-        "me": "Linda-Pro ocenia tekst zespołem modeli i analizą stylu; wynik to prawdopodobieństwo, a nie dowód. Trafność zależy od języka, długości i gatunku: rosyjski i polski są obsługiwane gorzej niż angielski, a teksty nowych modeli AI i teksty AI przepuszczone przez „humanizery” rozpoznawane są gorzej. Tekst przetworzono lokalnie na tym komputerze i nigdzie go nie wysłano.",
-        "page": "Strona", "of": "z", "footer": "Linda-Pro — lokalny detektor tekstu AI",
+        "me": "Linda ocenia tekst zespołem modeli i analizą stylu; wynik to prawdopodobieństwo, a nie dowód. Trafność zależy od języka, długości i gatunku: rosyjski i polski są obsługiwane gorzej niż angielski, a teksty nowych modeli AI i teksty AI przepuszczone przez „humanizery” rozpoznawane są gorzej. Tekst przetworzono lokalnie na tym komputerze i nigdzie go nie wysłano.",
+        "page": "Strona", "of": "z", "footer": "Linda — lokalny detektor tekstu AI",
         "sec_summary": "Podsumowanie", "sec_charts": "Wykresy", "sec_text": "Tekst",
         "print": "Drukuj / zapisz PDF", "untitled": "bez tytułu",
     },
@@ -124,8 +124,8 @@ T = {
         "t3": "Compare with the author's earlier work and the document's version history (Google Docs, Word).",
         "t4": "For disputed cases run the check again on the full text: long texts are scored more reliably than short ones.",
         "method": "About the method and its limits",
-        "me": "Linda-Pro scores a text with an ensemble of models and a style analysis; the result is a probability, not proof. Accuracy depends on language, length and genre: Russian and Polish are supported less well than English, and texts from new AI models and AI texts run through \"humanizers\" are recognized less well. The text was processed locally on this computer and was never sent anywhere.",
-        "page": "Page", "of": "of", "footer": "Linda-Pro — local AI text detector",
+        "me": "Linda scores a text with an ensemble of models and a style analysis; the result is a probability, not proof. Accuracy depends on language, length and genre: Russian and Polish are supported less well than English, and texts from new AI models and AI texts run through \"humanizers\" are recognized less well. The text was processed locally on this computer and was never sent anywhere.",
+        "page": "Page", "of": "of", "footer": "Linda — local AI text detector",
         "sec_summary": "Summary", "sec_charts": "Charts", "sec_text": "Text",
         "print": "Print / save PDF", "untitled": "untitled",
     },
@@ -422,9 +422,9 @@ def render_html(rep: dict, lang: str = "ru", toolbar: bool = False) -> str:
     tips = "".join("<li>%s</li>" % _e(t[k]) for k in ("t1", "t2", "t3", "t4"))
     css = CSS % {"ink": C_INK, "muted": C_MUTED, "acc": C_ACC, "footer": t["footer"], "page": t["page"], "of": t["of"]}
     bar = '<div class="toolbar"><button onclick="window.print()">%s</button></div>' % _e(t["print"]) if toolbar else ""
-    return """<!doctype html><html lang="%(lang)s"><head><meta charset="utf-8"><title>%(title)s — Linda-Pro</title><style>%(css)s</style></head>
+    return """<!doctype html><html lang="%(lang)s"><head><meta charset="utf-8"><title>%(title)s — Linda</title><style>%(css)s</style></head>
 <body style="--vc:%(vcol)s"><div class="wrap">%(bar)s
-<div class="top"><div class="logo">Linda<span>-Pro</span></div><div class="ttl">%(ttl)s<small>v%(ver)s</small></div></div>
+<div class="top"><div class="logo">Linda</div><div class="ttl">%(ttl)s<small>v%(ver)s</small></div></div>
 <div class="meta">%(meta)s</div>
 <div class="hero">%(gauge)s<div><h2>%(vtxt)s</h2><div class="sub">%(ai_prob)s</div><p>%(summ)s</p><div class="kpis">%(kpis)s</div></div></div>
 <h3>%(authorship)s</h3><div class="card">%(stack)s<p class="note" style="margin-top:6px">%(a_note)s</p></div>
