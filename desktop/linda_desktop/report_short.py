@@ -6,6 +6,7 @@ from __future__ import annotations
 import importlib.util
 
 from . import report as _r
+from .report_pdf import _draw_brand_mark
 
 
 def to_short_pdf_bytes(rep: dict, lang: str | None = None) -> bytes:
@@ -42,7 +43,9 @@ def to_short_pdf_bytes(rep: dict, lang: str | None = None) -> bytes:
     B = "B" if uni else ""
 
     pdf.set_font(fam, B, 20)
-    pdf.cell(0, 10, S("Linda-Pro"), new_x="LMARGIN", new_y="NEXT")
+    _draw_brand_mark(pdf, pdf.get_x(), pdf.get_y() + 1)
+    pdf.set_x(pdf.get_x() + 11)
+    pdf.cell(0, 10, S("Linda"), new_x="LMARGIN", new_y="NEXT")
     pdf.set_font(fam, "", 10)
     pdf.set_text_color(90, 90, 90)
     pdf.cell(0, 6, S("%s  ·  v%s  ·  %s" % (T("pdf_short_title"), ver, date_s)), new_x="LMARGIN", new_y="NEXT")

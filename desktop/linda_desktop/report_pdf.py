@@ -316,7 +316,7 @@ CSS = """
 body{font:10.5pt/1.5 'Segoe UI',Arial,sans-serif;color:%(ink)s;margin:0;background:#fff}
 .wrap{max-width:186mm;margin:0 auto}
 .top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid %(acc)s;padding-bottom:8px;margin-bottom:14px}
-.logo{font-size:22pt;font-weight:700;letter-spacing:-.5px}.logo span{color:%(acc)s}
+.logo{display:flex;align-items:center;gap:8px;font-size:22pt;font-weight:300;letter-spacing:-.5px}.logo svg{width:28px;height:28px;flex:none}.logo span{color:%(acc)s}
 .top .ttl{text-align:right;font-size:13pt;font-weight:600}.top .ttl small{display:block;font-size:9pt;font-weight:400;color:%(muted)s}
 .meta{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
 .meta div{background:#f3f5fa;border-radius:6px;padding:7px 10px;font-size:9pt;color:%(muted)s;min-width:0}
@@ -424,7 +424,7 @@ def render_html(rep: dict, lang: str = "ru", toolbar: bool = False) -> str:
     bar = '<div class="toolbar"><button onclick="window.print()">%s</button></div>' % _e(t["print"]) if toolbar else ""
     return """<!doctype html><html lang="%(lang)s"><head><meta charset="utf-8"><title>%(title)s — Linda</title><style>%(css)s</style></head>
 <body style="--vc:%(vcol)s"><div class="wrap">%(bar)s
-<div class="top"><div class="logo">Linda</div><div class="ttl">%(ttl)s<small>v%(ver)s</small></div></div>
+<div class="top"><div class="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><rect width="100" height="100" fill="#1ba1e2"/><rect x="14" y="24" width="72" height="12" fill="#fff"/><rect x="14" y="44" width="32" height="12" fill="#fff"/><rect x="52" y="44" width="34" height="12" fill="#e51400"/><rect x="14" y="64" width="52" height="12" fill="#fff"/></svg>linda</div><div class="ttl">%(ttl)s<small>v%(ver)s</small></div></div>
 <div class="meta">%(meta)s</div>
 <div class="hero">%(gauge)s<div><h2>%(vtxt)s</h2><div class="sub">%(ai_prob)s</div><p>%(summ)s</p><div class="kpis">%(kpis)s</div></div></div>
 <h3>%(authorship)s</h3><div class="card">%(stack)s<p class="note" style="margin-top:6px">%(a_note)s</p></div>
@@ -455,6 +455,22 @@ def render_html(rep: dict, lang: str = "ru", toolbar: bool = False) -> str:
 def pdf_available() -> bool:
     import importlib.util
     return importlib.util.find_spec('fpdf') is not None
+
+
+def _draw_brand_mark(pdf, x: float, y: float, size: float = 8) -> None:
+    """Draw the report brand mark in millimetres using filled rectangles."""
+    with pdf.local_context():
+        pdf.set_fill_color(27, 161, 226)
+        pdf.rect(x, y, size, size, style="F")
+        for bx, by, bw, color in (
+            (14, 24, 72, (255, 255, 255)),
+            (14, 44, 32, (255, 255, 255)),
+            (52, 44, 34, (229, 20, 0)),
+            (14, 64, 52, (255, 255, 255)),
+        ):
+            pdf.set_fill_color(*color)
+            pdf.rect(x + size * bx / 100, y + size * by / 100,
+                     size * bw / 100, size * 12 / 100, style="F")
 
 
 def to_pdf_bytes(rep: dict, lang: str = 'ru', timeout: int = 90) -> bytes:

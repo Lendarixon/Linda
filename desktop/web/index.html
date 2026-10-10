@@ -2533,8 +2533,11 @@ window.LINDA_I18N = {"en": {"a_action_all": "All actions", "a_action_batch": "Fo
     $('tourTitle').textContent = T(s.t); $('tourText').textContent = T(s.b);
     $('tourLegend').style.display = s.legend ? '' : 'none';
     $('tourBack').style.visibility = tourI ? 'visible' : 'hidden';
+    $('tourSkip').textContent = T('tour_skip');
+    $('tourBack').textContent = T('tour_back');
     $('tourNext').textContent = T(tourI === tourSteps.length - 1 ? 'tour_done' : 'tour_next');
   }
+  document.addEventListener('linda-i18n', () => { if (tourOn) tourShow(); });
   function tourStart() { if (tourOn) return; tourOn = true; tourI = 0; $('tour').classList.remove('hidden'); tourShow(); }
   function tourEnd() { tourOn = false; tourClear(); $('tour').classList.add('hidden'); post('/api/settings', { tour_done: true }).then(r => { if (S) S.settings = r.settings; }).catch(() => { }); }
   $('tourNext').onclick = () => { if (tourI >= tourSteps.length - 1) tourEnd(); else { tourI++; tourShow(); } };

@@ -12,7 +12,7 @@
   #define DisplayAppName "Linda"
 #endif
 #ifndef AppVersion
-  #define AppVersion "2.0.5.2"
+  #define AppVersion "2.0.5.3"
 #endif
 
 [Setup]
@@ -57,7 +57,7 @@ Name: "polish"; MessagesFile: "compiler:Languages\Polish.isl"
 [CustomMessages]
 english.ModelsTitle=Models folder
 english.ModelsDesc=Where should the detector models be stored?
-english.ModelsSub=The models take from 0.7 GB (Linda Loupe) to about 3.7 GB (both versions); the cache needs some more. You can choose another drive. Click Next to continue.
+english.ModelsSub=The models take from 0.3 GB (Linda Loupe) to about 3 GB (both versions); the cache needs some more. You can choose another drive. Click Next to continue.
 english.ModelsLow=There is not enough free space on this drive (about 6 GB needed). Choose another folder?
 english.ModelsRel=Please choose a folder on this computer (for example D:\Linda).
 english.CtxMenu=Check in Linda
@@ -86,19 +86,19 @@ polish.UninstallModels=Usunąć także pobrane modele, ustawienia i klucz licenc
 english.SetsTitle=What to install
 english.SetsDesc=Linda comes in two versions. Choose what to put on this computer.
 english.SetsSub=Not sure? Choose Linda Loupe. You can add or remove either version later in Settings.
-english.SetsLite=Linda Loupe (about 0.7 GB): light and fast, works on any computer, even without a graphics card. Slightly less accurate.
+english.SetsLite=Linda Loupe (about 0.3 GB): light and fast, works on any computer, even without a graphics card. Slightly less accurate.
 english.SetsPro=Linda Assay (about 3 GB): the most accurate; best with a modern graphics card, slow on a weak computer.
 english.SetsBoth=Both (about 3.7 GB): the app picks the suitable one by itself.
 russian.SetsTitle=Что установить
 russian.SetsDesc=Linda выпускается в двух версиях. Выберите, что поставить на этот компьютер.
 russian.SetsSub=Не уверены? Выберите Linda Loupe. Любую версию можно добавить или убрать позже в настройках.
-russian.SetsLite=Linda Loupe (около 0,7 ГБ): лёгкая и быстрая, работает на любом компьютере, даже без видеокарты. Чуть менее точная.
+russian.SetsLite=Linda Loupe (около 0,3 ГБ): лёгкая и быстрая, работает на любом компьютере, даже без видеокарты. Чуть менее точная.
 russian.SetsPro=Linda Assay (около 3 ГБ): самая точная; лучше всего с современной видеокартой, на слабом компьютере медленная.
 russian.SetsBoth=Обе (около 3,7 ГБ): программа сама выберет подходящую.
 polish.SetsTitle=Co zainstalować
 polish.SetsDesc=Linda występuje w dwóch wersjach. Wybierz, co zainstalować na tym komputerze.
 polish.SetsSub=Nie jesteś pewien? Wybierz Linda Loupe. Każdą wersję można później dodać lub usunąć w ustawieniach.
-polish.SetsLite=Linda Loupe (około 0,7 GB): lekka i szybka, działa na każdym komputerze, nawet bez karty graficznej. Nieco mniej dokładna.
+polish.SetsLite=Linda Loupe (około 0,3 GB): lekka i szybka, działa na każdym komputerze, nawet bez karty graficznej. Nieco mniej dokładna.
 polish.SetsPro=Linda Assay (około 3 GB): najdokładniejsza; najlepsza z nowoczesną kartą graficzną, na słabym komputerze wolna.
 polish.SetsBoth=Obie (około 3,7 GB): program sam wybierze odpowiednią.
 
