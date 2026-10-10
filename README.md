@@ -23,7 +23,7 @@ Not sure? Take Lite: it runs everywhere, and Linda-Pro can be added later.
 | Russian AI texts found (false alarms) | 80.3% (0.6%) | 77.3% (1.2%) |
 | False alarms, non-native exam essays (TOEFL) | 5.5% | 2.2% |
 | False alarms, human texts of a mixed set (MAGE) | 2.0% | 0.4% |
-| Full check of a 3,800-word text (with highlighting) | about 4 s with an RX 9070 XT; minutes on a processor alone | about 4-6 s for a full check with highlighting on a Ryzen 7 7800X3D (about 15-20 s on an office Ryzen 5 PRO 2400GE, estimate) |
+| Full check of a 3,800-word text (with highlighting) | about 4 s with an RX 9070 XT; minutes on a processor alone | about 3 s for a full check with highlighting on a Ryzen 7 7800X3D (about 12 s on an office Ryzen 5 PRO 2400GE, estimate) |
 | Download | about 2.9 GB | about 0.3 GB |
 | Graphics card | recommended | not needed |
 
