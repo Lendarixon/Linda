@@ -1,17 +1,17 @@
 [
  {
   "date": "2026-10-10",
-  "title": "Linda-Pro 2.0.5.2 — New logo and icons",
-  "text": "• New Metro-style logo: a tile with three lines of text, part of the middle one highlighted, just like the AI marking in the app itself.\n• New icon for the app, the installer and the Start menu.\n• The logo in the app header now follows the light/dark theme and the chosen accent colour.\n• Checking, models and verdicts are unchanged.",
+  "title": "Linda 2.0.5.2 — Linda: new names and logo",
+  "text": "• Linda is now the name of the product. The full ensemble Linda-Pro is now called Linda Assay, the fast version Linda-Pro Lite is Linda Loupe.\n• Models, verdicts, settings and licence keys are unchanged; keys work as before.\n• New Metro-style logo: a tile with three lines of text, part of the middle one highlighted, just like the AI marking in the app. New icon for the app, the installer and the Start menu.\n• The logo in the app header follows the light/dark theme.",
   "title_i18n": {
-   "ru": "Linda-Pro 2.0.5.2 — Новый логотип и иконки",
-   "en": "Linda-Pro 2.0.5.2 — New logo and icons",
-   "pl": "Linda-Pro 2.0.5.2 — Nowe logo i ikony"
+   "ru": "Linda 2.0.5.2 — Linda: новые названия и логотип",
+   "en": "Linda 2.0.5.2 — Linda: new names and logo",
+   "pl": "Linda 2.0.5.2 — Linda: nowe nazwy i logo"
   },
   "text_i18n": {
-   "ru": "• Новый логотип в стиле Metro: плитка с тремя строками текста, кусок средней подсвечен — как разметка ИИ в самом приложении.\n• Новая иконка приложения, установщика и меню «Пуск».\n• Логотип в шапке приложения теперь подстраивается под светлую и тёмную тему и под выбранный цвет акцента.\n• Проверка текста, модели и вердикты не изменились.",
-   "en": "• New Metro-style logo: a tile with three lines of text, part of the middle one highlighted, just like the AI marking in the app itself.\n• New icon for the app, the installer and the Start menu.\n• The logo in the app header now follows the light/dark theme and the chosen accent colour.\n• Checking, models and verdicts are unchanged.",
-   "pl": "• Nowe logo w stylu Metro: kafelek z trzema wierszami tekstu, fragment środkowego podświetlony — tak jak oznaczanie AI w samej aplikacji.\n• Nowa ikona aplikacji, instalatora i menu Start.\n• Logo w nagłówku aplikacji dopasowuje się teraz do jasnego/ciemnego motywu i wybranego koloru akcentu.\n• Sprawdzanie, modele i werdykty bez zmian."
+   "ru": "• Linda — теперь общее имя продукта. Полный ансамбль Linda-Pro называется Linda Assay, быстрая версия Linda-Pro Lite — Linda Loupe.\n• Модели, вердикты, настройки и ключи лицензий не изменились, ключи работают как прежде.\n• Новый логотип в стиле Metro: плитка с тремя строками текста, кусок средней подсвечен — как разметка ИИ в самом приложении. Новая иконка приложения, установщика и меню «Пуск».\n• Логотип в шапке приложения подстраивается под светлую и тёмную тему.",
+   "en": "• Linda is now the name of the product. The full ensemble Linda-Pro is now called Linda Assay, the fast version Linda-Pro Lite is Linda Loupe.\n• Models, verdicts, settings and licence keys are unchanged; keys work as before.\n• New Metro-style logo: a tile with three lines of text, part of the middle one highlighted, just like the AI marking in the app. New icon for the app, the installer and the Start menu.\n• The logo in the app header follows the light/dark theme.",
+   "pl": "• Linda to teraz nazwa produktu. Pełny zespół Linda-Pro nazywa się teraz Linda Assay, szybka wersja Linda-Pro Lite — Linda Loupe.\n• Modele, werdykty, ustawienia i klucze licencyjne bez zmian; klucze działają jak dotąd.\n• Nowe logo w stylu Metro: kafelek z trzema wierszami tekstu, fragment środkowego podświetlony — tak jak oznaczanie AI w aplikacji. Nowa ikona aplikacji, instalatora i menu Start.\n• Logo w nagłówku aplikacji dopasowuje się do jasnego/ciemnego motywu."
   }
  },
  {
