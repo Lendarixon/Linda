@@ -12,7 +12,7 @@
   #define DisplayAppName "Linda"
 #endif
 #ifndef AppVersion
-  #define AppVersion "2.0.5.3"
+  #define AppVersion "2.0.6.0"
 #endif
 
 [Setup]

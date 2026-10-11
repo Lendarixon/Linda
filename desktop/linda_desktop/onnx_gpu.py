@@ -70,12 +70,19 @@ class OnnxSeqCls:
     """Drop-in replacement of FastSeqCls (margins / close) that runs on the GPU through DirectML."""
 
     def __init__(self, model_dir: str | Path, cache_dir: str | Path, device_id: int = 0, fp16: bool = False,
-                 max_batch: int | None = None, allow_export: bool = True):
+                 max_batch: int | None = None, allow_export: bool = True, stable: bool = False):
+        if stable and fp16:
+            raise ValueError('stable FP32 mode rejects fp16=True (actual FP32 graph only)')
         self.fp16 = fp16
+        self.stable = bool(stable)
         self.max_batch = None if max_batch is None else max(1, int(max_batch))
         self.allow_export = bool(allow_export)
         self.model_dir = Path(model_dir)
-        self.cache = Path(cache_dir) / self.model_dir.name
+        if self.stable:
+            # Isolated FP32 namespace: never reuse legacy fp16/fp32 graphs.
+            self.cache = Path(cache_dir) / "fp32_stable_v1" / self.model_dir.name
+        else:
+            self.cache = Path(cache_dir) / self.model_dir.name
         self.device_id = device_id
         args = self.model_dir / "train_args.json"
         self.max_len = int(json.loads(args.read_text(encoding="utf-8")).get("max_len", 256)) if args.exists() else 256
@@ -102,10 +109,20 @@ class OnnxSeqCls:
         so.enable_mem_pattern = False
         so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
         so.log_severity_level = 3
-        self.sess = ort.InferenceSession(str(onnx_path), sess_options=so, providers=[("DmlExecutionProvider", {"device_id": self.device_id}), "CPUExecutionProvider"])
+        if self.stable:
+            so.use_deterministic_compute = True
+        self.sess = ort.InferenceSession(str(onnx_path), sess_options=so, providers=self._dml_providers())
         if 'DmlExecutionProvider' not in self.sess.get_providers():
             self.sess = None
             raise RuntimeError('DirectML session is unavailable; GPU inference was not started')
+
+    def _dml_providers(self) -> list:
+        """DML provider list; stable mode pins deterministic metacommand-free dispatch.
+
+        use_deterministic_compute is a SessionOptions flag only, never a provider option."""
+        if self.stable:
+            return [("DmlExecutionProvider", {"device_id": self.device_id, "disable_metacommands": "true"}), "CPUExecutionProvider"]
+        return [("DmlExecutionProvider", {"device_id": self.device_id}), "CPUExecutionProvider"]
 
     def close(self) -> None:
         self.sess = None
@@ -135,8 +152,10 @@ class OnnxSeqCls:
         so.enable_mem_pattern = False
         so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
         so.log_severity_level = 3
+        if self.stable:
+            so.use_deterministic_compute = True
         sess = ort.InferenceSession(str(path), sess_options=so,
-            providers=[("DmlExecutionProvider", {"device_id": self.device_id}), "CPUExecutionProvider"])
+            providers=self._dml_providers())
         if "DmlExecutionProvider" not in sess.get_providers():
             raise RuntimeError("DirectML token session is unavailable")
         self.tok_sess = sess

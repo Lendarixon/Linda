@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+from . import analytics
 
 LANGS = ("ru", "pl", "en")
 
@@ -23,17 +24,17 @@ C_HUM, C_UNC, C_AI, C_INK, C_MUTED, C_ACC = "#2e9e4f", "#e0a100", "#d6342c", "#1
 T = {
     "ru": {
         "title": "Отчёт о проверке текста", "doc": "Документ", "file": "Файл", "date": "Дата", "num": "Проверка №", "mode": "Режим",
-        "org": "Организация", "words": "слов", "sentences": "предложений", "ai_share": "доля ИИ в тексте",
+        "org": "Организация", "words": "слов", "sentences": "предложений", "ai_share": "доля слов с меткой ИИ",
         "v_ai": "Вероятно, ИИ", "v_human": "Вероятно, человек", "v_uncertain": "Неопределённо",
-        "ai_prob": "Оценка вероятности ИИ", "origin_prob": "Оценка вероятности указанного происхождения", "summary": "Что это значит",
+        "ai_prob": "Оценка ИИ по модели", "origin_prob": "Оценка происхождения по модели", "summary": "Что это значит",
         "s_ai": "Детектор нашёл в тексте устойчивые признаки машинной генерации. Это сильный сигнал, но не доказательство: поговорите с автором, попросите показать черновики и объяснить ход мысли.",
         "s_human": "Явных признаков машинной генерации не найдено. Это не гарантия: хорошо отредактированный ИИ-текст бывает неотличим от человеческого.",
         "s_uncertain": "Сигналы противоречивы: часть текста похожа на машинную, часть на человеческую. Такой результат нельзя трактовать ни как «ИИ», ни как «человек».",
-        "authorship": "Авторство (доли по словам)", "a_human": "человек", "a_mixed": "возможно ИИ / смешанное", "a_ai": "ИИ",
-        "a_note": "Предложения распознаются хуже целого текста, поэтому доли — ориентир, а не точное разделение.",
-        "timeline": "Вероятность ИИ по ходу текста", "tl_note": "Один столбик — фрагмент текста слева направо; высота — вероятность ИИ.",
+        "authorship": "Авторство (доли слов с метками)", "a_human": "человек", "a_mixed": "возможно ИИ / смешанное", "a_ai": "ИИ",
+        "a_note": "Доли слов с метками. Это локальная оценка моделей, а не точная доля фактически написанного ИИ текста.",
+        "timeline": "Оценка ИИ по ходу текста", "tl_note": "Один столбик — фрагмент текста слева направо; высота — оценка модели.",
         "tl_start": "начало", "tl_end": "конец", "violin": "Где этот текст относительно людей и ИИ",
-        "vi_note": "Форма показывает, как распределена вероятность ИИ по предложениям: чем шире форма на уровне, тем больше предложений с такой вероятностью. Тёмная черта — медиана. Слева тексты людей, в центре тексты ИИ из эталонной выборки, справа проверяемый текст.",
+        "vi_note": "Форма показывает, как распределена оценка ИИ по предложениям: чем шире форма на уровне, тем больше предложений с такой оценкой. Тёмная черта — медиана. Слева тексты людей, в центре тексты ИИ из эталонной выборки, справа проверяемый текст.",
         "vi_h": "люди (эталон)", "vi_a": "ИИ (эталон)", "vi_t": "этот текст", "vi_med": "медиана",
         "structure": "Карта структуры", "st_note": "Каждая строка — абзац (длина по числу слов); штрихи — предложения, цвет — оценка.",
         "par": "абзац", "kind_list": "список", "kind_heading": "заголовок",
@@ -43,8 +44,8 @@ T = {
         "m_burst": "Разброс длины предложений", "m_div": "Разнообразие лексики", "m_stock": "Штампы на 1000 слов",
         "stock": "Типичные «машинные» обороты", "rep": "Повторяющиеся фразы", "none": "не найдено",
         "models": "Оценки моделей", "models_note": "Чем больше число, тем увереннее модель в ИИ. Это внутренние оценки, а не проценты.",
-        "flagged": "Фрагменты, на которые стоит обратить внимание", "fl_none": "Предложений с высокой вероятностью ИИ нет.",
-        "marked": "Размеченный текст", "marked_note": "Красным отмечены предложения с высокой вероятностью ИИ, жёлтым — спорные.",
+        "flagged": "Фрагменты, на которые стоит обратить внимание", "fl_none": "Нет предложений с меткой ИИ.",
+        "marked": "Размеченный текст", "marked_note": "Красным отмечены предложения с меткой ИИ, жёлтым — спорные.",
         "legend_ai": "ИИ", "legend_unc": "спорно", "legend_hum": "человек",
         "teacher": "Как пользоваться результатом",
         "t1": "Не используйте отчёт как единственное основание для оценки или наказания: детектор ошибается, особенно на коротких текстах, текстах на неродном для автора языке и сильно отредактированных текстах.",
@@ -59,17 +60,17 @@ T = {
     },
     "pl": {
         "title": "Raport sprawdzenia tekstu", "doc": "Dokument", "file": "Plik", "date": "Data", "num": "Sprawdzenie nr", "mode": "Tryb",
-        "org": "Organizacja", "words": "słów", "sentences": "zdań", "ai_share": "udział AI w tekście",
+        "org": "Organizacja", "words": "słów", "sentences": "zdań", "ai_share": "udział słów z etykietą AI",
         "v_ai": "Prawdopodobnie AI", "v_human": "Prawdopodobnie człowiek", "v_uncertain": "Niejednoznacznie",
-        "ai_prob": "Szacowane prawdopodobieństwo AI", "origin_prob": "Szacowane prawdopodobieństwo wskazanego pochodzenia", "summary": "Co to oznacza",
+        "ai_prob": "Ocena AI według modelu", "origin_prob": "Ocena pochodzenia według modelu", "summary": "Co to oznacza",
         "s_ai": "Detektor znalazł w tekście wyraźne cechy generowania maszynowego. To silny sygnał, ale nie dowód: porozmawiaj z autorem, poproś o szkice i wyjaśnienie toku myślenia.",
         "s_human": "Nie znaleziono wyraźnych cech generowania maszynowego. To nie gwarancja: dobrze zredagowany tekst AI bywa nie do odróżnienia od ludzkiego.",
         "s_uncertain": "Sygnały są sprzeczne: część tekstu przypomina maszynowy, część ludzki. Tego wyniku nie można uznać ani za „AI”, ani za „człowieka”.",
-        "authorship": "Autorstwo (udziały wg słów)", "a_human": "człowiek", "a_mixed": "możliwe AI / mieszane", "a_ai": "AI",
-        "a_note": "Zdania rozpoznawane są gorzej niż cały tekst, więc udziały są orientacyjne, a nie dokładnym podziałem.",
-        "timeline": "Prawdopodobieństwo AI w toku tekstu", "tl_note": "Jeden słupek to fragment tekstu od lewej do prawej; wysokość to prawdopodobieństwo AI.",
+        "authorship": "Autorstwo (udziały słów z etykietami)", "a_human": "człowiek", "a_mixed": "możliwe AI / mieszane", "a_ai": "AI",
+        "a_note": "Udziały oznaczonych słów. To lokalna ocena modeli, a nie dokładny udział tekstu faktycznie napisanego przez AI.",
+        "timeline": "Ocena AI w toku tekstu", "tl_note": "Jeden słupek to fragment tekstu od lewej do prawej; wysokość to ocena modelu.",
         "tl_start": "początek", "tl_end": "koniec", "violin": "Gdzie ten tekst leży wobec ludzi i AI",
-        "vi_note": "Kształt pokazuje rozkład prawdopodobieństwa AI w zdaniach. Po lewej teksty ludzi, w środku teksty AI z próbki wzorcowej, po prawej zdania sprawdzanego tekstu (punkty).",
+        "vi_note": "Kształt pokazuje rozkład oceny AI w zdaniach. Po lewej teksty ludzi, w środku teksty AI z próbki wzorcowej, po prawej zdania sprawdzanego tekstu (punkty).",
         "vi_h": "ludzie (wzorzec)", "vi_a": "AI (wzorzec)", "vi_t": "ten tekst", "vi_med": "mediana",
         "structure": "Mapa struktury", "st_note": "Każdy wiersz to akapit (długość w słowach); kreski to zdania, kolor to ocena.",
         "par": "akapit", "kind_list": "lista", "kind_heading": "nagłówek",
@@ -79,8 +80,8 @@ T = {
         "m_burst": "Zróżnicowanie długości zdań", "m_div": "Różnorodność słownictwa", "m_stock": "Szablony na 1000 słów",
         "stock": "Typowe „maszynowe” zwroty", "rep": "Powtarzające się frazy", "none": "nie znaleziono",
         "models": "Oceny modeli", "models_note": "Im większa liczba, tym pewniej model wskazuje AI. To oceny wewnętrzne, nie procenty.",
-        "flagged": "Fragmenty warte uwagi", "fl_none": "Brak zdań z wysokim prawdopodobieństwem AI.",
-        "marked": "Tekst z oznaczeniami", "marked_note": "Na czerwono zdania o wysokim prawdopodobieństwie AI, na żółto sporne.",
+        "flagged": "Fragmenty warte uwagi", "fl_none": "Brak zdań oznaczonych jako AI.",
+        "marked": "Tekst z oznaczeniami", "marked_note": "Na czerwono zdania oznaczone jako AI, na żółto sporne.",
         "legend_ai": "AI", "legend_unc": "sporne", "legend_hum": "człowiek",
         "teacher": "Jak korzystać z wyniku",
         "t1": "Nie używaj raportu jako jedynej podstawy oceny lub kary: detektor się myli, zwłaszcza na krótkich tekstach, tekstach w obcym dla autora języku i mocno zredagowanych.",
@@ -95,17 +96,17 @@ T = {
     },
     "en": {
         "title": "Text check report", "doc": "Document", "file": "File", "date": "Date", "num": "Check no.", "mode": "Mode",
-        "org": "Organization", "words": "words", "sentences": "sentences", "ai_share": "AI share of the text",
+        "org": "Organization", "words": "words", "sentences": "sentences", "ai_share": "AI-labelled word share",
         "v_ai": "Likely AI", "v_human": "Likely human", "v_uncertain": "Uncertain",
-        "ai_prob": "Estimated AI probability", "origin_prob": "Estimated probability of this origin", "summary": "What this means",
+        "ai_prob": "Model AI score", "origin_prob": "Model origin score", "summary": "What this means",
         "s_ai": "The detector found consistent signs of machine generation. This is a strong signal but not proof: talk to the author, ask for drafts and an explanation of the reasoning.",
         "s_human": "No clear signs of machine generation were found. This is not a guarantee: a well-edited AI text can be indistinguishable from a human one.",
         "s_uncertain": "The signals conflict: part of the text looks machine-written, part human. This result should be read neither as \"AI\" nor as \"human\".",
-        "authorship": "Authorship (shares by words)", "a_human": "human", "a_mixed": "possibly AI / mixed", "a_ai": "AI",
-        "a_note": "Single sentences are recognized less reliably than a whole text, so the shares are a guide, not an exact split.",
-        "timeline": "AI probability along the text", "tl_note": "One bar is a stretch of text from left to right; its height is the AI probability.",
+        "authorship": "Authorship (labelled word shares)", "a_human": "human", "a_mixed": "possibly AI / mixed", "a_ai": "AI",
+        "a_note": "Shares of labelled words. These are local model assessments, not exact shares of text actually written by AI.",
+        "timeline": "AI score along the text", "tl_note": "One bar is a stretch of text from left to right; its height is the model score.",
         "tl_start": "start", "tl_end": "end", "violin": "Where this text sits against humans and AI",
-        "vi_note": "The shape shows how AI probability is spread over sentences. Left: human texts, middle: AI texts from the reference sample, right: sentences of this text (dots).",
+        "vi_note": "The shape shows how the AI score is spread over sentences. Left: human texts, middle: AI texts from the reference sample, right: sentences of this text (dots).",
         "vi_h": "humans (reference)", "vi_a": "AI (reference)", "vi_t": "this text", "vi_med": "median",
         "structure": "Structure map", "st_note": "Each row is a paragraph (length in words); ticks are sentences, colour is the score.",
         "par": "paragraph", "kind_list": "list", "kind_heading": "heading",
@@ -115,8 +116,8 @@ T = {
         "m_burst": "Sentence length variation", "m_div": "Vocabulary diversity", "m_stock": "Stock phrases per 1000 words",
         "stock": "Typical \"machine\" phrases", "rep": "Repeated phrases", "none": "none found",
         "models": "Model scores", "models_note": "A larger number means the model is more confident in AI. These are internal scores, not percentages.",
-        "flagged": "Passages worth a look", "fl_none": "No sentences with a high AI probability.",
-        "marked": "Annotated text", "marked_note": "Red marks sentences with a high AI probability, yellow the disputed ones.",
+        "flagged": "Passages worth a look", "fl_none": "No sentences labelled as AI.",
+        "marked": "Annotated text", "marked_note": "Red marks sentences labelled as AI, yellow the disputed ones.",
         "legend_ai": "AI", "legend_unc": "disputed", "legend_hum": "human",
         "teacher": "How to use the result",
         "t1": "Do not use the report as the only basis for grading or punishment: the detector makes mistakes, especially on short texts, texts in a language foreign to the author, and heavily edited texts.",
@@ -163,12 +164,15 @@ def _timeline(sents: list[dict], t: dict) -> str:
     w = [max(1, len(s["text"].split())) for s in sents]
     n_bins = min(70, len(sents))
     tot = sum(w)
-    bins = [[0.0, 0] for _ in range(n_bins)]
+    bins = [[0.0, 0, -1] for _ in range(n_bins)]
     acc = 0
     for s, ww in zip(sents, w):
         b = min(n_bins - 1, int((acc + ww / 2) / tot * n_bins))
         bins[b][0] += s["p_ai"] * ww
         bins[b][1] += ww
+        r = {"ai": 2, "uncertain": 1}.get(s.get("label"), 0)
+        if r > bins[b][2]:
+            bins[b][2] = r
         acc += ww
     W, H, L, B = 700, 105, 34, 20
     bw = (W - L) / n_bins
@@ -178,12 +182,13 @@ def _timeline(sents: list[dict], t: dict) -> str:
         out.append('<line x1="%d" y1="%.1f" x2="%d" y2="%.1f" stroke="#d5d9e3" stroke-dasharray="%s"/>'
                    '<text x="%d" y="%.1f" font-size="10" fill="%s" text-anchor="end">%d%%</text>'
                    % (L, y, W, y, "0" if v == 0 else "3 3", L - 6, y + 3.5, C_MUTED, int(v * 100)))
-    for i, (sp, sw) in enumerate(bins):
+    for i, (sp, sw, rk) in enumerate(bins):
         if not sw:
             continue
         p = sp / sw
         h = max(2.0, p * (H - 8))
-        out.append('<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="1.5" fill="%s"/>' % (L + i * bw + 0.6, H - h, max(1.0, bw - 1.2), h, _col(p)))
+        col = C_AI if rk == 2 else (C_UNC if rk == 1 else C_HUM)
+        out.append('<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="1.5" fill="%s"/>' % (L + i * bw + 0.6, H - h, max(1.0, bw - 1.2), h, col))
     out.append('<text x="%d" y="%d" font-size="10" fill="%s">%s</text><text x="%d" y="%d" font-size="10" fill="%s" text-anchor="end">%s</text></svg>'
                % (L, H + 15, C_MUTED, _e(t["tl_start"]), W, H + 15, C_MUTED, _e(t["tl_end"])))
     return "".join(out)
@@ -221,6 +226,9 @@ def _median(xs: list[float]) -> float:
 def _violin(rep: dict, t: dict) -> str:
     """Скрипичный график как в приложении: распределение вероятности ИИ по предложениям у людей и у ИИ (эталон) и у этого текста
     (те же корзины, то же сглаживание, линейный масштаб, медианы подписаны)."""
+    gran = (rep.get("sentence_stats") or {}).get("granularity")
+    if gran in ("tokens", "tokens_sentence"):
+        return ""
     ref = (rep.get("structure_reference") or {})
     hh, ha = ref.get("human_hist"), ref.get("ai_hist")
     ps = [float(s["p_ai"]) for s in rep.get("sentences") or []]
@@ -266,7 +274,7 @@ def _structure_map(layout: list[dict], t: dict) -> str:
         wpct = max(6.0, r.get("words", 1) / mx * 100)
         kind = r.get("kind")
         tag = ' <i>%s</i>' % _e(t["kind_" + kind]) if kind in ("list", "heading") else ""
-        ticks = "".join('<span style="flex:%d;background:%s"></span>' % (max(1, s.get("words", 1)), _col(float(s.get("p_ai", 0)))) for s in (r.get("sentences") or []))
+        ticks = "".join('<span style="flex:%d;background:%s"></span>' % (max(1, s.get("words", 1)), _lab_col(s.get("label", "human"))) for s in (r.get("sentences") or []))
         if not ticks:
             ticks = '<span style="flex:1;background:#c9ceda"></span>'
         out.append('<div class="smr"><b>%d</b><div class="smb" style="width:%.1f%%">%s</div><em>%d%s</em></div>' % (i, wpct, ticks, r.get("words", 0), tag))
@@ -368,6 +376,8 @@ def render_html(rep: dict, lang: str = "ru", toolbar: bool = False) -> str:
         w[s["label"] if s["label"] in w else "human"] += max(1, len(s["text"].split()))
     tot = sum(w.values()) or 1
     sh = {k: v / tot * 100 for k, v in w.items()}
+    local = analytics.labelled_word_summary(sents)
+    display_sh = local['word_percentages']
     org = ""
     try:
         from . import config
@@ -381,16 +391,23 @@ def render_html(rep: dict, lang: str = "ru", toolbar: bool = False) -> str:
     if rep.get("filename") and rep.get("title"):
         meta[3] = (t["file"], rep["filename"])
     meta_html = "".join("<div>%s<b>%s</b></div>" % (_e(k), _e(v)) for k, v in meta)
+    source_title = {'ru':'Источник разметки','pl':'Źródło oznaczeń','en':'Markup source'}.get(lang,'Markup source')
+    source = {'essay':'Linda-Essay 1.3','multi':'Linda-Multi 1.3'}.get(rep.get('markup_source'), 'Linda Loupe' if rep.get('lite') else 'Ensemble')
+    meta_html += '<div>%s<b>%s</b></div>' % (_e(source_title), _e(source))
     if rep.get('analysis_scope') in ('single','subset'):
         label = {'ru':'Выбранные модели','pl':'Wybrane modele','en':'Selected models'}.get(lang,'Selected models')
         meta_html += '<div>%s<b>%s</b></div>' % (_e(label),_e(', '.join(rep.get('models_used') or [])))
     kpis = '<div><b>%s</b>%s</div><div><b>%s</b>%s</div><div><b>%s</b>%s</div>' % (
         _e(an.get("words") or rep.get("words")), _e(t["words"]), _e(len(sents)), _e(t["sentences"]),
-        '—' if rep.get('heatmap_available') is False else '%.0f%%' % ((rep.get('ai_share') or 0)*100), _e(t["ai_share"]))
+        '—' if rep.get('heatmap_available') is False else '%d%%' % display_sh['ai'], _e(t["ai_share"]))
     summ = t["s_" + (verdict if verdict in ("ai", "human") else "uncertain")]
+    if verdict == "human" and any((s.get("label") == "ai") for s in sents):
+        summ = {"ru": "Документ в целом выглядит человеческим, но есть локальные фрагменты с меткой ИИ \u2014 см. размеченные места ниже.",
+                "pl": "Dokument jako całość wygląda na ludzki, ale zawiera lokalne fragmenty oznaczone jako AI \u2014 zob. zaznaczone miejsca poniżej.",
+                "en": "The document as a whole looks human, but it contains local passages marked as AI \u2014 see the marked places below."}.get(lang, "The document as a whole looks human, but it contains local passages marked as AI \u2014 see the marked places below.")
     stack = ('<div class="stack"><span style="width:%.2f%%;background:%s"></span><span style="width:%.2f%%;background:%s"></span><span style="width:%.2f%%;background:%s"></span></div>'
              '<div class="leg"><span><i style="background:%s"></i>%s %.0f%%</span><span><i style="background:%s"></i>%s %.0f%%</span><span><i style="background:%s"></i>%s %.0f%%</span></div>'
-             % (sh["human"], C_HUM, sh["uncertain"], C_UNC, sh["ai"], C_AI, C_HUM, _e(t["a_human"]), sh["human"], C_UNC, _e(t["a_mixed"]), sh["uncertain"], C_AI, _e(t["a_ai"]), sh["ai"]))
+             % (sh["human"], C_HUM, sh["uncertain"], C_UNC, sh["ai"], C_AI, C_HUM, _e(t["a_human"]), display_sh["human"], C_UNC, _e(t["a_mixed"]), display_sh["uncertain"], C_AI, _e(t["a_ai"]), display_sh["ai"]))
     tl, vi = _timeline(sents, t), _violin(rep, t)
     if rep.get('heatmap_available') is False:
         unavailable = {'ru':'Подсветка предложений недоступна для выбранной модели.',
@@ -412,9 +429,9 @@ def render_html(rep: dict, lang: str = "ru", toolbar: bool = False) -> str:
     voters = rep.get("voters") or {}
     vrows = "".join('<tr><td>%s</td><td class="num"><b>%s</b></td></tr>' % (_e(k), _e(round(v, 2) if isinstance(v, (int, float)) else v))
                     for k, v in voters.items() if isinstance(v, (int, float)))
-    flagged = sorted([s for s in sents if s["p_ai"] >= 0.65], key=lambda s: -s["p_ai"])[:12]
+    flagged = sorted([s for s in sents if s.get("label") == "ai"], key=lambda s: -s["p_ai"])[:12]
     flagged.sort(key=lambda s: s["n"])
-    fl = "".join('<li style="--c:%s"><b>%d%%</b>%s</li>' % (_col(s["p_ai"]), round(s["p_ai"] * 100), _e(s["text"])) for s in flagged)
+    fl = "".join('<li style="--c:%s"><b>%d%%</b>%s</li>' % (_lab_col(s.get("label")), math.floor(s["p_ai"] * 100 + .5), _e(s["text"])) for s in flagged)
     fl = '<ul class="fl">%s</ul>' % fl if fl else '<p class="note">%s</p>' % _e(t["fl_none"])
     marked = " ".join('<span class="s %s">%s</span>' % (s["label"] if s["label"] in ("ai", "uncertain") else "h", _e(s["text"])) for s in sents)
     if not marked:
@@ -422,6 +439,7 @@ def render_html(rep: dict, lang: str = "ru", toolbar: bool = False) -> str:
     tips = "".join("<li>%s</li>" % _e(t[k]) for k in ("t1", "t2", "t3", "t4"))
     css = CSS % {"ink": C_INK, "muted": C_MUTED, "acc": C_ACC, "footer": t["footer"], "page": t["page"], "of": t["of"]}
     bar = '<div class="toolbar"><button onclick="window.print()">%s</button></div>' % _e(t["print"]) if toolbar else ""
+    violin_block = "" if not vi else '<h3>%s</h3><div class="card">%s<p class="note">%s</p></div>' % (_e(t["violin"]), vi, _e(t["vi_note"]))
     return """<!doctype html><html lang="%(lang)s"><head><meta charset="utf-8"><title>%(title)s — Linda</title><style>%(css)s</style></head>
 <body style="--vc:%(vcol)s"><div class="wrap">%(bar)s
 <div class="top"><div class="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><rect width="100" height="100" fill="#1ba1e2"/><rect x="14" y="24" width="72" height="12" fill="#fff"/><rect x="14" y="44" width="32" height="12" fill="#fff"/><rect x="52" y="44" width="34" height="12" fill="#e51400"/><rect x="14" y="64" width="52" height="12" fill="#fff"/></svg>linda</div><div class="ttl">%(ttl)s<small>v%(ver)s</small></div></div>
@@ -429,7 +447,7 @@ def render_html(rep: dict, lang: str = "ru", toolbar: bool = False) -> str:
 <div class="hero">%(gauge)s<div><h2>%(vtxt)s</h2><div class="sub">%(ai_prob)s</div><p>%(summ)s</p><div class="kpis">%(kpis)s</div></div></div>
 <h3>%(authorship)s</h3><div class="card">%(stack)s<p class="note" style="margin-top:6px">%(a_note)s</p></div>
 <h3>%(timeline)s</h3><div class="card">%(tl)s<p class="note">%(tl_note)s</p></div>
-<h3>%(violin)s</h3><div class="card">%(vi)s<p class="note">%(vi_note)s</p></div>
+%(violin_block)s
 <h3>%(structure)s</h3><p class="note">%(st_note)s</p>%(smap)s
 <h3>%(features)s</h3><p class="note">%(ft_note)s</p>%(feat)s
 <div class="two"><div><h3>%(metrics)s</h3><table>%(mrows)s</table></div><div>%(models_block)s</div></div>
@@ -442,7 +460,7 @@ def render_html(rep: dict, lang: str = "ru", toolbar: bool = False) -> str:
         "lang": lang, "title": _e(t["title"]), "css": css, "vcol": vcol, "bar": bar, "ttl": _e(t["title"]), "ver": _e(rep.get("app_version")),
         "meta": meta_html, "gauge": _gauge(float(pct), vcol), "vtxt": _e(t["v_" + (verdict if verdict in ("ai", "human") else "uncertain")]),
         "ai_prob": _e(t["ai_prob" if verdict == 'uncertain' else "origin_prob"]), "summ": _e(summ), "kpis": kpis, "authorship": _e(t["authorship"]), "stack": stack, "a_note": _e(t["a_note"]),
-        "timeline": _e(t["timeline"]), "tl": tl, "tl_note": _e(t["tl_note"]), "violin": _e(t["violin"]), "vi": vi, "vi_note": _e(t["vi_note"]),
+        "timeline": _e(t["timeline"]), "tl": tl, "tl_note": _e(t["tl_note"]), "violin_block": violin_block,
         "structure": _e(t["structure"]), "st_note": _e(t["st_note"]), "smap": smap, "features": _e(t["features"]), "ft_note": _e(t["ft_note"]), "feat": feat,
         "metrics": _e(t["metrics"]), "mrows": mrows, "stock_h": _e(t["stock"]), "stock": stock, "rep_h": _e(t["rep"]), "repeated": repeated,
         "models_block": ('<h3>%s</h3><p class="note">%s</p><table>%s</table>' % (_e(t["models"]), _e(t["models_note"]), vrows)) if vrows else "",

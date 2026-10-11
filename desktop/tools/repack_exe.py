@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import marshal
 import os
+import shutil
 import struct
 import sys
 import zlib
@@ -72,12 +73,33 @@ def rebuild_pyz(old: bytes) -> tuple[bytes, list[str], list[str]]:
     return bytes(buf), replaced, added
 
 
+def copy_resources(internal: Path) -> None:
+    """Refresh bundled web/ and assets/ next to the repacked exe.
+
+    The PYZ rewrite above only replaces python bytecode. Anything the app reads
+    as a file at runtime (the UI, i18n, images, markup heads) lives in
+    _internal and is copied byte-for-byte from the base build, so without this
+    step the repacked exe would ship a stale interface. Copying from source
+    keeps the repack honest: what is tested in dev is what ships.
+    """
+    for name in ("web", "assets"):
+        src = ROOT / name
+        if not src.is_dir():
+            continue
+        shutil.copytree(src, internal / name, dirs_exist_ok=True)
+        n = sum(1 for _ in (internal / name).rglob("*") if _.is_file())
+        print(f"ресурсы: {name}/ обновлено ({n} файлов)")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("base")
     ap.add_argument("out")
     ap.add_argument("--entry", choices=("run_app", "run_store"), help="заменить скрипт запуска (run_app.py или run_store.py в корне)")
+    ap.add_argument("--entry-file", type=Path, help="явный локальный скрипт запуска для изолированной QA-сборки")
     a = ap.parse_args()
+    if a.entry_file and not a.entry:
+        ap.error("--entry-file requires --entry")
     raw = Path(a.base).read_bytes()
     ck = raw.rfind(COOKIE)
     magic, arch_len, toc_off, toc_len, pyvers, pylib = struct.unpack(COOKIE_FMT, raw[ck: ck + struct.calcsize(COOKIE_FMT)])
@@ -100,7 +122,7 @@ def main() -> int:
             ulen = len(data)
             print(f"PYZ: заменено {len(replaced)} модулей, добавлено {len(added)} {added}")
         elif tc == "s" and a.entry and name in ("run_app", "run_store"):
-            src = ROOT / f"{a.entry}.py"
+            src = a.entry_file or ROOT / f"{a.entry}.py"
             code = compile(src.read_text(encoding="utf-8"), f"{a.entry}.py", "exec")
             plain = marshal.dumps(code)
             data, ulen, cflag, name = zlib.compress(plain, 9), len(plain), 1, a.entry
@@ -115,8 +137,10 @@ def main() -> int:
     new_toc_off = len(body)
     arch = bytes(body) + bytes(toc_bytes)
     cookie = struct.pack(COOKIE_FMT, COOKIE, len(arch) + struct.calcsize(COOKIE_FMT), new_toc_off, len(toc_bytes), pyvers, pylib)
-    Path(a.out).write_bytes(raw[:start] + arch + cookie + tail)
-    print(f"готово: {a.out} ({len(raw[:start]) + len(arch) + len(cookie) + len(tail):,} байт), старый скрипт запуска: {sorted(entry_names)}")
+    out = Path(a.out)
+    out.write_bytes(raw[:start] + arch + cookie + tail)
+    copy_resources(out.parent / "_internal")
+    print(f"готово: {a.out} ({out.stat().st_size:,} байт), старый скрипт запуска: {sorted(entry_names)}")
     return 0
 
 

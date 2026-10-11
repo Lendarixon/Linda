@@ -70,7 +70,8 @@ def to_short_pdf_bytes(rep: dict, lang: str | None = None) -> bytes:
     pdf.set_text_color(0, 0, 0)
     pdf.ln(3)
     pdf.set_font(fam, "", 12)
-    pdf.multi_cell(0, 6.5, S(T("sv_%s_a" % key)), new_x="LMARGIN", new_y="NEXT")
+    summary_key = "sv_hum_local_ai" if key == "hum" and any(s.get("label") == "ai" for s in sents) else "sv_%s_a" % key
+    pdf.multi_cell(0, 6.5, S(T(summary_key)), new_x="LMARGIN", new_y="NEXT")
     pdf.ln(4)
 
     # ключевые цифры
@@ -87,8 +88,8 @@ def to_short_pdf_bytes(rep: dict, lang: str | None = None) -> bytes:
     pdf.ln(5)
 
     # самые подозрительные предложения
-    top = sorted([s for s in sents if (s.get("p_ai") or 0) >= 0.5], key=lambda s: -(s.get("p_ai") or 0))[:3]
-    if top and verdict != "human":
+    top = _r._suspicious_top(sents, limit=3)
+    if top:
         pdf.set_font(fam, B, 12)
         pdf.cell(0, 7, S(T("sv_why")), new_x="LMARGIN", new_y="NEXT")
         pdf.set_font(fam, "", 10.5)

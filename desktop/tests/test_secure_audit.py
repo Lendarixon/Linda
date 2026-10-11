@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 import pytest
 
@@ -154,7 +155,10 @@ def test_concurrent_appends_have_one_chain(home):
 def test_independent_processes_share_one_authenticated_chain(home):
     audit.append("baseline")
     script = "from linda_desktop.secure_audit import append; [append('process', str(i)) for i in range(4)]"
+    # Children must import the same checkout the parent is testing.
+    root = str(Path(__file__).resolve().parents[1])
     environment = dict(os.environ, PYTHONIOENCODING="utf-8")
+    environment["PYTHONPATH"] = os.pathsep.join(filter(None, [root, environment.get("PYTHONPATH", "")]))
     children = [subprocess.Popen([sys.executable, "-c", script], env=environment,
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE) for _ in range(3)]
     try:

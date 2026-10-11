@@ -1,5 +1,19 @@
 [
   {
+    "version": "2.0.6.0",
+    "date": "2026-10-11",
+    "title": {
+      "en": "Consistent GPU inference and local highlighting",
+      "ru": "Согласованные GPU-оценки и локальная разметка",
+      "pl": "Spójne oceny GPU i lokalne oznaczenia"
+    },
+    "notes": {
+      "en": "• Assay uses FP32 stable DirectML on Windows to reduce CPU/GPU score drift; Loupe remains on CPU. GPU memory use is higher than FP16; 4 GB compatibility is not certified.\n• Assay samples the same context anchors on CPU/GPU.\n• Model identity, independent Essay/Multi evidence, Unicode offsets and document extraction are corrected.\n• Selected highlighting, counters, word shares and exports stay synchronized. Document confidence and local coverage are separate.\n• Weights remain 1.3.4. Short AI inserts and edited texts may still be missed; these fixes do not certify detection accuracy.",
+      "ru": "• Assay использует стабильный FP32 DirectML в Windows для уменьшения расхождений CPU/GPU; Loupe работает на CPU. Расход видеопамяти выше FP16; совместимость с 4 ГБ не сертифицирована.\n• Assay использует одинаковые опорные контексты на CPU/GPU.\n• Исправлены имя модели, независимые данные Essay/Multi, Unicode-смещения и извлечение документов.\n• Выбранная подсветка, счётчики, доли слов и экспорт синхронизированы. Оценка документа и локальное покрытие — разные показатели.\n• Веса остаются 1.3.4. Короткие ИИ-вставки и редактированные тексты могут быть пропущены; эти исправления не сертифицируют точность детекции.",
+      "pl": "• Assay używa stabilnego FP32 DirectML w Windows, aby ograniczyć różnice CPU/GPU; Loupe pozostaje na CPU. Zużycie VRAM jest wyższe niż FP16; zgodność z 4 GB nie została potwierdzona.\n• Assay wybiera te same konteksty na CPU/GPU.\n• Poprawiono identyfikację modelu, niezależne dane Essay/Multi, przesunięcia Unicode i odczyt dokumentów.\n• Podświetlenie, liczniki, udziały słów i eksport są zsynchronizowane. Ocena dokumentu i lokalne pokrycie to oddzielne wskaźniki.\n• Wagi pozostają 1.3.4. Krótkie wstawki AI i edytowane teksty mogą pozostać niewykryte; poprawki nie certyfikują dokładności."
+    }
+  },
+  {
     "version": "2.0.5.3",
     "date": "2026-10-11",
     "title": {

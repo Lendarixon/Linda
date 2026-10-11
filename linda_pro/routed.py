@@ -77,13 +77,17 @@ class ModelPool:
     def size(self, key: str) -> int:
         return int(self.sizes.get(key.split("_")[0], 0))
 
+    def resident_size(self, key: str) -> int:
+        voter = self.items[key]
+        return self.size(key) * (1 + int(getattr(voter, 'tok_sess', None) is not None))
+
     def get(self, key: str):
         if key in self.items:
             self.order.remove(key)
             self.order.append(key)
             return self.items[key]
         need = self.size(key)
-        while self.order and sum(self.size(k) for k in self.items) + need > self.budget:
+        while self.order and sum(self.resident_size(k) for k in self.items) + need > self.budget:
             old = self.order.pop(0)
             v = self.items.pop(old)
             close = getattr(v, "close", None)

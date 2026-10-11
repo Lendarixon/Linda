@@ -25,7 +25,7 @@ def append_sections(pdf,rep,lang,fam,S,h1,need):
         if chunks and rep.get('heatmap_available') is not False:
             for chunk in chunks:
                 portion=width*max(1,chunk.get('words',1))/total
-                color=report_pdf._col(float(chunk.get('p_ai',0)))
+                color=report_pdf._lab_col(chunk.get('label', 'human'))
                 pdf.set_fill_color(*(int(color[i:i+2],16) for i in (1,3,5)))
                 pdf.rect(x,y+1,portion,5,style='F');x+=portion
         else:pdf.set_fill_color(201,206,218);pdf.rect(x,y+1,width,5,style='F')

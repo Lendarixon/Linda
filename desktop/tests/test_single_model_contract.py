@@ -111,3 +111,30 @@ def test_cpu_initialization_does_not_eagerly_load_any_voter(repo,monkeypatch):
     monkeypatch.setattr(server,'make_detectors',lambda device:{'sensitive':det,'precise':det})
     monkeypatch.setattr(engine,'_load_voters',lambda *args:pytest.fail('CPU eagerly loaded all voters'))
     assert engine.ensure_loaded()['sensitive'] is det and not det.factories
+
+
+def _narrow(det,value):
+    det.value = value
+    det.rules = {key:{'thr_5':.1,'thr_05':.3,'thr_1':.2} for key in ('essay','multi','stylo','ensemble')}
+    return det
+
+
+def test_single_narrow_scale_matches_main_engine():
+    from linda_desktop.engine import _sig
+    det = _narrow(Detector('linda_essay'),.35)
+    result = engine_for(det).run('First test sentence. Second test sentence.',models=['linda_essay'])
+    assert result['p_ai'] == round(_sig(.35,.1,.1),3) == .924
+    assert result['verdict'] == 'ai' and det.factories == ['linda_essay']
+    assert result['sentences']
+    for s in result['sentences']:
+        assert s['essay_prob'] == .924 and s['essay_label'] == 'ai' and s['label'] == 'ai'
+
+
+def test_single_label_uses_unrounded_probability():
+    det = _narrow(Detector('linda_multi_v2'),0.13211315714437313)
+    result = engine_for(det).run('First test sentence. Second test sentence.',models=['linda_multi_v2'])
+    assert result['verdict'] == 'uncertain' and det.factories == ['linda_multi_v2']
+    assert result['sentences']
+    for s in result['sentences']:
+        assert s['multi_prob'] == .58 and s['p_ai'] == .58
+        assert s['multi_label'] == 'uncertain' and s['label'] == 'uncertain'

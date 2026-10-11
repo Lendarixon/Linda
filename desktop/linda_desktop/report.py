@@ -35,8 +35,12 @@ def pdf_available() -> bool:
 def _sentences_of(result: dict) -> list[dict]:
     out = []
     for i, s in enumerate(result.get("sentences") or []):
-        out.append({"n": i + 1, "label": s.get("label", "human"),
-                    "p_ai": round(float(s.get("p_ai", 0.0)), 3), "text": s.get("text", "")})
+        row = {"n": i + 1, "label": s.get("label", "human"),
+               "p_ai": float(s.get("p_ai", 0.0)), "text": s.get("text", "")}
+        for key in ("start", "end", "essay_margin", "multi_margin", "essay_prob", "multi_prob", "essay_label", "multi_label", "ensemble_prob", "ensemble_label"):
+            if key in s:
+                row[key] = s[key]
+        out.append(row)
     return out
 
 
@@ -59,7 +63,7 @@ def build_report(text: str, result: dict, meta: dict | None = None) -> dict:
     pct = meta.get("pct")
     if result.get("p_ai") is not None:
         p = float(result["p_ai"])
-        pct = min(99, max(1, round(100 * (1 - p if result.get("verdict") == "human" else p))))
+        pct = analytics.display_probability(p, result.get('verdict'))
     elif pct is not None and result.get('verdict') == 'human':
         pct = 100 - pct
     return {
@@ -70,7 +74,14 @@ def build_report(text: str, result: dict, meta: dict | None = None) -> dict:
         "verdict": result.get("verdict"), "verdict_ru": VERDICT_RU.get(result.get("verdict"), ""),
         "pct": pct, "p_ai":result.get('p_ai'),"ai_share": round(ai_w / tot, 4) if result.get('heatmap_available',True) else None,
         "heatmap_available":result.get('heatmap_available',True),"analysis_scope":result.get('analysis_scope','ensemble'),"models_used":result.get('models_used'),"models_executed":result.get('models_executed'),
-        "authorship": auth, "voters": result.get("voters"), "lite": "Linda-Speed" in str((result.get("routing") or {}).get("config") or ""), "ens_z": result.get("ens_z"),
+        "sentence_stats": dict(result.get("sentence_stats") or {}) if isinstance(result.get("sentence_stats"), dict) else result.get("sentence_stats"),
+        "authorship": auth, "voters": result.get("voters"),
+        "markup_source": result.get('markup_source', 'ensemble'),
+        "local_summary": analytics.labelled_word_summary(sents) if result.get('heatmap_available', True) else None,
+        "detector_id": result.get("detector_id"),
+        "lite": result.get("detector_id") == "loupe" if result.get("detector_id") in ("loupe", "assay") else "Linda-Speed" in str((result.get("routing") or {}).get("config") or ""),
+        "local_document_disagreement": result.get("local_document_disagreement", False),
+        "alt": result.get("alt"), "model_disagreement": result.get("model_disagreement", False), "ens_z": result.get("ens_z"),
         "sentences": sents, "analytics": an,
         "structure_reference": st.get("reference"), "structure_notable": notable[:12], "structure_layout": (st.get("layout") or [])[:60],
         "disclaimer": DISCLAIMER_RU, "text": text,
@@ -98,7 +109,7 @@ def to_csv(rep: dict) -> str:
         if isinstance(value, str) and value.lstrip(' \t\r\n\ufeff').startswith(('=', '+', '-', '@')):
             return "'" + value
         return value
-    for k in ("app_version", "generated_at", "id", "title", "mode", "words", "verdict", "verdict_ru", "p_ai", "pct", "ai_share", "analysis_scope", "models_used", "heatmap_available"):
+    for k in ("app_version", "generated_at", "id", "title", "mode", "words", "verdict", "verdict_ru", "p_ai", "pct", "ai_share", "markup_source", "analysis_scope", "models_used", "heatmap_available"):
         value = rep.get(k)
         if isinstance(value,list):
             value = ', '.join(str(item) for item in value)
@@ -145,7 +156,8 @@ th{background:#f0f2f8}.lb-ai{background:#fde2e4}.lb-uncertain{background:#fff3cd
 <dt>Дата</dt><dd>%(generated_at)s</dd><dt>Проверка №</dt><dd>%(id)s</dd>
 <dt>Режим</dt><dd>%(mode)s</dd><dt>Слов</dt><dd>%(words)s</dd>
 <dt>Вердикт</dt><dd><b>%(verdict_ru)s</b> (%(verdict)s)</dd>
-<dt>Доля ИИ-предложений</dt><dd>%(ai_share)s</dd>
+<dt>Доля слов с меткой ИИ</dt><dd>%(ai_share)s</dd>
+<dt>Источник разметки</dt><dd>%(markup_source)s</dd>
 </dl>
 <p class="note">%(disclaimer)s Текст обработан локально на этом компьютере и никуда не отправлялся.</p>
 <h2>Оценки моделей (выше = ИИ)</h2>
@@ -163,6 +175,7 @@ th{background:#f0f2f8}.lb-ai{background:#fde2e4}.lb-uncertain{background:#fff3cd
         "id": _esc(rep.get("id")), "mode": _esc(rep.get("mode")), "words": _esc(rep.get("words")),
         "verdict_ru": _esc(rep.get("verdict_ru")), "verdict": _esc(rep.get("verdict")),
         "ai_share": "%.1f%%" % ((rep.get("ai_share") or 0) * 100),
+        "markup_source": _esc(rep.get('markup_source', 'ensemble')),
         "disclaimer": _esc(rep.get("disclaimer")),
         "v_names": ("Linda Loupe: <b>%s</b> · Stylo-D: <b>%s</b>" % (_esc(voters.get("linda_essay")), _esc(voters.get("stylo7c")))) if rep.get("lite") else ("Linda-Essay 1.3: <b>%s</b> · Linda-Multi 1.3: <b>%s</b> · Stylo-D: <b>%s</b>" % (_esc(voters.get("linda_essay")), _esc(voters.get("linda_multi_v2")), _esc(voters.get("stylo7c")))),
         "avg_sent": _esc(an.get("avg_sentence_words")), "burst": _esc(an.get("burstiness")),
@@ -246,6 +259,31 @@ def _label_color(p: float) -> tuple[int, int, int]:
     if p >= 0.38:
         return (250, 104, 0)
     return (96, 169, 23)
+
+
+_CANON_RGB = {"ai": (229, 20, 0), "uncertain": (250, 104, 0), "human": (96, 169, 23)}
+_LABEL_RANK = {"human": 0, "uncertain": 1, "ai": 2}
+
+
+def _canon_rgb(label: str) -> tuple[int, int, int]:
+    """Canonical sentence color (no numeric gates): ai red, uncertain orange, human green."""
+    return _CANON_RGB.get(label, _CANON_RGB["human"])
+
+
+def _group_top_label(grp: list[dict]) -> str:
+    """Highest canonical category within a timeline group (ai > uncertain > human)."""
+    top, rank = "human", -1
+    for s in grp:
+        r = _LABEL_RANK.get(s.get("label"), 0)
+        if r > rank:
+            rank, top = r, (s.get("label") if s.get("label") in _LABEL_RANK else "human")
+    return top
+
+
+def _suspicious_top(sents: list[dict], limit: int = 8) -> list[dict]:
+    """Canonical-AI sentences only (no numeric gate); highest score first for stable order."""
+    return sorted([s for s in (sents or []) if s.get("label") == "ai"],
+                  key=lambda s: -float(s.get("p_ai") or 0))[:limit]
 
 
 def _to_pdf_bytes_fpdf(rep: dict, lang: str | None = None) -> bytes:
@@ -423,10 +461,11 @@ def _to_pdf_bytes_fpdf(rep: dict, lang: str | None = None) -> bytes:
         pdf.rect(ax, ay, aw, ah, style="D")
         pdf.set_xy(ax, ay + ah + 1)
         pdf.set_font(fam, "", 9)
+        percentages = analytics.labelled_word_summary(rep.get('sentences') or [])['word_percentages']
         leg = "%s %d%%   %s %d%%   %s %d%%" % (
-            d.get("auth_hum", "human"), round(hu_share * 100),
-            d.get("auth_mixed", "mixed"), round(un_share * 100),
-            d.get("auth_ai", "AI"), round(ai_share * 100))
+            d.get("auth_hum", "human"), percentages['human'],
+            d.get("auth_mixed", "uncertain"), percentages['uncertain'],
+            d.get("auth_ai", "AI"), percentages['ai'])
     pdf.multi_cell(0, 5, S(leg), new_x="LMARGIN", new_y="NEXT")
     pdf.ln(2)
 
@@ -439,6 +478,7 @@ def _to_pdf_bytes_fpdf(rep: dict, lang: str | None = None) -> bytes:
         per = max(1, (len(sents) + 59) // 60)
         groups = [sents[i:i + per] for i in range(0, len(sents), per)][:60]
         vals = [max(float(g.get("p_ai") or 0) for g in grp) for grp in groups]
+        cols = [_canon_rgb(_group_top_label(grp)) for grp in groups]
         n = len(vals)
         need(60)
         cx, cw, chh = 15, 180, 42
@@ -454,7 +494,7 @@ def _to_pdf_bytes_fpdf(rep: dict, lang: str | None = None) -> bytes:
             hh = max(1.2, v * (chh - 2))
             xx = cx + i * bwdt + 0.4
             ww = max(0.8, bwdt - 0.8)
-            c = _label_color(v)
+            c = cols[i]
             pdf.set_fill_color(*c)
             pdf.rect(xx, cy + chh - 1 - hh, ww, hh, style="F")
         pdf.set_draw_color(0, 0, 0)
@@ -501,27 +541,21 @@ def _to_pdf_bytes_fpdf(rep: dict, lang: str | None = None) -> bytes:
 
     # --- самые подозрительные предложения с подсветкой ---
     h1(T("pdf_susp"))
-    top = sorted([s for s in sents if s.get('label')=='ai'], key=lambda s: -float(s.get("p_ai") or 0))[:8]
+    top = _suspicious_top(sents)
     pdf.set_font(fam, "", 10)
-    if not top or max(float(s.get("p_ai") or 0) for s in top) < 0.38:
+    if not top:
         pdf.multi_cell(0, 6, S(T("pdf_no_susp")), new_x="LMARGIN", new_y="NEXT")
     for s in top:
         p = float(s.get("p_ai") or 0)
-        c = _label_color(p)
+        c = _canon_rgb("ai")
         need(18)
         pdf.set_font(fam, "B" if uni else "", 10)
         pdf.set_text_color(*c)
         pdf.cell(0, 6, S("#%s  [%d%%]" % (s.get("n"), round(p * 100))), new_x="LMARGIN", new_y="NEXT")
         pdf.set_text_color(0, 0, 0)
         pdf.set_font(fam, "", 10)
-        if p >= 0.58:
-            pdf.set_fill_color(253, 226, 228)
-            pdf.multi_cell(0, 6, S(str(s.get("text") or "")[:600]), fill=True, new_x="LMARGIN", new_y="NEXT")
-        elif p >= 0.38:
-            pdf.set_fill_color(255, 243, 205)
-            pdf.multi_cell(0, 6, S(str(s.get("text") or "")[:600]), fill=True, new_x="LMARGIN", new_y="NEXT")
-        else:
-            pdf.multi_cell(0, 6, S(str(s.get("text") or "")[:600]), new_x="LMARGIN", new_y="NEXT")
+        pdf.set_fill_color(253, 226, 228)
+        pdf.multi_cell(0, 6, S(str(s.get("text") or "")[:600]), fill=True, new_x="LMARGIN", new_y="NEXT")
         pdf.ln(1)
 
     # --- как читать + дисклеймер ---

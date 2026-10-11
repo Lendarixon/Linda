@@ -52,12 +52,22 @@ def make_engine(monkeypatch, voter, tier, verdict="human", mode="auto"):
     return eng
 
 
+def thr_ai_for(tier):
+    return .815 if tier == "speed" else .20
+
+
+def thr_unc_for(tier):
+    return .35 if tier == "speed" else .10
+
+
 @pytest.mark.parametrize("tier", ["speed", "full"])
 @pytest.mark.parametrize("verdict,legacy", [("human", -10.), ("human", 10.), ("ai", -10.), ("uncertain", -10.)])
 def test_tokens_mean_and_verdict_invariance(tmp_path, monkeypatch, tier, verdict, legacy):
     np.savez(tmp_path / "tok_head.npz", w=np.ones(1), b=0., center=1., scale=.5)
     voter = Voter(tmp_path, legacy=legacy)
-    eng = make_engine(monkeypatch, voter, tier, verdict)
+    # Lite reads its token output in auto; Pro must opt in explicitly, because its
+    # auxiliary token head does not separate human from AI sentences.
+    eng = make_engine(monkeypatch, voter, tier, verdict, mode="auto" if tier == "speed" else "tokens")
     text = "High low. High High."
     assert eng.sentence_mode(4, eng.dets["sensitive"]) == "tokens"
     result = eng.run(text)
@@ -69,8 +79,13 @@ def test_tokens_mean_and_verdict_invariance(tmp_path, monkeypatch, tier, verdict
     assert baseline["sentence_stats"]["granularity"] == ("context" if tier == "speed" else "hybrid")
     c, s = (0., 1.) if tier == "speed" else (1., .5)
     for sent, mean in zip(result["sentences"], [1., 2.]):
+        # In tokens mode the calibrated token head is the whole per-sentence
+        # evidence, so every displayed number is that one measurement.
+        exp_p = round(E._sig(mean, c, s), 3)
         assert sent["essay_margin"] == sent["multi_margin"] == mean
-        assert sent["p_ai"] == sent["essay_prob"] == sent["multi_prob"] == round(E._sig(mean, c, s), 3)
+        assert sent["p_ai"] == sent["essay_prob"] == sent["multi_prob"] == exp_p
+        expected = "ai" if exp_p >= thr_ai_for(tier) else "uncertain" if exp_p >= thr_unc_for(tier) else "human"
+        assert sent["label"] == sent["essay_label"] == sent["multi_label"] == expected
     # Token heads have tier-specific calibration, separate from context mode.
     ai, uncertain = (.815, .35) if tier == "speed" else (.20, .10)
     assert result["sentence_stats"]["thresholds"] == dict(ai=ai, uncertain=uncertain)
@@ -100,11 +115,17 @@ def test_long_text_and_missing_output_fallback(tmp_path, monkeypatch, tier, mode
     eng = make_engine(monkeypatch, voter, tier, mode=mode)
     text = "High low. " * 800
     result = eng.run(text)
-    assert result["sentence_stats"]["granularity"] == "tokens"
-    assert len(result["sentences"]) == 800
-    voter.has_token_scores = False
-    baseline = eng.run(text)
-    assert baseline["sentence_stats"]["granularity"] == "context"
+    if tier == "speed" or mode == "tokens":
+        assert result["sentence_stats"]["granularity"] == "tokens"
+        assert len(result["sentences"]) == 800
+        voter.has_token_scores = False
+        baseline = eng.run(text)
+        assert baseline["sentence_stats"]["granularity"] == "context"
+    else:
+        # Pro in auto stays on the context path (see sentence_mode).
+        assert result["sentence_stats"]["granularity"] == "context"
+        assert len(result["sentences"]) == 800
+        baseline = result
     for key in ("verdict", "ens_z", "essay", "voters", "windows", "p_ai"):
         assert result.get(key) == baseline.get(key)
 

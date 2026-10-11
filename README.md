@@ -25,7 +25,7 @@ Not sure? Take Lite: it runs everywhere, and Linda Assay can be added later.
 | Russian AI texts found (false alarms) | 80.3% (0.6%) | 77.3% (1.2%) |
 | False alarms, non-native exam essays (TOEFL) | 5.5% | 2.2% |
 | False alarms, human texts of a mixed set (MAGE) | 2.0% | 0.4% |
-| Full check of a 3,800-word text (with highlighting) | about 4 s with an RX 9070 XT; minutes on a processor alone | about 3 s for a full check with highlighting on a Ryzen 7 7800X3D (about 12 s on an office Ryzen 5 PRO 2400GE, estimate) |
+| Full check of a 3,800-word text (with highlighting) | 2.0.6.0: 22.14 s for a 10,594-word local control on RX 9070 XT; other hardware and text lengths vary | about 3 s for a full check with highlighting on a Ryzen 7 7800X3D (about 12 s on an office Ryzen 5 PRO 2400GE, estimate) |
 | Download | about 2.9 GB | about 0.3 GB |
 | Graphics card | recommended | not needed |
 
@@ -36,7 +36,7 @@ Recommended computer:
 | System | Windows 10 / 11, 64-bit | Windows 10 / 11, 64-bit |
 | Processor | any 4-core processor from about 2017 | 4 cores or more |
 | Memory (RAM) | 4 GB (8 GB is comfortable) | 8 GB (16 GB recommended) |
-| Graphics card | not needed | DirectX 12 card with 4 GB of video memory or more; works without it, but slowly |
+| Graphics card | not needed | DirectX 12 GPU with 8 GB recommended; FP32 uses more memory, 4 GB is not validated for 2.0.6.0; CPU fallback is slower |
 | Free disk space | 2 GB | 6 GB (an SSD is better) |
 
 Our own measurements on public test sets (English, Polish, Russian), not an independent audit; one calibration rule for both versions. The full Linda Assay needed 226 s for a 3,800-word text on an office Ryzen 5 PRO 2400GE; Lite is expected to take a few seconds there (not measured on that processor yet).
@@ -99,3 +99,5 @@ If you use Linda Assay or Linda Loupe, please cite the technical report for vers
   doi       = {10.5281/zenodo.23261670}
 }
 ```
+
+Application 2.0.6.0: [release notes](desktop/RELEASE_NOTES_2.0.6.0.md). Model pack remains 1.3.4.

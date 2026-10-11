@@ -7,6 +7,31 @@ import re
 from collections import Counter
 
 _WORD = re.compile(r"[^\W\d_]+(?:['’-][^\W\d_]+)*", re.UNICODE)
+
+
+def display_probability(p_ai: float, verdict: str) -> int:
+    """Same half-up rounding and verdict confidence as the browser."""
+    p = float(p_ai)
+    return min(99, max(1, math.floor(100 * (1 - p if verdict == 'human' else p) + 0.5)))
+
+
+def labelled_word_summary(sentences: list[dict]) -> dict:
+    """Local label coverage, independent of whole-document probability."""
+    labels = ('ai', 'uncertain', 'human')
+    counts = {key: 0 for key in labels}
+    for s in sentences:
+        label = s.get('label', 'human')
+        if label in counts:
+            counts[label] += max(1, len(s.get('text', '').split()))
+    total = sum(counts.values())
+    percentages = {key: (counts[key] * 100 // total if total else 0) for key in labels}
+    if total:
+        order = sorted(labels, key=lambda key: -(counts[key] * 100 % total))
+        for key in order[:100 - sum(percentages.values())]:
+            percentages[key] += 1
+    return {'word_counts': counts, 'word_total': total,
+            'word_shares': {key: (counts[key] / total if total else 0) for key in labels},
+            'word_percentages': percentages}
 # connectives and stock transitions that are over-represented in LLM prose (a weak, explainable signal; not used in the verdict)
 _STOCK = [
     "moreover", "furthermore", "additionally", "in conclusion", "overall", "it is important to note", "it is worth noting", "plays a crucial role",

@@ -8,7 +8,7 @@ import pytest
 @pytest.mark.skipif(shutil.which('node') is None, reason='Node unavailable')
 def test_single_human_confidence_and_zero_score(tmp_path):
     html = (Path(__file__).resolve().parents[1] / 'web/index.html').read_text(encoding='utf-8')
-    start = html.index('function renderResults(r) {')
+    start = html.index('function LINDA_detectorId(r) {')
     end = html.index('// PANGRAM HEATMAP SWITCHER', start)
     renderer = html[start:end]
     script = '''

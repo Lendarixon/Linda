@@ -271,21 +271,31 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
 
   // ================= shared drawing: authorship, analytics, structure =================
   function drawAuthorship(el, r) {
+    if (!el) return;
     if (!r) { el.innerHTML = ''; return; }
     const a = r.authorship;
     if (!a || r.heatmap_available === false || a.label === 'unavailable' || ![a.ai_share,a.uncertain_share,a.human_share].every(Number.isFinite)) {
       el.innerHTML = `<h5>${T('auth_title')}</h5><div class="cab-note">${T('ui_heatmap_unavailable')}</div>`;
       return;
     }
-    const p = x => Math.round(x * 100);
-    el.innerHTML = `<h5>${T('auth_title')}</h5><div style="display:flex;justify-content:space-between;align-items:center"><span class="vbig" style="font-size:1.5rem">${VLAB()[a.label] || a.label}</span>${badge(a.label)}</div>
-      <div class="auth-bar"><i style="width:${p(a.ai_share)}%;background:var(--ai)"></i><i style="width:${p(a.uncertain_share)}%;background:var(--uncertain)"></i><i style="width:${p(a.human_share)}%;background:var(--human)"></i></div>
-      <div class="auth-leg"><span>${T('auth_ai')}${p(a.ai_share)}%</span><span>${T('auth_mixed')}${p(a.uncertain_share)}%</span><span>${T('auth_hum')}${p(a.human_share)}%</span></div>
-      <div class="cab-note" style="margin-top:6px">${T('auth_note')}</div>`;
+    const local = window.LINDA_localResult ? window.LINDA_localResult(r, r.markup_source || 'ensemble') : r;
+    const percentages = local.local_summary?.word_percentages;
+    const p = (x, key) => percentages ? percentages[key] : Math.round(x * 100);
+    const noLocalAI = r.local_document_disagreement ||
+      (['ai','uncertain'].includes(r.verdict) && !(r.sentences || []).some(s => s.label === 'ai'));
+    const source = r.markup_source === 'essay' ? 'Linda-Essay 1.3' : r.markup_source === 'multi' ? 'Linda-Multi 1.3' : (r.detector_id === 'loupe' ? 'Linda Loupe' : T('ui_ens_cons'));
+    el.innerHTML = `<h5>${T('auth_title')} · ${source}</h5><div style="display:flex;justify-content:space-between;align-items:center"><span class="vbig" style="font-size:1.5rem">${VLAB()[a.label] || a.label}</span>${badge(a.label)}</div>
+      <div class="auth-bar"><i style="width:${a.ai_share*100}%;background:var(--ai)"></i><i style="width:${a.uncertain_share*100}%;background:var(--uncertain)"></i><i style="width:${a.human_share*100}%;background:var(--human)"></i></div>
+      <div class="auth-leg"><span>${T('auth_ai')}${p(a.ai_share,'ai')}%</span><span>${T('auth_mixed')}${p(a.uncertain_share,'uncertain')}%</span><span>${T('auth_hum')}${p(a.human_share,'human')}%</span></div>
+      <div class="cab-note" style="margin-top:6px">${T('auth_note')}</div>
+      ${noLocalAI ? `<div class="cab-note" style="margin-top:6px;color:var(--uncertain)">${T('local_document_disagreement_note')}</div>` : ''}`;
   }
   async function drawAnalytics(el, r, text) {
+    if (!el) return;
+    const revision = el._localRevision = (el._localRevision || 0) + 1;
     try {
       const a = await jpost('/api/analytics', { text, sentences: r.sentences || [] });
+      if (el._localRevision !== revision) return;
       const TT = [[a.avg_sentence_words, T('an_words_sent')], [a.burstiness, T('an_burst')], [a.lexical_diversity, T('an_div')], [a.stock_per_1000, T('an_stock_1000')], [a.longest_ai_streak != null ? a.longest_ai_streak : '—', T('an_longest')], [a.paragraphs, T('an_paras')]];
       // long texts: at most 120 bars, each = a group of consecutive sentences (height = their strongest p_ai, colour = the worst label), so the strip always fits the card
       const sents = r.sentences || [], per = Math.max(1, Math.ceil(sents.length / 120)), rank = { human: 0, uncertain: 1, ai: 2 }, groups = [];
@@ -297,7 +307,7 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
         ${a.stock_phrases.length ? `<div class="cab-note" style="margin-top:8px">${T('an_stock')}${a.stock_phrases.map(x => `<span class="chip">${esc(x[0])} ×${x[1]}</span>`).join('')}</div>` : ''}
         ${a.repeated_phrases.length ? `<div class="cab-note" style="margin-top:6px">${T('an_rep')}${a.repeated_phrases.map(x => `<span class="chip">${esc(x[0])} ×${x[1]}</span>`).join('')}</div>` : ''}
         <div class="cab-note" style="margin-top:8px">${T('an_burst_note')}</div>`;
-    } catch (e) { el.innerHTML = ''; }
+    } catch (e) { if (el._localRevision === revision) el.innerHTML = ''; }
   }
   // violin: reference human / AI sentence distributions and this text (histograms over p_ai in [0,1])
   function smooth(h, s) { const o = h.map(() => 0); h.forEach((v, i) => { for (let j = -3; j <= 3; j++) { const k = i + j; if (k >= 0 && k < h.length) o[i] += v * Math.exp(-(j * j) / (2 * s * s)); } }); return o; }
@@ -319,13 +329,19 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
     return svg + '</svg>';
   }
   async function drawStructure(el, r, text) {
+    if (!el) return;
+    const revision = el._localRevision = (el._localRevision || 0) + 1;
     try {
       const st = await jpost('/api/structure', { text, sentences: r.sentences || [] });
+      if (el._localRevision !== revision) return;
       const lay = st.layout || [], mxw = Math.max(1, ...lay.map(p => p.words));
       const col = s => s.label === 'ai' ? 'var(--ai)' : s.label === 'uncertain' ? 'var(--uncertain)' : 'var(--human)';
       const map = lay.map((p, i) => { const has = p.sentences && p.sentences.length; return `<div class="col ${p.kind}" style="height:${Math.max(10, Math.round(p.words / mxw * 100))}%;animation-delay:${Math.min(i, 40) * 25}ms" title="${T('st_para', {i: i + 1, w: p.words}) + (p.kind !== 'text' ? ' (' + p.kind + ')' : '')}">${(has ? p.sentences : [{ label: 'human', words: 1 }]).map(s => `<i style="background:${has ? col(s) : '#4a4f5c'};flex-grow:${Math.max(1, s.words)}" title="${has ? 'p_ai ' + s.p_ai : ''}"></i>`).join('')}</div>`; }).join('');
       let vio = '';
-      if (st.reference && (r.sentences || []).length) {
+      // Bundled references were scored by the older sentence classifier.
+      // New token scores have their own calibration and are not comparable.
+      const tokenScale = ['tokens','tokens_sentence'].includes((r.sentence_stats || {}).granularity);
+      if (!tokenScale && st.reference && (r.sentences || []).length) {
         const ps = r.sentences.map(s => s.p_ai), N = st.reference.human_hist.length, mine = new Array(N).fill(0);
         ps.forEach(p => { mine[Math.min(N - 1, Math.floor(p * N))]++; });
         vio = `<div class="vio">${violinSvg([{ label: T('st_human_ref'), hist: st.reference.human_hist, color: '#d9dce3', median: histMedian(st.reference.human_hist), fill: .85 },
@@ -339,7 +355,7 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
         <details style="margin-top:8px"><summary class="cab-note" style="cursor:pointer">${T('st_feats', {n: notable.length})}</summary>
           <table class="ft">${head}${notable.map(row).join('')}${rest.map(row).join('')}</table></details>
         <div class="cab-note" style="margin-top:8px">${T('st_not_score')}</div>`;
-    } catch (e) { el.innerHTML = ''; }
+    } catch (e) { if (el._localRevision === revision) el.innerHTML = ''; }
   }
   window.drawAuthorship = drawAuthorship;
 
@@ -350,6 +366,7 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
     if (!host) { host = document.createElement('div'); host.id = 'mainExtras'; const vb = document.querySelector('.verdict-box'); if (vb && vb.parentNode) vb.parentNode.insertBefore(host, vb.nextSibling); host.innerHTML = '<div class="vbox" id="mxA"></div><div class="vbox" id="mxN"></div><div class="vbox" id="mxS"></div>'; }
     drawAuthorship($('mxA'), r); drawAnalytics($('mxN'), r, r._text); drawStructure($('mxS'), r, r._text);
   }
+  window.LINDA_renderLocalExtras = mainBoxes;
   const _rr = window.renderResults;
   if (typeof _rr === 'function') window.renderResults = function (r) { _rr.apply(this, arguments); try { mainBoxes(r); } catch (e) { } };
 
@@ -367,7 +384,7 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
       $('vTitle').textContent = c.title; $('vShNote').textContent = opts.note || '';
       { const lite = isLiteRes(r); document.querySelectorAll('#cabViewer [data-src=essay], #cabViewer [data-src=multi]').forEach(b => { b.style.display = lite ? 'none' : ''; }); }
       document.querySelectorAll('#cabViewer [data-src]').forEach(b => { b.classList.toggle('on', b.dataset.src === 'ensemble'); b.classList.toggle('sec', b.dataset.src !== 'ensemble'); });
-      renderDoc(); renderSide();
+      renderSide(); renderDoc();
       $('cabViewer').classList.add('open'); $('vSide').scrollTop = 0; $('vDoc').parentNode.scrollTop = 0;
     } catch (e) { alert(e.message); }
   }
@@ -381,13 +398,24 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
       <div class="vbox" id="vxA"></div>
       <div class="vbox"><h5>${T('v_margins')}</h5><table class="ft">${isLiteRes(V.r) ? `<tr><td>Linda Loupe</td><td><b>${v.linda_essay != null ? v.linda_essay.toFixed(2) : '—'}</b></td></tr>` : `<tr><td>Linda-Essay 1.3</td><td><b>${v.linda_essay != null ? v.linda_essay.toFixed(2) : '—'}</b></td></tr><tr><td>Linda-Multi 1.3</td><td><b>${v.linda_multi_v2 != null ? v.linda_multi_v2.toFixed(2) : '—'}</b></td></tr>`}<tr><td>Stylo-D</td><td><b>${v.stylo7c != null ? v.stylo7c.toFixed(2) : '—'}</b></td></tr></table></div>
       <div class="vbox" id="vxN"></div><div class="vbox" id="vxS"></div>`;
-    drawAuthorship($('vxA'), r); drawAnalytics($('vxN'), r, c.text || V.text); drawStructure($('vxS'), r, c.text || V.text);
+    const local = window.LINDA_localResult ? window.LINDA_localResult(r, V.src) : r;
+    drawAuthorship($('vxA'), local); drawAnalytics($('vxN'), local, c.text || V.text); drawStructure($('vxS'), local, c.text || V.text);
   }
   function renderDoc() {
-    const { r, text } = V, S = (r.sentences || []).slice().sort((a, b) => a.start - b.start);
+    const { r, text } = V;
+    // Смещения Python/tokenizer — по символам Unicode, slice в JS — по UTF-16.
+    const charOffsets = [0]; let units = 0;
+    for (const char of text) { units += char.length; charOffsets.push(units); }
+    const S = (r.sentences || []).filter(s => Number.isInteger(s.start) && Number.isInteger(s.end) &&
+      s.start >= 0 && s.end > s.start && s.end < charOffsets.length)
+      .map(s => ({...s, start: charOffsets[s.start], end: charOffsets[s.end]})).sort((a, b) => a.start - b.start);
     const TH = (r.sentence_stats || {}).thresholds || { ai: 0.58, uncertain: 0.38 }, uThr = TH.uncertain;
     const prob = s => V.src === 'essay' ? s.essay_prob : V.src === 'multi' ? s.multi_prob : s.p_ai;
-    const lab = s => V.src === 'ensemble' ? s.label : (prob(s) >= TH.ai ? 'ai' : prob(s) >= uThr ? 'uncertain' : 'human');
+    const lab = s => {
+      const key = V.src === 'essay' ? 'essay_label' : V.src === 'multi' ? 'multi_label' : 'label';
+      const label = s[key] ?? ((r.sentence_stats || {}).granularity === 'tokens' ? s.label : null);
+      return ['ai','uncertain','human'].includes(label) ? label : (prob(s) >= TH.ai ? 'ai' : prob(s) >= uThr ? 'uncertain' : 'human');
+    };
     const tok = [...text.matchAll(/\S+/g)], rng = [];
     (V.shared || []).forEach(p => { const a = tok[p.start], b = tok[p.start + p.words - 1]; if (a && b) rng.push([a.index, b.index + b[0].length]); });
     const pts = new Set([0, text.length]); S.forEach(s => { pts.add(s.start); pts.add(s.end); }); rng.forEach(x => { pts.add(x[0]); pts.add(x[1]); });
@@ -400,6 +428,10 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
     }
     $('vDoc').innerHTML = html;
     $('vpA').textContent = T('v_ai_n', {n: cnt.ai}); $('vpU').textContent = T('v_unc_n', {n: cnt.uncertain}); $('vpH').textContent = T('v_hum_n', {n: cnt.human});
+    if (window.LINDA_localResult) {
+      const local = window.LINDA_localResult(r, V.src);
+      drawAuthorship($('vxA'), local); drawAnalytics($('vxN'), local, text); drawStructure($('vxS'), local, text);
+    }
   }
   document.querySelector('#cabViewer .modebar').addEventListener('click', e => { const b = e.target.closest('[data-src]'); if (!b) return; V.src = b.dataset.src; document.querySelectorAll('#cabViewer [data-src]').forEach(x => { x.classList.toggle('on', x === b); x.classList.toggle('sec', x !== b); }); renderDoc(); });
   $('vMain').onclick = () => {
@@ -600,7 +632,8 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
     const fmt = b.dataset.rep;
     try {
       b.disabled = true; b.dataset.t = b.textContent; b.dataset.i18n = b.getAttribute('data-i18n') || ''; b.removeAttribute('data-i18n'); b.textContent = '…';
-      const r = await fetch('/api/report/' + V.id + '?fmt=' + fmt);
+      const local = window.LINDA_localResult ? window.LINDA_localResult(V.r, V.src) : V.r;
+      const r = await fetch('/api/report', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:V.text,result:local,mode:V.r.mode || '',fmt})});
       if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.detail || ('HTTP ' + r.status)); }
       const blob = await r.blob(), a = document.createElement('a');
       a.href = URL.createObjectURL(blob); a.download = 'linda_report_' + V.id + '.' + fmt; a.click();

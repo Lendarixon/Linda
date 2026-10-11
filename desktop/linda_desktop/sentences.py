@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass
 
 _SENTENCE_SPLIT_RE = re.compile(
-    r"(?<=[.!?…])[\"')»”]*\s+(?=[\"'«“—–-]*[А-ЯЁA-ZĄĆĘŁŃÓŚŹŻ0-9])|\n\s*\n"
+    r"(?<=[.!?…])(?P<closing>[\"')»”]*)\s+(?=[\"'«“—–-]*[А-ЯЁA-ZĄĆĘŁŃÓŚŹŻ0-9])|\n\s*\n"
 )
 _PARAGRAPH_SPLIT_RE = re.compile(r"\n\s*\n")
 _WORD_RE = re.compile(r"[^\W\d_]+", re.UNICODE)
@@ -26,7 +26,9 @@ def _split_by(regex: re.Pattern, text: str) -> list[Span]:
     spans: list[Span] = []
     prev_end = 0
     for m in regex.finditer(text):
-        chunk = text[prev_end : m.start()]
+        # Closing punctuation belongs to the preceding sentence, not its gap.
+        closing = m.groupdict().get('closing') or ''
+        chunk = text[prev_end : m.start()+len(closing)]
         stripped = chunk.strip()
         if stripped:
             offset = prev_end + chunk.find(stripped)

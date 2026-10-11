@@ -46,6 +46,30 @@ def limit_memory():
     _job = handle  # Keep the job alive until process exit.
 
 
+def _docx_parts(container):
+    """Body paragraphs and table cells in XML order, including nested tables.
+
+    python-docx exposes a merged cell once for each grid position. Visit its
+    underlying element once so merged rows/columns do not duplicate text.
+    """
+    from docx.oxml.ns import qn
+    from docx.text.paragraph import Paragraph
+    from docx.table import Table
+
+    element = container._tc if hasattr(container, '_tc') else container.element.body
+    for child in element:
+        if child.tag == qn('w:p'):
+            yield Paragraph(child, container).text
+        elif child.tag == qn('w:tbl'):
+            table = Table(child, container)
+            seen = set()
+            for row in table.rows:
+                for cell in row.cells:
+                    if cell._tc not in seen:
+                        seen.add(cell._tc)
+                        yield from _docx_parts(cell)
+
+
 def parse(filename, content):
     if len(content) > MAX_INPUT:
         raise ValueError('Document exceeds the supported input limit')
@@ -56,7 +80,7 @@ def parse(filename, content):
             if len(entries)>2000 or sum(item.file_size for item in entries)>80_000_000:
                 raise ValueError('Document expands beyond the supported limit')
         import docx
-        parts = (p.text for p in docx.Document(io.BytesIO(content)).paragraphs)
+        parts = _docx_parts(docx.Document(io.BytesIO(content)))
     elif ext == '.pdf':
         import pypdf
         reader = pypdf.PdfReader(io.BytesIO(content))
@@ -69,7 +93,7 @@ def parse(filename, content):
     for part in parts:
         if not part.strip():
             continue
-        size += len(part.encode('utf-8'))+2
+        size += len(part.encode('utf-8')) + (2 if output else 0)
         if size>MAX_TEXT:
             raise ValueError('Extracted text exceeds the supported limit')
         output.append(part)

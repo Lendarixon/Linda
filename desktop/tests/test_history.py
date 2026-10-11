@@ -25,10 +25,14 @@ def test_authorship_rules():
     assert a("human", ["human"] * 10) == "human"
     assert a("ai", ["ai"] * 8 + ["human"] * 2) == "ai"
     assert a("ai", ["ai"] * 2 + ["human"] * 8) == "mixed"        # the ensemble says AI but only part of the text carries a signal
-    assert a("uncertain", ["human"] * 10) == "uncertain"       # the document is borderline, but no stretch is marked: not "mixed"
+    # Lack of local detections cannot confirm human origin when the document
+    # remains uncertain: edited AI fiction can produce exactly this pattern.
+    assert a("uncertain", ["human"] * 10) == "uncertain"
     assert a("uncertain", ["uncertain"] * 3 + ["human"] * 7) == "mixed"
+    # Partly marked borderline (5% of words carry a signal): mixed, not human.
+    assert a("uncertain", ["uncertain"] * 1 + ["human"] * 19) == "mixed"
     assert a("human", ["ai"] * 6 + ["human"] * 8) == "mixed"      # AI stretch inside a human verdict
-    assert a("human", ["ai"] * 2 + ["human"] * 10) == "human"      # a couple of stray sentences are not "mixed"
+    assert a("human", ["ai"] * 2 + ["human"] * 10) == "mixed"      # retain confident local flags inside the human document verdict
     s = engine.authorship("ai", res(["ai", "uncertain", "human", "human"])["sentences"])
     assert abs(s["ai_share"] + s["uncertain_share"] + s["human_share"] - 1) < 0.01
 

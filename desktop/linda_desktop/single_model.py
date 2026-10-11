@@ -12,7 +12,7 @@ def run(engine, det, text, mode, name):
     key = {'linda_essay':'essay','linda_multi_v2':'multi','stylo7c':'stylo'}[name]
     rules = det.rules[key]
     center = rules['thr_5']
-    scale = max(1.0,(rules['thr_05']-center)/2.0)
+    scale = max(1e-3,(rules['thr_05']-center)/2.0)
     windows = split_windows(text,det.window_words,det.max_windows)
     check_cancel()
     voter = det._factory(name)
@@ -67,7 +67,7 @@ def run(engine, det, text, mode, name):
         label = 'ai' if p>=ai else 'uncertain' if p>=uncertain else 'human'
         counts[label]+=1
         result['sentences'].append({'start':span.start,'end':span.end,'text':span.text,'p_ai':round(p,3),'label':label,
-                                    prefix+'_margin':round(value,2),prefix+'_prob':round(p,3)})
+                                    prefix+'_margin':round(value,2),prefix+'_prob':round(p,3),prefix+'_label':label})
     sentences = result['sentences']
     total_words = sum(max(1,len(s['text'].split())) for s in sentences) or 1
     result['ai_share'] = sum(max(1,len(s['text'].split())) for s in sentences if s['label']=='ai')/total_words

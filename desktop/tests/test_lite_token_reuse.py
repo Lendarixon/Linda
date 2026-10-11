@@ -208,7 +208,9 @@ def test_engine_routes_reuse_only_to_lite(tmp_path, monkeypatch, tier):
     result = engine.run("High low.")
     assert calls == ([known] if tier == "speed" else [])
     assert "_lite_token_scores" not in result
-    assert result["sentence_stats"]["granularity"] == "tokens"
+    # Lite reuses its own token run in auto; Pro stays on the context path unless
+    # the user explicitly asks for the auxiliary token head.
+    assert result["sentence_stats"]["granularity"] == ("tokens" if tier == "speed" else "hybrid")
 
 
 def test_reuse_cancellation_and_missing_output(tmp_path, monkeypatch):

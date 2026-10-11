@@ -9,9 +9,11 @@ from test_tokens_mode import Voter, make_engine
 def test_audit_preserves_token_thresholds_labels_and_verdict(tmp_path, monkeypatch, tier, ai, uncertain):
     np.savez(tmp_path / "tok_head.npz", w=np.ones(1), b=0., center=1., scale=.5)
     voter = Voter(tmp_path)
-    eng = make_engine(monkeypatch, voter, tier)
+    # Pro opts into the auxiliary token head explicitly; Lite uses it in auto.
+    eng = make_engine(monkeypatch, voter, tier, mode="auto" if tier == "speed" else "tokens")
     text = "High low. High High."
     result = eng.run(text)
+    assert result["sentence_stats"]["granularity"] == "tokens"
     voter.has_token_scores = False
     baseline = eng.run(text)
     assert result["sentence_stats"]["thresholds"] == {"ai": ai, "uncertain": uncertain}

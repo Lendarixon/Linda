@@ -20,7 +20,11 @@ def main():
                     '--exclude-module','numpy','--exclude-module','webview','--exclude-module','linda_desktop',
                     str(ROOT/'linda_desktop'/'document_worker.py')],env=env,check=True)
     import shutil
-    shutil.copytree(ROOT/'build'/'parser-dist'/'Linda-Document-Worker',OUTPUT,dirs_exist_ok=True)
+    # python-docx also ships its expanded write template. Its [Content_Types].xml
+    # path cannot be included by MakeAppx. Reading documents only needs the
+    # library; the packed default.docx remains available for write operations.
+    shutil.copytree(ROOT/'build'/'parser-dist'/'Linda-Document-Worker',OUTPUT,
+                    dirs_exist_ok=True,ignore=shutil.ignore_patterns('default-docx-template'))
     print(OUTPUT)
 
 

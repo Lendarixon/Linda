@@ -82,12 +82,13 @@ class FastSeqCls:
     """Transformer classifier (DeBERTa). Long text is sliced into windows of `max_len` tokens with full coverage, text score is
     the average logit difference "AI minus human" across windows. Model body in bf16 (on GPU), head in fp32."""
 
-    def __init__(self, model_dir: str | Path, batch: int = 32, device: str | None = None):
+    def __init__(self, model_dir: str | Path, batch: int = 32, device: str | None = None, force_fp32: bool = False):
         self.model_dir = Path(model_dir)
         args = self.model_dir / "train_args.json"
         self.max_len = int(json.loads(args.read_text(encoding="utf-8")).get("max_len", 256)) if args.exists() else 256
         self.batch = batch
         self.device_pref = device
+        self.force_fp32 = force_fp32
         self.model = None
 
     def _load(self) -> None:
@@ -100,7 +101,7 @@ class FastSeqCls:
         self.device = self.device_pref or ("cuda" if torch.cuda.is_available() else "cpu")
         self.tok = AutoTokenizer.from_pretrained(str(self.model_dir))
         self.model = AutoModelForSequenceClassification.from_pretrained(str(self.model_dir)).to(self.device).eval()
-        if self.device == "cpu":  # 2.0 weights ship as fp16 (half the download); the CPU runs fp32
+        if self.device == "cpu" or self.force_fp32:  # downloads may be fp16; calibrated routes run FP32
             self.model = self.model.float()
         self.args = set(inspect.signature(self.model.forward).parameters)
 
@@ -116,7 +117,7 @@ class FastSeqCls:
 
     def _logits(self, enc):
         torch, m = self.torch, self.model
-        if self.device != "cuda":
+        if self.device != "cuda" or self.force_fp32:
             return m(**enc).logits.float()
         base = getattr(m, m.base_model_prefix, None)
         if base is not None and hasattr(m, "pooler") and hasattr(m, "classifier"):

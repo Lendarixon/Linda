@@ -17,6 +17,12 @@ def _command(filename, source, target):
     return [sys.executable,'-m','linda_desktop.document_worker',*args]
 
 
+def _bounded_text(text):
+    if len(text.encode('utf-8')) > MAX_TEXT:
+        raise ValueError('Extracted text exceeds the supported limit')
+    return text
+
+
 def extract(filename, content):
     if len(content)>MAX_INPUT:
         raise ValueError('Document exceeds the supported input limit')
@@ -27,14 +33,16 @@ def extract(filename, content):
         if b'\x00' in head and not utf16:  # NUL-байты вне UTF-16: это не текст (например, .exe под видом .txt)
             raise ValueError('not a text file')
         if utf16:
-            return content.decode('utf-16', errors='replace').lstrip('\ufeff')
+            text = content.decode('utf-16', errors='replace').lstrip('\ufeff')
+            return _bounded_text(text)
         try:
-            return content.decode('utf-8-sig')
+            text = content.decode('utf-8-sig')
         except UnicodeDecodeError:
             try:
-                return content.decode('cp1251')  # старые русские файлы Windows; cp1252 для них давал бы кракозябры
+                text = content.decode('cp1251')  # старые русские файлы Windows; cp1252 для них давал бы кракозябры
             except UnicodeDecodeError:
-                return content.decode('cp1252',errors='replace')
+                text = content.decode('cp1252',errors='replace')
+        return _bounded_text(text)
     if ext not in ('.pdf','.docx'):
         raise ValueError('Supported formats: .txt, .md, .docx, .pdf')
     if not _slots.acquire(timeout=TIMEOUT):
