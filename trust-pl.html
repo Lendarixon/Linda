@@ -1,0 +1,54 @@
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<script>(function(){var t;try{t=localStorage.getItem('linda-theme');}catch(e){}if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;})();</script>
+<title>Zaufanie i prywatność</title><meta name="description" content="Zaufanie i prywatność">
+<link rel="canonical" href="https://lendarixon.github.io/Linda/trust-pl.html">
+<link rel="alternate" hreflang="en" href="https://lendarixon.github.io/Linda/trust.html">
+<link rel="alternate" hreflang="ru" href="https://lendarixon.github.io/Linda/trust-ru.html">
+<link rel="alternate" hreflang="pl" href="https://lendarixon.github.io/Linda/trust-pl.html">
+<link rel="alternate" hreflang="x-default" href="https://lendarixon.github.io/Linda/trust.html">
+<meta property="og:type" content="website"><meta property="og:title" content="Zaufanie i prywatność"><meta property="og:description" content="Zaufanie i prywatność">
+<meta property="og:url" content="https://lendarixon.github.io/Linda/trust-pl.html"><meta property="og:image" content="https://lendarixon.github.io/Linda/assets/og_image.png"><meta property="og:locale" content="pl_PL">
+<meta name="twitter:card" content="summary"><meta name="twitter:title" content="Zaufanie i prywatność"><meta name="twitter:description" content="Zaufanie i prywatność">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Linda", "operatingSystem": "Windows 10/11", "applicationCategory": "UtilitiesApplication", "inLanguage": "pl", "description": "Zaufanie i prywatność", "offers": [{"@type": "Offer", "price": "0", "priceCurrency": "USD"}, {"@type": "Offer", "price": "10", "priceCurrency": "USD"}]}</script>
+<link rel="icon" href="assets/linda.png"><link rel="stylesheet" href="site.css?v=f648ff69"></head><body>
+<a class="skip-link" href="#main-content">Przejdź do treści</a>
+<header class="top" id="topbar"><div class="wrap"><a class="brand" href="pl.html"><img src="assets/logo_wordmark.png" alt="Linda" height="42"></a>
+<button class="burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="main-nav">&#9776;</button>
+<nav class="main" id="main-nav" aria-label="Main"><a href="pl.html#how">Jak działa</a><a href="pl.html#pricing">Cennik</a><a href="versions-pl.html">Którą wybrać?</a><a href="business-pl.html">Dla firm</a><a href="faq-pl.html">Pytania</a><a class="dl" href="https://get.microsoft.com/installer/download/9NP66G69BQPN?referrer=appbadge">Pobierz</a><span class="more"><details><summary>Więcej &#9662;</summary><span class="more-menu"><a href="results-pl.html">Wyniki</a><a href="developers-pl.html">Deweloperzy</a><a href="memo-pl.html">Jeśli wynik wysoki</a><a href="licensing-pl.html">Licencja</a><a href="updates-pl.html">Aktualizacje</a></span></details></span></nav><button type="button" class="theme-toggle" id="theme-toggle" aria-label="Motyw"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z"/></svg></button><span class="langbox"><label for="langsel">Język:</label><select class="langsel" id="langsel" aria-label="Language"><option value="en">EN</option><option value="ru">RU</option><option value="pl">PL</option></select><noscript><a href="trust.html">EN</a> <a href="trust-ru.html">RU</a></noscript></span></div></header>
+<main id="main-content" tabindex="-1"><div class="wrap prose"><h1>Linda — prywatność i zaufanie</h1>
+<p>Stan: 11 października 2026. Aplikacja 2.0.6.0; pakiet modeli 1.3.4. Oświadczenie techniczne autora, bez niezależnego certyfikatu bezpieczeństwa.</p>
+<h2>Teksty i połączenia</h2>
+<p>Aplikacja Windows analizuje tekst lokalnie. Może zapisywać teksty, wyniki i szkice w lokalnej historii; historię można wyłączyć, ustawić okres przechowywania i usunąć wpisy. Aktualny kod chroni przechowywane teksty/wyniki za pomocą Windows DPAPI. Nie oznacza to ochrony przed osobą mającą kontrolę nad zalogowanym kontem Windows ani szyfrowania wszystkich eksportów.</p>
+<p>Aplikacja łączy się z Hugging Face w celu pobrania modeli i sprawdzenia podpisanego manifestu, z GitHub w celu pobrania instalatora oraz z Polar w celu aktywacji, usunięcia i okresowej weryfikacji klucza. Do Polar trafiają klucz, identyfikatory aktywacji, losowa etykieta i skrót identyfikatora urządzenia; teksty nie są wysyłane tą ścieżką. Serwisy widzą metadane połączeń, np. adres IP. CLI i własny serwer to osobne wdrożenia: ich eksporty i logi zależą od operatora. <b>Demo w chmurze wysyła tekst do serwera; do poufnych danych używaj aplikacji lokalnej.</b></p>
+<h2>Ograniczenia</h2>
+<p>Nie używaj wyniku jako jedynego dowodu autorstwa ani jedynej podstawy decyzji dyscyplinarnych, akademickich, prawnych lub kadrowych. Fałszywe alarmy i przeoczenia są możliwe. Szczególnie trudne są krótkie teksty, małe wstawki AI, teksty mieszane, redagowane przez człowieka i prace osób piszących w obcym języku. Ocena dokumentu nie jest procentem słów napisanych przez AI. Kolorowanie lokalne może różnić się od wyniku całości.</p>
+<p>Assay używa stabilnego FP32 DirectML; Loupe działa na CPU. Dla Assay zalecane jest 8 GB VRAM; zgodność z 4 GB nie została potwierdzona. Nie deklarujemy audytu niezależnego, SOC 2, ISO 27001 ani gwarantowanego SLA. Instalator nie ma podpisu Authenticode.</p>
+<h2>Integralność i kontakt</h2>
+<p>Oficjalne wydanie: https://github.com/Lendarixon/Linda/releases/tag/v2.0.6.0. SHA-256 instalatora: <code>23a3d3afdcebb59e0bb48271392ba470d75b1a2b6a66cf41016d8fa1b73510ad</code>; rozmiar 286 398 840 bajtów. Manifest modeli zawiera sumy SHA-256 i podpis Ed25519, sprawdzany przez aktualizator. Podpis bieżącego manifestu został zweryfikowany.</p>
+<p>Zgłoszenia bezpieczeństwa: lindapro.support@proton.me. Podaj wersję i minimalny przykład; nie wysyłaj kluczy ani poufnych tekstów. Szczegółowe oświadczenie: <a href="trust.html">English trust statement</a>.</p>
+<h2>Dokumenty oceny</h2>
+<p><a href="benchmark-brief.html">Benchmark brief</a> · <a href="pilot-en.pdf">Trial PDF — English</a> · <a href="pilot-pl.pdf">Próba PDF — Polski</a> · <a href="Linda_pilot_documents_EN_PL.zip">Document pack EN/PL</a>.</p></div></main>
+<footer><div class="wrap"><p>Operator programu Linda: Vladyslav Manzyuk (Polska). Płatności obsługuje Polar (Merchant of Record).</p>
+<p><a href="updates-pl.html">Aktualizacje</a><a href="results-pl.html">Wyniki</a><a href="business-pl.html">Dla firm</a><a href="faq-pl.html">Pytania</a><a href="developers-pl.html">Deweloperzy</a><a href="memo-pl.html">Jeśli wynik wysoki</a></p>
+<p><a href="trust-pl.html">Zaufanie i prywatność</a><a href="licensing-pl.html">Licencja</a><a href="terms-pl.html">Warunki</a><a href="privacy-pl.html">Prywatność</a><a href="refund-pl.html">Zwroty</a><a href="https://github.com/Lendarixon/Linda">GitHub</a><a href="https://huggingface.co/Lindarixon/Linda-Pro">Hugging Face</a><a href="https://doi.org/10.5281/zenodo.23261670">Technical report</a><a href="mailto:lindapro.support@proton.me">lindapro.support@proton.me</a></p></div></footer><script>(function(){var h=document.documentElement,b=document.getElementById('theme-toggle'),m=matchMedia('(prefers-color-scheme: dark)'),chosen=false;try{chosen=/^(light|dark)$/.test(localStorage.getItem('linda-theme'));}catch(e){}function sync(){b.setAttribute('aria-pressed',h.dataset.theme==='dark'?'true':'false');}sync();b.addEventListener('click',function(){h.dataset.theme=h.dataset.theme==='dark'?'light':'dark';chosen=true;try{localStorage.setItem('linda-theme',h.dataset.theme);}catch(e){}sync();});m.addEventListener('change',function(e){if(!chosen){h.dataset.theme=e.matches?'dark':'light';sync();}});})();</script><script>
+(function(){
+var FILES={"trust": {"en": "trust.html", "ru": "trust-ru.html", "pl": "trust-pl.html"}, "updates": {"en": "updates.html", "ru": "updates-ru.html", "pl": "updates-pl.html"}, "index": {"en": "index.html", "ru": "ru.html", "pl": "pl.html"}, "results": {"en": "results.html", "ru": "results-ru.html", "pl": "results-pl.html"}, "business": {"en": "business.html", "ru": "business-ru.html", "pl": "business-pl.html"}, "faq": {"en": "faq.html", "ru": "faq-ru.html", "pl": "faq-pl.html"}, "developers": {"en": "developers.html", "ru": "developers-ru.html", "pl": "developers-pl.html"}, "memo": {"en": "memo.html", "ru": "memo-ru.html", "pl": "memo-pl.html"}, "terms": {"en": "terms.html", "ru": "terms-ru.html", "pl": "terms-pl.html"}, "privacy": {"en": "privacy.html", "ru": "privacy-ru.html", "pl": "privacy-pl.html"}, "refund": {"en": "refund.html", "ru": "refund-ru.html", "pl": "refund-pl.html"}, "licensing": {"en": "licensing.html", "ru": "licensing-ru.html", "pl": "licensing-pl.html"}, "versions": {"en": "versions.html", "ru": "versions-ru.html", "pl": "versions-pl.html"}};
+var slug='trust', lang='pl';
+var sel=document.getElementById('langsel');
+function navLang(){var l=(navigator.language||navigator.userLanguage||'en').toLowerCase();return l.indexOf('ru')===0?'ru':(l.indexOf('pl')===0?'pl':'en');}
+try{
+  var stored=null;try{stored=localStorage.getItem('linda-lang');}catch(e){}
+  sel.value=lang;
+  if(!stored&&slug==='index'&&lang==='en'&&navLang()!=='en'){
+    try{localStorage.setItem('linda-lang',navLang());}catch(e){}
+    location.replace(FILES[slug][navLang()]);
+  }
+}catch(e){sel.value=lang;}
+sel.addEventListener('change',function(){
+  try{localStorage.setItem('linda-lang',sel.value);}catch(e){}
+  location.href=FILES[slug][sel.value];
+});
+})();
+</script><script>
+(function(){var b=document.getElementById('burger'),h=document.getElementById('topbar');if(b&&h){function close(){h.classList.remove('open');b.setAttribute('aria-expanded','false');}b.addEventListener('click',function(){var o=h.classList.toggle('open');b.setAttribute('aria-expanded',o?'true':'false');});h.querySelectorAll('nav a').forEach(function(a){a.addEventListener('click',close);});window.addEventListener('resize',function(){if(window.innerWidth>1000)close();});document.addEventListener('keydown',function(e){if(e.key==='Escape'){var mobile=h.classList.contains('open'),expanded=h.querySelector('details[open]');close();if(expanded){expanded.open=false;if(!mobile)expanded.querySelector('summary').focus();}if(mobile)b.focus();}});document.addEventListener('click',function(e){if(!h.contains(e.target)){close();h.querySelectorAll('details[open]').forEach(function(d){d.open=false;});}});}})();
+</script></body></html>
