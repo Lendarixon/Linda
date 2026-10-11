@@ -1,73 +1,35 @@
-# Linda-Pro 1.3.1 — security and data-handling statement
+# Linda — privacy, limitations and release integrity
 
-Scope: what this software does with your data and how to verify what you received. This is a technical statement by the vendor,
-**not** a third-party certification. Linda-Pro has no SOC 2, ISO 27001 or VPAT report at this time.
+Updated 11 October 2026. Windows app 2.0.6.0; model pack 1.3.4. This is a technical vendor statement, not independent security certification.
 
-## 1. Data flow
+## Your texts and local storage
 
-```
-your text -> [your server: Linda-Pro process] -> verdict + scores -> back to you
-```
+The Windows desktop application performs detection on your computer. It does not upload checked texts for inference. It can save texts, results and drafts locally. History can be disabled and retention configured; delete unneeded checks and exports using the application and your organization's policy. Current Windows source uses DPAPI protection for stored text/results. This does not protect against someone controlling your signed-in Windows account, nor does it imply every exported report or file is encrypted. Exports and backups remain your responsibility.
 
-* Inference is fully local. The code makes no network connections: no telemetry, licence check, update check or model download at runtime.
-* Texts are processed in memory. The package does not write texts, scores or logs to disk. The HTTP service (`linda_pro.server`) does not log request bodies or access lines.
-* No third-party API or hosted model is used; the models are the files in `models/`.
-* Retention, access control and audit logging of texts and results are the responsibility of the system that embeds Linda-Pro.
+The default legacy EXE profile is `%LOCALAPPDATA%/Linda-Pro`. A Store package uses its package LocalState. Models can be stored in a separately selected folder. The CLI/core library is a separate deployment mode: it does not have the desktop application's automatic history or updater, but CLI output files, wrapper services and operator logs can still retain data.
 
-You can confirm the network claim yourself: run the package on a machine with the network disabled (or under a firewall rule denying outbound traffic); results are identical.
+## Network connections
 
-## 2. Integrity of the package
+Desktop network activity includes Hugging Face model downloads and signed-manifest checks; GitHub installer downloads; and Polar licence activation, deactivation and periodic validation (about weekly). Polar receives the licence key, organization/activation identifiers, a random display label and a machine-derived identifier hash. The current implementation hashes a salted Windows MachineGuid; the machine name and original GUID are not sent by this path. Network providers can see connection metadata such as IP addresses. Paid licence state can be cached offline; this does not mean the desktop app never attempts a network connection after activation. Payment data is handled by Polar/its payment processors, under their policies.
 
-`CHECKSUMS.sha256` lists SHA-256 hashes of every file (code, models, calibration). Verify before use:
+The static information site has no configured analytics or tracking cookies in its current source. GitHub Pages and linked services have their own infrastructure logs. **Modal/HF hosted demos are different:** using them sends the submitted text to the hosted service for processing. Use the installed desktop app for confidential texts; do not equate demo processing with local offline privacy.
 
-```
-# Linux/macOS
-sha256sum -c CHECKSUMS.sha256
-# Windows PowerShell (prints any mismatching file)
-Get-Content CHECKSUMS.sha256 | ForEach-Object { $h,$f = $_ -split '\s+\*?',2; if ((Get-FileHash $f -Algorithm SHA256).Hash -ne $h.ToUpper()) { "MISMATCH $f" } }
-```
-Model weights use the `safetensors` format (no pickle code execution). Stylometry uses a LightGBM text model and an `.npz` array file.
-The package is not code-signed.
+## Appropriate use and limitations
 
-## 3. Software bill of materials (dependencies)
+Linda is a screening aid for English, Polish and Russian, with `ai`, `uncertain` and `human` outcomes. **Do not use its score, highlighting or report as the sole evidence of authorship or the sole basis for disciplinary, academic, employment or legal decisions about a person.** Review the original text, drafting evidence and context, and allow a response from its author. Human text may be flagged and AI text may be missed. Short texts, small AI inserts, mixed authorship, human-edited AI and non-native/formulaic prose are difficult cases. Global document confidence is not the percentage of AI-written words. Local colouring can disagree with the global score and with another detector.
 
-Direct runtime dependencies (`requirements.txt`); versions the reference build was tested with:
+Published historical benchmark numbers are developer measurements; current 2.0.6.0 checks establish numerical and UI consistency, not independent population accuracy. Assay uses FP32 stable DirectML on Windows; Loupe runs on CPU. Assay's memory use increased; 8 GB GPU memory is recommended and 4 GB compatibility is unvalidated. No SOC 2, ISO 27001, independent penetration-test certification or formal SLA is claimed.
 
-| Package | Tested version |
-|---|---|
-| torch | 2.13.0 (ROCm build) |
-| transformers | 4.57.6 |
-| tokenizers | 0.22.2 |
-| safetensors | 0.8.0 |
-| lightgbm | 4.7.0 |
-| scikit-learn | 1.9.1 |
-| numpy | 2.5.3 |
-| scipy | 1.18.1 |
-| pyyaml | 6.0.3 |
-| sentencepiece | 0.2.2 |
-| tiktoken | 0.14.0 |
-| protobuf | 7.36.2 |
-| Python | 3.13 |
+## Verify your release
 
-Optional: `python-docx`, `pypdf` (file readers). The bundled `_vendor/aidetector` module is our own code. Scan dependencies with your usual tools (`pip-audit`, etc.); pin versions in your deployment.
+Official release: [Linda 2.0.6.0](https://github.com/Lendarixon/Linda/releases/tag/v2.0.6.0). Installer `Linda-Setup.exe`: **286,398,840 bytes**, SHA-256 **`23a3d3afdcebb59e0bb48271392ba470d75b1a2b6a66cf41016d8fa1b73510ad`**. Windows PowerShell: `Get-FileHash -Algorithm SHA256 .\Linda-Setup.exe`; compare the entire hash. The hash is useful when obtained from a trusted independent source; it is not an Authenticode publisher signature. The current installer is not Authenticode signed.
 
-## 4. Local HTTP service
+The [model manifest](https://huggingface.co/Lindarixon/Linda-Pro/resolve/main/latest.json) contains file sizes and SHA-256 values; its Ed25519 signature is checked before updates. The live signature was verified for this pack. Models and the app have separate versions. A Microsoft Store MSIX 2.0.6000.0 is built, but this pack does not claim that version is Store-certified or installed-package tested.
 
-* Binds to 127.0.0.1 by default and refuses to start on any other address without `--token`. The token is compared in constant time. Request limit 20 MB / 64 texts, no request logging.
-* No TLS, user management or rate limiting in the built-in service — place it behind your own reverse proxy / API gateway if it is reachable from other hosts.
-* Error responses do not echo request contents.
+## Security reports
 
-## 5. Models and data provenance
+Contact **lindapro.support@proton.me** privately with the app/model versions, platform and minimal reproduction. Do not send licence keys, confidential texts or unredacted personal information. Use synthetic examples where possible. No guaranteed response time, bounty or third-party certification is promised.
 
-See `DATA_BOM.md` (training data sources, licences, what was used only for calibration/evaluation) and `MODEL_CARD.md`.
-Base models: Microsoft DeBERTa-v3-large and mDeBERTa-v3-base (MIT licence).
+## Deployment boundary
 
-## 6. Not provided (be aware before procurement)
-
-* Independent security audit or penetration test, SOC 2 / ISO 27001 / VPAT / accessibility statement.
-* LTI 1.3 plug-in for LMS platforms. Integration is via the Python API or the local HTTP service above.
-* Formal SLA and support process (defined by the licence agreement).
-
-## 7. Vulnerability reports
-
-Contact: lindapro.support@proton.me. Please include the version (`VERSION`) and reproduction steps.
+For CLI/server deployment, configure authentication, access control, retention and wrapper logs yourself. Do not apply the desktop network/history statement to a hosted service. The built-in local API is not a full enterprise access-control platform.
