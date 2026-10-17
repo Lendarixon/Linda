@@ -12,3 +12,16 @@ jobs:
           python-version: "3.11"
       - run: pip install numpy pyyaml pytest fastapi httpx python-multipart python-docx
       - run: python -m pytest tests -q
+  site:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python build_site.py
+      - run: python check_i18n.py
+      - run: python check_links.py
