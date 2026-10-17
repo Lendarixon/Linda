@@ -21,12 +21,16 @@ def test_store_banner_and_setup_guidance_use_store_without_exe_action(tmp_path):
     html = (ROOT / 'web/index.html').read_text('utf-8')
     banner = html[html.index("    const ban = $('lpBanner')"):html.index("    ban.classList.toggle('show', !!text)")]
     setup = html[html.index('      const storeRequired ='):html.index('    // banner')].rsplit('    }',1)[0]
+    upload_guard = html[html.index('function currentUploadBlock()'):html.index('function preflightRefresh()')]
     script = """
 const assert=require('node:assert/strict');
 const elements = {};
 const $=id=>elements[id]||(elements[id]={style:{},disabled:false,textContent:''});
 const T=key=>key, textInput={}, btnUploadTrigger={}, btnAnalyze={};
 const checkCtl=null,uploadCtl=null,fmt=x=>String(x),chgText=x=>'';
+let activeTab={uploadBlockReason:''};
+const curTab=()=>activeTab;
+"""+upload_guard+"""
 function bannerResult(s) {
  const d=s.download,busy=false;
 """+banner+"""
@@ -45,6 +49,12 @@ const standalone=bannerResult({...base,installer_job:{phase:'idle'},update_pendi
 assert.equal(standalone.act,'app');assert.equal(standalone.btn,'btn_update_app');
 const storeModels=bannerResult({...base,update:{distribution:'store',weights_update:true,remote_version:'2'}});
 assert.equal(storeModels.act,'models');assert.equal(storeModels.btn,'btn_models');
+activeTab.uploadBlockReason='unsupported';
+bannerResult({...base,installer_job:{phase:'idle'},update_pending:null,update:null});
+assert.equal(btnAnalyze.disabled,true);
+activeTab={uploadBlockReason:''};
+bannerResult({...base,installer_job:{phase:'idle'},update_pending:null,update:null});
+assert.equal(btnAnalyze.disabled,false);
 """
     path = tmp_path / 'store-render.js'
     path.write_text(script,encoding='utf-8')

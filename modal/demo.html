@@ -1,73 +1,444 @@
-<!doctype html>
-<html lang="ru" data-theme="dark">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="dark light">
-<title>Linda Assay 2.0.6.0 — проверка текста</title>
-<style>
-:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark;--bg:#10131b;--panel:#181d28;--raised:#202737;--line:#30394b;--text:#f2f4f8;--muted:#a0aabd;--accent:#6685ff;--accent2:#a9baff;--ai:#ff6676;--human:#48d6a1;--uncertain:#ffc25b;--shadow:0 18px 50px #0004}
-html[data-theme="light"]{color-scheme:light;--bg:#f3f5f9;--panel:#fff;--raised:#f5f7fb;--line:#dce2ec;--text:#182031;--muted:#657087;--accent:#385fe0;--accent2:#2449c3;--ai:#c92945;--human:#087d58;--uncertain:#a86300;--shadow:0 16px 40px #25345216}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(900px 420px at 78% -5%,color-mix(in srgb,var(--accent) 13%,transparent),transparent 70%),var(--bg);color:var(--text);min-height:100vh}button,textarea,select{font:inherit}button{cursor:pointer}.top{height:72px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--panel) 92%,transparent);display:flex;align-items:center;justify-content:space-between;padding:0 max(24px,calc((100vw - 1320px)/2));position:sticky;top:0;z-index:5;backdrop-filter:blur(14px)}.brand{display:flex;gap:12px;align-items:center;font-weight:750;letter-spacing:-.03em}.logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(145deg,var(--accent),#9968e8);display:grid;place-items:center;color:#fff;font-size:19px;box-shadow:0 5px 18px color-mix(in srgb,var(--accent) 38%,transparent)}.brand small{display:block;color:var(--muted);font-size:11px;font-weight:550;letter-spacing:.08em;text-transform:uppercase}.top-actions{display:flex;align-items:center;gap:12px}.switch{display:flex;gap:3px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--raised)}.switch button,.icon-btn{border:0;background:transparent;color:var(--muted);border-radius:7px;padding:7px 10px;font-size:12px;font-weight:700}.switch button.active{background:var(--panel);color:var(--text);box-shadow:0 1px 4px #0002}.icon-btn{border:1px solid var(--line);padding:8px 11px;color:var(--text)}main{max-width:1320px;margin:34px auto;padding:0 24px}.intro{margin-bottom:24px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px}.intro h1{font-size:clamp(25px,3vw,36px);letter-spacing:-.045em;margin:0 0 7px}.intro p{margin:0;color:var(--muted);font-size:14px}.version{font-size:11px;color:var(--accent2);font-weight:700;border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line));border-radius:99px;padding:7px 11px;white-space:nowrap}.workspace{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,.8fr);gap:18px;align-items:start}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}.editor{padding:18px}.tabs{display:flex;align-items:center;gap:7px;overflow:auto;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px}.tab{border:1px solid transparent;background:transparent;color:var(--muted);border-radius:9px;padding:8px 11px;display:flex;gap:9px;align-items:center;white-space:nowrap;font-size:12px;font-weight:650}.tab.active{background:var(--raised);border-color:var(--line);color:var(--text)}.tab .close{opacity:.65;font-size:15px;line-height:12px}.tab.add{border:1px dashed var(--line);font-size:17px;padding:5px 11px}.controls{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px}.modes{display:flex;gap:7px}.mode{border:1px solid var(--line);border-radius:9px;background:var(--raised);color:var(--muted);font-size:12px;font-weight:700;padding:8px 12px}.mode.active{color:#fff;border-color:var(--accent);background:var(--accent)}html[data-theme="light"] .mode.active{color:#fff}.mode-note{color:var(--muted);font-size:11px}.editor textarea{width:100%;min-height:310px;resize:vertical;background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:16px;color:var(--text);line-height:1.7;outline:none}.editor textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 15%,transparent)}.editor textarea::placeholder{color:var(--muted)}.toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:12px}.primary,.secondary{border:1px solid var(--line);border-radius:10px;padding:11px 15px;font-size:13px;font-weight:750}.primary{background:var(--accent);border-color:var(--accent);color:white;min-width:160px}.primary:disabled{opacity:.6;cursor:wait}.secondary{background:var(--raised);color:var(--text)}.counter{margin-left:auto;color:var(--muted);font-size:11px}.note{margin:12px 2px 0;color:var(--muted);font-size:11px;line-height:1.55}.error{color:var(--ai);font-size:12px;margin-top:10px;min-height:18px}.result{padding:20px;position:sticky;top:92px}.result-title{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:750}.empty{padding:52px 12px;text-align:center;color:var(--muted);line-height:1.6}.empty-icon{font-size:30px;margin-bottom:12px;opacity:.7}.verdict{margin-top:17px;padding:20px;border-radius:13px;background:var(--raised);border:1px solid var(--line)}.verdict.ai{border-color:color-mix(in srgb,var(--ai) 45%,var(--line));background:color-mix(in srgb,var(--ai) 8%,var(--panel))}.verdict.human{border-color:color-mix(in srgb,var(--human) 45%,var(--line));background:color-mix(in srgb,var(--human) 7%,var(--panel))}.verdict.uncertain{border-color:color-mix(in srgb,var(--uncertain) 48%,var(--line));background:color-mix(in srgb,var(--uncertain) 8%,var(--panel))}.v-label{font-size:22px;font-weight:800;letter-spacing:-.03em}.verdict.ai .v-label{color:var(--ai)}.verdict.human .v-label{color:var(--human)}.verdict.uncertain .v-label{color:var(--uncertain)}.v-desc{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.55}.meta{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:9px}.metric{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:11px}.metric span{display:block;color:var(--muted);font-size:10px;margin-bottom:4px}.metric b{font-size:13px}.windows{margin-top:17px}.windows h3{font-size:12px;margin:0 0 9px}.window-list{display:flex;gap:6px;flex-wrap:wrap}.win{font-size:10px;padding:6px 8px;border-radius:7px;background:var(--raised);border:1px solid var(--line);color:var(--muted)}.win.flag{color:var(--ai);border-color:color-mix(in srgb,var(--ai) 45%,var(--line))}.win.clear{color:var(--human);border-color:color-mix(in srgb,var(--human) 40%,var(--line))}.privacy{max-width:1320px;margin:20px auto 36px;padding:0 24px;color:var(--muted);font-size:11px}.privacy b{color:var(--text)}.hide{display:none!important}input[type=file]{display:none}@media(max-width:900px){.workspace{grid-template-columns:1fr}.result{position:static}.top{padding:0 18px}main{margin-top:24px}}@media(max-width:600px){.top{height:62px;padding:0 12px}.brand{font-size:14px}.logo{width:34px;height:34px}.top-actions{gap:6px}.switch button{padding:6px 8px}main{padding:0 12px}.intro{align-items:flex-start;flex-direction:column}.editor{padding:12px}.controls{align-items:flex-start;flex-direction:column}.editor textarea{min-height:250px}.counter{margin-left:0}.privacy{padding:0 12px}}
-.gauge{margin-top:16px}.gauge span{display:block;color:var(--muted);font-size:10px;margin-bottom:6px}.gbar{height:10px;border-radius:99px;background:linear-gradient(90deg,var(--human),var(--uncertain),var(--ai));position:relative}.gbar i{position:absolute;top:-4px;width:4px;height:18px;border-radius:3px;background:var(--text);box-shadow:0 0 0 2px var(--panel);left:0;transition:left .3s}.gauge small{display:block;color:var(--muted);font-size:10px;margin-top:6px;line-height:1.5}
-.chart{display:flex;align-items:flex-end;gap:3px;height:54px;margin-top:10px}.chart i{flex:1;min-width:3px;border-radius:3px 3px 0 0;background:var(--human);opacity:.85}.chart i.f{background:var(--ai)}
-.exports{margin-top:16px;display:flex;flex-wrap:wrap;gap:7px}.exports button{border:1px solid var(--line);background:var(--raised);color:var(--text);border-radius:8px;padding:7px 10px;font-size:11px;font-weight:700}.exports button:hover{border-color:var(--accent)}
-.hlcard{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}.hltext{white-space:pre-wrap;line-height:1.75;font-size:14px;max-height:360px;overflow:auto;background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:14px}.hltext mark{background:color-mix(in srgb,var(--ai) 26%,transparent);color:inherit;border-radius:4px;padding:1px 0}.legend{margin-top:8px;font-size:11px;color:var(--muted);display:flex;gap:14px}.legend mark{background:color-mix(in srgb,var(--ai) 26%,transparent);color:inherit;border-radius:4px;padding:1px 6px}
-.warn{margin-top:10px;padding:9px 12px;border-left:4px solid var(--uncertain);background:color-mix(in srgb,var(--uncertain) 12%,transparent);font-size:12px;border-radius:0 8px 8px 0}
-.extra{max-width:1320px;margin:18px auto 0;padding:0 24px;display:grid;grid-template-columns:1fr 1fr;gap:18px}.extra details{padding:14px 18px}.extra summary{cursor:pointer;font-weight:750;font-size:13px}.extra pre{white-space:pre-wrap;word-break:break-word;font-size:11px;background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--text)}.hrow{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:6px 0;border-bottom:1px solid var(--line);color:var(--muted)}.hrow b{color:var(--text)}
-@media(max-width:900px){.extra{grid-template-columns:1fr;padding:0 12px}}@media print{body{background:#fff}.top,.editor,.privacy,.extra,.exports,.intro{display:none!important}.workspace{display:block}.result{position:static;box-shadow:none;border:0}}
-</style>
-</head>
-<body>
-<header class="top"><div class="brand"><svg class="logo-mark" width="40" height="40" viewBox="0 0 100 100" role="img" aria-label="Linda"><rect width="100" height="100" fill="#1ba1e2"/><rect x="14" y="24" width="72" height="12" fill="#fff"/><rect x="14" y="44" width="32" height="12" fill="#fff"/><rect x="52" y="44" width="34" height="12" fill="#e51400"/><rect x="14" y="64" width="52" height="12" fill="#fff"/></svg><div><span style="font-weight:300;letter-spacing:-.3px">linda</span> <span style="font-weight:600;color:#1ba1e2">assay</span><small>Commercial demo · 2.0.6.0 · Models 1.3.4 · EN / PL / RU</small></div></div><div class="top-actions"><div class="switch" id="langs" aria-label="Language"><button data-lang="ru">RU</button><button data-lang="pl">PL</button><button data-lang="en">EN</button></div><button class="icon-btn" id="theme" aria-label="Theme">☼</button></div></header>
-<main><section class="intro"><div><h1 data-t="title">Проверка текста</h1><p data-t="subtitle">Linda Assay 2.0.6.0 с моделями 1.3.4 для английского, русского и польского языков.</p></div><span class="version">Essay · Multi · Stylo-D</span></section>
-<section class="workspace"><div class="card editor"><div class="tabs" id="tabs" role="tablist"></div><div class="controls"><div class="modes" id="modes"><button class="mode active" data-mode="sensitive" data-t="sensitive">Чувствительный</button><button class="mode" data-mode="precise" data-t="precise">Точный</button></div><span class="mode-note" data-t="modeNote">Выберите режим анализа</span></div><textarea id="text" data-t-placeholder="placeholder" placeholder="Вставьте текст для проверки (20–5000 слов)…" spellcheck="false"></textarea><div class="toolbar"><button class="primary" id="analyze" data-t="analyze">Проверить текст</button><button class="secondary" id="attach" data-t="attach">Загрузить файл</button><button class="secondary" id="analyzeAll" data-t="analyzeAll">Проверить все вкладки</button><input type="file" id="file" accept=".txt,.md,.docx" multiple><span class="counter" id="counter">0 слов</span></div><p class="note" data-t="limits">20–5000 слов · TXT, DOCX до 6 МБ · Демонстрационные лимиты применяются.</p><div class="warn hide" id="shortWarn" role="alert"></div><div class="error" id="error" role="status"></div><div class="hlcard hide" id="hlCard"><div class="result-title" data-t="hlTitle">Подсветка текста</div><div class="hltext" id="hlText"></div><div class="legend"><span><mark data-t="legendAi">похоже на ИИ</mark></span><span data-t="legendNote">окна ~300 слов, цвет по сигналу Essay</span></div></div></div>
-<aside class="card result"><div class="result-title" data-t="result">Результат</div><div id="empty" class="empty"><div class="empty-icon">◌</div><span data-t="empty">Вставьте текст или загрузите файл, затем нажмите «Проверить текст».</span></div><div id="output" class="hide"><div class="verdict" id="verdict"><div class="v-label" id="vlabel"></div><div class="v-desc" id="vdesc"></div></div><div class="meta"><div class="metric"><span data-t="language">Язык</span><b id="langValue">—</b></div><div class="metric"><span data-t="score">Результат маршрутизации</span><b id="scoreValue">—</b></div><div class="metric"><span data-t="windows">Окон анализа</span><b id="windowValue">—</b></div><div class="metric"><span data-t="mode">Режим</span><b id="modeValue">—</b></div></div><div class="gauge"><span data-t="gaugeLabel">Сила сигнала ИИ</span><div class="gbar"><i id="gaugeFill"></i></div><small data-t="gaugeNote">Это не вероятность авторства: шкала показывает, насколько оценка выше порога «неуверенно» и приближается к порогу «ИИ».</small></div><div class="chart" id="chart" aria-hidden="true"></div><div class="windows"><h3 data-t="windowInfo">Предложения</h3><div class="window-list" id="windowList"></div></div><div class="exports" id="exports"><button id="expHtml">HTML</button><button id="expJson">JSON</button><button id="expCsv">CSV</button><button id="expPrint">PDF</button><button id="expPrompt" data-t="revBtn">Промпт для правки</button><button id="expCopy" data-t="copyBtn">Копировать итог</button></div></div></aside></section><section class="extra"><details class="card" id="histBox"><summary data-t="histTitle">История проверок (только в этом браузере)</summary><div id="histList"></div></details><details class="card"><summary data-t="apiTitle">API</summary><pre id="apiDoc"></pre></details></section></main>
-<footer class="privacy"><b data-t="privacyTitle">Конфиденциальность.</b> <span data-t="privacy">Текст обрабатывается в памяти и не сохраняется. Не используйте вердикт как единственное основание для решения о человеке.</span></footer>
+<!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Linda — Free online demo</title><meta name="description" content="Try Linda Loupe and Linda Assay. Twelve free checks, up to 6,000 characters. Use continuous prose of at least 300 words. Online AI-text detection and sentence highlighting."><style>
+/* Linda design tokens and flat Metro treatment from the site's site.css
+   and the application's web/index.html + metro-dev.css. */
+:root,html[data-theme="dark"]{color-scheme:dark;--bg:#0d0f15;--panel:#171a22;--raised:#1f232d;--border:#2e323d;--text:#fff;--muted:#a8adb8;--accent:#1ba1e2;--cobalt:#0050ef;--loupe:#008183;--assay:#2f6fe6;--ai:#e51400;--human:#60a917;--uncertain:#fa6800;--disabled:#2d313b;--accent-light:rgba(27,161,226,.14)}
+html[data-theme="light"]{color-scheme:light;--bg:#eef1f6;--panel:#fff;--raised:#e6ebf3;--border:#cfd6e3;--text:#141821;--muted:#4a5262;--disabled:#dbe0e9;--human:#397912}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:400 14px/1.65 "Segoe UI","Segoe UI Variable",Arial,sans-serif;-webkit-font-smoothing:antialiased}button,textarea{font:inherit}button,a{touch-action:manipulation}button{cursor:pointer}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}[hidden]{display:none!important}
+button:focus-visible,a:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.top{border-bottom:1px solid var(--border)}.top-inner{max-width:1560px;margin:auto;min-height:72px;padding:14px 28px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}.wordmark{display:flex;gap:10px;align-items:center;color:var(--text);font-weight:300;font-size:30px;line-height:1}.wordmark img{width:34px;height:34px}.demo-badge{background:var(--cobalt);color:white;padding:5px 10px;font-size:11px;font-weight:600;letter-spacing:.1em}.header-tools{margin-left:auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap}.desktop-link{font-size:13px;color:var(--text);border:1px solid var(--border);padding:7px 12px}.switch{display:flex;gap:2px}.switch button{border:0;background:var(--raised);color:var(--muted);padding:8px 12px;min-height:34px;font-size:12px;font-weight:600}.switch button:hover:not(:disabled){color:var(--text)}.switch button.active{background:var(--cobalt);color:white}.switch button:disabled{opacity:.6;cursor:wait}
+.shell{max-width:1560px;padding:0 28px 32px;margin:auto}.intro{padding:30px 0 24px;display:flex;justify-content:space-between;gap:24px;align-items:center}.intro h1{font-size:clamp(26px,2.8vw,38px);font-family:"Segoe UI Light","Segoe UI",sans-serif;font-weight:300;line-height:1.25;letter-spacing:-.025em;margin:0 0 7px}.intro p{color:var(--muted);margin:0;font-size:15px}.allowance{flex:none;border-left:3px solid var(--accent);padding-left:16px;color:var(--muted);font-size:13px}.allowance strong{display:block;color:var(--text);font-weight:500;font-size:18px}
+.app-grid{display:grid;grid-template-columns:232px minmax(0,1fr) 300px;gap:24px;align-items:start}.sidebar,.workspace,.result-column{min-width:0}.section-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin:0 0 12px}.grid{display:grid;gap:8px}.tile{position:relative;min-height:98px;padding:15px 17px;border:1px solid var(--border);border-left:5px solid var(--colour);background:var(--panel);outline:none;cursor:pointer}.tile[data-detector="loupe"]{--colour:var(--loupe)}.tile[data-detector="assay"]{--colour:var(--assay)}.tile.active{background:var(--colour);border-color:var(--colour);border-left-color:#fff;color:white}.tile:hover{outline:1px solid var(--colour);outline-offset:-1px}.tile:focus-visible{outline:2px solid var(--accent);outline-offset:3px}.tile.active:after{content:'✓';position:absolute;right:12px;top:12px;font-size:14px}.tile-header{font-size:17px;font-weight:500;margin-bottom:5px}.tile-body{font-size:13px;line-height:1.55;color:var(--muted)}.tile.active .tile-body{color:#fff}.side-section{margin-top:26px}.sidebar #modeSwitch button{flex:1;padding:10px 7px}.mode-note,.limit-copy{color:var(--muted);font-size:13px;line-height:1.6;margin:10px 0 0}.limit-copy strong{color:var(--text);font-weight:500}.limit-copy{border-top:1px solid var(--border);padding-top:14px}.limit-copy .info-box{font-size:13px}.limits-title{margin-top:24px}
+.editor-card,.highlight,.status,.empty-result{background:var(--panel);border:1px solid var(--border)}.editor-card{padding:20px}.editor-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:0 0 15px}.editor-head h2{font-weight:500;font-size:19px;margin:0}.editor-head p{font-size:13px;color:var(--muted);margin:0}.input-frame{border:1px solid var(--border)}textarea{display:block;width:100%;min-height:300px;resize:vertical;border:0;background:transparent;color:var(--text);padding:16px;font-size:15px;line-height:1.7}textarea::placeholder{color:var(--muted);opacity:.9}textarea:focus{outline:2px solid var(--accent);outline-offset:-2px}textarea:disabled{opacity:.7}.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:16px;margin-top:16px}.btn,.btn-secondary{min-height:44px;padding:10px 18px;border:1px solid var(--border);background:var(--raised);color:var(--text);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}.btn{background:var(--cobalt);border-color:var(--cobalt);color:#fff;min-width:164px}.btn:hover:not(:disabled){background:#0042c7}.btn-secondary:hover:not(:disabled){border-color:var(--accent);background:var(--accent-light)}button:disabled{cursor:not-allowed}.btn:disabled{background:var(--disabled);border-color:var(--disabled);color:var(--muted)}.btn-secondary:disabled{opacity:.5}.counter{margin-left:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}.cloud-note{font-size:12px;color:var(--muted);margin:14px 0 0}.error{color:var(--ai);font-size:13px;font-weight:500;margin:10px 0}.error:empty{display:none}.warn{border-left:3px solid var(--uncertain);padding:6px 10px;background:var(--raised);color:var(--muted);font-size:12px;margin-top:10px}#retryBtn{margin-bottom:10px}
+.empty-result{border-top:4px solid var(--accent);padding:24px;min-height:250px}.empty-result h2{font-size:22px;font-weight:300;line-height:1.4;margin:8px 0 12px}.empty-result p{color:var(--muted);font-size:13px;margin:0}.empty-icon{width:36px;height:36px;color:var(--muted);margin:8px 0 12px}.status{border-top:4px solid var(--accent);padding:20px}.status .section-title{margin-bottom:16px}.verdict{font-size:24px;font-weight:300;line-height:1.25;margin:0 0 12px}.verdict.ai{color:var(--ai)}.verdict.human{color:var(--human)}.verdict.uncertain{color:var(--uncertain)}#verdictDesc{font-size:12px;color:var(--muted);line-height:1.6;overflow-wrap:anywhere}.meta{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:18px}.metric{padding:12px;background:var(--raised);min-width:0}.metric-label{font-size:10px;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;line-height:1.5}.metric-value{font-size:16px;font-weight:400;line-height:1.45;margin-top:6px;overflow-wrap:anywhere}.metric.score{grid-column:1/-1;background:var(--cobalt);color:#fff;order:-1}.metric.score .metric-label{color:#fff}.metric.score .metric-value{font-size:42px;font-weight:300}
+.highlight{margin-top:20px;padding:20px}.highlight-head{border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:16px}.highlight-head strong{font-size:20px;font-weight:500}.hl-text{white-space:pre-wrap;font:400 15px/1.95 "Segoe UI",sans-serif;max-height:600px;overflow:auto}.hl-text mark{background:rgba(229,20,0,.20);color:var(--text);border-bottom:2px solid var(--ai);padding:2px 0}.hl-text mark.uncertain{background:rgba(250,104,0,.18);border-color:var(--uncertain)}.legend{font-size:12px;color:var(--muted);margin-top:16px}.exports{display:flex;gap:6px;margin-top:18px;flex-wrap:wrap}.exports button{font-size:11px;min-height:36px;padding:7px 12px}.footer{margin-top:24px;border-top:1px solid var(--border);padding-top:18px;display:flex;justify-content:space-between;gap:24px;align-items:start;color:var(--muted);font-size:12px}.footer details{max-width:760px}.footer summary{cursor:pointer;color:var(--text);font-size:13px}.footer p{margin:10px 0 0}.footer-links{display:flex;gap:18px;margin-top:12px}.version{text-align:right;flex:none}
+@media(max-width:1150px){.app-grid{grid-template-columns:210px minmax(0,1fr)}.result-column{grid-column:2}.empty-result{min-height:0}.meta{grid-template-columns:repeat(3,minmax(0,1fr))}.metric.score{grid-column:auto}.metric.score .metric-value{font-size:28px}.intro{align-items:flex-start}.header-tools{gap:8px}.desktop-link{display:none}}
+@media(max-width:720px){.top-inner{padding:12px 16px;gap:10px}.header-tools{margin-left:0;width:100%;justify-content:space-between}.shell{padding:0 16px 24px}.intro{padding:24px 0;display:block}.intro h1{font-size:28px}.allowance{margin-top:16px}.app-grid{grid-template-columns:1fr;gap:20px}.grid{grid-template-columns:1fr 1fr}.tile{padding:13px 12px;min-height:106px}.tile-header{font-size:16px}.tile.active:after{display:none}.side-section{margin-top:16px}.sidebar #modeSwitch{max-width:320px}.limit-copy{margin-top:14px}.limits-title{margin-top:18px}.result-column{grid-column:1}.editor-card,.highlight,.status{padding:16px}textarea{min-height:250px;padding:12px}.editor-head p{display:none}.toolbar .btn,.toolbar .btn-secondary{flex:1;padding:9px 12px;min-width:0}.counter{width:100%;margin-left:0}.footer{display:block}.version{text-align:left;margin-top:16px}.meta{grid-template-columns:1fr 1fr}.metric.score{grid-column:1/-1}.empty-result{padding:18px}.empty-icon{display:none}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto;transition:none}.an-prog .lp-bar.busy i{animation:none!important}}
+.an-prog{margin:14px 0 6px}.an-prog.hidden{display:none!important}.an-prog .lp-bar{margin:0 0 6px;height:10px;background:var(--raised);border:1px solid var(--border);border-radius:7px;overflow:hidden}.an-prog .lp-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#5b7cfa,#34d399);transition:width .3s ease;border-radius:7px}.an-prog .lp-bar.busy i{background-size:200% 100%;animation:lp-shimmer 1.2s linear infinite;background-image:linear-gradient(90deg,#5b7cfa 25%,#8fb0ff 50%,#5b7cfa 75%)}.an-prog span{font-size:12px;color:var(--muted);display:block;min-height:16px}@keyframes lp-shimmer{to{background-position:-200% 0}}
+ .input-help{font-size:14px;color:var(--text);margin:14px 0 8px;line-height:1.6}.warn{border:2px solid #c97700;border-left:6px solid #ed9d13;background:#3b2b10;color:#fff2cf;font-size:15px;line-height:1.65;padding:14px 16px;margin:12px 0}.warn strong{display:block;font-size:17px}.warn p{margin:6px 0 0}html[data-theme="light"] .warn{background:#fff2d4;color:#563700}#counter.short-input{font-weight:700;color:var(--uncertain)}#resultGuidance{margin:0 0 18px}.hl-text mark.human{background:rgba(96,169,23,.15);border-color:var(--human)}</style></head><body>
+<header class="top"><div class="top-inner"><a class="wordmark" href="https://lendarixon.github.io/Linda/" target="_blank" rel="noopener"><svg width="34" height="34" viewBox="0 0 100 100" aria-hidden="true" style="flex:none"><rect width="100" height="100" fill="#1ba1e2"/><rect x="14" y="24" width="72" height="12" fill="#fff"/><rect x="14" y="44" width="32" height="12" fill="#fff"/><rect x="52" y="44" width="34" height="12" fill="#e51400"/><rect x="14" y="64" width="52" height="12" fill="#fff"/></svg>linda</a><span class="demo-badge" data-i18n="demoBadge">FREE DEMO</span><div class="header-tools"><a class="desktop-link" href="https://lendarixon.github.io/Linda/" target="_blank" rel="noopener" data-i18n="download">Get the desktop app</a><div class="switch" id="langSwitch" aria-label="Language"><button data-lang="en" class="active">EN</button><button data-lang="pl">PL</button><button data-lang="ru">RU</button></div><div class="switch" id="themeSwitch" aria-label="Theme"><button data-theme="light" id="lightBtn">Light</button><button data-theme="dark" class="active" id="darkBtn">Dark</button></div></div></div></header>
+<main class="shell"><section class="intro"><div><h1 id="pageTitle">Check a text. See the evidence.</h1><p id="pageSubtitle">Try Linda Loupe and Linda Assay in your browser.</p></div><div class="allowance"><strong id="remaining">Initializing…</strong><span id="introHeader">Free online demo</span></div></section>
+<div class="app-grid"><aside class="sidebar"><h2 class="section-title" data-i18n="modelTitle">Detector</h2><div class="grid" id="detectorGrid"><div class="tile active" data-detector="loupe" role="button" tabindex="0"><div class="tile-header">Linda Loupe</div><div class="tile-body" id="loupeDesc"></div></div><div class="tile" data-detector="assay" role="button" tabindex="0"><div class="tile-header">Linda Assay</div><div class="tile-body" id="assayDesc"></div></div></div><section class="side-section"><h2 class="section-title" data-i18n="thresholdTitle">Detection mode</h2><div class="switch" id="modeSwitch"><button data-mode="sensitive" class="active" id="sensBtn">Sensitive</button><button data-mode="precise" id="precBtn">Precise</button></div><p class="mode-note" data-i18n="modeHint"></p></section><h2 class="section-title limits-title" id="restrictionsHeader">Demo limits</h2><div class="limit-copy"><span id="restrictionsText"></span></div></aside>
+<div class="workspace"><section class="editor-card"><div class="editor-head"><h2 data-i18n="editorTitle">Your text</h2><p data-i18n="editorHint"></p></div><div class="input-frame"><textarea id="textInput" aria-describedby="inputHelp warn" aria-label="Your text" placeholder="Paste a text…" spellcheck="false"></textarea></div><p class="input-help" id="inputHelp"></p><div class="warn" id="warn" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div><div class="toolbar"><button class="btn" id="checkBtn" disabled>Analyze text</button><button class="btn-secondary" id="uploadBtn" disabled>Attach file</button><input type="file" id="fileInput" accept=".txt,.md,.docx" hidden><span class="counter" id="counter"></span></div><div class="an-prog hidden" id="anProg" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div class="lp-bar" id="anProgWrap"><i id="anProgBar"></i></div><span id="anProgLabel"></span></div><div class="error" id="error" role="alert" aria-live="polite"></div><button class="btn-secondary" id="retryBtn" hidden>Retry</button><p class="cloud-note" data-i18n="cloudNote"></p></section>
+<section class="highlight" id="highlightPanel" hidden><div class="highlight-head"><strong id="hlHeader">Sentence-level highlighting</strong></div><div class="hl-text" id="hlText"></div><div class="legend" id="hlLegend"></div><div class="exports"><button class="btn-secondary" id="exportHtml">Export HTML</button><button class="btn-secondary" id="exportJson">Export JSON</button><button class="btn-secondary" id="exportCsv">Export CSV</button></div></section></div>
+<aside class="result-column" aria-live="polite"><section class="empty-result" id="emptyResult"><svg class="empty-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M7 2h12l7 7v21H7Zm12 0v8h7M11 16h11m-11 5h11m-11 5h7"/></svg><h2 data-i18n="emptyTitle">Your result appears here</h2><p data-i18n="emptyText"></p></section><div id="resultSection" style="display:none"><div class="status"><div class="warn" id="resultGuidance" hidden></div><h2 class="section-title" data-i18n="resultTitle">Document verdict</h2><div class="verdict" id="verdict"></div><div id="verdictDesc"></div><div class="meta"><div class="metric"><div class="metric-label" id="langLabel">Language</div><div class="metric-value" id="langValue">—</div></div><div class="metric"><div class="metric-label" id="modeLabel">Mode</div><div class="metric-value" id="modeValue">—</div></div><div class="metric"><div class="metric-label" id="detectorLabel">Detector</div><div class="metric-value" id="detectorValue">—</div></div><div class="metric score"><div class="metric-label" id="scoreLabel">Document AI score</div><div class="metric-value" id="scoreValue">—</div></div><div class="metric"><div class="metric-label" id="sentLabel">Sentences</div><div class="metric-value" id="sentValue">—</div></div><div class="metric"><div class="metric-label" id="coverageLabel">AI-labeled words</div><div class="metric-value" id="coverageValue">—</div></div></div></div></div></aside></div>
+<footer class="footer"><div><p id="introText"></p><details><summary id="privacyHeader">About this demo</summary><p id="privacyText"></p></details><div class="footer-links"><a href="https://lendarixon.github.io/Linda/" target="_blank" rel="noopener" data-i18n="download">Get the desktop app</a><a href="https://lendarixon.github.io/Linda/trust.html" target="_blank" rel="noopener">Trust</a></div></div><span class="version" data-i18n="version">App 2.0.6.0 · Model pack 1.3.4</span></footer></main>
 <script>
-(() => {
-const words = {ru:{title:'Проверка текста',subtitle:'Linda Assay 2.0.6.0 с моделями 1.3.4 для английского, русского и польского языков.',sensitive:'Чувствительный',precise:'Точный',modeNote:'Выберите режим анализа',placeholder:'Вставьте текст для проверки (20–5000 слов)…',analyze:'Проверить текст',attach:'Загрузить файл',limits:'20–5000 слов · TXT, DOCX до 6 МБ · Демонстрационные лимиты применяются.',result:'Результат',empty:'Вставьте текст или загрузите файл, затем нажмите «Проверить текст».',language:'Язык',score:'Результат маршрутизации',windows:'Окон анализа',mode:'Режим',windowInfo:'Предложения',privacyTitle:'Конфиденциальность.',privacy:'Текст обрабатывается в памяти и не сохраняется. Не используйте вердикт как единственное основание для решения о человеке.',wordCount:n=>`${n} слов`,langs:{en:'Английский',ru:'Русский',pl:'Польский'},modes:{sensitive:'Чувствительный',precise:'Точный'},verdict:{ai:'Вероятно, написан ИИ',human:'Вероятно, написан человеком',uncertain:'Неоднозначный результат'},desc:{ai:'Результаты ансамбля указывают на признаки текста, созданного ИИ.',human:'Ансамбль не обнаружил достаточных признаков текста, созданного ИИ.',uncertain:'Сигналы моделей не дают уверенного ответа.'},windowsN:n=>`${n} окон`,windowN:n=>`Окно ${n}`,sentenceN:n=>`Предложение ${n}`,error:'Ошибка',analyzeAll:"Проверить все вкладки",hlTitle:"Подсветка текста",legendAi:"похоже на ИИ",legendNote:"Процент предложений считается по предложениям, доли слов — по словам. Оценка ИИ для документа — отдельный показатель. Выбор источника меняет локальную разметку и экспорт.",gaugeLabel:"Сила сигнала ИИ",gaugeNote:"Это не вероятность авторства: шкала показывает, насколько оценка выше порога «неуверенно» и приближается к порогу «ИИ».",revBtn:"Промпт для правки",copyBtn:"Копировать итог",copied:"Скопировано",histTitle:"История проверок (только в этом браузере)",histEmpty:"Пока пусто.",histClear:"Очистить",apiTitle:"API",shortWarn:"Короткий текст (меньше 150 слов): результат может быть неточным.",queue:"Очередь",reportTitle:"Отчёт Linda Assay",reportNote:"Вероятностная оценка, а не доказательство авторства. Не используйте её как единственное основание для решения о человеке.",revIntro:"Помоги мне переработать отмеченные фрагменты моего текста так, чтобы они звучали как мои собственные слова.",revRules:"Правила: сохрани смысл и факты, ничего не выдумывай; задай мне вопросы о моём опыте и примерах, которые я могу добавить; не меняй цитаты и термины; предложи 2 варианта для каждого фрагмента и коротко объясни правки. Используй только для текста, который я вправе редактировать, и в рамках правил моего учебного заведения или работодателя об использовании ИИ.",revFragment:"Фрагмент",revNone:"В этом результате нет отмеченных фрагментов."},en:{title:'Check a text',subtitle:'Linda Assay 2.0.6.0 with models 1.3.4 for English, Russian and Polish.',sensitive:'Sensitive',precise:'Precise',modeNote:'Choose an analysis mode',placeholder:'Paste text to check (20–5,000 words)…',analyze:'Check text',attach:'Upload file',limits:'20–5,000 words · TXT or DOCX up to 6 MB · Demo limits apply.',result:'Result',empty:'Paste text or upload a file, then select “Check text”.',language:'Language',score:'Routing score',windows:'Analysis windows',mode:'Mode',windowInfo:'Sentences',privacyTitle:'Privacy.',privacy:'Text is processed in memory and is not saved. Do not use a verdict as the sole basis for a decision about a person.',wordCount:n=>`${n} words`,langs:{en:'English',ru:'Russian',pl:'Polish'},modes:{sensitive:'Sensitive',precise:'Precise'},verdict:{ai:'Likely AI generated',human:'Likely human written',uncertain:'Uncertain result'},desc:{ai:'The ensemble found signals associated with AI generated text.',human:'The ensemble did not find sufficient signals of AI generated text.',uncertain:'The model signals do not give a confident answer.'},windowsN:n=>`${n} windows`,windowN:n=>`Window ${n}`,sentenceN:n=>`Sentence ${n}`,error:'Error',analyzeAll:"Check all tabs",hlTitle:"Highlighted text",legendAi:"looks AI-written",legendNote:"Sentence percentages count sentences; word shares count words. The document AI score is a separate estimate. Switching the source updates local markup and exports.",gaugeLabel:"AI signal strength",gaugeNote:"This is not a probability of authorship: the scale shows how far the score is above the “uncertain” threshold and approaching the “AI” threshold.",revBtn:"Revision prompt",copyBtn:"Copy summary",copied:"Copied",histTitle:"Check history (this browser only)",histEmpty:"Nothing yet.",histClear:"Clear",apiTitle:"API",shortWarn:"Short text (under 150 words): the result may be inaccurate.",queue:"Queue",reportTitle:"Linda Assay report",reportNote:"A probabilistic estimate, not proof of authorship. Do not use it as the sole basis for a decision about a person.",revIntro:"Help me revise the flagged passages of my text so that they sound like my own words.",revRules:"Rules: keep the meaning and the facts, invent nothing; ask me questions about my own experience and examples I could add; do not change quotations or terms; offer 2 options per passage and briefly explain the edits. Use this only for text I am entitled to edit and within the AI-use rules of my school or employer.",revFragment:"Passage",revNone:"This result has no flagged passages."},pl:{title:'Sprawdź tekst',subtitle:'Linda Assay 2.0.6.0 z modelami 1.3.4 dla języka angielskiego, rosyjskiego i polskiego.',sensitive:'Czuły',precise:'Precyzyjny',modeNote:'Wybierz tryb analizy',placeholder:'Wklej tekst do sprawdzenia (20–5000 słów)…',analyze:'Sprawdź tekst',attach:'Wczytaj plik',limits:'20–5000 słów · TXT lub DOCX do 6 MB · Obowiązują limity wersji demo.',result:'Wynik',empty:'Wklej tekst lub wczytaj plik, a następnie wybierz „Sprawdź tekst”.',language:'Język',score:'Wynik routingu',windows:'Okna analizy',mode:'Tryb',windowInfo:'Zdania',privacyTitle:'Prywatność.',privacy:'Tekst jest przetwarzany w pamięci i nie jest zapisywany. Nie używaj werdyktu jako jedynej podstawy decyzji dotyczącej człowieka.',wordCount:n=>`${n} słów`,langs:{en:'Angielski',ru:'Rosyjski',pl:'Polski'},modes:{sensitive:'Czuły',precise:'Precyzyjny'},verdict:{ai:'Prawdopodobnie tekst AI',human:'Prawdopodobnie tekst człowieka',uncertain:'Wynik niejednoznaczny'},desc:{ai:'Zespół wykrył sygnały typowe dla tekstu wygenerowanego przez AI.',human:'Zespół nie wykrył wystarczających sygnałów tekstu wygenerowanego przez AI.',uncertain:'Sygnały modeli nie dają pewnej odpowiedzi.'},windowsN:n=>`${n} okien`,windowN:n=>`Okno ${n}`,sentenceN:n=>`Zdanie ${n}`,error:'Błąd',analyzeAll:"Sprawdź wszystkie karty",hlTitle:"Podświetlenie tekstu",legendAi:"wygląda na AI",legendNote:"Procent zdań dotyczy zdań, a udziały słów — słów. Ocena AI dla dokumentu jest osobnym wskaźnikiem. Wybór źródła zmienia lokalne oznaczenia i eksport.",gaugeLabel:"Siła sygnału AI",gaugeNote:"To nie jest prawdopodobieństwo autorstwa: skala pokazuje, o ile wynik przekracza próg „niepewne” i zbliża się do progu „AI”.",revBtn:"Prompt do poprawek",copyBtn:"Kopiuj podsumowanie",copied:"Skopiowano",histTitle:"Historia sprawdzeń (tylko w tej przeglądarce)",histEmpty:"Na razie pusto.",histClear:"Wyczyść",apiTitle:"API",shortWarn:"Krótki tekst (poniżej 150 słów): wynik może być niedokładny.",queue:"Kolejka",reportTitle:"Raport Linda Assay",reportNote:"Szacunek probabilistyczny, a nie dowód autorstwa. Nie używaj go jako jedynej podstawy decyzji dotyczącej człowieka.",revIntro:"Pomóż mi poprawić zaznaczone fragmenty mojego tekstu tak, by brzmiały jak moje własne słowa.",revRules:"Zasady: zachowaj sens i fakty, niczego nie wymyślaj; zadaj mi pytania o moje doświadczenia i przykłady, które mogę dodać; nie zmieniaj cytatów i terminów; zaproponuj 2 warianty dla każdego fragmentu i krótko wyjaśnij zmiany. Używaj tylko dla tekstu, który mam prawo edytować, zgodnie z zasadami mojej szkoły lub pracodawcy dotyczącymi AI.",revFragment:"Fragment",revNone:"W tym wyniku nie ma zaznaczonych fragmentów."}};
-let lang=localStorage.getItem('linda-ui-lang')||'ru', mode='sensitive', docs=[{id:1,name:'Документ 1',text:'',result:null}], active=1; const $=id=>document.getElementById(id), dict=()=>words[lang];
-function applyLang(){document.documentElement.lang=lang;document.querySelectorAll('[data-t]').forEach(e=>e.textContent=dict()[e.dataset.t]);document.querySelectorAll('[data-t-placeholder]').forEach(e=>e.placeholder=dict()[e.dataset.tPlaceholder]);document.querySelectorAll('#langs button').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang));renderTabs();renderResult(current().result)}
-function current(){return docs.find(d=>d.id===active)}
-function renderTabs(){const root=$('tabs');root.replaceChildren();docs.forEach(d=>{const b=document.createElement('button');b.className='tab'+(d.id===active?' active':'');b.setAttribute('role','tab');b.textContent=d.name;b.onclick=()=>select(d.id);if(docs.length>1){const x=document.createElement('span');x.className='close';x.textContent='×';x.title='Close';x.onclick=e=>{e.stopPropagation();close(d.id)};b.append(x)}root.append(b)});const add=document.createElement('button');add.className='tab add';add.textContent='+';add.title=lang==='ru'?'Новая вкладка':'New tab';add.onclick=()=>{const id=Date.now();docs.push({id,name:`${lang==='ru'?'Документ':'Document'} ${docs.length+1}`,text:'',result:null});select(id)};root.append(add)}
-function select(id){saveText();active=id;$('text').value=current().text;updateCount();$('error').textContent='';renderTabs();renderResult(current().result)}function close(id){if(docs.length===1){current().text='';current().result=null;select(id);return}docs=docs.filter(d=>d.id!==id);if(active===id)active=docs[0].id;select(active)}function saveText(){if(current())current().text=$('text').value}
-function updateCount(){const n=$('text').value.trim()?$('text').value.trim().split(/\s+/).length:0;$('counter').textContent=dict().wordCount(n)}
-const localControls=document.createElement('div');localControls.innerHTML='<select id="localSource" aria-label="Markup source"><option value="ensemble">Ensemble</option><option value="essay">Essay</option><option value="multi">Multi</option></select> <span id="localCoverage"></span>';$('hlCard').prepend(localControls);$('localSource').onchange=()=>renderResult(current().result);
-function localResult(r){const source=$('localSource')?.value||'ensemble',th=r.sentence_stats?.thresholds||{ai:.58,uncertain:.38};const sentences=(r.sentences||[]).map(s=>{const p=source==='essay'?s.essay_prob:source==='multi'?s.multi_prob:s.p_ai;const label=source==='ensemble'?s.label:(s[source+'_label']||(p>=th.ai?'ai':p>=th.uncertain?'uncertain':'human'));return {...s,p_ai:p,label}});const stats=localCounts({sentences});return {...r,sentences,all_sentences:r.sentences,markup_source:source,sentence_stats:{...r.sentence_stats,...stats.counts,total:sentences.length,ai_pct:sentences.length?Math.round(100*stats.counts.ai/sentences.length):0},authorship:{...r.authorship,word_percentages:{ai:stats.pct[0],uncertain:stats.pct[1],human:stats.pct[2]}}}}
-function localCounts(r){const counts={ai:0,uncertain:0,human:0},wc={ai:0,uncertain:0,human:0};for(const s of r.sentences||[]){counts[s.label]++;wc[s.label]+=Math.max(1,(s.text||'').trim().split(/\s+/).filter(Boolean).length)}const total=Object.values(wc).reduce((a,b)=>a+b,0),keys=['ai','uncertain','human'],raw=keys.map(k=>total?100*wc[k]/total:0),pct=raw.map(Math.floor);if(total){let left=100-pct.reduce((a,b)=>a+b,0);const order=keys.map((k,i)=>i).sort((a,b)=>(raw[b]-pct[b])-(raw[a]-pct[a])||a-b);for(let i=0;i<left;i++)pct[order[i]]++}return {counts,pct}}
-function renderResult(r){if(!r){$('empty').classList.remove('hide');$('output').classList.add('hide');return}$('empty').classList.add('hide');$('output').classList.remove('hide');const v=r.verdict||'uncertain';$('verdict').className='verdict '+v;$('vlabel').textContent=(dict().verdict[v]||dict().verdict.uncertain)+' · '+Math.min(99,Math.max(1,Math.round(100*(v==='human'?1-r.p_ai:r.p_ai))))+'%';$('vdesc').textContent=dict().desc[v]||'';$('langValue').textContent=dict().langs[r.language]||r.language;$('scoreValue').textContent=Number(r.score??r.ens_z??0).toFixed(3);const local=localResult(r),c=localCounts(local);$('windowValue').textContent=local.sentences.length+' · AI '+c.counts.ai+' / ? '+c.counts.uncertain+' / Human '+c.counts.human;$('modeValue').textContent=dict().modes[r.mode]||r.mode;const list=$('windowList');list.replaceChildren();local.sentences.forEach((x,i)=>{const el=document.createElement('span');el.className='win '+(x.label==='ai'?'flag':'clear');el.textContent=dict().sentenceN(i+1)+' · '+x.label;el.title=x.start+'–'+x.end+' · AI '+Math.round(100*x.p_ai)+'%';list.append(el)})}
-async function apiFetch(url,opts={}){const request=()=>fetch(url,{...opts,headers:{...(opts.headers||{}),'x-access-code':sessionStorage.getItem('linda_code')||''}});let res=await request();if(res.status===401){const code=prompt(lang==='ru'?'Введите код доступа к демо:':lang==='pl'?'Wpisz kod dostępu do wersji demo:':'Enter the demo access code:');if(code){sessionStorage.setItem('linda_code',code.trim());res=await request()}}const body=await res.json().catch(()=>({}));if(!res.ok)throw Error(body.detail||`HTTP ${res.status}`);return body}
-document.querySelectorAll('#langs button').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;localStorage.setItem('linda-ui-lang',lang);applyLang()});$('theme').onclick=()=>{const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;localStorage.setItem('linda-ui-theme',t);$('theme').textContent=t==='dark'?'☼':'☾'};const savedTheme=localStorage.getItem('linda-ui-theme');if(savedTheme){document.documentElement.dataset.theme=savedTheme;$('theme').textContent=savedTheme==='dark'?'☼':'☾'}
-document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('active',x===b))});$('text').addEventListener('input',()=>{saveText();updateCount();current().result=null;renderResult(null)});$('attach').onclick=()=>$('file').click();$('file').onchange=async()=>{const files=[...$('file').files];if(!files.length)return;const file=files[0];window.__queue=files.slice(1);$('error').textContent='';$('attach').disabled=true;try{const form=new FormData();form.append('file',file);const result=await apiFetch('/api/upload',{method:'POST',body:form});$('text').value=result.text;saveText();updateCount();current().result=null;renderResult(null)}catch(e){$('error').textContent=e.message}finally{$('attach').disabled=false;$('file').value=''}};
-$('analyze').onclick=async()=>{saveText();const owner=current();const text=owner.text.replace(/\r\n?/g,'\n').trim();owner.text=text;$('text').value=text;updateCount();$('error').textContent='';if(!text){$('error').textContent=lang==='ru'?'Сначала добавьте текст.':'Add text first.';return}$('analyze').disabled=true;const old=$('analyze').textContent;$('analyze').textContent='…';try{const data=await apiFetch('/api/detect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,mode})});if(docs.includes(owner)&&owner.text===text){owner.result=data.result;if(current()===owner)renderResult(data.result)}}catch(e){$('error').textContent=e.message}finally{$('analyze').disabled=false;$('analyze').textContent=old}};
+(()=>{
+const $=id=>document.getElementById(id);
+const txt={
+en:{
+title:'Demo — Free Hosted AI Text Detector',subtitle:'App 2.0.6.0 / Models 1.3.4 · English, Polish, Russian · Free hosted demo with 12 checks total',
+introHeader:'Welcome to the Linda free hosted demo',
+introText:'Limited demo environment: <strong>12 successful checks total</strong> across both detectors (Linda Loupe and Linda Assay). Desktop app is free for personal non-commercial use (14-day commercial trial). First request may take longer while models start.',
+restrictionsHeader:'Restrictions',restrictionsText:'Text: 20 words minimum, 6000 Unicode characters maximum. File uploads: TXT, MD, DOCX up to 2000000 bytes (upload does not consume checks). <strong>12 successful checks total</strong> shared across both detectors (browser cookie + network-level antiabuse guard, not precise per-person authentication).',
+loupeDesc:'Compact CPU detector. Works on any computer.',assayDesc:'Full GPU ensemble. Recommended for modern graphics cards.',
+checkBtn:'Check Text',uploadBtn:'Upload File',placeholder:'Paste text here (20 words minimum, 6000 characters maximum)…',
+exportHtml:'Export HTML',exportJson:'Export JSON',exportCsv:'Export CSV',
+hlHeader:'Highlighted Text (sentences marked by verdict)',hlPrompt:'Run a check to see highlighted text',
+hlLegend:'Red = AI-labeled sentences · Sentence-based highlighting',
+privacyHeader:'Privacy and technical notes',
+privacyText:'This hosted cloud demo processes your text; text is not stored by the backend beyond inference (platform policies apply). Do not submit confidential text. Switching detector/mode after a check does not relabel previous results. Document verdict and local sentence highlighting may differ; global AI signal is not proof. Never use AI detection as the sole basis for decisions about people. <a href="https://lendarixon.github.io/Linda/" target="_blank" rel="noopener">Learn more about the desktop version</a> · <a href="https://lendarixon.github.io/Linda/trust.html" target="_blank" rel="noopener">Trust statement</a>',
+verdict:{ai:'Likely AI generated',human:'Likely human written',uncertain:'Uncertain'},
+desc:{ai:'Document signals AI; local evidence may differ',human:'No sufficient AI signals in document',uncertain:'Mixed or inconclusive signals'},
+nomarked:'Global verdict AI/uncertain, but no marked sentences (sentence-based)',
+langs:{en:'English',pl:'Polish',ru:'Russian'},modes:{sensitive:'Sensitive',precise:'Precise'},detectors:{loupe:'Linda Loupe',assay:'Linda Assay'},
+retry:'Session init failed. Retry',init:'Initializing…',checking:'Checking…',
+langLabel:'Language',modeLabel:'Mode',detectorLabel:'Detector',scoreLabel:'AI Score',sentLabel:'Sentences',coverageLabel:'AI Coverage',
+counter:'{0} words · {1} / 6000 chars',remaining:'Remaining: {0} / {1}',
+total:'{0} total · {1} AI',coverage:'{0}% ({1}/{2} words)',
+errExceed:'Text exceeds 6000 characters',errShort:'Text too short (minimum 20 words)',errUploadUnavail:'Upload unavailable',errFile:'File exceeds 2000000 bytes',
+warnShort:'Short text (under 150 words): results may be less accurate',
+sens:'Sensitive',prec:'Precise',light:'Light',dark:'Dark',progWait:'Preparing…',progLoad:'Loading models…',progScan:'Analysing text…',progSent:'Marking sentences…',progDone:'Done',progUpload:'Uploading file…',progRead:'Reading document…'
+},
+pl:{
+title:'Demo — Darmowy Hostowany Detektor Tekstów AI',subtitle:'Aplikacja 2.0.6.0 / Modele 1.3.4 · Angielski, Polski, Rosyjski · Darmowe demo z 12 sprawdzeńmi',
+introHeader:'Witamy w darmowym demo Linda',
+introText:'Ograniczone środowisko demo: <strong>3 udane sprawdzenia łącznie</strong> dla obu detektorów (Linda Loupe i Linda Assay). Aplikacja desktopowa jest darmowa do użytku osobistego niekomercyjnego (14-dniowy okres próbny komercyjny). Pierwsze żądanie może trwać dłużej podczas uruchamiania modeli.',
+restrictionsHeader:'Ograniczenia',restrictionsText:'Tekst: minimum 20 słów, maksimum 6000 znaków Unicode. Przesyłanie plików: TXT, MD, DOCX do 2000000 bajtów (przesyłanie nie zużywa sprawdzeń). <strong>3 udane sprawdzenia łącznie</strong> współdzielone między detektorami (cookie przeglądarki + sieciowa ochrona antyabuzowa, nie precyzyjna uwierzytelnienie na osobę).',
+loupeDesc:'Kompaktowy detektor CPU. Działa na każdym komputerze.',assayDesc:'Pełny ensemble GPU. Zalecany dla nowoczesnych kart graficznych.',
+checkBtn:'Sprawdź Tekst',uploadBtn:'Prześlij Plik',placeholder:'Wklej tekst tutaj (minimum 20 słów, maksimum 6000 znaków)…',
+exportHtml:'Eksport HTML',exportJson:'Eksport JSON',exportCsv:'Eksport CSV',
+hlHeader:'Podświetlony Tekst (zdania oznaczone werdyktem)',hlPrompt:'Uruchom sprawdzenie, aby zobaczyć podświetlony tekst',
+hlLegend:'Czerwony = zdania oznaczone AI · Podświetlanie oparte na zdaniach',
+privacyHeader:'Prywatność i uwagi techniczne',
+privacyText:'To hostowane demo w chmurze przetwarza Twój tekst; tekst nie jest przechowywany przez backend poza inferencją (obowiązują zasady platformy). Nie przesyłaj poufnego tekstu. Zmiana detektora/trybu po sprawdzeniu nie zmienia etykiet poprzednich wyników. Werdykt dokumentu i lokalne podświetlenie zdań mogą się różnić; globalny sygnał AI nie jest dowodem. Nigdy nie używaj wykrywania AI jako jedynej podstawy decyzji o ludziach. <a href="https://lendarixon.github.io/Linda/" target="_blank" rel="noopener">Dowiedz się więcej o wersji desktopowej</a> · <a href="https://lendarixon.github.io/Linda/trust.html" target="_blank" rel="noopener">Oświadczenie zaufania</a>',
+verdict:{ai:'Prawdopodobnie AI',human:'Prawdopodobnie człowiek',uncertain:'Niejednoznaczne'},
+desc:{ai:'Dokument sygnalizuje AI; dowody lokalne mogą się różnić',human:'Brak wystarczających sygnałów AI w dokumencie',uncertain:'Sygnały mieszane lub niejednoznaczne'},
+nomarked:'Werdykt AI/nieokreślony, ale brak zaznaczonych zdań (oparte na zdaniach)',
+langs:{en:'Angielski',pl:'Polski',ru:'Rosyjski'},modes:{sensitive:'Czuły',precise:'Precyzyjny'},detectors:{loupe:'Linda Loupe',assay:'Linda Assay'},
+retry:'Inicjalizacja sesji nie powiodła się. Ponów',init:'Inicjalizacja…',checking:'Sprawdzanie…',
+langLabel:'Język',modeLabel:'Tryb',detectorLabel:'Detektor',scoreLabel:'Wynik AI',sentLabel:'Zdania',coverageLabel:'Pokrycie AI',
+counter:'{0} słów · {1} / 6000 znaków',remaining:'Pozostało: {0} / {1}',
+total:'{0} łącznie · {1} AI',coverage:'{0}% ({1}/{2} słów)',
+errExceed:'Tekst przekracza 6000 znaków',errShort:'Tekst za krótki (minimum 20 słów)',errUploadUnavail:'Przesyłanie niedostępne',errFile:'Plik przekracza 2000000 bajtów',
+warnShort:'Krótki tekst (poniżej 150 słów): wyniki mogą być mniej dokładne',
+sens:'Czuły',prec:'Precyzyjny',light:'Jasny',dark:'Ciemny',progWait:'Przygotowanie…',progLoad:'Ładowanie modeli…',progScan:'Analiza tekstu…',progSent:'Oznaczanie zdań…',progDone:'Gotowe',progUpload:'Wczytywanie pliku…',progRead:'Odczyt dokumentu…'
+},
+ru:{
+title:'Демо — Бесплатный Размещенный Детектор Текстов ИИ',subtitle:'Приложение 2.0.6.0 / Модели 1.3.4 · Английский, Польский, Русский · Бесплатное демо с 3 проверками',
+introHeader:'Добро пожаловать в бесплатное демо Linda',
+introText:'Ограниченная демо-среда: <strong>12 успешных проверок всего</strong> для обоих детекторов (Linda Loupe и Linda Assay). Настольное приложение бесплатно для личного некоммерческого использования (14-дневная коммерческая пробная версия). Первый запрос может занять больше времени во время запуска моделей.',
+restrictionsHeader:'Ограничения',restrictionsText:'Текст: минимум 20 слов, максимум 6000 символов Unicode. Загрузка файлов: TXT, MD, DOCX до 2000000 байт (загрузка не расходует проверки). <strong>12 успешных проверок всего</strong> общие для обоих детекторов (cookie браузера + сетевая защита от злоупотреблений, не точная аутентификация на человека).',
+loupeDesc:'Компактный детектор CPU. Работает на любом компьютере.',assayDesc:'Полный ансамбль GPU. Рекомендуется для современных видеокарт.',
+checkBtn:'Проверить Текст',uploadBtn:'Загрузить Файл',placeholder:'Вставьте текст здесь (минимум 20 слов, максимум 6000 символов)…',
+exportHtml:'Экспорт HTML',exportJson:'Экспорт JSON',exportCsv:'Экспорт CSV',
+hlHeader:'Выделенный Текст (предложения отмечены вердиктом)',hlPrompt:'Запустите проверку, чтобы увидеть выделенный текст',
+hlLegend:'Красный = предложения, помеченные ИИ · Выделение на основе предложений',
+privacyHeader:'Конфиденциальность и технические заметки',
+privacyText:'Это размещенное демо в облаке обрабатывает ваш текст; текст не хранится бэкендом за пределами вывода (применяются политики платформы). Не отправляйте конфиденциальный текст. Переключение детектора/режима после проверки не меняет метки предыдущих результатов. Вердикт документа и локальное выделение предложений могут отличаться; глобальный сигнал ИИ не является доказательством. Никогда не используйте обнаружение ИИ в качестве единственной основы для решений о людях. <a href="https://lendarixon.github.io/Linda/" target="_blank" rel="noopener">Узнайте больше о настольной версии</a> · <a href="https://lendarixon.github.io/Linda/trust.html" target="_blank" rel="noopener">Заявление о доверии</a>',
+verdict:{ai:'Вероятно ИИ',human:'Вероятно человек',uncertain:'Неоднозначно'},
+desc:{ai:'Документ сигнализирует ИИ; локальные доказательства могут отличаться',human:'Недостаточно признаков ИИ в документе',uncertain:'Смешанные или неоднозначные сигналы'},
+nomarked:'Вердикт ИИ/неоднозначен, но нет отмеченных предложений (на основе предложений)',
+langs:{en:'Английский',pl:'Польский',ru:'Русский'},modes:{sensitive:'Чувствительный',precise:'Точный'},detectors:{loupe:'Linda Loupe',assay:'Linda Assay'},
+retry:'Ошибка инициализации сеанса. Повторить',init:'Инициализация…',checking:'Проверка…',
+langLabel:'Язык',modeLabel:'Режим',detectorLabel:'Детектор',scoreLabel:'Оценка ИИ',sentLabel:'Предложения',coverageLabel:'Покрытие ИИ',
+counter:'{0} слов · {1} / 6000 символов',remaining:'Осталось: {0} / {1}',
+total:'{0} всего · {1} ИИ',coverage:'{0}% ({1}/{2} слов)',
+errExceed:'Текст превышает 6000 символов',errShort:'Текст слишком короткий (минимум 20 слов)',errUploadUnavail:'Загрузка недоступна',errFile:'Файл превышает 2000000 байт',
+warnShort:'Короткий текст (менее 150 слов): результаты могут быть менее точными',
+sens:'Чувствительный',prec:'Точный',light:'Светлый',dark:'Темный',progWait:'Подготовка…',progLoad:'Загрузка моделей…',progScan:'Анализ текста…',progSent:'Разметка предложений…',progDone:'Готово',progUpload:'Загрузка файла…',progRead:'Чтение документа…'
+}
+};
+Object.assign(txt.en,{caps:' These limits apply only to this free demo; the desktop app has no demo check or character caps.',quotaNote:'Three checks for this browser; shared networks may share the allowance.',hlLegend:'Red = AI signal · Amber = uncertain · Green = human label. Labels are model signals, not proof of authorship.',service:'The demo is temporarily unavailable. Try again shortly.',used:'All three free checks have been used. Continue in the desktop app.',capacity:'The free demo has reached its daily capacity. Please try tomorrow.',invalid:'This file or request could not be processed. Check the format and demo limits.',markup:'Markup',sources:{tokens:'Token-based sentence labels',hybrid:'Sentence and context labels',context:'Context-based sentence labels',sentence:'Sentence labels'},report:'Report',generated:'Generated',proof:'Not proof of authorship'});
+Object.assign(txt.pl,{caps:' Te limity dotyczą tylko darmowego demo; aplikacja desktopowa nie ma limitów demo dotyczących liczby sprawdzeń ani znaków.',quotaNote:'Trzy sprawdzenia w tej przeglądarce; użytkownicy wspólnej sieci mogą dzielić limit.',hlLegend:'Czerwony = AI · Bursztynowy = niejednoznaczne · Zielony = etykieta człowieka. Etykiety nie stanowią dowodu autorstwa.',service:'Demo jest chwilowo niedostępne. Spróbuj ponownie za chwilę.',used:'Wykorzystano trzy darmowe sprawdzenia. Kontynuuj w aplikacji desktopowej.',capacity:'Demo osiągnęło dzienny limit. Spróbuj jutro.',invalid:'Nie można przetworzyć pliku lub żądania. Sprawdź format i limity demo.',markup:'Podświetlanie',sources:{tokens:'Etykiety zdań z tokenów',hybrid:'Zdania i kontekst',context:'Kontekst zdań',sentence:'Etykiety zdań'},report:'Raport',generated:'Utworzono',proof:'Nie stanowi dowodu autorstwa'});
+Object.assign(txt.ru,{caps:' Эти ограничения действуют только в бесплатном демо; в настольном приложении нет демо-лимитов на проверки и символы.',quotaNote:'Три проверки в этом браузере; пользователи общей сети могут делить лимит.',hlLegend:'Красный — признаки ИИ · Янтарный — неоднозначно · Зелёный — метка «человек». Метки не доказывают авторство.',service:'Демо временно недоступно. Повторите попытку чуть позже.',used:'Все три бесплатные проверки использованы. Продолжите в настольном приложении.',capacity:'Достигнут дневной лимит демо. Попробуйте завтра.',invalid:'Не удалось обработать файл или запрос. Проверьте формат и ограничения демо.',markup:'Разметка',sources:{tokens:'Предложения по токенным оценкам',hybrid:'Предложения и контекст',context:'Контекст предложений',sentence:'Метки предложений'},report:'Отчёт',generated:'Создано',proof:'Не является доказательством авторства'});
 
-// ---- extras: gauge, highlight, chart, exports, revision prompt, queue, history, API snippet ----
-const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function tokens(text){return text.split(/(\s+)/)}
-function highlighted(text,r,asHtml){const chars=Array.from(text),sents=[...(r.sentences||[])].sort((a,b)=>a.start-b.start);let pos=0,out='';for(const x of sents){if(x.start<pos||x.end>chars.length)continue;const gap=chars.slice(pos,x.start).join(''),chunk=chars.slice(x.start,x.end).join('');out+=asHtml?esc(gap):gap;const color=x.label==='ai'?'#e5140040':x.label==='uncertain'?'#f0a30a40':'#60a91720';out+=asHtml?'<mark style="background:'+color+';color:inherit" title="'+x.label+' · AI '+Math.round(100*x.p_ai)+'%">'+esc(chunk)+'</mark>':chunk;pos=x.end}const tail=chars.slice(pos).join('');return out+(asHtml?esc(tail):tail)}
-function flaggedPassages(text,r){const chars=Array.from(text);return(localResult(r).sentences||[]).filter(x=>x.label==='ai').map(x=>chars.slice(x.start,x.end).join(''))}
-function gauge(r){const t=r.thresholds;if(!t)return .5;const v=(Number(r.score??r.ens_z??0)-t.p5)/Math.max(1e-6,(t.p03-t.p5));return Math.max(0,Math.min(1,v))}
-function hist(){try{return JSON.parse(localStorage.getItem('linda-hist')||'[]')}catch(e){return[]}}
-function renderHist(){const l=hist();const box=$('histList');box.replaceChildren();if(!l.length){box.textContent=dict().histEmpty;return}l.slice().reverse().forEach(h=>{const row=document.createElement('div');row.className='hrow';row.innerHTML='<span>'+esc(h.name)+' · '+esc(h.when)+'</span><b>'+esc(dict().verdict[h.verdict]||h.verdict)+' · '+h.words+'</b>';box.append(row)});const b=document.createElement('button');b.className='secondary';b.style.marginTop='10px';b.textContent=dict().histClear;b.onclick=()=>{localStorage.removeItem('linda-hist');renderHist()};box.append(b)}
-function pushHist(r){if(r._logged)return;r._logged=true;const l=hist();l.push({name:current().name,when:new Date().toLocaleString(),verdict:r.verdict,words:current().text.trim().split(/\s+/).length});try{localStorage.setItem('linda-hist',JSON.stringify(l.slice(-30)))}catch(e){}renderHist()}
-function extra(r){const card=$('hlCard');if(!r){card.classList.add('hide');return}const local=localResult(r),c=localCounts(local);$('hlText').innerHTML=highlighted(current().text,local,true);card.classList.remove('hide');$('localCoverage').textContent='AI '+c.pct[0]+'% · ? '+c.pct[1]+'% · Human '+c.pct[2]+'%';$('gaugeFill').style.left='calc('+Math.round(gauge(r)*100)+'% - 2px)';const ch=$('chart');ch.replaceChildren();for(const x of local.sentences){const i=document.createElement('i');i.style.height=Math.max(6,Math.round(100*x.p_ai))+'%';if(x.label==='ai')i.className='f';i.title=x.label+' · AI '+Math.round(100*x.p_ai)+'%';ch.append(i)}pushHist(r)}
-const _rr=renderResult;renderResult=function(r){_rr(r);extra(r);const n=$('text').value.trim()?$('text').value.trim().split(/\s+/).length:0;const sw=$('shortWarn');sw.textContent=dict().shortWarn;sw.classList.toggle('hide',!(n>0&&n<150))};
-function download(name,type,data){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
-function summary(r){const local=localResult(r),c=localCounts(local);return dict().reportTitle+': '+(dict().verdict[r.verdict]||r.verdict)+' · '+Math.round(100*r.p_ai)+'% AI document score · '+local.markup_source+' · '+c.counts.ai+'/'+local.sentences.length+' AI sentences · '+c.pct[0]+'% AI-labelled words · '+dict().reportNote}
-$('expJson').onclick=()=>{const r=current().result;if(r)download('linda-report.json','application/json',JSON.stringify({generated:new Date().toISOString(),name:current().name,result:localResult(r)},null,1))};
-$('expCsv').onclick=()=>{const r=current().result;if(!r)return;const local=localResult(r);const rows=['sentence,start,end,p_ai,label,source'].concat((local.sentences||[]).map((s,i)=>[i+1,s.start,s.end,s.p_ai,s.label,local.markup_source].join(',')));download('linda-sentences.csv','text/csv',rows.join('\n'))};
-$('expHtml').onclick=()=>{const r=current().result;if(!r)return;const css='body{font:15px/1.7 system-ui,sans-serif;max-width:860px;margin:30px auto;padding:0 16px;color:#182031}mark{background:#f6c7cf;border-radius:4px}h1{font-size:22px}.m{color:#657087;font-size:13px}.note{margin-top:20px;font-size:12px;color:#657087;border-top:1px solid #dce2ec;padding-top:10px}';download('linda-report.html','text/html','<!doctype html><meta charset="utf-8"><title>'+esc(dict().reportTitle)+'</title><style>'+css+'</style><h1>'+esc(dict().reportTitle)+'</h1><p class="m">'+esc(summary(r))+'</p><p class="m">'+esc(dict().gaugeLabel)+': '+Math.round(gauge(r)*100)+'/100</p><div style="white-space:pre-wrap">'+highlighted(current().text,localResult(r),true)+'</div><p class="note">'+esc(dict().reportNote)+'</p>')};
-$('expPrint').onclick=()=>window.print();
-$('expCopy').onclick=async()=>{const r=current().result;if(!r)return;try{await navigator.clipboard.writeText(summary(r))}catch(e){}$('expCopy').textContent=dict().copied;setTimeout(()=>$('expCopy').textContent=dict().copyBtn,1500)};
-$('expPrompt').onclick=()=>{const r=current().result;if(!r)return;const ps=flaggedPassages(current().text,r);const d=dict();const body=ps.length?ps.map((p,i)=>d.revFragment+' '+(i+1)+':\n\"\"\"\n'+p+'\n\"\"\"').join('\n\n'):d.revNone;const prompt=d.revIntro+'\n\n'+d.revRules+'\n\n'+body+'\n';download('revision-prompt.txt','text/plain',prompt);try{navigator.clipboard.writeText(prompt)}catch(e){}};
-// batch: files beyond the first become new tabs; "check all tabs" runs them one by one (the demo limits still apply)
-const _onchange=$('file').onchange;$('file').onchange=async()=>{const files=[...$('file').files];await _onchange();for(const f of window.__queue||[]){const id=Date.now()+Math.floor(Math.random()*1000);docs.push({id,name:f.name,text:'',result:null});select(id);try{const form=new FormData();form.append('file',f);const res=await apiFetch('/api/upload',{method:'POST',body:form});$('text').value=res.text;saveText();updateCount()}catch(e){$('error').textContent=e.message}}window.__queue=[]};
-$('analyzeAll').onclick=async()=>{for(const d of docs.slice()){if(d.result||!d.text.trim())continue;select(d.id);$('error').textContent=dict().queue+': '+d.name;await $('analyze').onclick()}};
-$('apiDoc').textContent="curl -X POST \"$LINDA_DEMO_URL/api/detect\" \\\n  -H \"x-access-code: <code>\" -H \"Content-Type: application/json\" \\\n  -d '{\"text\": \"...\", \"mode\": \"sensitive\"}'\n\n# response: {\"status\":\"ok\",\"result\":{\"verdict\":\"ai|uncertain|human\",\"language\":\"en|pl|ru\",\"score\":0.0,\"p_ai\":0.0,\"sentences\":[...],\"thresholds\":{...}}}";
-renderHist();
-applyLang();$('text').value=current().text;updateCount();
+Object.assign(txt.en,{title:'Check a text. See the evidence.',subtitle:'Try Linda Loupe and Linda Assay in your browser.',introHeader:'Free online demo',introText:'Three checks to explore Linda. The desktop app runs locally, with no demo limits.',restrictionsHeader:'Demo limits',restrictionsText:'Up to <strong>6,000 characters</strong> per text. At least 20 words. TXT, MD or DOCX files up to <strong>2 MB</strong>.',loupeDesc:'Lightweight model. Fast checks on CPU.',assayDesc:'Full ensemble. Runs on a cloud GPU.',privacyHeader:'About this demo',privacyText:'Your text is sent to Modal for processing. We do not save a text history or put text in the quota database. Modal processing and retention policies apply. Do not submit confidential text. The allowance is linked to this browser, with a daily shared-network limit. Never use a detector verdict as the sole basis for a decision about a person.',demoBadge:'FREE DEMO',download:'Get the desktop app',editorTitle:'Your text',editorHint:'Paste an excerpt or attach a document.',modelTitle:'Detector',thresholdTitle:'Detection mode',modeHint:'Sensitive finds more signals. Precise reduces false alarms.',emptyTitle:'Your result appears here',emptyText:'Run a check to see the document verdict, local highlighting and model signals.',resultTitle:'Document verdict',checkBtn:'Analyze text',uploadBtn:'Attach file',hlHeader:'Sentence-level highlighting',scoreLabel:'Document AI score',coverageLabel:'AI-labeled words',cloudNote:'Online demo · processed in the cloud. The desktop app checks text locally.',version:'App 2.0.6.0 · Model pack 1.3.4',errFile:'The demo accepts files up to 2 MB.'});
+Object.assign(txt.pl,{title:'Sprawdź tekst. Zobacz wskazania.',subtitle:'Wypróbuj Linda Loupe i Linda Assay w przeglądarce.',introHeader:'Darmowe demo online',introText:'Trzy sprawdzenia, aby poznać Lindę. Aplikacja desktopowa działa lokalnie, bez limitów demo.',restrictionsHeader:'Limity demo',restrictionsText:'Do <strong>6000 znaków</strong> w tekście. Minimum 20 słów. Pliki TXT, MD lub DOCX do <strong>2 MB</strong>.',loupeDesc:'Lekki model. Szybkie sprawdzanie na CPU.',assayDesc:'Pełny zestaw modeli. Działa na GPU w chmurze.',privacyHeader:'O tym demo',privacyText:'Tekst jest przesyłany do Modal do analizy. Nie zapisujemy historii tekstów ani tekstu w bazie limitów. Obowiązują zasady przetwarzania i przechowywania danych Modal. Nie przesyłaj poufnych tekstów. Limit dotyczy tej przeglądarki i obejmuje dzienne zabezpieczenie dla wspólnej sieci. Werdykt detektora nie może być jedyną podstawą decyzji dotyczącej człowieka.',demoBadge:'DARMOWE DEMO',download:'Pobierz aplikację',editorTitle:'Twój tekst',editorHint:'Wklej fragment lub dołącz dokument.',modelTitle:'Detektor',thresholdTitle:'Tryb analizy',modeHint:'Czuły wykrywa więcej sygnałów. Precyzyjny ogranicza fałszywe alarmy.',emptyTitle:'Tutaj pojawi się wynik',emptyText:'Sprawdź tekst, aby zobaczyć werdykt, podświetlenie zdań i wskazania modeli.',resultTitle:'Werdykt dokumentu',checkBtn:'Analizuj tekst',uploadBtn:'Dołącz plik',hlHeader:'Podświetlenie zdań',scoreLabel:'Ocena AI dokumentu',coverageLabel:'Słowa oznaczone AI',cloudNote:'Demo online · analiza w chmurze. Aplikacja desktopowa sprawdza tekst lokalnie.',version:'Aplikacja 2.0.6.0 · Pakiet modeli 1.3.4',errFile:'Demo przyjmuje pliki do 2 MB.'});
+Object.assign(txt.ru,{title:'Проверьте текст. Посмотрите разметку.',subtitle:'Попробуйте Linda Loupe и Linda Assay в браузере.',introHeader:'Бесплатное онлайн-демо',introText:'Три проверки, чтобы познакомиться с Linda. Настольное приложение работает локально, без демо-лимитов.',restrictionsHeader:'Ограничения демо',restrictionsText:'До <strong>6 000 символов</strong> в тексте. Не менее 20 слов. Файлы TXT, MD или DOCX до <strong>2 МБ</strong>.',loupeDesc:'Лёгкая модель. Быстрые проверки на CPU.',assayDesc:'Полный ансамбль. Работает на облачной GPU.',privacyHeader:'Об этом демо',privacyText:'Текст отправляется в Modal для анализа. Мы не сохраняем историю текстов и не записываем текст в базу счётчика. Действуют правила обработки и хранения данных Modal. Не отправляйте конфиденциальные тексты. Лимит привязан к этому браузеру и дополнен дневным ограничением для общей сети. Вердикт детектора не должен быть единственным основанием для решения о человеке.',demoBadge:'БЕСПЛАТНОЕ ДЕМО',download:'Скачать приложение',editorTitle:'Ваш текст',editorHint:'Вставьте отрывок или прикрепите документ.',modelTitle:'Детектор',thresholdTitle:'Режим проверки',modeHint:'Чувствительный находит больше признаков. Точный снижает ложные срабатывания.',emptyTitle:'Здесь появится результат',emptyText:'Запустите проверку, чтобы увидеть общий вердикт, разметку предложений и оценки моделей.',resultTitle:'Общий вердикт',checkBtn:'Проверить текст',uploadBtn:'Прикрепить файл',hlHeader:'Разметка предложений',scoreLabel:'Оценка ИИ для документа',coverageLabel:'Слова с признаками ИИ',cloudNote:'Онлайн-демо · анализ в облаке. Настольное приложение проверяет текст локально.',version:'Приложение 2.0.6.0 · Пакет моделей 1.3.4',errFile:'В демо принимаются файлы до 2 МБ.'});
+
+
+// Suitability guidance concerns the input, never a prediction of its author.
+Object.assign(txt.en,{
+ introText:'12 successful checks shared by both detectors. Uploading a file is not a check. Only a completed analysis uses one check.',
+ restrictionsText:'Up to <strong>6,000 characters</strong>, at least 20 words. <strong>12 checks</strong> for this browser, with a shared-network daily limit. TXT, MD or DOCX up to <strong>2 MB</strong>.',
+ quotaNote:'12 checks for this browser; users on the same network share a daily allowance.',used:'The 12 free checks for this browser or today’s shared network have been used. Continue in the desktop app.',
+ inputHelp:'For a useful assessment, choose continuous prose: an essay, article or passage of at least 300 words. 300 words is a recommendation, not a guarantee. Files: TXT, MD, DOCX. Presentations (PPT/PPTX) and PDF are not accepted in this demo.',
+ warnTitle:'Before you use a check',warnShort:'Only {0} words — fewer than the recommended 300. There may be too little writing for the detector to assess reliably. Add a longer passage if possible.',
+ warnList:'This looks like a list or many short entries. Rules, forms, tables and slide text often give too little connected writing. Choose an essay or article instead. This is a structure check, not an AI verdict.',
+ warnProof:'A low AI score does not prove a person wrote the text. A high score does not prove AI use.',
+ formatsError:'This file was not analysed. Choose TXT, MD or DOCX. PPT/PPTX presentations and PDF are not supported here. Exporting slides does not make their text suitable. No check was used.',
+ uploadFailed:'The file could not be read. No analysis was run and no check was used. Choose a supported file, or edit/paste the text to continue.',
+ fileTooLarge:'The file is larger than 2 MB. It was not analysed; no check was used.',
+ checkAnyway:'Check anyway · uses 1 check',checkNormal:'Analyse text · uses 1 check',
+ placeholder:'Paste an essay, article or other continuous prose. Prefer at least 300 words; maximum 6,000 characters.',
+ verdict:{ai:'AI signals found',human:'No clear AI signals found',uncertain:'The result is inconclusive'}
+});
+Object.assign(txt.pl,{
+ introText:'12 udanych analiz łącznie dla obu detektorów. Wczytanie pliku nie jest analizą. Tylko zakończona analiza zużywa jedną próbę.',
+ restrictionsText:'Do <strong>6000 znaków</strong>, minimum 20 słów. <strong>12 prób</strong> w tej przeglądarce, z dziennym limitem dla wspólnej sieci. TXT, MD lub DOCX do <strong>2 MB</strong>.',
+ quotaNote:'12 prób w tej przeglądarce; użytkownicy wspólnej sieci dzielą dzienny limit.',used:'Wykorzystano 12 prób w tej przeglądarce lub dzisiejszy limit wspólnej sieci. Kontynuuj w aplikacji desktopowej.',
+ inputHelp:'Do oceny wybierz tekst ciągły: esej, artykuł lub fragment liczący co najmniej 300 słów. To zalecenie, a nie gwarancja poprawnego wyniku. Pliki: TXT, MD, DOCX. Demo nie przyjmuje prezentacji PPT/PPTX ani PDF.',
+ warnTitle:'Zanim wykorzystasz próbę',warnShort:'Tylko {0} słów — mniej niż zalecane 300. Detektor może mieć za mało tekstu, aby dokonać wiarygodnej oceny. Jeśli możesz, dodaj dłuższy fragment.',
+ warnList:'Tekst przypomina listę lub wiele krótkich wpisów. Regulaminy, formularze, tabele i slajdy często zawierają za mało tekstu ciągłego. Wybierz esej lub artykuł. To ocena struktury, a nie sygnał użycia AI.',
+ warnProof:'Niski wynik AI nie dowodzi, że tekst napisał człowiek. Wysoki wynik nie dowodzi użycia AI.',
+ formatsError:'Plik nie został przeanalizowany. Wybierz TXT, MD lub DOCX. Prezentacje PPT/PPTX i PDF nie są tutaj obsługiwane. Eksport slajdów nie sprawia, że ich tekst nadaje się do oceny. Nie zużyto próby.',
+ uploadFailed:'Nie udało się odczytać pliku. Nie uruchomiono analizy i nie zużyto próby. Wybierz obsługiwany plik albo edytuj lub wklej tekst, aby kontynuować.',
+ fileTooLarge:'Plik przekracza 2 MB. Nie został przeanalizowany; nie zużyto próby.',
+ checkAnyway:'Analizuj mimo to · zużywa 1 próbę',checkNormal:'Analizuj tekst · zużywa 1 próbę',
+ placeholder:'Wklej esej, artykuł lub inny tekst ciągły. Zalecamy co najmniej 300 słów; maksymalnie 6000 znaków.',
+ verdict:{ai:'Wykryto sygnały AI',human:'Nie wykryto wyraźnych sygnałów AI',uncertain:'Wynik niejednoznaczny'}
+});
+Object.assign(txt.ru,{
+ introText:'12 успешных проверок на оба детектора. Загрузка файла — ещё не проверка. Только завершённый анализ расходует одну попытку.',
+ restrictionsText:'До <strong>6 000 символов</strong>, минимум 20 слов. <strong>12 попыток</strong> для этого браузера, с дневным ограничением для общей сети. TXT, MD или DOCX до <strong>2 МБ</strong>.',
+ quotaNote:'12 попыток в этом браузере; пользователи общей сети делят дневной лимит.',used:'12 попыток этого браузера или сегодняшний лимит общей сети использованы. Продолжите в настольном приложении.',
+ inputHelp:'Для оценки нужен связный текст: сочинение, статья или отрывок хотя бы на 300 слов. Это рекомендация, а не гарантия точности. Файлы: TXT, MD, DOCX. Презентации PPT/PPTX и PDF в этом демо не принимаются.',
+ warnTitle:'Перед тем как потратить попытку',warnShort:'Всего {0} слов — меньше рекомендуемых 300. Детектору может не хватить текста для надёжной оценки. По возможности добавьте более длинный отрывок.',
+ warnList:'Текст похож на список или набор коротких пунктов. В правилах, анкетах, таблицах и слайдах часто слишком мало связного текста. Лучше выбрать сочинение или статью. Это подсказка о структуре, а не признак ИИ.',
+ warnProof:'Низкая оценка ИИ не доказывает, что текст написал человек. Высокая оценка не доказывает использование ИИ.',
+ formatsError:'Этот файл не проверен. Выберите TXT, MD или DOCX. Презентации PPT/PPTX и PDF здесь не поддерживаются. Экспорт слайдов не делает их текст пригодным для оценки. Попытка не потрачена.',
+ uploadFailed:'Не удалось прочитать файл. Анализ не запускался, попытка не потрачена. Выберите поддерживаемый файл или измените/вставьте текст, чтобы продолжить.',
+ fileTooLarge:'Файл больше 2 МБ. Он не проверен, попытка не потрачена.',
+ checkAnyway:'Всё равно проверить · 1 попытка',checkNormal:'Проверить текст · 1 попытка',
+ placeholder:'Вставьте сочинение, статью или другой связный текст. Желательно от 300 слов; максимум 6 000 символов.',
+ verdict:{ai:'Найдены признаки ИИ',human:'Явных признаков ИИ не найдено',uncertain:'Неоднозначный результат'}
+});
+
+function inputSuitability(value){
+ const text=normLF(value).trim(),words=text?text.split(/\s+/u).length:0;
+ const lines=text.split('\n').map(x=>x.trim()).filter(Boolean);
+ const sizes=lines.map(x=>x.split(/\s+/u).length);
+ const marked=lines.filter(x=>/^(?:[-*•▪◦–—]\s+|\d+[.)]\s+|[A-Za-zА-Яа-я][.)]\s+)/u.test(x)).length;
+ const short= sizes.filter(n=>n<=20).length;
+ const listLike=(lines.length>=4&&marked>=3&&marked/lines.length>=0.5)||(lines.length>=6&&short/lines.length>=0.8&&words/lines.length<=14);
+ return {words,short:words>0&&words<300,listLike};
+}
+function guidanceHTML(text){
+ const f=inputSuitability(text),t=txt[lang],messages=[];
+ if(f.short)messages.push(fmt(t.warnShort,f.words));
+ if(f.listLike)messages.push(t.warnList);
+ return messages.length?'<strong>'+esc(t.warnTitle)+'</strong>'+messages.map(x=>'<p>'+esc(x)+'</p>').join('')+'<p>'+esc(t.warnProof)+'</p>':'';
+}
+
+Object.assign(txt.en,{uploadTooLong:'The file contains more than 6,000 characters. Choose a shorter excerpt. Nothing was analysed; no check was used.',uploadEmpty:'No text was found in this file. Choose a document containing text. No check was used.',uploadEncoding:'Save this text file as UTF-8, or use DOCX. No analysis was run; no check was used.',uploadTimedOut:'Reading the file took too long. Please try again. No analysis was run; no check was used.'});
+Object.assign(txt.pl,{uploadTooLong:'Plik zawiera ponad 6000 znaków. Wybierz krótszy fragment. Nie wykonano analizy i nie zużyto próby.',uploadEmpty:'W pliku nie znaleziono tekstu. Wybierz dokument zawierający tekst. Nie zużyto próby.',uploadEncoding:'Zapisz plik tekstowy w UTF-8 lub użyj DOCX. Nie wykonano analizy i nie zużyto próby.',uploadTimedOut:'Odczyt pliku trwał zbyt długo. Spróbuj ponownie. Nie wykonano analizy i nie zużyto próby.'});
+Object.assign(txt.ru,{uploadTooLong:'В файле больше 6 000 символов. Выберите более короткий отрывок. Анализ не запускался, попытка не потрачена.',uploadEmpty:'В файле не найден текст. Выберите документ с текстом. Попытка не потрачена.',uploadEncoding:'Сохраните текстовый файл в UTF-8 или используйте DOCX. Анализ не запускался, попытка не потрачена.',uploadTimedOut:'Чтение файла заняло слишком много времени. Попробуйте ещё раз. Анализ не запускался, попытка не потрачена.'});
+let lang='en',mode='sensitive',detector='loupe',session=null,busy=false,result=null,apiError='',snapshot={text:'',mode:'',detector:''};
+let uploadBlocked=false,uploadErrorKey='';
+
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function chars(s){return Array.from(s)}
+function fmt(t,...a){return t.replace(/\{(\d+)\}/g,(m,n)=>a[n]!=null?a[n]:m)}
+function normLF(s){return s.replace(/\r\n/g,'\n').replace(/\r/g,'\n')}
+function updateLang(){
+const t=txt[lang];
+document.documentElement.lang=lang;document.title='Linda — '+t.introHeader;document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t[el.dataset.i18n]);$('pageTitle').textContent=t.title;$('pageSubtitle').textContent=t.subtitle;
+$('introHeader').textContent=t.introHeader;$('introText').innerHTML=t.introText;
+$('restrictionsHeader').textContent=t.restrictionsHeader;$('restrictionsText').innerHTML=t.restrictionsText.replace(/\([^)]*\)\.$/,t.quotaNote)+t.caps;
+$('loupeDesc').textContent=t.loupeDesc;$('assayDesc').textContent=t.assayDesc;
+$('checkBtn').textContent=busy?t.checking:t.checkBtn;$('uploadBtn').textContent=t.uploadBtn;
+$('textInput').placeholder=t.placeholder;$('textInput').setAttribute('aria-label',t.editorTitle);
+$('exportHtml').textContent=t.exportHtml;$('exportJson').textContent=t.exportJson;$('exportCsv').textContent=t.exportCsv;
+$('hlHeader').textContent=t.hlHeader;$('hlLegend').textContent=t.hlLegend;
+$('privacyHeader').textContent=t.privacyHeader;$('privacyText').innerHTML=t.privacyText;
+$('langLabel').textContent=t.langLabel;$('modeLabel').textContent=t.modeLabel;$('detectorLabel').textContent=t.detectorLabel;
+$('scoreLabel').textContent=t.scoreLabel;$('sentLabel').textContent=t.sentLabel;$('coverageLabel').textContent=t.coverageLabel;
+$('inputHelp').textContent=t.inputHelp;
+$('sensBtn').textContent=t.sens;$('precBtn').textContent=t.prec;
+$('lightBtn').textContent=t.light;$('darkBtn').textContent=t.dark;$('retryBtn').textContent=t.retry;
+if(!result)$('hlText').textContent=t.hlPrompt;
+if(result)showResult(result);
+}
+function updateUI(){
+$('highlightPanel').hidden=!result;$('emptyResult').hidden=!!result;
+document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang));
+document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+document.querySelectorAll('[data-theme]').forEach(b=>b.classList.toggle('active',b.dataset.theme===document.documentElement.dataset.theme));
+document.querySelectorAll('.tile').forEach(t=>t.classList.toggle('active',t.dataset.detector===detector));
+const raw=$('textInput').value,norm=normLF(raw),chs=chars(norm).length,text=norm.trim(),words=text?text.split(/\s+/).filter(Boolean).length:0;
+const t=txt[lang];
+$('counter').textContent=fmt(t.counter,words,chs);
+$('remaining').textContent=session?fmt(t.remaining,session.remaining,session.max_uses):t.init;
+const valid=session&&!busy&&!uploadBlocked&&words>=session.min_words&&chs<=session.max_chars&&session.remaining>0;
+$('checkBtn').disabled=!valid;
+$('uploadBtn').disabled=busy||!session;
+$('textInput').disabled=busy;
+document.querySelectorAll('.tile').forEach(el=>el.tabIndex=busy?-1:0);
+document.querySelectorAll('#modeSwitch button,#langSwitch button,#themeSwitch button').forEach(el=>el.disabled=busy);
+let errMsg=uploadErrorKey?t[uploadErrorKey]:apiError;
+if(!errMsg&&session&&chs>session.max_chars)errMsg=t.errExceed;
+else if(!errMsg&&session&&words>0&&words<session.min_words)errMsg=t.errShort;
+$('error').textContent=errMsg;
+const guidance=guidanceHTML(text);
+$('warn').style.display=guidance?'block':'none';$('warn').innerHTML=guidance;
+$('counter').classList.toggle('short-input',words>0&&words<300);
+$('checkBtn').textContent=busy?t.checking:guidance?t.checkAnyway:t.checkNormal;
+}
+
+async function api(path,opts={}){
+let r;try{r=await fetch(path,opts)}catch(e){throw new Error(txt[lang].service)}
+const j=await r.json().catch(()=>({}));
+if(session&&j.remaining!=null)session.remaining=j.remaining;
+if(!r.ok){
+if(r.status===429&&session&&j.remaining!=null){session.remaining=j.remaining;updateUI()}
+const t=txt[lang];throw new Error(r.status===429?(j.remaining===0?t.used:t.capacity):r.status>=500?t.service:t.invalid)
+}
+return j;
+}
+
+async function initSession(){
+busy=true;apiError='';$('retryBtn').hidden=true;updateUI();
+try{session=await api('/api/session');updateUI()}
+catch(e){
+session=null;
+apiError=e.message;$('retryBtn').textContent=txt[lang].retry;$('retryBtn').hidden=false;updateUI()
+}
+finally{busy=false;updateUI()}
+}
+
+$('langSwitch').onclick=e=>{if(!busy&&e.target.dataset.lang){lang=e.target.dataset.lang;updateLang();updateUI()}};
+$('modeSwitch').onclick=e=>{if(!busy&&e.target.dataset.mode){mode=e.target.dataset.mode;updateUI()}};
+$('themeSwitch').onclick=e=>{if(!busy&&e.target.dataset.theme){document.documentElement.dataset.theme=e.target.dataset.theme;updateUI()}};
+$('detectorGrid').onclick=e=>{const el=e.target.closest('.tile');if(el&&!busy){detector=el.dataset.detector;updateUI()}};
+$('detectorGrid').onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('tile')&&!busy){e.preventDefault();detector=e.target.dataset.detector;updateUI()}};
+$('retryBtn').onclick=initSession;
+$('textInput').oninput=()=>{apiError='';uploadErrorKey='';uploadBlocked=false;const norm=normLF($('textInput').value).trim();if(result&&snapshot.text!==norm){result=null;$('resultSection').style.display='none'}updateUI()};
+$('textInput').onkeydown=e=>{if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();doCheck()}};
+const anProg=$('anProg'),anProgBar=$('anProgBar'),anProgWrap=$('anProgWrap'),anProgLabel=$('anProgLabel');
+let progTimer=null;
+function progShow(pct,label,busy){
+if(!anProg)return;
+anProg.classList.toggle('hidden',false);
+anProgWrap.classList.toggle('busy',!!busy);
+anProgBar.style.width=(busy&&pct==null?100:Math.max(2,Math.min(100,pct||0)))+'%';
+anProg.setAttribute('aria-valuenow',Math.round(pct||0));
+anProgLabel.textContent=label||'';
+}
+function progHide(){
+if(progTimer&&typeof clearInterval==='function'){clearInterval(progTimer);progTimer=null}
+else{progTimer=null}
+if(anProg){
+anProg.classList.toggle('hidden',true);
+anProgWrap.classList.toggle('busy',false);
+anProgBar.style.width='0';
+anProgLabel.textContent='';
+}
+}
+
+$('uploadBtn').onclick=()=>$('fileInput').click();
+$('fileInput').onchange=async()=>{
+const file=$('fileInput').files[0];if(!file)return;
+const t=txt[lang];
+if(!session||busy){apiError=t.errUploadUnavail;$('fileInput').value='';updateUI();return}
+// A rejected replacement must never leave an old text ready to spend a check.
+uploadBlocked=true;result=null;$('resultSection').style.display='none';
+if(!/\.(txt|md|docx)$/i.test(file.name)){uploadErrorKey='formatsError';$('fileInput').value='';updateUI();return}
+if(file.size>2000000){uploadErrorKey='fileTooLarge';$('fileInput').value='';updateUI();return}
+busy=true;apiError='';uploadErrorKey='';updateUI();
+progHide();progShow(2,t.progUpload,false);
+try{
+const res=await new Promise((resolve,reject)=>{
+const xhr=new XMLHttpRequest(),fd=new FormData();
+fd.append('file',file);
+xhr.open('POST','/api/upload');xhr.timeout=60000;
+xhr.ontimeout=()=>reject(Object.assign(new Error(t.uploadTimedOut),{guidanceKey:'uploadTimedOut'}));xhr.onabort=()=>reject(new Error(t.uploadFailed));
+xhr.upload.onprogress=e=>{
+if(e.lengthComputable){
+const pct=Math.round((e.loaded/e.total)*50);
+progShow(pct,t.progUpload+' '+Math.round((e.loaded/e.total)*100)+'%',false);
+}
+};
+xhr.upload.onload=()=>progShow(null,t.progRead,true);
+xhr.onload=()=>{
+let j={};try{j=JSON.parse(xhr.responseText)}catch(e){}
+if(xhr.status>=200&&xhr.status<300&&j.status==='ok'&&typeof j.text==='string')resolve(j);
+else reject(Object.assign(new Error(t.uploadFailed),{guidanceKey:({text_too_long:'uploadTooLong',empty_document:'uploadEmpty',invalid_encoding:'uploadEncoding',unsupported_format:'formatsError'})[j.error_code]||'uploadFailed'}));
+};
+xhr.onerror=()=>reject(new Error(t.uploadFailed));
+xhr.send(fd);
+});
+progShow(100,t.progDone+' 100%',false);
+setTimeout(progHide,350);
+$('textInput').value=res.text;uploadBlocked=false;apiError='';uploadErrorKey='';result=null;$('resultSection').style.display='none';updateUI()
+}catch(e){
+progHide();
+apiError=e.message;uploadErrorKey=e.guidanceKey||'uploadFailed';
+}
+finally{busy=false;updateUI();$('fileInput').value=''}
+};
+
+async function doCheck(){
+if(busy||uploadBlocked||!session||session.remaining<=0)return;
+const norm=normLF($('textInput').value),chs=chars(norm).length,text=norm.trim(),words=text.split(/\s+/).filter(Boolean).length;
+if(!text||words<session.min_words||chs>session.max_chars)return;
+busy=true;apiError='';result=null;$('resultSection').style.display='none';snapshot={text,mode,detector};$('checkBtn').disabled=true;updateLang();updateUI();
+
+const t=txt[lang];
+progHide();
+let curPct=3;
+progShow(curPct,t.progWait,true);
+const tStart=Date.now();
+if(typeof setInterval==='function'){
+progTimer=setInterval(()=>{
+const elapsed=(Date.now()-tStart)/1000;
+if(elapsed<2){
+curPct=Math.min(20,curPct+3.5);
+progShow(curPct,t.progLoad+' '+Math.round(curPct)+'%',true);
+}else if(elapsed<7){
+curPct=Math.min(65,curPct+2.5);
+progShow(curPct,t.progScan+' '+Math.round(curPct)+'%',true);
+}else if(elapsed<28){
+curPct=Math.min(92,curPct+0.8);
+progShow(curPct,t.progSent+' '+Math.round(curPct)+'%',true);
+}else{
+curPct=Math.min(96,curPct+0.2);
+progShow(curPct,t.progSent+' '+Math.round(curPct)+'%',true);
+}
+},250);
+}
+
+let requestTimer=null;
+try{
+const ctl=typeof AbortController!=='undefined'?new AbortController():null;
+requestTimer=ctl?setTimeout(()=>ctl.abort(),360000):null;
+const fetchOpts={method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({text,mode:snapshot.mode,detector:snapshot.detector})};
+if(ctl)fetchOpts.signal=ctl.signal;
+const res=await api('/api/detect',fetchOpts);
+if(requestTimer)clearTimeout(requestTimer);
+
+if(progTimer&&typeof clearInterval==='function'){clearInterval(progTimer);progTimer=null}
+progShow(100,t.progDone+' 100%',false);
+
+result=res.result;session.remaining=res.remaining;$('resultSection').dataset.checkId=res.check_id;
+$('error').textContent='';showResult(result);updateUI();
+setTimeout(progHide,400);
+}catch(e){
+progHide();
+apiError=e.message;
+}
+finally{if(requestTimer)clearTimeout(requestTimer);busy=false;updateLang();updateUI()}
+}
+$('checkBtn').onclick=doCheck;
+
+function showResult(r){
+const g=guidanceHTML(snapshot.text);$('resultGuidance').innerHTML=g;$('resultGuidance').hidden=!g;
+const t=txt[lang];
+$('resultSection').style.display='block';
+const v=r.verdict||'uncertain';
+$('verdict').textContent=t.verdict[v];
+$('verdict').className='verdict '+v;$('resultSection').dataset.verdict=v;
+$('verdictDesc').textContent=t.desc[v];
+$('langValue').textContent=t.langs[r.language]||esc(r.language);
+$('modeValue').textContent=t.modes[snapshot.mode]||esc(snapshot.mode);
+$('detectorValue').textContent=t.detectors[r.detector_id]||r.detector_id;
+$('scoreValue').textContent=Math.round(100*Number(r.p_ai||0))+'%';
+const sents=r.sentences||[],ai=sents.filter(s=>s.label==='ai').length;
+$('sentValue').textContent=fmt(t.total,sents.length,ai);
+const textChs=chars(snapshot.text),totalWords=snapshot.text.split(/\s+/).filter(Boolean).length;
+let coveredWords=0,aiWords=0;
+const sorted=[...sents].sort((a,b)=>a.start-b.start);
+let pos=0;
+sorted.forEach(s=>{if(s.start>=pos&&s.end<=textChs.length){
+const chunk=textChs.slice(s.start,s.end).join(''),w=chunk.split(/\s+/).filter(Boolean).length;
+coveredWords+=w;if(s.label==='ai')aiWords+=w;
+pos=s.end
+}});
+$('coverageValue').textContent=fmt(t.coverage,totalWords?Math.round(100*aiWords/totalWords):0,aiWords,totalWords);
+$('verdictDesc').textContent+=' · '+t.markup+': '+(t.sources[r.sentence_stats?.granularity]||r.sentence_stats?.granularity||t.sources.sentence)+' · '+(r.app_version||'2.0.6.0')+' / '+(r.model_pack_version||'1.3.4');
+if((v==='ai'||v==='uncertain')&&ai===0){$('verdictDesc').textContent+='. '+t.nomarked}
+renderHighlight(r)
+}
+
+function renderHighlight(r){
+const chs=chars(snapshot.text),sents=[...(r.sentences||[])].sort((a,b)=>a.start-b.start);
+let pos=0,out='';
+sents.forEach(s=>{
+if(s.start<pos||s.end>chs.length)return;
+out+=esc(chs.slice(pos,s.start).join(''));
+const chunk=chs.slice(s.start,s.end).join('');
+if(['ai','uncertain','human'].includes(s.label))out+=`<mark class="${s.label}" title="${esc(txt[lang].verdict[s.label])} · ${esc(String(Math.round(100*s.p_ai)))}%">${esc(chunk)}</mark>`;
+else out+=esc(chunk);
+pos=s.end
+});
+out+=esc(chs.slice(pos).join(''));
+$('hlText').innerHTML=out||'(no highlights)'
+}
+
+function download(name,type,data){
+const a=document.createElement('a');
+a.href=URL.createObjectURL(new Blob([data],{type}));
+a.download=name;a.click();
+setTimeout(()=>URL.revokeObjectURL(a.href),2000)
+}
+
+$('exportHtml').onclick=()=>{if(!result)return;
+const t=txt[lang],r=result,v=r.verdict||'uncertain',detName=esc(t.detectors[r.detector_id]||r.detector_id),verdName=esc(t.verdict[v]),langName=esc(t.langs[r.language]||r.language),modeName=esc(t.modes[snapshot.mode]||snapshot.mode),scoreVal=esc(Number(r.p_ai||0).toFixed(2)),hlBody=$('hlText').innerHTML,iso=esc(new Date().toISOString());
+const html=`<!doctype html><meta charset=utf-8><title>Linda ${esc(t.report)}</title><style>body{font:14px/1.6 'Segoe UI',sans-serif;max-width:900px;margin:20px auto;padding:0 20px}mark{background:#e51400;color:#fff;padding:2px}mark.uncertain{background:#f0a30a;color:#111}mark.human{background:#cfe5bc;color:#111}</style><h1>Linda ${detName} — ${esc(t.report)}</h1><p>${verdName}<br>${esc(t.langLabel)}: ${langName}<br>${esc(t.modeLabel)}: ${modeName}<br>${esc(t.scoreLabel)}: ${scoreVal}</p><pre style="white-space:pre-wrap">${hlBody}</pre><p style="font-size:12px;color:#666">${esc(t.generated)}: ${iso} · ${esc(t.proof)}</p>`;
+download('linda-report.html','text/html',html)
+};
+$('exportJson').onclick=()=>{if(!result)return;
+download('linda-result.json','application/json',JSON.stringify({generated:new Date().toISOString(),submitted_text:snapshot.text,requested_mode:snapshot.mode,requested_detector:snapshot.detector,result},null,2))
+};
+$('exportCsv').onclick=()=>{if(!result)return;
+const rows=['id,start,end,p_ai,label'].concat((result.sentences||[]).map((s,i)=>`${i+1},${s.start},${s.end},${s.p_ai},${s.label}`));
+download('linda-sentences.csv','text/csv',rows.join('\n'))
+};
+
+document.querySelectorAll('.tile').forEach(t=>t.setAttribute('role','button'));
+document.querySelectorAll('.tile').forEach(t=>t.tabIndex=0);
+updateLang();initSession()
 })();
-</script>
-</body>
-</html>
+</script></body></html>

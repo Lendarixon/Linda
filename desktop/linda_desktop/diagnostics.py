@@ -14,6 +14,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import re
 import zipfile
 
 MAX_ZIP_BYTES = 2 * 1024 * 1024   # жёсткий предел размера вложения
@@ -46,10 +47,59 @@ def _decode(raw: bytes) -> str:
         return raw.decode('cp1251', errors='replace')
 
 
-def _redact(text: str) -> str:
-    """Путь домашней папки -> %USERPROFILE%: личное имя не уезжает в поддержку."""
+def _redact(text: str, private_paths=None) -> str:
+    """Replace local profile/model paths before diagnostic text is serialized."""
+    replacements = list(private_paths or ())
     home = os.path.expanduser('~')
-    return text.replace(home, '%USERPROFILE%') if home and home != '~' else text
+    if home and home != '~':
+        replacements.append((home, '%USERPROFILE%'))
+    # Replace longest roots first, so a custom model path nested under the profile
+    # gets the clearer token and never leaves its account name in the archive.
+    variants = []
+    for path, token in replacements:
+        variants.append((path, token))
+        slash_variant = path.replace('\\', '/')
+        if slash_variant != path:
+            variants.append((slash_variant, token))
+    replacements = sorted(variants, key=lambda pair: len(pair[0]), reverse=True)
+    flags = re.IGNORECASE if os.name == 'nt' else 0
+    for path, token in replacements:
+        if not path:
+            continue
+        text = re.sub(re.escape(path), lambda _match, value=token: value, text, flags=flags)
+    return text
+
+
+def _private_paths(info: dict) -> list[tuple[str, str]]:
+    """Gather paths that should not be disclosed by serialized metadata."""
+    paths: dict[str, str] = {}
+    home = os.path.expanduser('~')
+    if home and home != '~':
+        paths[home] = '%USERPROFILE%'
+    location = info.get('models_location')
+    if isinstance(location, dict):
+        for key in ('path', 'default', 'chosen'):
+            value = location.get(key)
+            if isinstance(value, str) and value:
+                paths[value] = '%MODELS_LOCATION%'
+    for value in info.get('log_files') or []:
+        if isinstance(value, (str, os.PathLike)):
+            paths[os.fspath(value)] = '%LOG_FILE%'
+    return list(paths.items())
+
+
+def _redact_tree(value, private_paths):
+    """Recursively redact paths in metadata without changing source values."""
+    if isinstance(value, dict):
+        return {_redact(str(k), private_paths): _redact_tree(v, private_paths)
+                for k, v in value.items()}
+    if isinstance(value, list):
+        return [_redact_tree(item, private_paths) for item in value]
+    if isinstance(value, tuple):
+        return [_redact_tree(item, private_paths) for item in value]
+    if isinstance(value, str):
+        return _redact(value, private_paths)
+    return value
 
 
 def _read_tail(path) -> list[str] | None:
@@ -122,9 +172,11 @@ def build_zip(info: dict) -> bytes:
     не превышает MAX_ZIP_BYTES (лишние строки логов обрезаются, свежие остаются).
     Исходный словарь info не изменяется.
     """
+    private_paths = _private_paths(info)
     payload = dict(info)
     if isinstance(payload.get('settings'), dict):
         payload['settings'] = _scrub(payload['settings'])
+    payload = _redact_tree(payload, private_paths)
     system_json = json.dumps(payload, ensure_ascii=False, indent=2, default=str).encode('utf-8')
 
     logs, used = [], set()

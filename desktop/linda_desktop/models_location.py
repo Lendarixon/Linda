@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import tempfile
 import threading
 from pathlib import Path
 
@@ -15,6 +16,21 @@ from . import config
 
 ITEMS = ("models", "onnx", "calibration", "staging", "manifest.json", "manifest.json.sig")
 NEED_GB = 6.0  # модели 2,9 ГБ + кэш ONNX 1,5 ГБ + запас на докачку обновления
+
+
+def _roots_overlap(old: Path, new: Path) -> bool:
+    """Return true when either resolved models root contains the other.
+
+    Resolving before comparison also catches Windows junctions and symlink aliases.
+    If resolution fails, fail closed: a move must never guess that deletion is safe.
+    """
+    try:
+        old_root = Path(old).resolve(strict=False)
+        new_root = Path(new).resolve(strict=False)
+        return (old_root == new_root or old_root in new_root.parents
+                or new_root in old_root.parents)
+    except (OSError, RuntimeError, ValueError):
+        return True
 
 
 def free_gb(path: Path) -> float:
@@ -42,6 +58,10 @@ def validate(path: str) -> tuple[bool, str]:
         return False, "loc_bad"
     if not p.is_absolute() or str(p).startswith("\\\\"):
         return False, "loc_bad"  # only a local absolute path (no network shares: slow and unreliable for 3 GB of weights)
+    # Check against the active root before mkdir or the write probe. Overlapping
+    # roots make the later source cleanup capable of deleting the new copy.
+    if _roots_overlap(config.models_root(), p):
+        return False, "loc_overlap"
     if len(str(p)) > 200:
         return False, "loc_long"
     try:
@@ -85,6 +105,8 @@ class MoveJob:
         return self.state["phase"] in ("copying", "cleaning")
 
     def start(self, old: Path, new: Path, before=None) -> None:
+        if _roots_overlap(old, new):
+            raise ValueError("loc_overlap")
         with self.lock:
             if self.busy():
                 raise RuntimeError("busy")
@@ -92,7 +114,12 @@ class MoveJob:
         threading.Thread(target=self._run, args=(Path(old), Path(new), before), daemon=True).start()
 
     def _run(self, old: Path, new: Path, before) -> None:
+        owned_parts: set[Path] = set()
         try:
+            # Defense in depth for direct/background invocations: do this before
+            # unloading the engine, creating destination directories, or copying.
+            if _roots_overlap(old, new):
+                raise ValueError("loc_overlap")
             if before:
                 before()  # unload the engine: files must not be in use
             files: list[tuple[Path, Path]] = []
@@ -105,11 +132,15 @@ class MoveJob:
             self.state["total"] = sum(f.stat().st_size for f, _ in files)
             for src, dst in files:
                 dst.parent.mkdir(parents=True, exist_ok=True)
-                with open(src, "rb") as r, open(str(dst) + ".part", "wb") as w:
+                fd, part_name = tempfile.mkstemp(prefix=dst.name + ".", suffix=".part", dir=str(dst.parent))
+                part = Path(part_name)
+                owned_parts.add(part)
+                with os.fdopen(fd, "wb") as w, open(src, "rb") as r:
                     while chunk := r.read(8 << 20):
                         w.write(chunk)
                         self.state["done"] += len(chunk)
-                os.replace(str(dst) + ".part", dst)
+                os.replace(part, dst)
+                owned_parts.discard(part)
             config.set_models_root(new)  # switch only after everything is copied
             self.state["phase"] = "cleaning"
             for name in ITEMS:
@@ -122,7 +153,7 @@ class MoveJob:
         except Exception as e:  # noqa: BLE001
             self.state = {**self.state, "phase": "error", "error": "%s: %s" % (type(e).__name__, e)}
             # the old location stays valid: the pointer was not switched
-            for f in new.rglob("*.part") if new.exists() else []:
+            for f in owned_parts:
                 try:
                     f.unlink()
                 except OSError:

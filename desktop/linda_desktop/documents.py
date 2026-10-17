@@ -43,6 +43,8 @@ def extract(filename, content):
             except UnicodeDecodeError:
                 text = content.decode('cp1252',errors='replace')
         return _bounded_text(text)
+    if ext in ('.ppt','.pptx'):
+        raise ValueError('PowerPoint files are not supported. Slide text is not suitable for reliable authorship analysis, even when exported to PDF')
     if ext not in ('.pdf','.docx'):
         raise ValueError('Supported formats: .txt, .md, .docx, .pdf')
     if not _slots.acquire(timeout=TIMEOUT):

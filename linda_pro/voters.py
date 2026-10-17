@@ -257,6 +257,7 @@ class SpeedOnnx:
         order = sorted(range(len(seqs)), key=lambda j: len(seqs[j]))
         z = np.zeros(len(seqs))
         for b in range(0, len(order), self.batch):
+            check_cancel()
             idx = order[b: b + self.batch]
             width = max(len(seqs[j]) for j in idx)
             ids = np.full((len(idx), width), pad_id, dtype=np.int64)

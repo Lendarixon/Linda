@@ -60,6 +60,44 @@ def test_home_path_is_replaced_with_userprofile(tmp_path):
     assert 'см. %USERPROFILE%/Downloads' in body
 
 
+def test_metadata_recursively_redacts_profile_and_custom_model_paths(tmp_path, monkeypatch):
+    profile = tmp_path / 'PrivateAccount'
+    profile_text = str(profile)
+    monkeypatch.setattr(diagnostics.os.path, 'expanduser', lambda _path: profile_text)
+    custom_models = profile / 'LindaModels'
+    log = profile / 'Linda-Pro' / 'app.log'
+    log.parent.mkdir(parents=True)
+    log.write_text('started from %s\\AppData\\Local\n' % profile_text, encoding='utf-8')
+    info = {
+        'models_location': {
+            'path': str(custom_models), 'default': str(profile / 'Linda-Pro'),
+            'chosen': str(custom_models), 'custom': True,
+        },
+        'log_files': [str(log)],
+        'nested': [
+            {'detail': 'cache under %s' % custom_models},
+            {'detail': 'alternate path %s' % str(custom_models).replace('\\', '/').lower()},
+        ],
+        'settings': {'theme': 'dark'},
+    }
+
+    _, archive = _open(info)
+    members = {name: archive.read(name) for name in archive.namelist()}
+    assert members
+    assert all(b'PrivateAccount' not in body for body in members.values())
+    system = json.loads(members['system.json'].decode('utf-8'))
+    assert system['models_location']['path'] == '%MODELS_LOCATION%'
+    assert system['models_location']['default'] == '%MODELS_LOCATION%'
+    assert system['log_files'] == ['%LOG_FILE%']
+    assert system['nested'][0]['detail'] == 'cache under %MODELS_LOCATION%'
+    assert system['nested'][1]['detail'] == 'alternate path %MODELS_LOCATION%'
+    assert b'%USERPROFILE%\\AppData\\Local' in members['logs/app.log.txt']
+    # The privacy transformation is applied to a copy; the real paths remain
+    # available to the log reader and in the caller's original metadata.
+    assert info['log_files'] == [str(log)]
+    assert info['models_location']['path'] == str(custom_models)
+
+
 def test_missing_and_unreadable_logs_do_not_break(tmp_path):
     """Отсутствующий файл и ошибка чтения не роняют сборку, рабочий лог попадает в архив."""
     log = tmp_path / 'ok.log'

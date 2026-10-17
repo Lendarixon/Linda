@@ -1,5 +1,33 @@
 [
   {
+    "version": "2.0.6.2",
+    "date": "2026-10-17",
+    "title": {
+      "en": "Clearer guidance and safer document handling",
+      "ru": "Понятные предупреждения и безопасная работа с документами",
+      "pl": "Czytelniejsze wskazówki i bezpieczna obsługa dokumentów"
+    },
+    "notes": {
+      "pl": "• Przed analizą aplikacja wyraźnie ostrzega, gdy tekst ma mniej niż zalecane 300 słów lub przypomina listę, formularz albo slajdy.\n• Jaśniejsze informacje o obsługiwanych plikach. Po nieudanym wczytaniu analiza pozostaje zablokowana do poprawienia tekstu lub wybrania prawidłowego pliku, osobno dla każdej karty.\n• Bezpieczniejsze przenoszenie modeli: ochrona przed nakładającymi się folderami i usunięciem nowej kopii; porządkowanie tylko własnych plików tymczasowych.\n• Poprawiono anulowanie analizy w Linda Loupe oraz ukrywanie ścieżek profilu i modeli w metadanych diagnostycznych.\n• Modele 1.3.4, tokenizatory i progi oceny pozostają bez zmian. Wynik nie jest dowodem autorstwa; krótkie wstawki AI mogą pozostać niewykryte.",
+      "ru": "• До анализа приложение заметно предупреждает, если текст короче рекомендуемых 300 слов или похож на список, анкету либо текст слайдов.\n• Понятнее указаны поддерживаемые файлы. После неудачной загрузки анализ блокируется до правки текста или выбора подходящего файла, отдельно для каждой вкладки.\n• Безопаснее перенос моделей: защита от пересекающихся папок и удаления новой копии; очистка только собственных временных файлов.\n• Исправлена отмена анализа Linda Loupe; пути профиля и моделей скрываются в метаданных диагностики.\n• Модели 1.3.4, токенизаторы и пороги оценки не менялись. Результат не доказывает авторство; короткие ИИ-вставки могут быть пропущены.",
+      "en": "• Clear warnings appear before analysis when text is shorter than the recommended 300 words or resembles a list, form or slide text.\n• Supported file types are explained more clearly. After a failed upload, analysis stays blocked until the text is edited or a supported file is loaded, independently for each tab.\n• Safer model moves prevent overlapping folders from deleting the new copy; cleanup removes only the job's own temporary files.\n• Fixed cancellation during Linda Loupe analysis and redacted profile and model paths in diagnostic metadata.\n• Models 1.3.4, tokenizers and scoring thresholds are unchanged. Results do not prove authorship; short AI inserts may still be missed."
+    }
+  },
+  {
+    "version": "2.0.6.1",
+    "date": "2026-10-16",
+    "title": {
+      "en": "Clear guidance before checking text",
+      "pl": "Czytelne wskazówki przed analizą",
+      "ru": "Понятные подсказки перед проверкой"
+    },
+    "notes": {
+      "en": "• Live warnings appear before analysis for texts under the recommended 300 words and list-like layouts. 300 words do not guarantee accuracy.\n• Supported file types and unsupported PowerPoint presentations are explained before upload. A rejected replacement cannot accidentally trigger analysis of old text. Upload timeouts and malformed responses are handled.\n• Models 1.3.4 and detector thresholds are unchanged. A low AI score is not proof of human authorship.",
+      "pl": "• Ostrzeżenia przed analizą dotyczą tekstów krótszych niż zalecane 300 słów i układu przypominającego listę. 300 słów nie gwarantuje poprawnego wyniku.\n• Obsługiwane formaty i brak obsługi prezentacji PowerPoint są wyjaśnione przed wczytaniem. Odrzucony plik nie pozwala przypadkowo przeanalizować poprzedniego tekstu. Poprawiono obsługę limitów czasu i błędnych odpowiedzi.\n• Modele 1.3.4 i progi detektora pozostają bez zmian. Niski wynik AI nie dowodzi autorstwa człowieka.",
+      "ru": "• До анализа появляются предупреждения о тексте короче рекомендуемых 300 слов и структуре из коротких пунктов. 300 слов не гарантируют точность.\n• Заранее указаны поддерживаемые форматы и отсутствие поддержки PowerPoint. После отказа загрузки нельзя случайно проверить старый текст. Исправлены тайм-ауты и некорректные ответы загрузки.\n• Модели 1.3.4 и пороги детектора не менялись. Низкая оценка ИИ не доказывает человеческое авторство."
+    }
+  },
+  {
     "version": "2.0.6.0",
     "date": "2026-10-11",
     "title": {

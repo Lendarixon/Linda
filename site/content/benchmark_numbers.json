@@ -1,0 +1,30 @@
+{
+  "pro": {
+    "hb": "81.0",
+    "oct": "84.0",
+    "unseen": "95.5",
+    "pl": "79.4",
+    "ru": "80.3",
+    "toefl": "5.5",
+    "mage_h": "2.0",
+    "chi_h": "0.2",
+    "fp_pl": "1.4",
+    "fp_ru": "0.6"
+  },
+  "lite": {
+    "hb": "69.4",
+    "oct": "75.8",
+    "unseen": "83.0",
+    "pl": "72.2",
+    "ru": "77.3",
+    "toefl": "2.2",
+    "mage_h": "0.4",
+    "chi_h": "0.0",
+    "fp_pl": "1.5",
+    "fp_ru": "1.2"
+  },
+  "speed_lite_s": "1-5",
+  "speed_measured_s": "1.2",
+  "corpus_windows": "149,000",
+  "_note": "Lite numbers: packaged Llama-filtered lg4 model (stealth-style rewrites added), 9 Oct 2026. Chicago plain on a random sample of 1500."
+}

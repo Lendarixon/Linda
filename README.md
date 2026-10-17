@@ -6,6 +6,16 @@ Free for personal non-commercial use, **paid for commercial use** - one licence 
 Weights live on Hugging Face: [Lindarixon/Linda-Pro](https://huggingface.co/Lindarixon/Linda-Pro) (ensemble, GPU recommended) and
 [Lindarixon/Linda-Stylo-Clean](https://huggingface.co/Lindarixon/Linda-Stylo-Clean) (CPU only, strictly clean data lineage).
 
+<!-- release-2062:start -->
+## Latest Windows update: 2.0.6.2
+
+[Download the Windows release](https://github.com/Lendarixon/Linda/releases/tag/v2.0.6.2) · [Release notes](desktop/RELEASE_NOTES_2.0.6.2.md) · **[Try the online demo](https://ninjagovlad--linda-pro-demo-web.modal.run/)**
+
+Clear warnings before analysis, safer uploads and model-folder moves, improved cancellation and diagnostic metadata. Model pack 1.3.4, tokenizers and thresholds are unchanged. Prefer at least 300 words of continuous prose; lists, forms and slide text may be unsuitable. Results do not prove authorship and small AI inserts can be missed.
+
+The online demo processes your text on Modal servers; do not submit confidential material. It provides 12 successful checks, with a shared-network daily limit; up to 6,000 characters, TXT/MD/DOCX. The desktop app processes text locally and has no demo quota.
+<!-- release-2062:end -->
+
 ## Windows app (no Python needed)
 Get it from the [Microsoft Store](https://apps.microsoft.com/detail/9NP66G69BQPN), or download **Linda-Setup.exe** from the [releases page](https://github.com/Lendarixon/Linda/releases/latest), install it and start it: the app downloads the models once (about 2.9 GB), then works offline, highlights the AI-looking passages and updates its models by itself. Free for personal non-commercial use; a commercial licence key ($10 person, $30 team of 10, $500 per year organization) covers the app, the command line and the models together ([how licensing works](LICENSING.md)). Source of the app: [desktop/](desktop).
 
@@ -65,7 +75,7 @@ python -m linda_pro my_text.txt --windows               # verdict + per-window s
 python evaluate.py --human my_human_texts/ --ai my_ai_texts/ --mode precise   # accuracy on your own labelled samples
 ```
 `evaluate.py` takes two folders of `.txt` files (or a JSONL with `text` and `label` fields), prints AUROC, true/false positive rates for the `ai` verdict
-and for `ai or uncertain`, and writes `evaluation_report.csv`. Use **at least 100 texts per class, 150+ words each**; texts by non-native writers are a good stress test.
+and for `ai or uncertain`, and writes `evaluation_report.csv`. Use **at least 100 texts per class, preferably 300+ words each**; texts by non-native writers are a good stress test.
 From Python: `from linda_pro import load_detector; load_detector("sensitive").detect([text])`.
 
 ## No GPU? Google Colab
@@ -102,11 +112,11 @@ If you use Linda Assay or Linda Loupe, please cite the technical report for vers
 }
 ```
 
-Application 2.0.6.0: [release notes](desktop/RELEASE_NOTES_2.0.6.0.md). Model pack remains 1.3.4.
+Application 2.0.6.2: [release notes](desktop/RELEASE_NOTES_2.0.6.2.md). Model pack remains 1.3.4.
 
 ## Current trust and evaluation documents
 
-App 2.0.6.0 / model pack 1.3.4. [Trust statement](docs/TRUST.md), [benchmark brief](docs/BENCHMARK_BRIEF.md), [free organization pilot](docs/PILOT_EN.md). Historical benchmark percentages are not a fresh full evaluation of app 2.0.6.0.
+App 2.0.6.2 / model pack 1.3.4. [Trust statement](docs/TRUST.md), [benchmark brief](docs/BENCHMARK_BRIEF.md), [free organization pilot](docs/PILOT_EN.md). Historical benchmark percentages are not a fresh full evaluation of app 2.0.6.0.
 
 ## Free 14-day commercial evaluation
 

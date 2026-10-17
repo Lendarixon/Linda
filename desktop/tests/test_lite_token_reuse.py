@@ -48,6 +48,19 @@ def speed(tmp_path, n=4, available=True):
     return voter
 
 
+@pytest.mark.parametrize('capture', [False, True])
+def test_loupe_verdict_cancels_between_onnx_batches(tmp_path, monkeypatch, capture):
+    import linda_pro.voters as module
+    voter = speed(tmp_path)
+    monkeypatch.setattr(module, 'CANCEL', lambda: len(voter.sess.calls) >= 1)
+    with pytest.raises(Cancelled):
+        if capture:
+            voter.margins_with_token_scores(['abcd'] * 8)
+        else:
+            voter.margins(['abcd'] * 8)
+    assert len(voter.sess.calls) == 1
+
+
 def words(text):
     return [(m.start(), m.end()) for m in re.finditer(r"\S+", text)]
 
