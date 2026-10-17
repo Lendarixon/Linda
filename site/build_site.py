@@ -193,7 +193,7 @@ h2{font-family:"Segoe UI Light","Segoe UI",sans-serif;font-size:28px;font-weight
 .recommended-label{position:absolute;top:0;right:0;margin:0;padding:5px 10px;background:#fff;color:#141821;font-size:12px;line-height:1.5}
 .pricing-notes{margin:16px 0;display:flex;flex-wrap:wrap;gap:8px 24px}.pricing-notes p{margin:0}
 .btns{gap:8px;align-items:stretch;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));grid-auto-rows:1fr}
-.btns .btn{width:100%;min-height:52px}.hero .btns{display:grid;grid-template-columns:1fr}.hero .btn{min-width:0}
+.btns .btn{width:100%;min-height:52px}.hero .btns{display:grid;grid-template-columns:1fr;align-items:stretch}.hero .btn{min-width:0}
 .btns:has(>.btn:nth-child(3)):not(:has(>.btn:nth-child(4))){grid-template-columns:repeat(3,minmax(0,1fr))}
 .shots{align-items:stretch}.shot{display:flex;flex-direction:column}.shot a{flex:1;display:flex;align-items:center;background:var(--surface)}.shot figcaption{margin-top:auto;background:var(--surface);color:var(--mut);border-top:1px solid var(--line)}
 .btn-col{gap:8px}.btn-col .btn{min-height:72px}.panel>.btn{margin-top:auto}
