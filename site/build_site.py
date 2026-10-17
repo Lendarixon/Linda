@@ -17,7 +17,7 @@ STATIC_ARTIFACTS = ("benchmark-brief.html", "pilot-en.pdf", "pilot-pl.pdf", "Lin
 BUY_PT = "https://buy.polar.sh/polar_cl_xbgd3gaCH2ZQIzNHmRAjyJiIUTNAHuRmE51zi1P8ywI"
 BUY_ORG = "https://buy.polar.sh/polar_cl_UznG2OPeM5diDZ1nCtxwRD1HW1pO3OZIu55DN07bCQe"
 DOWNLOAD = "https://github.com/Lendarixon/Linda/releases/latest"
-LITE = os.environ.get("LINDA_LITE") == "1"  # Linda Loupe pages and sections: built only for a preview or at the Lite release
+LITE = "--no-lite" not in sys.argv and os.environ.get("LINDA_LITE", "1") != "0"  # full two-model site by default
 # the listing exists (9NP66G69BQPN) but holds an old 1.x build: switch it on with LINDA_MS_STORE=https://apps.microsoft.com/detail/9NP66G69BQPN once a current build is certified
 MS_STORE_URL = os.environ.get("LINDA_MS_STORE", "https://get.microsoft.com/installer/download/9NP66G69BQPN?referrer=appbadge").strip()  # Microsoft Store listing; empty = the GitHub installer is the main download
 PRIMARY_DL = MS_STORE_URL or DOWNLOAD
