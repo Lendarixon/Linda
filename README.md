@@ -51,6 +51,8 @@ Recommended computer:
 
 Our own measurements on public test sets (English, Polish, Russian), not an independent audit; one calibration rule for both versions. The full Linda Assay needed 226 s for a 3,800-word text on an office Ryzen 5 PRO 2400GE; Lite is expected to take a few seconds there (not measured on that processor yet).
 Lite weights have their own repository: [Lindarixon/Linda-Pro-Lite](https://huggingface.co/Lindarixon/Linda-Pro-Lite). From Python: `python download_models.py --set lite`, then `python -m linda_pro file.txt --lite`.
+
+The online demo also has a **Stylize** button (rewrite a whole text, the AI-looking sentences, or your selection; it does not hide authorship). Its adapters are public: [Lindarixon/Linda-Stylizer](https://huggingface.co/Lindarixon/Linda-Stylizer) (CC BY-NC-4.0, same terms as the detectors; meaning is not verified automatically).
 <!-- lite:end -->
 
 ## Speed (historical previous precision route)
