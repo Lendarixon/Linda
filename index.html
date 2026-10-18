@@ -27,7 +27,7 @@
 <section id="demo-embed" class="demo-embed"><div class="wrap"><h2>Try it right here</h2><p class="note">Loads the free online demo inside this page. Nothing connects to the cloud server until you press the button; after that your text is sent there for analysis. The desktop app works locally.</p>
 <div class="btns"><button type="button" class="btn" id="demo-load">Load the demo on this page</button><a class="btn demo-cta" href="https://ninjagovlad--linda-pro-demo-web.modal.run/" target="_blank" rel="noopener noreferrer">Open in a new tab</a></div>
 <div id="demo-slot" hidden><iframe id="demo-frame" title="Linda online demo" referrerpolicy="origin" allow="clipboard-write"></iframe><p class="note">If the frame stays empty or the attempt counter looks wrong, your browser blocks third-party cookies. Use the new-tab button.</p></div>
-<script>document.getElementById('demo-load').addEventListener('click',function(){var f=document.getElementById('demo-frame');if(!f.src)f.src="https://ninjagovlad--linda-pro-demo-web.modal.run/";document.getElementById('demo-slot').hidden=false;this.hidden=true});</script>
+<script>document.getElementById('demo-load').addEventListener('click',function(){var f=document.getElementById('demo-frame');if(!f.src)f.src="https://ninjagovlad--linda-pro-demo-web.modal.run/";document.getElementById('demo-slot').hidden=false;this.style.display='none'});</script>
 </div></section>
 <section id="overview"><div class="wrap"><h2>Texts and models stay on your PC</h2>
 <p class="sub">Detection runs locally. Model downloads are about 0.3 GB for Loupe or 2.9 GB for Assay; inference can work offline. Updates and licence activation/periodic checks use internet connections without uploading checked texts.</p>
