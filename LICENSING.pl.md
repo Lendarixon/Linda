@@ -31,7 +31,7 @@ Użytek komercyjny to używanie Linda do pracy zarobkowej lub dla klientów, wew
 
 * **Jak otrzymać.** Po płatności otrzymujesz klucz licencyjny e-mailem. Wpisz go w aplikacji (okno Licence): powiadomienie o licencji zniknie. Narzędzia wiersza poleceń nie sprawdzają kluczy; licencja obowiązuje je tak samo, a klucz jest Twoim dowodem zakupu.
 * **Zasada wersji.** Klucz Personal lub Team jest wieczysty: kupiona wersja i jej poprawki działają zawsze. Nowe funkcje i nowe modele mogą być wydawane tylko w ramach osobnych licencji lub jako płatna aktualizacja. Licencja Organization obowiązuje przez opłacony rok i obejmuje wszystkie aktualizacje wydane w tym roku; po jego zakończeniu bez odnowienia użytek komercyjny Linda na jej podstawie ustaje.
-* **Nic nie jest zablokowane.** Aplikacja działa tak samo bez klucza; klucz to prawne pozwolenie, nie przełącznik techniczny.
+* **Detektor nie jest zablokowany.** Detektor (Linda Assay i Linda Loupe) działa tak samo bez klucza; klucz to prawne pozwolenie na użytek komercyjny, nie przełącznik techniczny. Linda Trace i Humanizer to opcjonalne narzędzia pobierane tylko z kluczem.
 * **Nie wchodzą w te licencje:** prawa wyłączne, integracja OEM / white-label z innym produktem, hosting Linda jako usługi lub API dla stron trzecich, redystrybucja modeli, kalibracja indywidualna na Twoich tekstach. Są uzgadniane indywidualnie: napisz na lindapro.support@proton.me, podając przypadek użycia, wolumen i wdrożenie.
 
 ## 3. Szybkie pytania

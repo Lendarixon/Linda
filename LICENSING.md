@@ -31,7 +31,7 @@ Commercial use means using Linda for paid work or for clients, inside a company,
 
 * **How you get it.** After payment you receive a licence key by e-mail. Enter it in the app (Licence dialog): the licence notice disappears. The command-line tools do not check keys; the licence applies to them in the same way, and the key is your proof of purchase.
 * **Version rule.** A Personal or Team key is perpetual: the version you bought and its fixes keep working. New features and new models may be released only under separate licences or as a paid upgrade. The Organization licence is valid for the paid year and includes all updates released in that year; when it ends, commercial use of Linda under it ends unless renewed.
-* **Nothing is locked.** The app works the same without a key; the key is the legal permission, not a technical switch.
+* **The detector is not locked.** The detector (Linda Assay and Linda Loupe) works the same without a key; the key is the legal permission for commercial use, not a technical switch. Linda Trace and the Humanizer are optional tools downloaded only with a key.
 * **Not included in these licences:** exclusive rights, OEM / white-label integration into another product, hosting Linda as a service or API for third parties, redistribution of the models, custom calibration on your texts. These are agreed individually: write to lindapro.support@proton.me with your use case, volume and deployment.
 
 ## 3. Quick questions
