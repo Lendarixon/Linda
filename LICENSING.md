@@ -31,7 +31,7 @@ Commercial use means using Linda for paid work or for clients, inside a company,
 
 * **How you get it.** After payment you receive a licence key by e-mail. Enter it in the app (Licence dialog): the licence notice disappears. The command-line tools do not check keys; the licence applies to them in the same way, and the key is your proof of purchase.
 * **Version rule.** A Personal or Team key is perpetual: the version you bought and its fixes keep working. New features and new models may be released only under separate licences or as a paid upgrade. The Organization licence is valid for the paid year and includes all updates released in that year; when it ends, commercial use of Linda under it ends unless renewed.
-* **Nothing is locked.** The app works the same without a key; the key is the legal permission, not a technical switch.
+* **The detector is not locked.** The detector (Linda Assay and Linda Loupe) works the same without a key; the key is the legal permission for commercial use, not a technical switch. Linda Trace and the Humanizer are optional tools downloaded only with a key.
 * **Not included in these licences:** exclusive rights, OEM / white-label integration into another product, hosting Linda as a service or API for third parties, redistribution of the models, custom calibration on your texts. These are agreed individually: write to lindapro.support@proton.me with your use case, volume and deployment.
 
 ## 3. Quick questions
@@ -60,6 +60,3 @@ Existing published policy, preserved: for Personal/Team, if Linda does not work 
 ## Free 14-day commercial evaluation
 
 Individuals and organizations may evaluate Linda for commercial use free of charge for 14 calendar days from their first launch of the application. No registration, separately agreed start date, paid key, payment card or subscription is required. This is a licence permission, not an app timer or technical lock; the user is responsible for observing the period. Reinstallation, an update or switching devices does not restart the period for the same person or organization. The trial is for internal evaluation, without resale, redistribution, third-party hosting or adverse decisions about people. After the period, continued commercial use requires the appropriate paid licence. Personal non-commercial use remains free under CC BY-NC 4.0 without a 14-day limit. There is no automatic charge, renewal or conversion to a paid subscription. Texts remain with the user; sharing aggregate feedback is optional.
-
-## Optional licensed tools (2.3.0.0+)
-Linda Trace (forensic authorship) and the Humanizer are optional packs. They are downloaded only after a licence key is entered (any tier, including the Organization subscription); without a key the detector works as before and these tabs are locked. The 14-day commercial evaluation applies to the detector; it does not by itself provide the licensed packs. The packs are not distributed in this repository.
