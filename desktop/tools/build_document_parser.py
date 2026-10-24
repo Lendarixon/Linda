@@ -18,6 +18,7 @@ def main():
                     '--workpath',str(ROOT/'build'/'parser-work'),'--specpath',str(ROOT/'build'),
                     '--collect-data','docx','--collect-submodules','pypdf','--exclude-module','torch',
                     '--exclude-module','numpy','--exclude-module','webview','--exclude-module','linda_desktop',
+                    '--paths',str(ROOT/'linda_desktop'),'--hidden-import','document_formats','--hidden-import','linda_olefile',
                     str(ROOT/'linda_desktop'/'document_worker.py')],env=env,check=True)
     import shutil
     # python-docx also ships its expanded write template. Its [Content_Types].xml

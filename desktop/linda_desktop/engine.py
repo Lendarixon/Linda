@@ -484,13 +484,16 @@ class Engine:
     def warm_all(self, lang: str = "en") -> None:
         """Warm up every transformer voice of the language (routed backend): the first real check then does not wait for the ONNX export / DirectML compile."""
         dets = self.ensure_for_language(lang)
-        det = dets["sensitive"]
-        if not getattr(det, "routed", False):
-            return
-        for key in det.tier(lang)["voters"]:
-            if key.startswith("stylo"):
+        warmed = set()
+        for name in ('sensitive', 'alt_sensitive'):
+            det = dets.get(name)
+            if not getattr(det, "routed", False):
                 continue
-            det.pool.get(key).margins(["Warm up."])
+            for key in det.tier(lang)["voters"]:
+                if key.startswith("stylo") or key in warmed:
+                    continue
+                det.pool.get(key).margins(["Warm up."])
+                warmed.add(key)
 
     def _load_voters(self, dets: dict) -> None:
         if getattr(dets["sensitive"], "routed", False):
@@ -587,14 +590,14 @@ class Engine:
             return self.THRESHOLDS_LITE[gran]
         return self.THRESHOLDS.get(gran, (self.AI_THR, self.UNCERTAIN_THR_WINDOW))
 
-    def _context_margins(self, det, spans) -> tuple[list[float], list[float]]:
+    def _context_margins(self, det, spans, lang: str | None = None) -> tuple[list[float], list[float]]:
         """Margins of Essay and Multi for every sentence scored in its context (~CONTEXT_WORDS words); between the directly scored anchor sentences the margin is interpolated."""
         from linda_pro.voters import clean_text
 
         lite = getattr(self, "tier", "full") == "speed"
         cap = self.CONTEXT_ANCHORS_LITE if lite else self.CONTEXT_ANCHORS_CPU if self.device == "cpu" else self.CONTEXT_ANCHORS_GPU
         anchors, ctx = self._sentence_contexts([x.text for x in spans], cap, self.LITE_ANCHOR_WORDS if lite else 0)
-        ctx = [clean_text(t) for t in ctx]
+        ctx = [clean_text(t, lang) for t in ctx]
         fe = det._factory("linda_essay")
         ae = fe.margins(ctx)
         fm = det._factory("linda_multi_v2")
@@ -757,15 +760,22 @@ class Engine:
                 raise ValueError('Precise mode requires all models.')
             if self.dets is not None and self._backend is None:
                 dets = self.ensure_loaded()  # manually injected detectors (tests): keep legacy behaviour
+                _orig_lang = _backend_lang = CLASSIC_LANG
             else:
                 try:
                     from linda_pro.routed import detect_language as _detect_lang
-                    _lang = _detect_lang(text)
+                    _orig_lang = _detect_lang(text)
                 except Exception:  # noqa: BLE001
-                    _lang = CLASSIC_LANG
-                if _lang not in ("en", "pl", "ru"):
-                    _lang = CLASSIC_LANG
-                dets = self.ensure_for_language(_lang)
+                    _orig_lang = CLASSIC_LANG
+                if _orig_lang == "uk":
+                    _backend_lang = "ru"
+                elif _orig_lang not in ("en", "pl", "ru"):
+                    _backend_lang = CLASSIC_LANG
+                else:
+                    _backend_lang = _orig_lang
+                dets = self.ensure_for_language(_backend_lang)
+            # Cleaning language: uk scores as ru (same script), other as en fallback.
+            _clean_lang = "ru" if _backend_lang == "ru" else ("pl" if _backend_lang == "pl" else "en")
             det = dets[mode]
             self._emit(8, "scan")
             if hasattr(det, "progress"):
@@ -777,6 +787,16 @@ class Engine:
                 return run_single(self,det,text,mode,chosen_models[0])
             res = det.detect([text])[0]
             known_tokens = res.pop("_lite_token_scores", [])
+            # Routed backend may score uk/other via ru/en — report the original.
+            if "_orig_lang" in locals() and _orig_lang not in ("en", "pl", "ru"):
+                res["language"] = _orig_lang
+                res["language_warning"] = "ukrainian_unsupported_scored_as_ru" if _orig_lang == "uk" else "unsupported_language_scored_as_en"
+                try:
+                    routing = res.get("routing") or {}
+                    routing["backend"] = _backend_lang
+                    res["routing"] = routing
+                except Exception:  # noqa: BLE001
+                    pass
             R = det.rules
             lite_widen(res, R, mode, getattr(self, "tier", "full") == "speed")
             self._emit(55, "sent")
@@ -829,10 +849,17 @@ class Engine:
                             float(multi_head["center"]), float(multi_head["scale"]))
                 except Cancelled:
                     raise
-                except Exception:  # unavailable graph/head/output: use legacy colouring
+                except Exception as exc:  # unavailable graph/head/output: use legacy colouring
                     token_rows = None
                     multi_token_rows = None
                     lite_reuse = False
+                    res["token_path_error"] = type(exc).__name__
+                    try:
+                        import logging
+
+                        logging.getLogger("linda.token_path").warning("token_path_fallback: %s", type(exc).__name__)
+                    except Exception:  # noqa: BLE001 — diagnostics must never break analysis
+                        pass
             if token_rows is not None and (lite_reuse or res.get("verdict") != "human"):
                 gran = "windows"  # Lite uses existing evidence for consistency too.
             full = gran in ("hybrid", "full", "context")  # all of them give one margin per sentence
@@ -840,20 +867,24 @@ class Engine:
             m_essay = m_multi = None
             wspans = []  # (first word, after last word, essay margin, multi margin) of the windows used for colouring
             if gran == "context" and spans:
-                m_essay, m_multi = self._context_margins(det, spans)
+                m_essay, m_multi = self._context_margins(det, spans, _clean_lang)
                 self._emit(90, "sent")
             elif gran == "hybrid" and spans:
-                s_texts = [x.text for x in spans]
+                from linda_pro.voters import clean_text as _clean
+
+                s_texts = [_clean(x.text, _clean_lang) for x in spans]
                 ie = det._factory("linda_essay").margins(s_texts)
                 self._emit(65, "sent")
                 im = det._factory("linda_multi_v2").margins(s_texts)
                 self._emit(75, "sent")
-                ce, cm = self._context_margins(det, spans)
+                ce, cm = self._context_margins(det, spans, _clean_lang)
                 self._emit(92, "sent")
                 m_essay = [max(float(x), y) for x, y in zip(ie, ce)]  # sigmoid is monotone: the larger margin is the larger probability
                 m_multi = [max(float(x), y) for x, y in zip(im, cm)]
             elif full and spans:
-                s_texts = [s.text for s in spans]
+                from linda_pro.voters import clean_text as _clean_full
+
+                s_texts = [_clean_full(s.text, _clean_lang) for s in spans]
                 m_essay = det._factory("linda_essay").margins(s_texts)
                 m_multi = det._factory("linda_multi_v2").margins(s_texts)
             elif gran == "smooth" and spans:
@@ -865,7 +896,7 @@ class Engine:
                     from linda_pro.voters import clean_text
 
                     pos = word_positions
-                    wt = [clean_text(text[pos[a][0]: pos[b - 1][1]]) for a, b in wins]
+                    wt = [clean_text(text[pos[a][0]: pos[b - 1][1]], _clean_lang) for a, b in wins]
                     ce = det._factory("linda_essay").margins(wt)
                     cm = det._factory("linda_multi_v2").margins(wt)
                     wspans = [(a, b, float(e), float(m)) for (a, b), e, m in zip(wins, ce, cm)]
@@ -928,14 +959,10 @@ class Engine:
                                      "thresholds": {"ai": thr_ai, "uncertain": thr_unc}}
             res["sentence_stats"]["sources"] = ["ensemble"] if getattr(self, "tier", "full") == "speed" else ["ensemble", "essay", "multi"]
             if models and len(models) < 3:
+                # NOTE: len(models)==1 never reaches here — it returns early
+                # via single_model.run above. Only the 2-model subset is live.
                 chosen = [m for m in models if m in det.mean]
-                if len(chosen) == 1:
-                    name = chosen[0]
-                    raw = res["voters"].get(name, 0.0)
-                    key, c, s = {"linda_essay": ("essay", pe_c, pe_s), "linda_multi_v2": ("multi", pm_c, pm_s)}.get(name, ("stylo", ps_c, ps_s))
-                    v = "ai" if raw >= R[key]["thr_05"] else ("uncertain" if raw >= R[key]["thr_5"] else "human")
-                    res["custom_verdict"] = {"model": name, "score": round(raw, 2), "p_ai": round(_sig(raw, c, s), 3), "verdict": v}
-                elif len(chosen) > 1:
+                if len(chosen) > 1:
                     zs = [(res["voters"][k] - det.mean[k]) / det.std[k] for k in chosen if k in res["voters"]]
                     z_sub = sum(zs) / len(zs) if zs else 0.0
                     v = "ai" if z_sub >= R["ensemble"]["thr_1"] else ("uncertain" if z_sub >= R["ensemble"]["thr_5"] else "human")
@@ -1034,7 +1061,7 @@ DEFAULT_SETTINGS = {
     "preload": True,
     "theme": "dark", "accent": "cobalt", "density": "comfortable",
     "font_scale": 100, "radius": "square", "sidebar": "left",
-    "language": "ru", "ui_mode": "simple", "tour_done": False, "auto_models": True,
+    "language": "auto", "ui_mode": "simple", "tour_done": False, "auto_models": True,
     "quality": "auto",
     "model_sets": None,
 }
@@ -1049,8 +1076,27 @@ def load_settings() -> dict:
         stored = {}
     if not isinstance(stored, dict):
         stored = {}
+    if not stored:
+        try:
+            choice = json.loads((config.data_dir() / 'installer_choice.json').read_text(encoding='utf-8'))
+            if choice.get('language') in UI_LANGUAGES:
+                from .i18n import system_language
+                stored['language'] = choice['language']
+                stored['language_source'] = 'system' if choice['language'] == system_language() else 'manual'
+        except (OSError, ValueError, AttributeError):
+            pass
     merged = dict(DEFAULT_SETTINGS)
     merged.update(stored)
+    from .i18n import system_language, SUPPORTED
+    # Older releases wrote their hard-coded Russian default to every profile.
+    # A preference explicitly chosen in 2.1+ is marked and always preserved.
+    if stored.get('language_source') == 'manual' and stored.get('language') in SUPPORTED:
+        pass
+    elif stored.get('language') in ('en', 'pl') and 'language_source' not in stored:
+        merged['language_source'] = 'manual'
+    else:
+        merged['language'] = system_language()
+        merged['language_source'] = 'system'
     return merged
 
 

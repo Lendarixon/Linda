@@ -12,7 +12,31 @@ import json
 from pathlib import Path
 
 SUPPORTED = ("ru", "pl", "en")
-DEFAULT_LANG = "ru"
+DEFAULT_LANG = "en"
+
+
+def system_language() -> str:
+    """Use the Windows display language, not the region/date/keyboard locale."""
+    import locale
+    import os
+    if os.name == 'nt':
+        try:
+            import ctypes
+            size = ctypes.c_ulong(0)
+            count = ctypes.c_ulong(0)
+            get_languages = ctypes.windll.kernel32.GetUserPreferredUILanguages
+            if get_languages(8, ctypes.byref(count), None, ctypes.byref(size)) and size.value:
+                buf = ctypes.create_unicode_buffer(size.value)
+                if get_languages(8, ctypes.byref(count), buf, ctypes.byref(size)):
+                    lang = buf.value.replace('_', '-').split('-')[0].lower()
+                    return lang if lang in SUPPORTED else DEFAULT_LANG
+        except (OSError, AttributeError, ValueError):
+            pass
+    try:
+        lang = (locale.getlocale()[0] or '').replace('_', '-').split('-')[0].lower()
+    except (ValueError, TypeError):
+        lang = ''
+    return lang if lang in SUPPORTED else DEFAULT_LANG
 
 # Встроенный минимум (ключи ошибок бэкенда). Полные тексты — в web/i18n/*.json.
 _BUILTIN: dict[str, dict[str, str]] = {
@@ -75,9 +99,9 @@ def load_lang(lang: str) -> dict[str, str]:
 
 
 def resolve_lang(settings: dict | None) -> str:
-    """Язык интерфейса из настроек (ru/pl/en, иначе ru)."""
-    lang = (settings or {}).get("language", DEFAULT_LANG)
-    return lang if lang in SUPPORTED else DEFAULT_LANG
+    """Resolved UI preference, with the display language as the default."""
+    lang = (settings or {}).get("language")
+    return lang if lang in SUPPORTED else system_language()
 
 
 def tr(key: str, lang: str = DEFAULT_LANG, *args) -> str:

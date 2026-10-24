@@ -9,6 +9,12 @@ from .sentences import split_sentences_with_offsets
 
 def run(engine, det, text, mode, name):
     from .engine import _sig, authorship
+    try:
+        from linda_pro.routed import detect_language as _dl
+        _orig = _dl(text)
+    except Exception:  # noqa: BLE001
+        _orig = "en"
+    _clean_lang = "ru" if _orig in ("ru", "uk") else ("pl" if _orig == "pl" else "en")
     key = {'linda_essay':'essay','linda_multi_v2':'multi','stylo7c':'stylo'}[name]
     rules = det.rules[key]
     center = rules['thr_5']
@@ -17,10 +23,10 @@ def run(engine, det, text, mode, name):
     check_cancel()
     voter = det._factory(name)
     if name=='stylo7c':
-        raw = float(voter.margins([clean_text(text)])[0])
+        raw = float(voter.margins([clean_text(text, _clean_lang)])[0])
         margins = []
     else:
-        margins = [float(x) for x in voter.margins([clean_text(w[0]) for w in windows])]
+        margins = [float(x) for x in voter.margins([clean_text(w[0], _clean_lang) for w in windows])]
         raw = top25(margins)
     check_cancel()
     verdict = 'ai' if raw>=rules['thr_05'] else 'uncertain' if raw>=center else 'human'
@@ -38,10 +44,10 @@ def run(engine, det, text, mode, name):
     word_count = len(text.split())
     if gran in ('full','hybrid','context') and spans:
         if gran in ('full','hybrid'):
-            direct = [float(x) for x in voter.margins([s.text for s in spans])]
+            direct = [float(x) for x in voter.margins([clean_text(s.text, _clean_lang) for s in spans])]
         if gran in ('context','hybrid'):
             anchors,context = engine._sentence_contexts([s.text for s in spans],engine.CONTEXT_ANCHORS_CPU if engine.device=='cpu' else engine.CONTEXT_ANCHORS_GPU)
-            scores = voter.margins([clean_text(t) for t in context])
+            scores = voter.margins([clean_text(t, _clean_lang) for t in context])
             contextual = [float(x) for x in np.interp(list(range(len(spans))),anchors,scores)]
         values = direct if gran=='full' else contextual if gran=='context' else [max(a,b) for a,b in zip(direct,contextual)]
     else:
@@ -50,7 +56,7 @@ def run(engine, det, text, mode, name):
         if gran=='smooth' and spans:
             intervals = engine._smooth_windows(word_count)
             if len(intervals)>1:
-                texts = [clean_text(text[positions[a][0]:positions[b-1][1]]) for a,b in intervals]
+                texts = [clean_text(text[positions[a][0]:positions[b-1][1]], _clean_lang) for a,b in intervals]
                 covers = [(a,b,float(v)) for (a,b),v in zip(intervals,voter.margins(texts))]
         values = []
         word_starts = [a for a, _ in positions]

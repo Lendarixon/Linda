@@ -208,6 +208,8 @@ def stage_runtime(directory):
         else:
             shutil.copy2(origin, root / origin.name)
     shutil.copy2(Path(__file__).with_name('document_worker.py'), root / 'worker.py')
+    for name in ('document_formats.py','linda_olefile.py'):
+        shutil.copy2(Path(__file__).with_name(name),root/name)
     (root / f'python{sys.version_info.major}{sys.version_info.minor}._pth').write_text('stdlib.zip\nDLLs\n.\n', encoding='ascii')
     return [str(executable), str(root / 'worker.py')]
 

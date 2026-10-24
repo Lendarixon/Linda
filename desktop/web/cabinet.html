@@ -62,7 +62,18 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
 .cab-drop { border:2px dashed #555; padding:24px; text-align:center; color:var(--text-muted); margin-bottom:14px; cursor:pointer; transition:background .15s, border-color .15s, transform .15s; }
 .cab-drop.over { border-color:var(--accent); background:var(--accent-light); transform:scale(1.01); }
 .cab-busy { background:linear-gradient(90deg,var(--accent) 25%,#8fb0ff 50%,var(--accent) 75%)!important; background-size:200% 100%; animation:lp-shimmer 1.2s linear infinite; }
+@keyframes lp-shimmer { from { background-position:200% 0; } to { background-position:-200% 0; } }
 .cab-prog { height:6px; background:#262a33; margin:8px 0 12px; } .cab-prog > div { height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--cobalt)); transition:width .2s; }
+/* Локальный прогресс инструментов (humanize/Trace): полоса + подпись; busy = неопределённая shimmer-анимация */
+.cab-lp { display:flex; align-items:center; gap:10px; margin:8px 0; }
+.cab-lp[hidden] { display:none; }
+.cab-lp .cab-lp-bar { flex:1 1 auto; min-width:120px; height:8px; background:#262a33; border-radius:4px; overflow:hidden; }
+.cab-lp .cab-lp-bar > i { display:block; height:100%; width:0; background:var(--accent); border-radius:4px; transition:width .3s ease; }
+.cab-lp .cab-lp-bar.busy > i { width:100%!important; background:linear-gradient(90deg,var(--accent) 25%,#8fb0ff 50%,var(--accent) 75%); background-size:200% 100%; animation:lp-shimmer 1.2s linear infinite; }
+.cab-lp > span { font-size:.8rem; color:var(--text-muted); white-space:nowrap; }
+.cab-lock { margin:8px 0; }
+.cab-lock .pack-lock { display:flex; align-items:center; gap:8px; width:100%; background:none; border:1px dashed var(--border); color:var(--text); padding:10px 12px; font-size:.84rem; cursor:pointer; text-align:left; }
+.cab-lock .pack-lock:hover { border-color:var(--accent); }
 .dots { display:inline-flex; gap:4px; margin-left:6px; } .dots i { width:5px; height:5px; background:var(--accent); display:block; animation:dot 1s infinite ease-in-out; } .dots i:nth-child(2) { animation-delay:.15s; } .dots i:nth-child(3) { animation-delay:.3s; }
 .modebar { display:flex; gap:2px; margin-bottom:14px; } .modebar button { flex:1 1 0; min-height:40px; }
 .cmp-cards { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:14px; }
@@ -120,6 +131,8 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
     <button class="cab-tab" data-pane="batch" data-i18n="cab_batch">Batch check</button>
     <button class="cab-tab" data-pane="cmp" data-i18n="cab_cmp">Compare</button>
     <button class="cab-tab" data-pane="audit" data-i18n="cab_audit">Audit</button>
+    <button class="cab-tab" data-pane="trace" data-i18n="cab_trace">Trace</button>
+    <button class="cab-tab" data-pane="humanize" data-i18n="cab_hum">Humanize</button>
     <button class="cab-close" id="cabClose" data-i18n="cab_close">✕ Close</button>
   </div>
   <div class="cab-body">
@@ -172,9 +185,11 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
         <button class="cab-btn sec" id="bClear" data-i18n="b_clear">Clear list</button>
       </div>
       <div class="cab-drop" id="bDrop" data-i18n="b_drop">📁 Drop any number of files here or click to choose (.pdf, .docx, .txt, .md). They are checked one after another and saved to History.</div>
-      <input type="file" id="bFiles" multiple accept=".pdf,.docx,.txt,.md" style="display:none">
+      <input type="file" id="bFiles" multiple accept=".csv,.doc,.docx,.epub,.fb2,.htm,.html,.json,.log,.markdown,.md,.odt,.pdf,.rst,.rtf,.tex,.text,.tsv,.txt,.xhtml,.yaml,.yml" style="display:none">
       <div class="cab-row">
         <input class="cab-in" id="bPath" data-i18n-ph="b_path_ph" placeholder="…или локальная папка (рекурсивно): C:\Docs" style="min-width:280px;flex:1">
+        <button class="cab-btn sec" id="bFolderPick" data-i18n="b_folder_pick" data-i18n-title="b_folder_pick" title="Выбрать папку с этого компьютера">Выбрать папку…</button>
+        <input type="file" id="bFolderFiles" webkitdirectory style="display:none">
         <button class="cab-btn" id="bFolderGo" data-i18n="b_folder_go" data-i18n-title="b_folder_go" title="Пакетная проверка папки на этом компьютере">Проверить папку</button>
         <span class="cab-note" data-i18n="b_folder_note">The folder is checked on this computer (.txt, .md, .docx, .pdf); the number of files per folder is limited.</span>
       </div>
@@ -188,8 +203,12 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
       <div class="modebar"><button class="cab-btn on" id="cmPair" data-i18n="cmp_matrix_btn_pair">Two documents</button><button class="cab-btn sec" id="cmMany" data-i18n="cmp_matrix_btn_many">Many documents</button></div>
       <div id="cmPairBox">
         <div class="cab-row">
-          <span class="cab-note" data-i18n="cmp_a">A (original):</span><select class="cab-sel" id="cA" style="max-width:300px"></select>
-          <span class="cab-note" data-i18n="cmp_b">B (revised):</span><select class="cab-sel" id="cB" style="max-width:300px"></select>
+          <span class="cab-note" data-i18n="cmp_a">A (original):</span><select class="cab-sel" id="cA" style="max-width:230px"></select>
+          <button class="cab-btn sec" id="cFileA" data-i18n="cmp_file_a" title="Check the file and use it as A">📎 Файл A…</button>
+          <input type="file" id="cFileAInput" accept=".csv,.doc,.docx,.epub,.fb2,.htm,.html,.json,.log,.markdown,.md,.odt,.pdf,.rst,.rtf,.tex,.text,.tsv,.txt,.xhtml,.yaml,.yml" style="display:none">
+          <span class="cab-note" data-i18n="cmp_b">B (revised):</span><select class="cab-sel" id="cB" style="max-width:230px"></select>
+          <button class="cab-btn sec" id="cFileB" data-i18n="cmp_file_b" title="Check the file and use it as B">📎 Файл Б…</button>
+          <input type="file" id="cFileBInput" accept=".csv,.doc,.docx,.epub,.fb2,.htm,.html,.json,.log,.markdown,.md,.odt,.pdf,.rst,.rtf,.tex,.text,.tsv,.txt,.xhtml,.yaml,.yml" style="display:none">
           <button class="cab-btn" id="cGo" data-i18n="cmp_go">Compare</button>
           <label class="cab-note"><input type="checkbox" id="cOnly" checked> <span data-i18n="cmp_only_changed">only changed sentences</span></label>
         </div>
@@ -213,6 +232,54 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
       </div>
       <table class="cab-tbl"><thead><tr><th data-i18n="a_col_date">Date</th><th data-i18n="a_col_action">Action</th><th data-i18n="a_col_details">Details</th></tr></thead><tbody id="aBody"></tbody></table>
       <p class="cab-note" data-i18n="a_note">The local audit log is encrypted and checked for integrity. Manual clearing is unavailable. Old entries are removed according to the organisation's retention policy.</p>
+    </div>
+
+    <!-- TRACE: forensic corpus ranking (licensed Pro pack) -->
+    <div class="cab-pane" id="pane-trace">
+      <p class="cab-note" data-i18n="tr_hint">Соберите от 4 текстов и запустите анализ.</p>
+      <div class="cab-row">
+        <button class="cab-btn" id="trAdd" data-i18n="tr_add">Добавить</button>
+        <button class="cab-btn sec" id="trCur" data-i18n="tr_cur">＋ Текущий текст</button>
+        <button class="cab-btn sec" id="trFileBtn" data-i18n="tr_file">＋ Файл</button>
+        <input type="file" id="trFile" accept=".csv,.doc,.docx,.epub,.fb2,.htm,.html,.json,.log,.markdown,.md,.odt,.pdf,.rst,.rtf,.tex,.text,.tsv,.txt,.xhtml,.yaml,.yml" style="display:none" multiple>
+      </div>
+      <textarea class="cab-in" id="trText" data-i18n-ph="tr_ph" placeholder="Вставьте текст (от 300 слов)…" style="width:100%;min-height:90px;margin-bottom:8px"></textarea>
+      <div class="cab-row">
+      <button class="cab-btn" id="trGo" data-i18n="tr_go">Анализировать корпус</button>
+      <button class="cab-btn sec" id="trStop" data-i18n="task_stop" hidden>Остановить</button>
+        <button class="cab-btn sec" id="trClear" data-i18n="tr_clear">Очистить</button>
+        <span class="cab-note" id="trInfo"></span>
+      </div>
+      <div class="cab-lock" id="trLock" hidden><button class="pack-lock" id="trLockBtn" data-i18n="pack_lock">🔒 Licence required — click to enter a key</button></div>
+      <div class="cab-lp" id="trProg" hidden role="progressbar" aria-valuemin="0" aria-valuemax="100"><div class="cab-lp-bar" id="trProgWrap"><i id="trProgBar"></i></div><span id="trProgLabel"></span></div>
+      <div id="trList" class="cab-note" style="margin-bottom:8px"></div>
+      <table class="cab-tbl"><thead><tr><th data-i18n="tr_col_rank">#</th><th data-i18n="h_col_title">Название</th><th data-i18n="tr_col_score">Оценка</th><th data-i18n="h_col_words">Слов</th><th data-i18n="tr_col_feat">Главные отличия</th></tr></thead><tbody id="trBody"></tbody></table>
+      <p class="cab-note" data-i18n="tr_discl">Относительная дистанция внутри корпуса, а не доказательство авторства.</p>
+    </div>
+
+    <!-- HUMANIZE: rewrite with the local Humanizer pack (licensed) -->
+    <div class="cab-pane" id="pane-humanize">
+      <p class="cab-note" data-i18n="hu_hint">Перепишите текст локальным Humanizer.</p>
+      <div class="cab-row hu-import-row" style="margin-bottom:8px">
+        <button class="cab-btn sec" id="huFileBtn" data-i18n="hu_file">Открыть файл</button>
+        <span class="cab-note" data-i18n="hu_formats">TXT, MD, DOCX, PDF · извлечение текста из документа</span>
+        <input type="file" id="huFile" accept=".csv,.doc,.docx,.epub,.fb2,.htm,.html,.json,.log,.markdown,.md,.odt,.pdf,.rst,.rtf,.tex,.text,.tsv,.txt,.xhtml,.yaml,.yml" hidden>
+      </div>
+      <label for="huText" data-i18n="hu_input">Исходный текст</label>
+      <textarea class="cab-in" id="huText" data-i18n-ph="hu_ph" placeholder="Вставьте текст для очеловечивания…" style="width:100%;min-height:110px;margin-bottom:8px"></textarea>
+      <div class="cab-row">
+        <button class="cab-btn sec" id="huTake" data-i18n="hu_take">Взять текущий текст</button>
+        <select class="cab-sel" id="huVariant"><option value="auto" data-i18n="style_auto">Авто</option><option value="lite" data-i18n="style_lite">Лёгкая</option><option value="full" data-i18n="style_full">Полная</option></select>
+        <button class="cab-btn" id="huGo" data-i18n="style_go">Гуманизировать</button>
+        <button class="cab-btn" id="huLoop" data-i18n="style_loop">Доводка</button>
+        <button class="cab-btn sec" id="huStop" data-i18n="task_stop" hidden>Остановить</button>
+        <button class="cab-btn sec" id="huCopy" data-i18n="exp_copy">Копировать</button>
+      </div>
+      <div class="cab-lock" id="huLock" hidden><button class="pack-lock" id="huLockBtn" data-i18n="pack_lock">🔒 Licence required — click to enter a key</button></div>
+      <div class="cab-lp" id="huProg" hidden role="progressbar" aria-valuemin="0" aria-valuemax="100"><div class="cab-lp-bar" id="huProgWrap"><i id="huProgBar"></i></div><span id="huProgLabel"></span></div>
+      <div class="cab-note" id="huInfo" role="status" aria-live="polite" style="margin-bottom:8px"></div>
+      <label for="huOut" data-i18n="hu_output">Переписанный текст</label>
+      <textarea class="cab-in" id="huOut" readonly style="width:100%;min-height:110px"></textarea>
     </div>
   </div>
 </div>
@@ -264,10 +331,211 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
     document.querySelectorAll('.cab-tab').forEach(t => t.classList.toggle('active', t.dataset.pane === p));
     document.querySelectorAll('.cab-pane').forEach(x => x.classList.toggle('active', x.id === 'pane-' + p));
     if (p === 'hist') loadHistory(); if (p === 'cmp') fillCompareSelects(); if (p === 'batch') fillFolderSelects(); if (p === 'audit') loadAudit();
+    if (p === 'trace' && typeof trRenderList === 'function') trRenderList();
+    if (p === 'trace' || p === 'humanize') { syncLicBanners(); packStatus().then(() => syncLicBanners()).catch(() => {}); }
+    try { if (packLic) paintPackTabs(); } catch (e) {}
   }
   $('cabClose').onclick = closeCab;
-  document.querySelectorAll('.cab-tab').forEach(t => t.onclick = () => showPane(t.dataset.pane));
+  document.querySelectorAll('.cab-tab').forEach(t => t.onclick = () => gatedPane(t.dataset.pane));
+  // Trace/Humanize — лицензионные паки: без лицензии вкладка показывает замок и открывает окно лицензии
+  let packLic = null, packLicAt = 0, packInfo = null;
+  async function packStatus() {
+    const now = Date.now();
+    if (packLic && now - packLicAt < 30000) return { lic: packLic, packs: packInfo };
+    const s = await api('/api/status');
+    packLic = s.license || {}; packInfo = s.packs || null;
+    if (!packInfo) { try { packInfo = await api('/api/packs/status'); } catch (e) { packInfo = null; } }
+    packLicAt = Date.now();
+    paintPackTabs();
+    return { lic: packLic, packs: packInfo };
+  }
+  function paintPackTabs() {
+    const lock = !packLic || !packLic.licensed;
+    document.querySelectorAll('.cab-tab[data-pane="trace"], .cab-tab[data-pane="humanize"]').forEach(t => {
+      t.textContent = (lock ? '🔒 ' : '') + T(t.dataset.pane === 'trace' ? 'cab_trace' : 'cab_hum');
+      if (lock) t.setAttribute('title', T('pack_lock')); else t.removeAttribute('title');
+    });
+  }
+  // Замки внутри паков: без лицензии ведут в окно лицензии; при лицензии без пака — в модели.
+  // Статус обновляем при каждом открытии пака.
+  function openLicence() { const l = document.getElementById('licBadge'); if (l) l.click(); }
+  function openModels() { if (window.LINDA_desktop) window.LINDA_desktop.navigate('models'); }
+  function packTraceInstalled() { const t = (packInfo || {}).trace || {}; return !!t.installed; }
+  function packHumInstalled() { const h = ((packInfo || {}).humanizer) || {}; return !!((h.lite && h.lite.installed) || (h.full && h.full.installed)); }
+  function setBanner(boxId, btnId, mode, packKey) {
+    const box = $(boxId); if (!box) return;
+    const btn = $(btnId);
+    if (mode === 'hide') { box.hidden = true; return; }
+    box.hidden = false;
+    if (!btn) return;
+    if (mode === 'license') { btn.setAttribute('data-i18n', 'pack_lock'); }
+    else { btn.removeAttribute('data-i18n'); }
+    btn.textContent = T(mode === 'license' ? 'pack_lock' : packKey);
+    btn.onclick = mode === 'license' ? openLicence : openModels;
+  }
+  function syncLicBanners() {
+    const licensed = !!(packLic && packLic.licensed);
+    if (!licensed) {
+      setBanner('trLock', 'trLockBtn', 'license'); setBanner('huLock', 'huLockBtn', 'license');
+    } else {
+      setBanner('trLock', 'trLockBtn', packTraceInstalled() ? 'hide' : 'pack', 'tr_no_pack');
+      setBanner('huLock', 'huLockBtn', packHumInstalled() ? 'hide' : 'pack', 'hu_no_pack');
+    }
+    for (const [id, needPack] of [['trGo', !packTraceInstalled()], ['huGo', !packHumInstalled()], ['huLoop', !packHumInstalled()]]) {
+      const b = $(id); if (!b) continue;
+      if (!licensed) b.setAttribute('title', T('pack_lock'));
+      else if (needPack) b.setAttribute('title', T(id === 'trGo' ? 'tr_no_pack' : 'hu_no_pack'));
+      else b.removeAttribute('title');
+    }
+  }
+  async function gatedPane(p) {
+    if (p === 'trace' || p === 'humanize') {
+      try {
+        const st = await packStatus();
+        if (!st.lic || !st.lic.licensed) { const l = document.getElementById('licBadge'); if (l) l.click(); return false; }
+      } catch (e) { /* offline: открываем как есть, ошибку покажет запрос */ }
+    }
+    showPane(p);
+    return true;
+  }
+  let desktopNavGeneration = 0;
+  window.LINDA_cabinet = {
+    async open(pane) {
+      const turn = ++desktopNavGeneration;
+      if (pane === 'trace' || pane === 'humanize') {
+        const st = await packStatus();
+        if (turn !== desktopNavGeneration) return false;
+        if (!st.lic || !st.lic.licensed) { $('licBadge').click(); return false; }
+      }
+      if (turn !== desktopNavGeneration) return false;
+      openCab(pane);
+      return true;
+    },
+    close() { desktopNavGeneration++; closeCab(); }
+  };
+  // Принудительное обновление лицензионных замков после ввода/удаления ключа.
+  window.LINDA_packRefresh = async function () {
+    packLic = null; packInfo = null; packLicAt = 0;
+    try { await packStatus(); } catch (e) {}
+    try { syncLicBanners(); } catch (e) {}
+    try { if (window._cabPane === 'trace' || window._cabPane === 'humanize') showPane(window._cabPane); } catch (e) {}
+    try { document.dispatchEvent(new Event('linda-license')); } catch (e) {}
+  };
+  try { packStatus().catch(() => {}); } catch (e) {}
   document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if ($('cabViewer').classList.contains('open')) closeViewer(); else if ($('cabView').classList.contains('open')) closeCab(); });
+
+  // ================= Trace pane: local corpus + /api/trace/corpus =================
+  const TR_KEY = 'linda-trace-corpus';
+  function trDocs() { try { const d = JSON.parse(localStorage.getItem(TR_KEY) || '[]'); return Array.isArray(d) ? d : []; } catch (e) { return []; } }
+  function trRenderList() {
+    const docs = trDocs();
+    $('trList').innerHTML = docs.length
+      ? docs.map((d, i) => '<span class="chip">' + esc(d.title || ('#' + (i + 1))) + ' <span style="opacity:.7">' + String(d.text || '').split(/\s+/).filter(Boolean).length + '</span> <button class="cab-act del" data-i="' + i + '" title="' + esc(T('t_delete')) + '">✕</button></span>').join(' ')
+      : esc(T('tr_empty'));
+    $('trList').querySelectorAll('button[data-i]').forEach(b => b.onclick = () => { const d = trDocs(); d.splice(+b.dataset.i, 1); try { localStorage.setItem(TR_KEY, JSON.stringify(d)); } catch (e) {} trRenderList(); if (window.LINDA_traceCount) window.LINDA_traceCount(); });
+  }
+  $('trAdd').onclick = () => {
+    const t = ($('trText').value || '').trim(); if (!t) { $('trText').focus(); return; }
+    const d = trDocs(); d.push({ id: 't' + Date.now(), title: t.slice(0, 60), text: t });
+    try { localStorage.setItem(TR_KEY, JSON.stringify(d)); } catch (e) { $('trInfo').textContent = e.message; return; }
+    $('trText').value = ''; trRenderList(); if (window.LINDA_traceCount) window.LINDA_traceCount();
+  };
+  $('trCur').onclick = () => { const t = (document.getElementById('textInput') || {}).value || ''; if (t.trim()) $('trText').value = t; $('trText').focus(); };
+  $('trFileBtn').onclick = () => $('trFile').click();
+  $('trFile').onchange = async e => {
+    const files = [...(e.target.files || [])]; e.target.value = ''; if (!files.length) return;
+    $('trInfo').textContent = T('tr_reading', { n: files.length });
+    let done = 0;
+    for (const f of files) {
+      try {
+        let text = '';
+        const fd = new FormData(); fd.append('file', f); const up = await api('/api/upload', { method: 'POST', body: fd }); text = up.text || '';
+        if (text.trim()) $('trText').value = (($('trText').value ? $('trText').value + '\n' : '') + text).slice(0, 2000000);
+        done++;
+      } catch (err) { $('trInfo').textContent = T('hu_file_error'); }
+    }
+    if (done) $('trInfo').textContent = T('tr_files_loaded', { n: done });
+  };
+  $('trClear').onclick = () => { try { localStorage.removeItem(TR_KEY); } catch (e) {} $('trBody').innerHTML = ''; $('trInfo').textContent = ''; trRenderList(); if (window.LINDA_traceCount) window.LINDA_traceCount(); };
+  let trBusy = false;
+  function trProgShow() { $('trProg').hidden = false; $('trProgWrap').classList.add('busy'); $('trProgLabel').textContent = T('tr_working'); }
+  function trProgHide() { $('trProg').hidden = true; $('trProgWrap').classList.remove('busy'); }
+  $('trGo').onclick = async () => {
+    if (trBusy) return;
+    if (!packLic || !packLic.licensed) { try { const st = await packStatus(); syncLicBanners(); if (!st.lic || !st.lic.licensed) { openLicence(); return; } } catch (e) { openLicence(); return; } }
+    if (!packTraceInstalled()) { syncLicBanners(); $('trInfo').textContent = T('tr_no_pack'); return; }
+    const docs = trDocs();
+    if (docs.length < 4) { $('trInfo').textContent = T('tr_min', { n: docs.length }); return; }
+    trBusy = true; $('trGo').disabled = true; $('trStop').hidden=false; $('trInfo').textContent = T('tr_working'); trProgShow();
+    try {
+      const lang = ['ru', 'pl', 'en'].includes(window.LINDA_LANG) ? window.LINDA_LANG : 'en';
+      const r = await window.LINDA_tools.run('/api/trace/corpus', { documents: docs.map(d => ({ id: String(d.id), title: String(d.title || d.id), text: String(d.text || '') })), language: lang },'trace','trace',() => trProgShow());
+      const ranking = (r.result || {}).ranking || [];
+      $('trBody').innerHTML = ranking.map((row, i) => '<tr><td>' + (i + 1) + '</td><td><span class="cab-title">' + esc(row.title) + '</span></td><td>' +
+        (row.score == null ? '—' : Number(row.score).toFixed(3)) + '</td><td>' + (row.words == null ? '—' : row.words) + '</td><td style="white-space:normal;min-width:220px">' +
+        esc(((row.top_features || []).slice(0, 3).map(f => f.description || f.name || '').filter(Boolean)).join('; ')) + '</td></tr>').join('');
+      $('trInfo').textContent = '';
+    } catch (e) { $('trInfo').textContent = e.message; }
+    finally { trBusy = false; $('trGo').disabled = false; $('trStop').hidden=true; trProgHide(); }
+  };
+  $('trStop').onclick=()=>{$('trInfo').textContent=T('task_stopping');window.LINDA_tools.cancel('trace').catch(()=>{$('trInfo').textContent=T('task_retry_stop');});};
+
+  // ================= Humanize pane: /api/humanize + /api/humanize/loop =================
+  let huBusy = false;
+  function huSetBusy(on, msg) { huBusy = on; $('huStop').hidden=!on; ['huGo', 'huLoop','huFileBtn','huTake'].forEach(id => $(id).disabled = on); if (!on) huProgHide(); if (msg != null) $('huInfo').textContent = msg; }
+  function huProgShow() { $('huProg').hidden = false; $('huProgWrap').classList.add('busy'); $('huProgBar').style.width = '0'; $('huProgLabel').textContent = T('style_working'); }
+  function huProgHide() { $('huProg').hidden = true; $('huProgWrap').classList.remove('busy'); $('huProgBar').style.width = '0'; }
+  function huProgUpdate(p) {
+    $('huProg').hidden = false;
+    if (p && p.pct > 0 && p.of) {
+      $('huProgWrap').classList.remove('busy');
+      $('huProgBar').style.width = Math.max(2, Math.min(100, p.pct)) + '%';
+    } else $('huProgWrap').classList.add('busy');
+    $('huProgLabel').textContent = (p && p.of != null)
+      ? T('style_iter', { i: p.iters, n: p.of, p: Math.round((p.share || 0) * 100) })
+      : T('style_working');
+  }
+  $('huTake').onclick = () => { const t = (document.getElementById('textInput') || {}).value || ''; if (t.trim()) $('huText').value = t; $('huText').focus(); };
+  let huImporting=false;
+  $('huFileBtn').onclick = () => $('huFile').click();
+  $('huFile').onchange = async e => {
+    const file=e.target.files[0];e.target.value='';if(!file||huImporting)return;
+    if(!/\.(?:csv|doc|docx|epub|fb2|htm|html|json|log|markdown|md|odt|pdf|rst|rtf|tex|text|tsv|txt|xhtml|yaml|yml)$/i.test(file.name)){$('huInfo').textContent=T('hu_file_error');return;}
+    const before=$('huText').value;
+    huImporting=true;['huFileBtn','huTake','huGo','huLoop'].forEach(id=>$(id).disabled=true);
+    $('huInfo').textContent=T('hu_reading');
+    try {
+      const fd=new FormData();fd.append('file',file);
+      const result=await api('/api/upload',{method:'POST',body:fd,signal:AbortSignal.timeout(60000)});
+      if(typeof result.text!=='string'||!result.text.trim())throw new Error('empty');
+      if($('huText').value!==before){$('huInfo').textContent=T('hu_input_changed');return;}
+      $('huText').value=result.text;$('huText').dispatchEvent(new Event('input',{bubbles:true}));
+      $('huInfo').textContent=T('hu_file_loaded',{name:file.name});
+      if(window._cabPane==='humanize')$('huText').focus();
+    } catch(err){$('huInfo').textContent=T('hu_file_error');}
+    finally{huImporting=false;['huFileBtn','huTake','huGo','huLoop'].forEach(id=>$(id).disabled=huBusy);}
+  };
+  async function huRun(loop) {
+    if (huBusy) return;
+    if (!packLic || !packLic.licensed) { try { const st = await packStatus(); syncLicBanners(); if (!st.lic || !st.lic.licensed) { openLicence(); return; } } catch (e) { openLicence(); return; } }
+    if (!packHumInstalled()) { syncLicBanners(); $('huInfo').textContent = T('hu_no_pack'); return; }
+    const text = ($('huText').value || '').trim(); if (!text) { $('huText').focus(); return; }
+    const variant = ($('huVariant') || {}).value || 'auto';
+    huSetBusy(true, T('style_working')); huProgShow();
+    try {
+      const res = await window.LINDA_tools.run(loop ? '/api/humanize/loop' : '/api/humanize', loop ? { text, target: 0.5, max_iters: 3, variant } : { text, mode: 'all', variant },'hu','humanize',huProgUpdate);
+      const r = res.result || {};
+      $('huOut').value = r.text || '';
+      $('huInfo').textContent = loop
+        ? T('style_done', { p: Math.round((((r.iters || []).slice(-1)[0] || {}).ai_share || 0) * 100), n: Math.max(0, (r.iters || []).length - 1) })
+        : '✓ ' + (r.variant || variant) + ' · ' + (r.changed == null ? 0 : r.changed);
+    } catch (e) { $('huInfo').textContent = e.message; }
+    finally { huSetBusy(false); }
+  }
+  $('huGo').onclick = () => huRun(false);
+  $('huStop').onclick=()=>{$('huInfo').textContent=T('task_stopping');window.LINDA_tools.cancel('hu').catch(()=>{$('huInfo').textContent=T('task_retry_stop');});};
+  $('huLoop').onclick = () => huRun(true);
+  $('huCopy').onclick = () => { if ($('huOut').value) navigator.clipboard.writeText($('huOut').value).catch(e => { $('huInfo').textContent = e.message; }); };
 
   // ================= shared drawing: authorship, analytics, structure =================
   function drawAuthorship(el, r) {
@@ -539,6 +807,8 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
     $('bStart').disabled = running || folderRunning || !queue.some(q => q.state === 'queued'); $('bCancel').disabled = !running && !folderRunning; $('bCsv').disabled = !queue.some(q => q.state === 'done'); $('bMatrix').disabled = running || folderRunning || queue.filter(q => q.id).length < 2; $('bFolderGo').disabled = running || folderRunning;
   }
   $('bDrop').onclick = () => $('bFiles').click(); $('bFiles').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+  $('bFolderPick').onclick = () => $('bFolderFiles').click();
+  $('bFolderFiles').onchange = e => { const files = [...(e.target.files || [])]; e.target.value = ''; addFiles(files); };
   ['dragover', 'dragenter'].forEach(n => $('bDrop').addEventListener(n, e => { e.preventDefault(); $('bDrop').classList.add('over'); }));
   ['dragleave', 'drop'].forEach(n => $('bDrop').addEventListener(n, e => { e.preventDefault(); $('bDrop').classList.remove('over'); }));
   $('bDrop').addEventListener('drop', e => addFiles(e.dataTransfer.files));
@@ -601,6 +871,25 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
     else if (v) openViewer(v.dataset.view);
   });
   $('cGo').onclick = runCompare; $('cOnly').onchange = drawCompare;
+  async function cmpImportFile(input, selectId) {
+    const f = input.files[0]; input.value = ''; if (!f) return;
+    if (!/\.(?:csv|doc|docx|epub|fb2|htm|html|json|log|markdown|md|odt|pdf|rst|rtf|tex|text|tsv|txt|xhtml|yaml|yml)$/i.test(f.name)) { $('cOut').innerHTML = `<p class="cab-note">${esc(T('hu_file_error'))}</p>`; return; }
+    $('cOut').innerHTML = '<div class="cab-prog"><div style="width:100%" class="cab-busy"></div></div><p class="cab-note">' + esc(T('cmp_importing', {name: f.name})) + '</p>';
+    try {
+      const fd = new FormData(); fd.append('file', f);
+      const up = await api('/api/upload', { method: 'POST', body: fd });
+      if (!up.text || !up.text.trim()) throw new Error('empty');
+      const d = await jpost('/api/detect', { text: up.text, title: f.name.slice(0, 200), filename: f.name });
+      if (!d.history_id) throw new Error(T('cmp_no_save'));
+      await fillCompareSelects();
+      $(selectId).value = String(d.history_id);
+      const a = $('cA').value, b = $('cB').value;
+      if (a && b && a !== b) runCompare();
+      else $('cOut').innerHTML = '<p class="cab-note">' + esc(T('cmp_pick_second')) + '</p>';
+    } catch (err) { $('cOut').innerHTML = `<p class="cab-note">${esc(err.message)}</p>`; }
+  }
+  $('cFileA').onclick = () => $('cFileAInput').click(); $('cFileAInput').onchange = e => cmpImportFile(e.target, 'cA');
+  $('cFileB').onclick = () => $('cFileBInput').click(); $('cFileBInput').onchange = e => cmpImportFile(e.target, 'cB');
 
   const heat = v => v >= .6 ? '#e51400' : v >= .3 ? '#b34d00' : v >= .1 ? '#0050ef' : v > 0 ? '#00716f' : '#2f3b2f';
   async function runMatrix(ids) {
@@ -664,7 +953,7 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
   }
   $('aGo').onclick = loadAudit; $('aAction').onchange = loadAudit;
 
-  document.addEventListener('linda-i18n', e => { try { if (!window.LINDA_LANG) return; if (window._cabLang === window.LINDA_LANG && !(e && e.detail && e.detail.force)) return; window._cabLang = window.LINDA_LANG; if ($('cabViewer')?.classList.contains('open') && V && V.id) { renderDoc(); renderSide(); if (V.title) $('vTitle').textContent = V.title; } else if ($('cabView')?.classList.contains('open')) { showPane(window._cabPane || 'hist'); } } catch (err) { console.error('[cabinet] i18n update failed', err); } });
+  document.addEventListener('linda-i18n', e => { try { if (!window.LINDA_LANG) return; if (window._cabLang === window.LINDA_LANG && !(e && e.detail && e.detail.force)) return; window._cabLang = window.LINDA_LANG; try { paintPackTabs(); } catch (_) {} if ($('cabViewer')?.classList.contains('open') && V && V.id) { renderDoc(); renderSide(); if (V.title) $('vTitle').textContent = V.title; } else if ($('cabView')?.classList.contains('open')) { showPane(window._cabPane || 'hist'); } } catch (err) { console.error('[cabinet] i18n update failed', err); } });
   window.openLindaCabinet = openCab;
 })();
 </script>

@@ -1,0 +1,32 @@
+/* Panorama: supplied artwork fills the window, with a cropped Metro title. */
+#lindaStartup{position:fixed;inset:0;z-index:100000;background:#111318;color:#f4f5f7;overflow:auto;font:16px/1.5 'Segoe UI',sans-serif}
+#lindaStartup[hidden]{display:none!important}
+.startup-card{position:relative;width:100%;min-height:100vh;overflow:hidden;background:#111318}
+.startup-art{position:absolute;inset:0;overflow:hidden}
+.startup-art svg{display:block;width:100%;height:100%;object-fit:cover}
+.startup-card::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(17,19,24,.96) 0,rgba(17,19,24,.84) 34%,rgba(17,19,24,.18) 78%)}
+.startup-content{position:relative;z-index:1;min-height:100vh}
+.startup-brand{display:contents}
+.startup-icon{position:absolute;right:3vw;top:3vw;width:clamp(40px,4.4vw,84px);height:clamp(40px,4.4vw,84px);background:#1ba1e2;padding:7px;box-sizing:border-box}
+.startup-icon svg{display:block;width:100%;height:100%}
+.startup-name{position:absolute;left:-.9vw;top:7vw;font-size:14.5vw;font-weight:300;line-height:.9;letter-spacing:-.03em;white-space:nowrap}
+.startup-tagline{position:absolute;left:4vw;top:24vw;font-size:clamp(20px,2.3vw,44px);font-weight:300;color:#e0e3e8;max-width:80vw}
+.startup-version{position:absolute;right:9vw;top:3.6vw;font-size:clamp(16px,1.7vw,32px);font-variant-numeric:tabular-nums}
+.startup-foot{position:absolute;left:4vw;bottom:4vh;width:min(650px,56vw);max-width:92vw;display:grid;gap:8px}
+.startup-status{font-size:clamp(19px,1.7vw,28px);font-weight:400}
+.startup-models,.startup-note{color:#d4d8df;font-size:14px;overflow-wrap:anywhere}
+.startup-dots{display:flex;gap:12px;height:26px;align-items:center;margin:2px 0}
+.startup-dots i{height:6px;width:6px;background:#fff;animation:startup-pulse 1.5s infinite;opacity:.25}
+.startup-dots i:nth-child(2){animation-delay:.15s}.startup-dots i:nth-child(3){animation-delay:.3s}.startup-dots i:nth-child(4){animation-delay:.45s}.startup-dots i:nth-child(5){animation-delay:.6s}
+@keyframes startup-pulse{0%,80%,100%{opacity:.25;transform:translateX(0)}40%{opacity:1;transform:translateX(12px)}}
+@media(prefers-reduced-motion:reduce){.startup-dots i{animation:none;opacity:1}}
+#startupContinue{justify-self:start;margin-top:8px;background:#111318;color:inherit;border:1px solid #8a91a0;padding:10px 18px;font:inherit;cursor:pointer}
+#startupContinue:focus-visible{outline:3px solid #1ba1e2;outline-offset:3px}
+html[data-theme=light] #lindaStartup{background:#f2f3f5;color:#15171b}
+html[data-theme=light] .startup-card::after{background:linear-gradient(90deg,rgba(245,246,248,.98) 0,rgba(245,246,248,.93) 42%,rgba(245,246,248,.2) 90%)}
+html[data-theme=light] .startup-tagline,html[data-theme=light] .startup-models,html[data-theme=light] .startup-note{color:#303640}
+html[data-theme=light] .startup-dots i{background:#15171b}
+html[data-theme=light] #startupContinue{background:#f5f6f8;border-color:#50555e}
+html[data-theme=contrast] .startup-card::after{background:linear-gradient(90deg,#000 0,rgba(0,0,0,.96) 50%,rgba(0,0,0,.6) 100%)}
+html[data-theme=contrast] #lindaStartup,html[data-theme=contrast] .startup-tagline,html[data-theme=contrast] .startup-models,html[data-theme=contrast] .startup-note{color:#fff}
+@media(max-width:600px){.startup-name{top:16vh;font-size:30vw;left:-1.8vw}.startup-tagline{top:36vh;left:6vw;font-size:22px;max-width:88vw}.startup-icon{top:24px;right:6vw}.startup-version{top:31px;right:calc(6vw + 56px)}.startup-foot{left:6vw;width:88vw;max-width:88vw;bottom:5vh}.startup-card::after{background:linear-gradient(90deg,rgba(17,19,24,.96),rgba(17,19,24,.65))}}

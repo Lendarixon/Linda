@@ -14,7 +14,8 @@ from pathlib import Path
 from . import config
 
 # Разрешённые расширения (в нижнем регистре, с точкой).
-ALLOWED_SUFFIXES = frozenset({".docx", ".pdf", ".txt", ".md"})
+from .document_formats import SUPPORTED_EXTS
+ALLOWED_SUFFIXES = frozenset(SUPPORTED_EXTS)
 # Предел размера файла: 20 МБ.
 MAX_SIZE = 20 * 1024 * 1024
 # Время жизни записи во входящих: 10 минут.

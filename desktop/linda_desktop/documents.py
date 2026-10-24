@@ -5,6 +5,7 @@ import sys
 import threading
 
 from .document_worker import MAX_INPUT, MAX_TEXT
+from .document_formats import PLAIN_EXTS, SUPPORTED_EXTS
 
 TIMEOUT = 20
 _slots = threading.BoundedSemaphore(2)
@@ -27,7 +28,7 @@ def extract(filename, content):
     if len(content)>MAX_INPUT:
         raise ValueError('Document exceeds the supported input limit')
     ext = Path(filename).suffix.lower()
-    if ext in ('.txt','.md','.text',''):
+    if ext in PLAIN_EXTS or ext=='':
         head = content[:4096]
         utf16 = head.startswith((b'\xff\xfe', b'\xfe\xff'))
         if b'\x00' in head and not utf16:  # NUL-байты вне UTF-16: это не текст (например, .exe под видом .txt)
@@ -45,8 +46,8 @@ def extract(filename, content):
         return _bounded_text(text)
     if ext in ('.ppt','.pptx'):
         raise ValueError('PowerPoint files are not supported. Slide text is not suitable for reliable authorship analysis, even when exported to PDF')
-    if ext not in ('.pdf','.docx'):
-        raise ValueError('Supported formats: .txt, .md, .docx, .pdf')
+    if ext not in SUPPORTED_EXTS:
+        raise ValueError('Unsupported document format')
     if not _slots.acquire(timeout=TIMEOUT):
         raise ValueError('Document parser is busy; try again')
     try:

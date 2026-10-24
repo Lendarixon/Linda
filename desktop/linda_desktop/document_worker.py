@@ -74,7 +74,11 @@ def parse(filename, content):
     if len(content) > MAX_INPUT:
         raise ValueError('Document exceeds the supported input limit')
     ext = Path(filename).suffix.lower()
-    if ext == '.docx':
+    try:from .document_formats import EXTRA_EXTS, extract_extended
+    except ImportError:from document_formats import EXTRA_EXTS, extract_extended
+    if ext in EXTRA_EXTS:
+        parts=[extract_extended(ext,content)]
+    elif ext == '.docx':
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
             entries = archive.infolist()
             if len(entries)>2000 or sum(item.file_size for item in entries)>80_000_000:
@@ -88,7 +92,7 @@ def parse(filename, content):
             raise ValueError('PDF exceeds the supported page limit')
         parts = ((page.extract_text() or '').strip() for page in reader.pages)
     else:
-        raise ValueError('Supported formats: .txt, .md, .docx, .pdf')
+        raise ValueError('Unsupported document format')
     output, size = [], 0
     for part in parts:
         if not part.strip():

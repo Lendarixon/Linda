@@ -21,7 +21,7 @@ def test_settings_defaults_have_ui_prefs(repo):
     s = load_settings()
     for k in ("theme", "accent", "density", "font_scale", "radius", "sidebar", "language"):
         assert k in s, k
-        assert s[k] == DEFAULT_SETTINGS[k]
+        assert s[k] == (ui18n.system_language() if k == 'language' else DEFAULT_SETTINGS[k])
 
 
 def test_settings_accepts_ui_prefs(repo):
@@ -46,6 +46,7 @@ def test_settings_rejects_bad_ui_prefs(repo):
 
 def test_backend_errors_follow_language(repo):
     c = make_client()
+    c.post("/api/settings", json={"language": "ru"})
     bad = {"file": ("a.exe", b"MZ", "application/octet-stream")}
     ru = c.post("/api/upload", files=bad).json()["detail"]
     assert "прочитать" in ru  # дефолт ru
@@ -61,9 +62,9 @@ def test_i18n_endpoint(repo):
     for lang in ("ru", "pl", "en"):
         d = c.get("/api/i18n/" + lang).json()
         assert d["lang"] == lang and len(d["strings"]) > 300
-    assert c.get("/api/i18n/xx").json()["lang"] == "ru"  # фолбэк
+    assert c.get("/api/i18n/xx").json()["lang"] == "en"
     assert ui18n.tr("no_such_key", "pl") == "no_such_key"
-    assert ui18n.resolve_lang({"language": "de"}) == "ru"
+    assert ui18n.resolve_lang({"language": "de"}) == ui18n.system_language()
 
 
 def test_dictionaries_parity():

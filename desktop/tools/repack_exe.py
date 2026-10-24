@@ -21,7 +21,20 @@ ROOT = Path(__file__).resolve().parents[1]
 COOKIE = b"MEI\014\013\012\013\016"
 COOKIE_FMT, TOC_FMT = "!8sIIII64s", "!IIIIBc"
 PYZ_MODULE, PYZ_PKG = 0, 1
-EXTRA_MODULES: set[str] = set()  # новые модули приложения: вписать сюда имя, чтобы он попал в exe
+EXTRA_MODULES: set[str] = {
+    "linda_desktop.document_formats", "linda_desktop.linda_olefile",
+    "linda_desktop.task_cancel",
+    # 2.2.0.0 licensed packs: splash screen, Trace engine, Humanizer, pack manager
+    "linda_desktop.splash", "linda_desktop.trace_pack", "linda_desktop.humanize_pack",
+    "linda_desktop.packs", "linda_desktop.stylize_core",
+    "linda_desktop.trace", "linda_desktop.trace.vendor",
+    "linda_desktop.trace.outlier_engine", "linda_desktop.trace.authorship_engine",
+    "linda_desktop.trace.stylometric_engine", "linda_desktop.trace.core",
+    "linda_desktop.trace.feature_labels", "linda_desktop.trace.input_quality",
+    "linda_desktop.trace.projection_2d", "linda_desktop.trace.runtime_manifest",
+    "linda_desktop.trace.trace_config", "linda_desktop.trace.trace_updater",
+    "linda_desktop.trace.report_builder", "linda_desktop.trace.vendor.linda_stylometry",
+}  # новые модули приложения: вписать сюда имя, чтобы он попал в exe (char_ngrams_model.json едет файлом в _internal/linda_desktop/trace/)
 
 
 def our_modules() -> dict[str, tuple[int, object]]:

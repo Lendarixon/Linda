@@ -1,5 +1,33 @@
 [
   {
+    "version": "2.1.0.0",
+    "date": "2026-10-23",
+    "title": {
+      "en": "System language and localized model startup",
+      "ru": "Язык системы и локализованный запуск моделей",
+      "pl": "Język systemu i zlokalizowane uruchamianie modeli"
+    },
+    "notes": {
+      "en": "Windows display language is selected on first launch (English fallback). An explicit language choice is saved. Legacy automatic Russian defaults migrate to the system language. Localized startup screen shows app/model versions and preparation stages using the supplied Linda artwork. Fixed duplicate model warmup, unnecessary wait for update servers, and warmup of both selected detector tiers. Saved preload-off is respected. Model weights and scoring thresholds are unchanged.",
+      "ru": "При первом запуске выбирается язык интерфейса Windows (для остальных языков — английский). Ручной выбор сохраняется. Старый автоматический русский по умолчанию заменяется языком системы. Локализованный экран запуска показывает версии приложения и моделей и этапы подготовки с графикой Linda из папки дизайна. Исправлены повторный прогрев, ожидание сервера обновлений и прогрев обоих выбранных наборов. Отключённая предзагрузка сохраняется. Веса моделей и пороги не менялись.",
+      "pl": "Przy pierwszym uruchomieniu wybierany jest język interfejsu Windows (dla innych języków: angielski). Ręczny wybór jest zapisywany. Dawne automatyczne ustawienie rosyjskiego jest zastępowane językiem systemu. Zlokalizowany ekran startowy pokazuje wersje aplikacji i modeli oraz etapy przygotowania z dostarczoną grafiką Linda. Naprawiono podwójne rozgrzewanie, czekanie na serwer aktualizacji i przygotowanie obu wybranych zestawów. Wyłączone ładowanie wstępne jest respektowane. Wagi modeli i progi pozostają bez zmian."
+    }
+  },
+  {
+    "version": "2.0.7.0",
+    "date": "2026-10-17",
+    "title": {
+      "en": "Audit fixes: language-aware cleaning, sentence splitter, unsupported-language warning",
+      "ru": "Исправления аудита: очистка по языку, сплиттер предложений, предупреждение о языке",
+      "pl": "Poprawki audytu: czyszczenie wg jezyka, podzialzdan, ostrzezenie o jezyku"
+    },
+    "notes": {
+      "en": "- Language-aware cleaning: RU/PL/EN text is cleaned with its own script (homoglyphs no longer flip in Russian); hybrid/full sentence scoring now uses the same cleaning as context/document paths. Models 1.3.4 and thresholds are unchanged in code, but RU needs threshold re-validation on held-out data before release claims.- Sentence splitter: Ukrainian capitals split correctly; Dr./U.S./A. S. initials no longer break highlighting; zero-width space no longer glues sentences.- Unsupported languages: German/French score as en with an explicit unreliable-result warning; Ukrainian scores as ru with its own warning; plain English and empty text behaviour unchanged.- Token-path fallback now records token_path_error in the result and logs it instead of silent downgrade; dead single-model branch removed (single-model path unchanged via single_model.run).",
+      "ru": "- Очистка по языку: RU/PL/EN чистятся своим скриптом (гомоглифы больше не переворачивают русский); hybrid/full считают по очищенным предложениям, как context/документ. Модели 1.3.4 и пороги в коде не менялись, но RU нужна перепроверка порогов на отложенной выборке до релизных заявлений.- Сплиттер: украинские заглавные делятся корректно; Dr./U.S./А. С. не рвут подсветку; zero-width space больше не склеивает предложения.- Чужие языки: немецкий/французский считаются как en с явным предупреждением о ненадежности; украинский — как ru со своим предупреждением; короткие английские тексты работают как раньше.- Откат токенного пути теперь пишет token_path_error в результат и лог вместо тихого отката; мертвая ветка одиночной модели убрана (путь single_model.run без изменений).",
+      "pl": "- Czyszczenie wg jezyka: RU/PL/EN czyszczone wlasnym skryptem; hybrid/full licza na wyczyszczonych zdaniach jak context/dokument. Modele 1.3.4 i progi w kodzie bez zmian, ale RU wymaga ponownej walidacji progow na danych hold-out przed deklaracjami wydania.\n- Podzial zdan: ukrainskie wielkie litery dziela sie poprawnie; Dr./U.S./inicjaly nie rwana podswietlenia; zero-width space nie skleja zdan.\n- Inne jezyki: niemiecki/francuski liczone jako en z wyraznym ostrzezeniem o niewiarygodnosci; ukrainski jako ru z wlasnym ostrzezeniem; krotkie teksty angielskie bez zmian.\n- Awaryjny tryb tokenow zapisuje token_path_error w wyniku i logu zamiast cichego powrotu; martwa galaz pojedynczego modelu usunieta (sciezka single_model.run bez zmian)."
+    }
+  },
+  {
     "version": "2.0.6.2",
     "date": "2026-10-17",
     "title": {

@@ -19,6 +19,15 @@ import webbrowser
 from . import config
 
 
+if getattr(sys, "frozen", False):  # упакованное приложение: дисковый _internal рядом с exe
+    try:                          # содержит tkinter, torch-стек, trace-данные — добавить в путь сразу
+        _di = os.path.join(os.path.dirname(sys.executable), "_internal")
+        if os.path.isdir(_di) and _di not in sys.path:
+            sys.path.insert(0, _di)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def _take_over_stale() -> bool:
     """The copy that holds the mutex is older than this one (left over from before an update) or has lost its window (hung after the window was closed):
     end it, so that the new launch does not just open the old copy's page in a browser or do nothing."""
@@ -135,7 +144,8 @@ def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     def _file_arg() -> str | None:
         for a in argv:
-            if not a.startswith("-") and os.path.splitext(a)[1].lower() in (".docx", ".pdf", ".txt", ".md") and os.path.isfile(a):
+            from .document_formats import SUPPORTED_EXTS
+            if not a.startswith("-") and os.path.splitext(a)[1].lower() in SUPPORTED_EXTS and os.path.isfile(a):
                 return a
         return None
 
@@ -173,6 +183,16 @@ def main(argv: list[str] | None = None) -> int:
         log = open(config.data_dir() / "app.log", "a", encoding="utf-8", buffering=1)
         sys.stdout = sys.stdout or log
         sys.stderr = sys.stderr or log
+    else:
+        try:
+            sys.stdout.flush()  # frozen exe с оборванным stdout (EINVAL): уйти в лог, а не падать
+        except Exception:  # noqa: BLE001
+            try:
+                log = open(config.data_dir() / "app.log", "a", encoding="utf-8", buffering=1)
+                sys.stdout = log
+                sys.stderr = log
+            except Exception:  # noqa: BLE001
+                pass
     def recover_document_jobs():
         try:
             from .document_sandbox import cleanup_stale
@@ -199,6 +219,15 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     (config.data_dir() / "instance.json").write_text(json.dumps({"port": port, "pid": os.getpid(), "version": config.APP_VERSION, "mode": "browser" if "--browser" in argv or "--no-ui" in argv else "window"}), encoding="utf-8")
     core.background()
+    def activate_installer_key():
+        try:
+            from . import licensing
+            res = licensing.maybe_activate_installer_key()
+            if res.get("status") not in ("none", "already"):
+                print("Linda: installer licence key: %s" % (res.get("status"),), file=sys.stderr)
+        except Exception:  # noqa: BLE001
+            pass
+    threading.Thread(target=activate_installer_key, daemon=True).start()
     if _file_arg():
         try:
             from . import inbox
@@ -207,8 +236,29 @@ def main(argv: list[str] | None = None) -> int:
         except Exception:  # noqa: BLE001
             pass
     url = f"http://127.0.0.1:{port}/"
+    if "--no-ui" not in argv and "--browser" not in argv:
+        try:
+            from .splash import show_splash
+
+            splash_res = show_splash(port, app.state.token)
+            try:
+                (config.data_dir() / "splash_debug.log").write_text(
+                    "splash result: %s\n" % (splash_res,), encoding="utf-8")
+            except Exception:  # noqa: BLE001
+                pass
+        except Exception as e:  # noqa: BLE001 — без дисплея идём как раньше, без сплэша
+            try:
+                import traceback
+
+                (config.data_dir() / "splash_debug.log").write_text(
+                    "splash import/call failed: %r\n%s" % (e, traceback.format_exc()), encoding="utf-8")
+            except Exception:  # noqa: BLE001
+                pass
     if "--no-ui" in argv:
-        print(url, flush=True)
+        try:
+            print(url, flush=True)  # порт также всегда лежит в data_dir/instance.json
+        except Exception:  # noqa: BLE001 — stdout оборван (frozen без консоли): сервер уже поднят
+            pass
         while True:
             time.sleep(3600)
     if "--browser" not in argv:

@@ -20,7 +20,44 @@ UA = {"User-Agent": f"Linda-Pro/{config.APP_VERSION}", "Content-Type": "applicat
 
 
 class LicenseError(Exception):
-    pass
+    """Ключ i18n + аргументы; текст подставляет вызывающий через terr()."""
+
+    def __init__(self, key: str, *args):
+        super().__init__(key)
+        self.i18n_key = key
+        self.i18n_args = args
+
+
+def maybe_activate_installer_key() -> dict:
+    """One attempt to activate the key saved by the installer in installer_choice.json.
+
+    Runs in a background thread at startup; never raises. Skips when a licence is
+    already active. On success the key is removed from installer_choice.json (it now
+    lives in license.json). On failure the key stays for a later manual activation.
+    """
+    try:
+        if public_state()["licensed"]:
+            return {"status": "already"}
+        try:
+            choice = json.loads((config.data_dir() / "installer_choice.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {"status": "none"}
+        key = str((choice or {}).get("license_key") or "").strip()
+        if not key:
+            return {"status": "none"}
+        try:
+            st = activate(key)
+        except LicenseError as e:
+            return {"status": "failed", "detail": str(e)[:200]}
+        try:
+            choice.pop("license_key", None)
+            (config.data_dir() / "installer_choice.json").write_text(
+                json.dumps(choice, indent=1), encoding="utf-8")
+        except OSError:
+            pass
+        return {"status": "granted", "tier": st.get("tier")}
+    except Exception as e:  # noqa: BLE001 — активация из установщика не должна ронять старт
+        return {"status": "error", "detail": str(e)[:200]}
 
 
 def _path():
@@ -49,7 +86,7 @@ def _post(path: str, body: dict, timeout: float = 20) -> tuple[int, dict]:
         except Exception:  # noqa: BLE001
             return e.code, {}
     except (urllib.error.URLError, OSError) as e:
-        raise LicenseError("cannot reach the licence server; check your internet connection") from e
+        raise LicenseError("lic_err_offline") from e
 
 
 def _detail(j: dict) -> str:
@@ -104,29 +141,29 @@ def apply_revocations(ids: list) -> None:
 def activate(key: str) -> dict:
     key = (key or "").strip()
     if not key:
-        raise LicenseError("enter your licence key")
+        raise LicenseError("lic_err_empty")
     g = verify_gift(key)
     if g:  # complimentary key: verified offline, no network needed
         st = {"key": g["key"], "kind": "gift", "gift_id": g["id"], "activated_at": int(time.time()), "last_validated": int(time.time()), "status": "granted", "tier": g["tier"]}
         _save(st)
         return public_state(st)
     if re.match(r"^\s*LINDA-[PT]-\d{4}-", key, re.I):
-        raise LicenseError("this key is not valid; check that it was copied completely (it is long)")
+        raise LicenseError("lic_err_malformed")
     if not config.POLAR_ORG_ID:
-        raise LicenseError("licensing is not configured in this build yet")
+        raise LicenseError("lic_err_not_configured")
     label = "Windows-" + uuid.uuid4().hex[:6]
     mid = machine_id()
     code, j = _post("/v1/customer-portal/license-keys/activate", {"key": key, "organization_id": config.POLAR_ORG_ID, "label": label, "conditions": {"machine": mid}})
     if code not in (200, 201):
         msg = _detail(j)
         if code == 403:
-            raise LicenseError("this key has reached its device limit; free a device in your Polar customer portal or write to " + config.CONTACT_EMAIL)
+            raise LicenseError("lic_err_limit", config.CONTACT_EMAIL)
         if code in (404, 422):
-            raise LicenseError("licence key not found; check that you copied it completely")
-        raise LicenseError(f"licence server answered {code}" + (f": {msg}" if msg else ""))
+            raise LicenseError("lic_err_not_found")
+        raise LicenseError("lic_err_server", code, (": " + msg) if msg else "")
     lk = j.get("license_key") or {}
     if lk.get("status") not in (None, "granted"):
-        raise LicenseError(f"this key is {lk.get('status')}")
+        raise LicenseError("lic_err_status", lk.get("status"))
     st = {"key": key, "activation_id": j.get("id"), "label": label, "machine": mid, "activated_at": int(time.time()), "last_validated": int(time.time()),
           "status": "granted", "limit_activations": lk.get("limit_activations"), "expires_at": lk.get("expires_at"),
           "tier": tier_of(lk.get("limit_activations"))}
@@ -209,3 +246,18 @@ def public_state(st: dict | None = None) -> dict:
             pass
     return {"licensed": active, "kind": st.get("kind", "purchase"), "tier": st.get("tier") if active else None, "key_hint": _mask(st["key"]) if st.get("key") else "",
             "status": status, "configured": bool(config.POLAR_ORG_ID)}
+
+
+LICENSED_FEATURES = {"trace", "humanize", "humanize_loop", "packs"}
+
+
+def requires_license(feature: str) -> bool:
+    """Trace and Humanizer are licensed-only (any tier, incl. subscription). Detect stays free."""
+    return feature in LICENSED_FEATURES
+
+
+def check_licensed(feature: str) -> dict | None:
+    """None when allowed, else an error dict for the API (403 need_license)."""
+    if requires_license(feature) and not public_state()["licensed"]:
+        return {"need_license": True}
+    return None

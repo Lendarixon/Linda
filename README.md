@@ -6,8 +6,16 @@ Free for personal non-commercial use, **paid for commercial use** - one licence 
 Weights live on Hugging Face: [Lindarixon/Linda-Pro](https://huggingface.co/Lindarixon/Linda-Pro) (ensemble, GPU recommended) and
 [Lindarixon/Linda-Stylo-Clean](https://huggingface.co/Lindarixon/Linda-Stylo-Clean) (CPU only, strictly clean data lineage).
 
+<!-- release-2300:start -->
+## Latest Windows update: 2.3.0.0
+
+[Download the Windows release](https://github.com/Lendarixon/Linda/releases/tag/v2.3.0.0) · [Release notes](desktop/RELEASE_NOTES_2.3.0.0.md) · **[Try the online demo](https://ninjagovlad--linda-pro-demo-web.modal.run/)**
+
+New Windows-style workspace, startup splash, and two optional **licensed** tools: Linda Trace (authorship) and Humanizer. Both are downloaded only with a licence key; the detector, model pack 1.3.4.1 and thresholds are unchanged. Prefer at least 300 words of continuous prose; results do not prove authorship.
+<!-- release-2300:end -->
+
 <!-- release-2062:start -->
-## Latest Windows update: 2.0.6.2
+## Previous update: 2.0.6.2
 
 [Download the Windows release](https://github.com/Lendarixon/Linda/releases/tag/v2.0.6.2) · [Release notes](desktop/RELEASE_NOTES_2.0.6.2.md) · **[Try the online demo](https://ninjagovlad--linda-pro-demo-web.modal.run/)**
 

@@ -97,6 +97,7 @@ def test_upload_txt_and_limits(client):
 
 
 def test_license_activate_and_errors(client, polar):
+    client.post("/api/settings", json={"language": "en"})
     r = client.post("/api/license/activate", json={"key": "LINDA-GOOD"})
     assert r.status_code == 200
     lic = r.json()["license"]
@@ -126,6 +127,7 @@ def test_license_revalidate_revoked_and_offline(client, polar):
 
 def test_license_not_configured(client, monkeypatch):
     monkeypatch.setattr(config, "POLAR_ORG_ID", "")
+    client.post("/api/settings", json={"language": "en"})
     r = client.post("/api/license/activate", json={"key": "LINDA-GOOD"})
     assert r.status_code == 422 and "not configured" in r.json()["detail"]
 
@@ -140,7 +142,8 @@ def test_download_through_api_and_settings(client, repo):
             break
         time.sleep(0.1)
     assert s["download"]["phase"] == "done" and s["models_ready"] and s["installed_version"] == "1.1.0"
-    assert client.post("/api/settings", json={"sentences": "windows", "device": "cpu"}).json()["settings"] == {"sentences": "windows", "device": "cpu", **DEFAULT_SETTINGS, "gpu_map": 2, "preload_v2": True}
+    from linda_desktop.i18n import system_language
+    assert client.post("/api/settings", json={"sentences": "windows", "device": "cpu"}).json()["settings"] == {"sentences": "windows", "device": "cpu", **DEFAULT_SETTINGS, "language": system_language(), "language_source": "system", "gpu_map": 2, "preload_v2": True}
     assert client.post("/api/app/update").status_code == 409  # no app update announced
 
 
@@ -173,3 +176,26 @@ def test_remove_key_frees_the_device_slot(client, polar):
     assert client.post("/api/license/remove").json()["license"]["licensed"] is False
     assert polar.deactivated == ["act1"]
     assert licensing.load() == {}
+
+
+def test_installer_key_activates_in_background(repo, polar):
+    home = config.data_dir()
+    home.mkdir(parents=True, exist_ok=True)
+    (home / "installer_choice.json").write_text(json.dumps({"model_sets": ["lite"], "license_key": "LINDA-GOOD"}), encoding="utf-8")
+    assert licensing.maybe_activate_installer_key()["status"] == "granted"
+    assert licensing.public_state()["licensed"]
+    assert "license_key" not in json.loads((home / "installer_choice.json").read_text(encoding="utf-8"))
+    assert licensing.maybe_activate_installer_key()["status"] == "already"
+
+
+def test_installer_key_failure_keeps_key_for_manual_entry(repo, polar):
+    home = config.data_dir()
+    home.mkdir(parents=True, exist_ok=True)
+    (home / "installer_choice.json").write_text(json.dumps({"license_key": "nope"}), encoding="utf-8")
+    assert licensing.maybe_activate_installer_key()["status"] == "failed"
+    assert licensing.public_state()["licensed"] is False
+    assert json.loads((home / "installer_choice.json").read_text(encoding="utf-8"))["license_key"] == "nope"
+
+
+def test_installer_key_absent(repo):
+    assert licensing.maybe_activate_installer_key()["status"] == "none"

@@ -105,9 +105,12 @@ class Core:
         self.batch_cancel = threading.Event()
         self.checks_lock = threading.Lock()
         self.active_checks = {}  # job_id -> (client_id, cancel event)
+        self.tool_lock = threading.Lock()
         self.active_requests = 0
         self.first_check_pending = False
         self.preloading = False
+        self._preload_lock = threading.Lock()
+        self.startup = {"phase": "pending", "error": ""}
         self.cancelled_checks = {}  # cancellation may arrive before the worker request
         self.move = models_location.MoveJob()  # moving the downloaded models to another folder
         self._preload_started = False
@@ -131,9 +134,8 @@ class Core:
                 changed = True
                 if int(_cur.get("gpu_index", 0) or 0) != 0:
                     _cur["gpu_index"] = 0
-            if not _cur.get("preload_v2"):  # 2.0.3.1: warming the models up at start is the default now (the old stored "off" was never a deliberate choice)
+            if not _cur.get("preload_v2"):
                 _cur["preload_v2"] = True
-                _cur["preload"] = True
                 changed = True
             if changed:
                 save_settings(_cur)
@@ -177,35 +179,42 @@ class Core:
         self.job.start(m, self.manifest_raw)
 
     def preload(self) -> bool:
-        """Optional explicit background warmup. Default CPU loading is on demand."""
-        if not load_settings().get("preload", True) or self.engine.dets is not None or not updater.is_complete():
+        """Warm the saved model/device choice once, without delaying for the network."""
+        if not load_settings().get("preload", True) or not updater.is_complete():
+            if not self.preloading:
+                self.startup = {"phase": "skipped", "error": ""}
             return False
+        # Set the flag before scheduling. /api/status and background() can race.
+        with self._preload_lock:
+            if self.preloading or self.engine.dets is not None:
+                return False
+            if self.job.running():
+                self.startup = {"phase": "skipped", "error": ""}
+                return False
+            self.preloading = True
+            self._preload_started = True
+            self.startup = {"phase": "loading", "error": ""}
 
         def work():
-            t_wait = time.time()
-            while self.first_check_pending and time.time() - t_wait < 25:
-                time.sleep(0.5)
-            try:
-                pending = bool(self.manifest) and bool(updater.files_to_fetch(self.manifest))
-            except Exception:
-                pending = False
-            if self.job.running() or pending:
-                return
-            self.preloading = True
             try:
                 with self.engine.lock:
+                    # A foreground check may have loaded models while we waited.
+                    if self.engine.dets is not None:
+                        self.startup = {"phase": "ready", "error": ""}
+                        return
                     detectors = self.engine.ensure_loaded()
                     self.engine.state = {'phase':'loading','error':''}
                     self.engine._load_voters(detectors)
-                    try:
-                        self.engine.warm_all("en")  # routed backend: both transformer voices, so the first check is fast
-                    except Exception:  # noqa: BLE001 — warm-up is best effort
-                        pass
+                    self.startup = {"phase": "warming", "error": ""}
+                    self.engine.warm_all("en")
                     self.engine.state = {'phase':'ready','error':''}
+                    self.startup = {"phase": "ready", "error": ""}
             except Exception as e:  # noqa: BLE001
                 self.engine.state = {"phase": "error", "error": f"{type(e).__name__}: {e}"}
+                self.startup = {"phase": "error", "error": f"{type(e).__name__}: {e}"}
             finally:
-                self.preloading = False
+                with self._preload_lock:
+                    self.preloading = False
 
         threading.Thread(target=work, daemon=True).start()
         return True
@@ -238,6 +247,13 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
     html = html.replace("</body>", cabinet + "\n</body>", 1)
     metro = (config.resource_dir() / "web" / "metro-dev.css").read_text(encoding="utf-8")
     html = html.replace("</head>", "<style>" + metro + "</style></head>", 1)
+    splash = (config.resource_dir() / "web" / "startup.html").read_text(encoding="utf-8")
+    html = html.replace("<body>", "<body>" + splash, 1)
+    # The desktop workspace is shared by installed and development builds.
+    desktop_css = (config.resource_dir() / "web" / "desktop-shell.css").read_text(encoding="utf-8")
+    desktop_js = (config.resource_dir() / "web" / "desktop-shell.js").read_text(encoding="utf-8")
+    html = html.replace("</head>", "<style>" + desktop_css + "</style></head>", 1)
+    html = html.replace("</body>", "<script>" + desktop_js + "</script></body>", 1)
 
     @api.middleware("http")
     async def guard(request: Request, call_next):
@@ -275,7 +291,10 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
 
     @api.get("/", response_class=HTMLResponse)
     def index():
-        return html.replace("__LINDA_TOKEN__", token).replace("__LINDA_VERSION__", config.APP_VERSION)
+        settings = load_settings()
+        boot = json.dumps({"language": ui18n.resolve_lang(settings), "settings": settings,
+                           "version": config.APP_VERSION}, ensure_ascii=True).replace('<', '\\u003c')
+        return html.replace("__LINDA_TOKEN__", token).replace("__LINDA_VERSION__", config.APP_VERSION).replace("__LINDA_BOOT_B64__", base64.b64encode(boot.encode('ascii')).decode('ascii'))
 
     @api.get("/api/status")
     def status():
@@ -298,9 +317,16 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             chlog = report.changelog_merged(core.manifest)[:5]  # встроенный changelog для баннера/настроек
         except Exception:  # noqa: BLE001
             chlog = []
+        try:
+            from . import packs  # noqa: PLC0415
+
+            packs_info = packs.probe()
+        except Exception:  # noqa: BLE001
+            packs_info = {"trace": {"installed": False}, "humanizer": {}, "licensed": False, "job": {}}
         return {"app_version": config.APP_VERSION, "installed_version": updater.installed_version(), "models_ready": ready,
-                "license": licensing.public_state(), "update": core.update, "update_error": core.update_error,
+                "license": licensing.public_state(), "packs": packs_info, "update": core.update, "update_error": core.update_error,
                 "download": core.job.snapshot(), "engine": core.engine.info(), "settings": load_settings(),
+                "startup": dict(core.startup),
                 "installer_job": core.installer_job, "pending_restart": pend, "update_pending": core.update_pending,
                 "model_sets": {"selected": updater.selected_sets(), "info": updater.set_info(core.manifest or _raw_installed()), "recommend": "pro" if (core.engine.gpu or {}).get("discrete") else "lite"},
                 "rollback": rollback_msg, "enterprise": config.enterprise(), "pdf_available": report.pdf_available(),
@@ -514,6 +540,44 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
 
     def valid_id(value):
         return isinstance(value, str) and 1 <= len(value) <= 64 and all(c in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_' for c in value)
+
+    async def tool_work(body, request, function, exclusive=False):
+        from . import task_cancel
+        job_id=body.get('job_id') or secrets.token_urlsafe(16)
+        client_id=body.get('client_id') or 'legacy-tools'
+        if not valid_id(job_id) or not valid_id(client_id):return terr('err_bad_request',400)
+        cancel=threading.Event()
+        with core.checks_lock:
+            if core.installer_job['phase']=='launching':return err('Application is restarting',409)
+            if job_id in core.active_checks:return err('Duplicate task',409)
+            if job_id in core.cancelled_checks:cancel.set()
+            core.active_checks[job_id]=(client_id,cancel);core.active_requests+=1
+        def work():
+            acquired=False
+            try:
+                with task_cancel.bind(cancel):
+                    if exclusive:
+                        acquired=core.tool_lock.acquire(blocking=False)
+                        if not acquired:return err('Another rewriting task is running',409)
+                    result=function(body);task_cancel.check();return result
+            except task_cancel.ToolCancelled:return err('cancelled',499)
+            finally:
+                if acquired:core.tool_lock.release()
+        task=asyncio.create_task(run_in_threadpool(work))
+        try:
+            while not task.done():
+                await asyncio.wait({task},timeout=.1)
+                if not task.done() and await request.is_disconnected():cancel.set()
+            return await task
+        except asyncio.CancelledError:
+            cancel.set()
+            raise
+        finally:
+            def release(_=None):
+                with core.checks_lock:
+                    core.active_requests-=1;core.active_checks.pop(job_id,None);core.progress.pop(job_id,None)
+            if task.done():release()
+            else:task.add_done_callback(release)
 
     @api.post('/api/batch/start')
     def batch_start():
@@ -856,7 +920,8 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         if not root.is_dir():
             return terr("err_folder_not_found", 404)
         pol = config.enterprise()
-        exts = {".txt", ".md", ".text", ".docx", ".pdf"}
+        from .document_formats import SUPPORTED_EXTS
+        exts = SUPPORTED_EXTS
         if pol.get('require_license') and not licensing.public_state()['licensed']:
             return terr('err_license_required',403)
         try:
@@ -954,7 +1019,7 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
                 pass
             return {"license": st}
         except licensing.LicenseError as e:
-            return err(str(e), 422)
+            return terr(e.i18n_key, 422, *e.i18n_args)
 
     @api.post("/api/license/remove")
     def lic_remove():
@@ -964,6 +1029,282 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         except Exception:  # noqa: BLE001
             pass
         return {"license": licensing.public_state()}
+
+    # ---- licensed packs: Linda Trace (forensic authorship) + Humanizer ----
+    @api.get("/api/packs/status")
+    def packs_status():
+        from . import humanize_pack, packs, trace_pack  # noqa: PLC0415
+
+        st = packs.probe()
+        st["job"] = packs.job_snapshot()
+        return st
+
+    @api.post("/api/packs/download")
+    def packs_download(body: dict):
+        denied = licensing.check_licensed("packs")
+        if denied:
+            return terr("err_need_license_packs", 403)
+        from . import packs  # noqa: PLC0415
+
+        pack = str((body or {}).get("pack") or "")
+        if pack not in ("trace", "humanizer-lite", "humanizer-full"):
+            return terr("err_bad_request", 400)
+        if core.job.running() or core.folder_lock.locked():
+            return terr("err_download_running", 409)
+
+        def _bg():
+            try:
+                packs.download(pack)
+            except Exception:  # noqa: BLE001
+                pass
+
+        threading.Thread(target=_bg, daemon=True).start()
+        return {"started": True, "pack": pack}
+
+    def _trace_docs(documents, limit=200, per_text=2_000_000, total=20_000_000):
+        docs = documents or []
+        if not isinstance(docs, list) or not docs or len(docs) > limit:
+            raise ValueError("need 1..%d documents" % limit)
+        size = 0
+        out = []
+        for i, d in enumerate(docs):
+            t = str((d or {}).get("text") or "")
+            size += len(t.encode("utf-8", "ignore"))
+            if len(t.encode("utf-8", "ignore")) > per_text:
+                raise ValueError("document too large (2 МБ)")
+            out.append({"id": str((d or {}).get("id") or i), "title": str((d or {}).get("title") or (d or {}).get("id") or i), "text": t})
+        if size > total:
+            raise ValueError("corpus too large (20 МБ)")
+        return out
+
+    @api.post("/api/trace/corpus")
+    async def trace_corpus(body: dict, request: Request):
+        return await tool_work(body,request,_trace_corpus)
+
+    def _trace_corpus(body: dict):
+        denied = licensing.check_licensed("trace")
+        if denied:
+            return terr("err_need_license", 403)
+        from . import trace_pack  # noqa: PLC0415
+
+        if not trace_pack.installed():
+            return terr("err_trace_no_pack", 409)
+        try:
+            docs = _trace_docs((body or {}).get("documents"), limit=200)
+            lang = str((body or {}).get("language") or "ru")
+            target = (body or {}).get("target_id")
+        except ValueError as e:
+            return err(str(e), 400)
+        try:
+            res = trace_pack.analyze_corpus(docs, language=lang, target_id=target)
+        except Exception as e:  # noqa: BLE001
+            return err("trace failed: %s: %s" % (type(e).__name__, e), 500)
+        try:
+            history.audit("trace_corpus", "документов: %d, язык: %s" % (len(docs), lang))
+        except Exception:  # noqa: BLE001
+            pass
+        return {"status": "ok", "result": res}
+
+    @api.post("/api/trace/authorship")
+    def trace_authorship(body: dict):
+        denied = licensing.check_licensed("trace")
+        if denied:
+            return terr("err_need_license", 403)
+        from . import trace_pack  # noqa: PLC0415
+
+        if not trace_pack.installed():
+            return terr("err_trace_no_pack", 409)
+        try:
+            refs = _trace_docs((body or {}).get("references"), limit=200)
+            docs = _trace_docs((body or {}).get("documents"), limit=100)
+            lang = str((body or {}).get("language") or "ru")
+        except ValueError as e:
+            return err(str(e), 400)
+        try:
+            res = trace_pack.analyze_authorship(refs, docs, language=lang)
+        except Exception as e:  # noqa: BLE001
+            return err("trace failed: %s: %s" % (type(e).__name__, e), 500)
+        try:
+            history.audit("trace_authorship", "refs: %d, docs: %d" % (len(refs), len(docs)))
+        except Exception:  # noqa: BLE001
+            pass
+        return {"status": "ok", "result": res}
+
+    @api.post("/api/trace/report")
+    def trace_report(body: dict):
+        denied = licensing.check_licensed("trace")
+        if denied:
+            return terr("err_need_license", 403)
+        from . import trace_pack  # noqa: PLC0415
+
+        try:
+            docs = _trace_docs((body or {}).get("documents"), limit=200)
+            html = trace_pack.html_report((body or {}).get("result") or {}, docs,
+                                             selected_id=(body or {}).get("selected_id"))
+        except Exception as e:  # noqa: BLE001
+            return err("trace report failed: %s" % e, 500)
+        return {"status": "ok", "html": html}
+
+    def _ai_share_of(text: str) -> float:
+        from . import task_cancel
+        task_cancel.check()
+        res = core.engine.run(text, "sensitive", None, cancel=task_cancel.current())
+        task_cancel.check()
+        try:
+            return float(res.get("ai_share", 0.0))
+        except (TypeError, ValueError):
+            z = float(res.get("ens_z", 0.0))
+            return float(1.0 / (1.0 + 2.718281828 ** (-1.7 * z)))
+
+    @api.post("/api/humanize")
+    async def humanize(body: dict, request: Request):
+        return await tool_work(body,request,_humanize,True)
+
+    def _humanize(body: dict):
+        denied = licensing.check_licensed("humanize")
+        if denied:
+            return terr("err_need_license", 403)
+        from . import humanize_pack  # noqa: PLC0415
+
+        text = str((body or {}).get("text") or "").replace("\r\n", "\n").strip()
+        if len(text.split()) < 4:
+            return terr("err_text_min", 400, config.MIN_WORDS, len(text.split()))
+        mode = str((body or {}).get("mode") or "all")
+        if mode not in ("ai", "sel", "all"):
+            return terr("err_bad_request", 400)
+        variant = str((body or {}).get("variant") or "auto")
+        if variant not in ("auto", "full", "lite"):
+            return terr("err_bad_request", 400)
+        if core.job.running() or core.folder_lock.locked():
+            return terr("err_download_running", 409)
+        try:
+            spans = (body or {}).get("spans")
+            res = humanize_pack.humanize(text, spans=spans, mode=mode, variant=variant)
+        except RuntimeError as e:
+            if "is not downloaded" in str(e):
+                return terr("err_hum_no_pack", 409)
+            return err(str(e), 409)
+        except ValueError as e:
+            return err(str(e), 400)
+        except Exception as e:  # noqa: BLE001
+            return err("humanize failed: %s: %s" % (type(e).__name__, e), 500)
+        finally:
+            try:
+                humanize_pack.unload()
+            except Exception:  # noqa: BLE001
+                pass
+        try:
+            history.audit("humanize", "вариант: %s, переписано: %s" % (res.get("variant"), res.get("changed")))
+        except Exception:  # noqa: BLE001
+            pass
+        return {"status": "ok", "result": res}
+
+    @api.post("/api/humanize/loop")
+    async def humanize_loop(body: dict, request: Request):
+        return await tool_work(body,request,_humanize_loop,True)
+
+    def _humanize_loop(body: dict):
+        """Humanize until the detector AI share drops below target (default 0.5)."""
+        denied = licensing.check_licensed("humanize_loop")
+        if denied:
+            return terr("err_need_license", 403)
+        from . import humanize_pack  # noqa: PLC0415
+
+        if not updater.is_complete():
+            return terr("err_models_not_installed", 409)
+        text = str((body or {}).get("text") or "").replace("\r\n", "\n").strip()
+        if len(text.split()) < 4:
+            return terr("err_text_min", 400, config.MIN_WORDS, len(text.split()))
+        try:
+            target = float((body or {}).get("target", 0.5))
+        except (TypeError, ValueError):
+            return terr("err_bad_request", 400)
+        target = min(max(target, 0.05), 0.95)
+        try:
+            max_iters = int((body or {}).get("max_iters", 3))
+        except (TypeError, ValueError):
+            return terr("err_bad_request", 400)
+        max_iters = min(max(max_iters, 1), 5)
+        variant = str((body or {}).get("variant") or "auto")
+        if variant not in ("auto", "full", "lite"):
+            return terr("err_bad_request", 400)
+        if core.job.running() or core.folder_lock.locked():
+            return terr("err_download_running", 409)
+        try:
+            jid = str(body.get('job_id') or '')
+            def report(i, n, share):
+                try:
+                    with core.checks_lock:
+                        core.progress[jid] = {"pct": round(i / max(n, 1) * 100, 1),
+                                              "phase": "humanize", "iters": int(i), "of": int(n),
+                                              "share": round(float(share), 4), "ts": time.monotonic()}
+                except Exception:  # noqa: BLE001  # прогресс не должен ронять доводку
+                    pass
+            res = humanize_pack.loop_until_calm(
+                text, detector_run=_ai_share_of, detector_unload=core.engine.unload,
+                detector_warm=None, target=target, max_iters=max_iters, variant=variant,
+                progress=report if jid else None)
+        except RuntimeError as e:
+            if "is not downloaded" in str(e):
+                return terr("err_hum_no_pack", 409)
+            return err(str(e), 409)
+        except Exception as e:  # noqa: BLE001
+            return err("humanize loop failed: %s: %s" % (type(e).__name__, e), 500)
+        finally:
+            try:
+                humanize_pack.unload()
+            except Exception:  # noqa: BLE001
+                pass
+        try:
+            history.audit("humanize_loop", "цель: %.2f, итераций: %d, спокойно: %s"
+                          % (target, len(res.get("iters", [])), res.get("calm")))
+        except Exception:  # noqa: BLE001
+            pass
+        return {"status": "ok", "result": res}
+
+    @api.post("/api/humanize/batch")
+    def humanize_batch(body: dict):
+        """Swap out the detector, humanize many texts with the loop, swap back."""
+        denied = licensing.check_licensed("humanize_loop")
+        if denied:
+            return terr("err_need_license", 403)
+        from . import humanize_pack  # noqa: PLC0415
+
+        if not updater.is_complete():
+            return terr("err_models_not_installed", 409)
+        texts = (body or {}).get("texts") or []
+        if not isinstance(texts, list) or not texts or len(texts) > 200:
+            return terr("err_bad_request", 400)
+        variant = str((body or {}).get("variant") or "auto")
+        target = float((body or {}).get("target", 0.5))
+        out = []
+        try:
+            for t in texts:
+                s = str(t or "").strip()
+                if len(s.split()) < 4:
+                    out.append({"text": s, "skipped": "too_short"})
+                    continue
+                r = humanize_pack.loop_until_calm(
+                    s, detector_run=_ai_share_of, detector_unload=core.engine.unload,
+                    detector_warm=None, target=target, max_iters=int((body or {}).get("max_iters", 2)),
+                    variant=variant)
+                out.append({"text": r.get("text"), "calm": r.get("calm"),
+                            "ai_share": (r.get("iters") or [{}])[-1].get("ai_share"),
+                            "variant": r.get("variant")})
+                if core.batch_cancel.is_set():
+                    break
+        except Exception as e:  # noqa: BLE001
+            return err("humanize batch failed: %s: %s" % (type(e).__name__, e), 500)
+        finally:
+            try:
+                humanize_pack.unload()
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                core.engine.warm_all("en")
+            except Exception:  # noqa: BLE001
+                pass
+        return {"status": "ok", "results": out}
 
     @api.post("/api/settings")
     def settings(body: dict):
@@ -1010,6 +1351,7 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             cur["sidebar"] = body["sidebar"]
         if body.get("language") in UI_LANGUAGES:
             cur["language"] = body["language"]
+            cur["language_source"] = "manual"
         if body.get("ui_mode") in ("simple", "expert"):
             cur["ui_mode"] = body["ui_mode"]
         if isinstance(body.get("auto_models"), bool):

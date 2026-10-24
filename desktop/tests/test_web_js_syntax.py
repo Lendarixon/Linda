@@ -11,7 +11,7 @@ WEB = Path(__file__).resolve().parent.parent / "web"
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="нет node")
-@pytest.mark.parametrize("name", ["index.html", "cabinet.html"])
+@pytest.mark.parametrize("name", ["index.html", "cabinet.html", "startup.html"])
 def test_inline_scripts_parse(name, tmp_path):
     html = (WEB / name).read_text(encoding="utf-8")
     for i, body in enumerate(re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", html, flags=re.S)):
