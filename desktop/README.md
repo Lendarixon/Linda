@@ -1,6 +1,8 @@
 # Linda desktop app (Windows)
 
-Local app around the Linda Assay detector: first start downloads the model files from Hugging Face (about 2.9 GB, once), then everything runs offline.
+Linda Detector 2.3.0.1 is a local Windows workspace with Assay and Loupe AI-text detection, plus optional Humanizer and Linda Trace writing-style tools. Model package: 1.3.4.1. Download the [latest installer](https://github.com/Lendarixon/Linda/releases/latest).
+
+Model files are downloaded when needed (about 2.9 GB for Assay or 0.3 GB for Loupe). Text processing runs on your computer. Downloads, update checks and licence activation/periodic validation use internet connections without uploading checked texts. Any paid Detector key also unlocks Humanizer and Trace for personal use; they are not separate app purchases. Linda Probe is a separate app and key. See [licensing](https://github.com/Lendarixon/Linda/blob/main/LICENSING.md).
 GPU acceleration on any DirectX 12 card (AMD Radeon, NVIDIA GeForce, Intel Arc) through ONNX Runtime DirectML (`onnx_gpu.py`: the models are exported to ONNX once on the user's PC), colour map of the text, sensitive / precise modes, CPU or GPU, licence key dialog, update check (signed manifest) for models and for the app itself.
 
 * `linda_desktop/` - local web backend (FastAPI on 127.0.0.1), update logic (`updater.py`), licence (`licensing.py`), engine (`engine.py`), window launcher (`__main__.py`);
@@ -31,3 +33,4 @@ History with folders (kept only on the PC; can be switched off or cleaned up aut
 See [full release notes](RELEASE_NOTES_2.0.2.20.md). History and drafts now use current-user Windows DPAPI. PDF/DOCX parsing uses the bundled LPAC helper with network/file restrictions and Job limits. The audit ledger uses chained HMAC and retention; clearing is disabled. WebView2 restores its rendering surface after minimization without reloading the page. The EXE includes PerMonitorV2 and long-path support.
 
 Build the dedicated document parser before packaging the desktop app. The generated `assets/document-parser` runtime is included in the installer, not committed to source. Model weights, signing keys and user profiles are never part of the public desktop source.
+

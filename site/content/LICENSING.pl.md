@@ -16,6 +16,8 @@ Aplikacja, narzędzia wiersza poleceń, kod, modele i kalibracja są **bezpłatn
 Obejmuje to na przykład: sprawdzanie własnych tekstów lub tekstów znajomych na własny użytek, naukę, hobby, badania niekomercyjne oraz zgłębianie działania detektora.
 Pobierz je z Hugging Face lub GitHuba albo pozwól aplikacji to zrobić. Bez rejestracji, klucza i limitów.
 
+Bezpłatna instalacja detektora obejmuje Assay/Loupe. Opcjonalne pakiety Humanizer i Linda Trace wymagają płatnego klucza Detector, także do użytku osobistego. Nie zmienia to licencji kodu źródłowego już opublikowanego na CC BY-NC 4.0.
+
 ## 2. Licencja komercyjna: co kupujesz
 
 Kupujesz **licencję na komercyjne używanie oprogramowania**. Jedna licencja obejmuje **wszystko razem**: aplikację (interfejs), narzędzia wiersza poleceń i pakiet oraz modele i kalibrację.
@@ -31,7 +33,7 @@ Użytek komercyjny to używanie Linda do pracy zarobkowej lub dla klientów, wew
 
 * **Jak otrzymać.** Po płatności otrzymujesz klucz licencyjny e-mailem. Wpisz go w aplikacji (okno Licence): powiadomienie o licencji zniknie. Narzędzia wiersza poleceń nie sprawdzają kluczy; licencja obowiązuje je tak samo, a klucz jest Twoim dowodem zakupu.
 * **Zasada wersji.** Klucz Personal lub Team jest wieczysty: kupiona wersja i jej poprawki działają zawsze. Nowe funkcje i nowe modele mogą być wydawane tylko w ramach osobnych licencji lub jako płatna aktualizacja. Licencja Organization obowiązuje przez opłacony rok i obejmuje wszystkie aktualizacje wydane w tym roku; po jego zakończeniu bez odnowienia użytek komercyjny Linda na jej podstawie ustaje.
-* **Detektor nie jest zablokowany.** Detektor (Linda Assay i Linda Loupe) działa tak samo bez klucza; klucz to prawne pozwolenie na użytek komercyjny, nie przełącznik techniczny. Linda Trace i Humanizer to opcjonalne narzędzia pobierane tylko z kluczem.
+* **Detektor nie jest zablokowany.** Detektor (Linda Assay i Linda Loupe) działa tak samo bez klucza; klucz to prawne pozwolenie na użytek komercyjny, nie przełącznik techniczny. Każdy płatny klucz (dowolna edycja) obejmuje również opcjonalne narzędzia Linda Trace i Humanizer, także dla użytkownika Personal; nie są to osobne zakupy, lecz narzędzia wewnątrz Detektora. Probe to osobny program/klucz; klucz Detektora nie odblokowuje Probe.
 * **Nie wchodzą w te licencje:** prawa wyłączne, integracja OEM / white-label z innym produktem, hosting Linda jako usługi lub API dla stron trzecich, redystrybucja modeli, kalibracja indywidualna na Twoich tekstach. Są uzgadniane indywidualnie: napisz na lindapro.support@proton.me, podając przypadek użycia, wolumen i wdrożenie.
 
 ## 3. Szybkie pytania
@@ -42,10 +44,10 @@ Użytek komercyjny to używanie Linda do pracy zarobkowej lub dla klientów, wew
 * **Jestem freelancerem sprawdzającym teksty dla klientów.** Licencja Personal.
 * **Jak liczone są urządzenia? Czy mogę przenieść klucz na nowy komputer?** Kupiony klucz aktywuje się na komputerze, na którym go wpiszesz (aplikacja wysyła klucz i anonimowy id maszyny, ale nie Twoje teksty), i zajmuje miejsce w limicie urządzeń Twojej licencji. Kopiowanie aplikacji ani jej pliku licencji na inny komputer nie przenosi licencji. Aby przenieść: otwórz okno Licence i naciśnij Remove key przy połączeniu z siecią (slot zwalnia się po potwierdzeniu przez Polar), a następnie wpisz klucz na nowym komputerze. Jeśli starego komputera już nie ma, napisz do wsparcia — slot zostanie zwolniony.
 * **Czy mogę włożyć ją do swojego produktu albo strony?** Tylko na podstawie osobnej umowy OEM.
-* **Co aplikacja wysyła do internetu?** Tylko pobieranie modeli, sprawdzanie aktualizacji i — gdy wpiszesz klucz — klucz, identyfikatory aktywacji, losową etykietę i skrót identyfikatora urządzenia. Twoje teksty nigdy nie opuszczają Twojego komputera. Zobacz [Privacy](privacy.html).
-* **Co jeśli nie zgadzam się z wynikiem?** Detektor daje ocenę probabilistyczną i może się mylić; nie może być jedyną podstawą decyzji o ludziach. Zobacz [Terms](terms.html).
+* **Co aplikacja wysyła do internetu?** Tylko pobieranie modeli, sprawdzanie aktualizacji i — gdy wpiszesz klucz — klucz, identyfikatory aktywacji, losową etykietę i skrót identyfikatora urządzenia. Twoje teksty nigdy nie opuszczają Twojego komputera. Zobacz [Privacy](https://lendarixon.github.io/Linda/privacy-pl.html).
+* **Co jeśli nie zgadzam się z wynikiem?** Detektor daje ocenę probabilistyczną i może się mylić; nie może być jedyną podstawą decyzji o ludziach. Zobacz [Terms](https://lendarixon.github.io/Linda/terms-pl.html).
 
-Ta strona streści licencję. Moc prawną mają [Terms](terms.html), plik `LICENSE` (CC BY-NC 4.0 i licencja komercyjna) oraz `COMMERCIAL_LICENSE.md` w repozytoriach; ta strona nie jest poradą prawną.
+Ta strona streści licencję. Moc prawną mają [Terms](https://lendarixon.github.io/Linda/terms-pl.html), plik `LICENSE` (CC BY-NC 4.0 i licencja komercyjna) oraz `COMMERCIAL_LICENSE.md` w repozytoriach; ta strona nie jest poradą prawną. Zobacz też [NOTICE](https://github.com/Lendarixon/Linda/blob/main/docs/NOTICE.md) i [MODEL_CARD](https://github.com/Lendarixon/Linda/blob/main/docs/MODEL_CARD.md); warunki stron trzecich pozostają w mocy.
 
 
 Personal i Team są bezterminowe dla kupionej wersji i jej poprawek; nowe funkcje lub modele mogą wymagać osobnej licencji. Organization obejmuje aktualizacje opłaconego roku i odnawia się w Polar do anulowania. Bezpłatna próba komercyjna trwa 14 dni kalendarzowych od pierwszego uruchomienia, bez płatnego klucza, rejestracji i automatycznej opłaty. Termin jest warunkiem licencji; aplikacja nie odlicza czasu. Dalszy użytek komercyjny wymaga płatnej licencji. Osobisty użytek niekomercyjny jest bezpłatny bez limitu czasu.
@@ -59,3 +61,6 @@ Dotychczasowa polityka: Personal/Team — pełny zwrot przez Polar w ciągu 14 d
 ## Bezpłatna 14-dniowa próba komercyjna
 
 Osoby fizyczne i organizacje mogą bezpłatnie oceniać Linda do użytku komercyjnego przez 14 dni kalendarzowych od pierwszego uruchomienia aplikacji. Rejestracja, osobno uzgodniona data startu, płatny klucz, karta i subskrypcja nie są wymagane. To pozwolenie licencyjne, bez licznika ani technicznej blokady; użytkownik sam przestrzega terminu. Ponowna instalacja, aktualizacja lub zmiana urządzenia nie rozpoczyna nowego okresu dla tej samej osoby lub organizacji. Próba obejmuje ocenę wewnętrzną, bez odsprzedaży, dystrybucji, hostingu dla osób trzecich i negatywnych decyzji o osobach. Po tym okresie dalszy użytek komercyjny wymaga odpowiedniej płatnej licencji. Osobisty użytek niekomercyjny pozostaje bezpłatny na CC BY-NC 4.0, bez limitu 14 dni. Nie ma automatycznej opłaty, odnowienia ani przejścia na płatną subskrypcję. Teksty pozostają u użytkownika; przekazanie zbiorczych uwag jest dobrowolne.
+
+
+Płatny klucz Detector można kupić wyłącznie do korzystania z Humanizera i Trace, także do osobistych zadań niekomercyjnych. Linda Probe wymaga osobnej licencji i klucza.

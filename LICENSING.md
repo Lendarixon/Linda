@@ -16,6 +16,8 @@ The app, the command-line tools, the code, the models and the calibration are **
 This covers, for example: checking your own or your friends' texts for yourself, studying, hobby projects, non-commercial research and learning how the detector works.
 Download them from Hugging Face or GitHub, or let the app do it. No registration, no key, no limits.
 
+The free detector installation includes Assay/Loupe. Optional Humanizer and Linda Trace packs require a paid Detector key, including for personal use. This does not change the licence of source code already published under CC BY-NC 4.0.
+
 ## 2. Commercial licence: what you buy
 
 You buy a **licence to use the software commercially**. One licence covers **everything together**: the app (interface), the command-line tools and package, and the models and calibration.
@@ -31,7 +33,7 @@ Commercial use means using Linda for paid work or for clients, inside a company,
 
 * **How you get it.** After payment you receive a licence key by e-mail. Enter it in the app (Licence dialog): the licence notice disappears. The command-line tools do not check keys; the licence applies to them in the same way, and the key is your proof of purchase.
 * **Version rule.** A Personal or Team key is perpetual: the version you bought and its fixes keep working. New features and new models may be released only under separate licences or as a paid upgrade. The Organization licence is valid for the paid year and includes all updates released in that year; when it ends, commercial use of Linda under it ends unless renewed.
-* **The detector is not locked.** The detector (Linda Assay and Linda Loupe) works the same without a key; the key is the legal permission for commercial use, not a technical switch. Linda Trace and the Humanizer are optional tools downloaded only with a key.
+* **The detector is not locked.** The detector (Linda Assay and Linda Loupe) works the same without a key; the key is the legal permission for commercial use, not a technical switch. Linda Trace and the Humanizer are optional tools downloaded only with a key. A paid key at any tier, including Personal, unlocks them; no separate tool purchase is required. Probe is a separate app and key; a Detector key does not unlock Probe.
 * **Not included in these licences:** exclusive rights, OEM / white-label integration into another product, hosting Linda as a service or API for third parties, redistribution of the models, custom calibration on your texts. These are agreed individually: write to lindapro.support@proton.me with your use case, volume and deployment.
 
 ## 3. Quick questions
@@ -42,10 +44,12 @@ Commercial use means using Linda for paid work or for clients, inside a company,
 * **I am a freelancer checking texts for clients.** Personal licence.
 * **How are devices counted? Can I move my key to a new computer?** A purchased key is activated on the computer where you enter it (the app sends the key and an anonymous machine id, never your texts) and counts against the device limit of your licence. Copying the app or its licence file to another computer does not carry the licence over. To move: open the Licence window and press Remove key while online (this frees the slot after a successful server request), then enter the key on the new computer. If the old computer is gone, write to the support address and the slot is freed.
 * **Can I put it into my product or a website?** Only under a separate OEM agreement.
-* **What does the app send over the internet?** Only model downloads, update checks and, when you enter a key, the key, activation identifiers, a random device label and a machine-derived identifier hash. Your texts never leave your computer. See [Privacy](privacy.html).
-* **What if I disagree with a result?** The detector gives a probabilistic estimate and can be wrong; it must not be the sole basis for decisions about people. See [Terms](terms.html).
+* **What does the app send over the internet?** Only model downloads, update checks and, when you enter a key, the key, activation identifiers, a random device label and a machine-derived identifier hash. Your texts never leave your computer. See [Privacy](https://lendarixon.github.io/Linda/privacy.html).
+* **What if I disagree with a result?** The detector gives a probabilistic estimate and can be wrong; it must not be the sole basis for decisions about people. See [Terms](https://lendarixon.github.io/Linda/terms.html).
 
-This page summarizes the licence. The legal texts are the [Terms](terms.html), the file `LICENSE` (CC BY-NC 4.0 and the commercial licence) and `COMMERCIAL_LICENSE.md` in the repositories; this page is not legal advice.
+This page summarizes the licence. The legal texts are the [Terms](https://lendarixon.github.io/Linda/terms.html), the file `LICENSE` (CC BY-NC 4.0 and the commercial licence) and `COMMERCIAL_LICENSE.md` in the repositories; this page is not legal advice.
+
+Third-party components, datasets and model lineage: [docs/NOTICE.md](docs/NOTICE.md) and [docs/MODEL_CARD.md](docs/MODEL_CARD.md). Those third-party terms remain governed by their own licences; this licence does not override them.
 
 ## Tax, payment and renewal
 
@@ -60,3 +64,7 @@ Existing published policy, preserved: for Personal/Team, if Linda does not work 
 ## Free 14-day commercial evaluation
 
 Individuals and organizations may evaluate Linda for commercial use free of charge for 14 calendar days from their first launch of the application. No registration, separately agreed start date, paid key, payment card or subscription is required. This is a licence permission, not an app timer or technical lock; the user is responsible for observing the period. Reinstallation, an update or switching devices does not restart the period for the same person or organization. The trial is for internal evaluation, without resale, redistribution, third-party hosting or adverse decisions about people. After the period, continued commercial use requires the appropriate paid licence. Personal non-commercial use remains free under CC BY-NC 4.0 without a 14-day limit. There is no automatic charge, renewal or conversion to a paid subscription. Texts remain with the user; sharing aggregate feedback is optional.
+
+
+
+A paid Detector key can also be purchased solely to use Humanizer and Trace for personal, non-commercial tasks. Linda Probe has its own licence and key.

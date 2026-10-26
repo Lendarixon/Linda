@@ -23,7 +23,7 @@ use in a product or service that earns money; any other use that supports a busi
 
 ## OEM, exclusive rights, custom calibration
 Write to **lindapro.support@proton.me** with the use case, volume, languages and deployment.
-Data provenance is disclosed in the model card and in DATA_BOM.md. Not legal advice.
+Data provenance and third-party terms: [docs/NOTICE.md](https://github.com/Lendarixon/Linda/blob/main/docs/NOTICE.md) and [docs/MODEL_CARD.md](https://github.com/Lendarixon/Linda/blob/main/docs/MODEL_CARD.md). Those third-party terms are not overridden by this licence. Not legal advice.
 
 ## Tax, payment and renewal
 
@@ -38,3 +38,9 @@ Existing published policy, preserved: for Personal/Team, if Linda does not work 
 ## Free 14-day commercial evaluation
 
 Individuals and organizations may evaluate Linda for commercial use free of charge for 14 calendar days from their first launch of the application. No registration, separately agreed start date, paid key, payment card or subscription is required. This is a licence permission, not an app timer or technical lock; the user is responsible for observing the period. Reinstallation, an update or switching devices does not restart the period for the same person or organization. The trial is for internal evaluation, without resale, redistribution, third-party hosting or adverse decisions about people. After the period, continued commercial use requires the appropriate paid licence. Personal non-commercial use remains free under CC BY-NC 4.0 without a 14-day limit. There is no automatic charge, renewal or conversion to a paid subscription. Texts remain with the user; sharing aggregate feedback is optional.
+
+## Optional licensed tools (2.3.0.0+)
+Linda Trace (forensic authorship) and the Humanizer are optional packs. They are downloaded only after a licence key is entered (any tier, including Personal); without a key the detector works as before and these tabs are locked. A paid key at any tier, including Personal, unlocks them; no separate tool purchase is required. Probe is a separate app and key; a Detector key does not unlock Probe. The 14-day commercial evaluation applies to the detector; it does not by itself provide the licensed packs. The packs are not distributed in this repository.
+
+
+A paid Detector key can also be purchased solely to use Humanizer and Trace for personal, non-commercial tasks. Linda Probe has its own licence and key.
