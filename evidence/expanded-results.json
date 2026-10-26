@@ -1,0 +1,1235 @@
+{
+  "as_of": "2026-10-26",
+  "sources": {
+    "humanizer_open": "детектор/experiments/open_benchmarks_20261016/reports/OPEN_BENCHMARK_MASTER_REPORT.md",
+    "humanizer_fresh": "детектор/experiments/style_benchmark_20261015/OVERNIGHT_MASTER_REPORT.md",
+    "trace": "ForensicAuthorship/reports/competitor_stylo_comparison_report.json",
+    "detector": "Linda_site/build_site.py; Linda_site/content/benchmark_numbers.json; original detailed detector pages"
+  },
+  "humanizer": {
+    "commercial_same_subset": [
+      {
+        "id": "linda_v4",
+        "model": "Linda Style Editor 4B v4",
+        "benchmark": "HumanizerBench",
+        "n": 33,
+        "anchor_recall_percent": 94.47134143933735,
+        "all_anchors_count": 15,
+        "changed_count": 27,
+        "evaded_count": 1,
+        "terminal_count": 19,
+        "median_seconds": 13.24281559999963,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "linda_mini_v2",
+        "model": "Linda-Mini v2 0.6B",
+        "benchmark": "HumanizerBench",
+        "n": 33,
+        "anchor_recall_percent": 91.07556138294616,
+        "all_anchors_count": 16,
+        "changed_count": 30,
+        "evaded_count": 0,
+        "terminal_count": 16,
+        "median_seconds": 8.861513300000297,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "qwen4_base",
+        "model": "Qwen3-4B base",
+        "benchmark": "HumanizerBench",
+        "n": 33,
+        "anchor_recall_percent": 98.24781355271406,
+        "all_anchors_count": 25,
+        "changed_count": 11,
+        "evaded_count": 0,
+        "terminal_count": 15,
+        "median_seconds": 13.022232499999518,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "qwen06_base",
+        "model": "Qwen3-0.6B base",
+        "benchmark": "HumanizerBench",
+        "n": 33,
+        "anchor_recall_percent": 93.1079220567273,
+        "all_anchors_count": 18,
+        "changed_count": 20,
+        "evaded_count": 0,
+        "terminal_count": 20,
+        "median_seconds": 8.650998600000094,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "undetectable",
+        "model": "Undetectable.ai",
+        "benchmark": "HumanizerBench",
+        "n": 33,
+        "anchor_recall_percent": 81.99389404624574,
+        "all_anchors_count": 2,
+        "changed_count": 33,
+        "evaded_count": 2,
+        "terminal_count": 25,
+        "median_seconds": null,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "grammarly",
+        "model": "Grammarly Paraphraser",
+        "benchmark": "HumanizerBench",
+        "n": 33,
+        "anchor_recall_percent": 80.26262036877857,
+        "all_anchors_count": 4,
+        "changed_count": 33,
+        "evaded_count": 0,
+        "terminal_count": 26,
+        "median_seconds": null,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "phrasly",
+        "model": "Phrasly.ai",
+        "benchmark": "HumanizerBench",
+        "n": 33,
+        "anchor_recall_percent": 68.55372574593595,
+        "all_anchors_count": 3,
+        "changed_count": 33,
+        "evaded_count": 8,
+        "terminal_count": 26,
+        "median_seconds": null,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "stealthgpt",
+        "model": "StealthGPT",
+        "benchmark": "HumanizerBench",
+        "n": 33,
+        "anchor_recall_percent": 64.28625962389036,
+        "all_anchors_count": 2,
+        "changed_count": 33,
+        "evaded_count": 8,
+        "terminal_count": 25,
+        "median_seconds": null,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "hix-bypass",
+        "model": "HIX Bypass",
+        "benchmark": "HumanizerBench",
+        "n": 33,
+        "anchor_recall_percent": 76.09243745610983,
+        "all_anchors_count": 3,
+        "changed_count": 33,
+        "evaded_count": 7,
+        "terminal_count": 26,
+        "median_seconds": null,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "writehuman",
+        "model": "WriteHuman.ai",
+        "benchmark": "HumanizerBench",
+        "n": 33,
+        "anchor_recall_percent": 71.78965267138251,
+        "all_anchors_count": 3,
+        "changed_count": 33,
+        "evaded_count": 3,
+        "terminal_count": 27,
+        "median_seconds": null,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "penlify",
+        "model": "Penlify",
+        "benchmark": "HumanizerBench",
+        "n": 33,
+        "anchor_recall_percent": 64.99428089985379,
+        "all_anchors_count": 2,
+        "changed_count": 33,
+        "evaded_count": 0,
+        "terminal_count": 26,
+        "median_seconds": null,
+        "zero_anchor_cases": 0
+      }
+    ],
+    "open_133": [
+      {
+        "id": "linda_v4",
+        "model": "Linda Style Editor 4B v4",
+        "benchmark": "all",
+        "n": 133,
+        "anchor_recall_percent": 94.94934203391921,
+        "all_anchors_count": 97,
+        "changed_count": 79,
+        "evaded_count": 1,
+        "terminal_count": 111,
+        "median_seconds": 7.464225200000328,
+        "zero_anchor_cases": 2
+      },
+      {
+        "id": "linda_v4",
+        "model": "Linda Style Editor 4B v4",
+        "benchmark": "AINL2025",
+        "n": 50,
+        "anchor_recall_percent": 94.11428571428571,
+        "all_anchors_count": 41,
+        "changed_count": 27,
+        "evaded_count": 0,
+        "terminal_count": 50,
+        "median_seconds": 6.640334350000558,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "linda_v4",
+        "model": "Linda Style Editor 4B v4",
+        "benchmark": "HumanizerBench",
+        "n": 33,
+        "anchor_recall_percent": 94.47134143933735,
+        "all_anchors_count": 15,
+        "changed_count": 27,
+        "evaded_count": 1,
+        "terminal_count": 19,
+        "median_seconds": 13.24281559999963,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "linda_v4",
+        "model": "Linda Style Editor 4B v4",
+        "benchmark": "RAID-Adversarial",
+        "n": 50,
+        "anchor_recall_percent": 96.09987874597675,
+        "all_anchors_count": 41,
+        "changed_count": 25,
+        "evaded_count": 0,
+        "terminal_count": 42,
+        "median_seconds": 7.945924649999597,
+        "zero_anchor_cases": 2
+      },
+      {
+        "id": "linda_mini_v2",
+        "model": "Linda-Mini v2 0.6B",
+        "benchmark": "all",
+        "n": 133,
+        "anchor_recall_percent": 93.7237073094027,
+        "all_anchors_count": 90,
+        "changed_count": 106,
+        "evaded_count": 0,
+        "terminal_count": 112,
+        "median_seconds": 5.497997099999338,
+        "zero_anchor_cases": 2
+      },
+      {
+        "id": "linda_mini_v2",
+        "model": "Linda-Mini v2 0.6B",
+        "benchmark": "AINL2025",
+        "n": 50,
+        "anchor_recall_percent": 93.10952380952381,
+        "all_anchors_count": 37,
+        "changed_count": 33,
+        "evaded_count": 0,
+        "terminal_count": 50,
+        "median_seconds": 4.870895000000928,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "linda_mini_v2",
+        "model": "Linda-Mini v2 0.6B",
+        "benchmark": "HumanizerBench",
+        "n": 33,
+        "anchor_recall_percent": 91.07556138294616,
+        "all_anchors_count": 16,
+        "changed_count": 30,
+        "evaded_count": 0,
+        "terminal_count": 16,
+        "median_seconds": 8.861513300000297,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "linda_mini_v2",
+        "model": "Linda-Mini v2 0.6B",
+        "benchmark": "RAID-Adversarial",
+        "n": 50,
+        "anchor_recall_percent": 96.0856671207429,
+        "all_anchors_count": 37,
+        "changed_count": 43,
+        "evaded_count": 0,
+        "terminal_count": 46,
+        "median_seconds": 5.943540799999937,
+        "zero_anchor_cases": 2
+      },
+      {
+        "id": "qwen4_base",
+        "model": "Qwen3-4B base",
+        "benchmark": "all",
+        "n": 133,
+        "anchor_recall_percent": 97.7001363096229,
+        "all_anchors_count": 117,
+        "changed_count": 28,
+        "evaded_count": 0,
+        "terminal_count": 106,
+        "median_seconds": 7.153594199999134,
+        "zero_anchor_cases": 2
+      },
+      {
+        "id": "qwen4_base",
+        "model": "Qwen3-4B base",
+        "benchmark": "AINL2025",
+        "n": 50,
+        "anchor_recall_percent": 95.83333333333334,
+        "all_anchors_count": 47,
+        "changed_count": 10,
+        "evaded_count": 0,
+        "terminal_count": 50,
+        "median_seconds": 6.5635480999999345,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "qwen4_base",
+        "model": "Qwen3-4B base",
+        "benchmark": "HumanizerBench",
+        "n": 33,
+        "anchor_recall_percent": 98.24781355271406,
+        "all_anchors_count": 25,
+        "changed_count": 11,
+        "evaded_count": 0,
+        "terminal_count": 15,
+        "median_seconds": 13.022232499999518,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "qwen4_base",
+        "model": "Qwen3-4B base",
+        "benchmark": "RAID-Adversarial",
+        "n": 50,
+        "anchor_recall_percent": 99.20547230547231,
+        "all_anchors_count": 45,
+        "changed_count": 7,
+        "evaded_count": 0,
+        "terminal_count": 41,
+        "median_seconds": 8.001806849999411,
+        "zero_anchor_cases": 2
+      },
+      {
+        "id": "qwen06_base",
+        "model": "Qwen3-0.6B base",
+        "benchmark": "all",
+        "n": 133,
+        "anchor_recall_percent": 96.39380920580007,
+        "all_anchors_count": 104,
+        "changed_count": 73,
+        "evaded_count": 0,
+        "terminal_count": 117,
+        "median_seconds": 5.142055099999197,
+        "zero_anchor_cases": 2
+      },
+      {
+        "id": "qwen06_base",
+        "model": "Qwen3-0.6B base",
+        "benchmark": "AINL2025",
+        "n": 50,
+        "anchor_recall_percent": 97.6,
+        "all_anchors_count": 45,
+        "changed_count": 23,
+        "evaded_count": 0,
+        "terminal_count": 50,
+        "median_seconds": 4.658758999999918,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "qwen06_base",
+        "model": "Qwen3-0.6B base",
+        "benchmark": "HumanizerBench",
+        "n": 33,
+        "anchor_recall_percent": 93.1079220567273,
+        "all_anchors_count": 18,
+        "changed_count": 20,
+        "evaded_count": 0,
+        "terminal_count": 20,
+        "median_seconds": 8.650998600000094,
+        "zero_anchor_cases": 0
+      },
+      {
+        "id": "qwen06_base",
+        "model": "Qwen3-0.6B base",
+        "benchmark": "RAID-Adversarial",
+        "n": 50,
+        "anchor_recall_percent": 97.35630392998814,
+        "all_anchors_count": 41,
+        "changed_count": 30,
+        "evaded_count": 0,
+        "terminal_count": 47,
+        "median_seconds": 5.196931500000574,
+        "zero_anchor_cases": 2
+      }
+    ],
+    "fresh30": [
+      {
+        "id": "linda_v4",
+        "model": "Linda Style Editor 4B v4",
+        "scope": "all",
+        "n": 30,
+        "anchor_recall_percent": 98.33333333333333,
+        "all_anchors_count": 28,
+        "language_count": 30,
+        "language_metric_source": "stored per-output language_match",
+        "terminal_count": 30,
+        "changed_count": 17,
+        "median_seconds": 2.29586879999988
+      },
+      {
+        "id": "linda_v4",
+        "model": "Linda Style Editor 4B v4",
+        "scope": "en",
+        "n": 10,
+        "anchor_recall_percent": 100.0,
+        "all_anchors_count": 10,
+        "language_count": 10,
+        "language_metric_source": "stored per-output language_match",
+        "terminal_count": 10,
+        "changed_count": 6,
+        "median_seconds": 1.6344732499999282
+      },
+      {
+        "id": "linda_v4",
+        "model": "Linda Style Editor 4B v4",
+        "scope": "ru",
+        "n": 10,
+        "anchor_recall_percent": 100.0,
+        "all_anchors_count": 10,
+        "language_count": 10,
+        "language_metric_source": "stored per-output language_match",
+        "terminal_count": 10,
+        "changed_count": 4,
+        "median_seconds": 2.29586879999988
+      },
+      {
+        "id": "linda_v4",
+        "model": "Linda Style Editor 4B v4",
+        "scope": "pl",
+        "n": 10,
+        "anchor_recall_percent": 95.0,
+        "all_anchors_count": 8,
+        "language_count": 10,
+        "language_metric_source": "stored per-output language_match",
+        "terminal_count": 10,
+        "changed_count": 7,
+        "median_seconds": 2.5411250999998174
+      },
+      {
+        "id": "linda_mini_v2",
+        "model": "Linda-Mini v2 0.6B",
+        "scope": "all",
+        "n": 30,
+        "anchor_recall_percent": 97.22222222222221,
+        "all_anchors_count": 27,
+        "language_count": 30,
+        "language_metric_source": "stored per-output language_match",
+        "terminal_count": 30,
+        "changed_count": 22,
+        "median_seconds": 1.5979632999997193
+      },
+      {
+        "id": "linda_mini_v2",
+        "model": "Linda-Mini v2 0.6B",
+        "scope": "en",
+        "n": 10,
+        "anchor_recall_percent": 100.0,
+        "all_anchors_count": 10,
+        "language_count": 10,
+        "language_metric_source": "stored per-output language_match",
+        "terminal_count": 10,
+        "changed_count": 8,
+        "median_seconds": 1.2259975499998745
+      },
+      {
+        "id": "linda_mini_v2",
+        "model": "Linda-Mini v2 0.6B",
+        "scope": "ru",
+        "n": 10,
+        "anchor_recall_percent": 91.66666666666666,
+        "all_anchors_count": 7,
+        "language_count": 10,
+        "language_metric_source": "stored per-output language_match",
+        "terminal_count": 10,
+        "changed_count": 8,
+        "median_seconds": 1.6956172499999411
+      },
+      {
+        "id": "linda_mini_v2",
+        "model": "Linda-Mini v2 0.6B",
+        "scope": "pl",
+        "n": 10,
+        "anchor_recall_percent": 100.0,
+        "all_anchors_count": 10,
+        "language_count": 10,
+        "language_metric_source": "stored per-output language_match",
+        "terminal_count": 10,
+        "changed_count": 6,
+        "median_seconds": 1.8104644000000008
+      },
+      {
+        "id": "qwen4",
+        "model": "Qwen3-4B base",
+        "scope": "all",
+        "n": 30,
+        "anchor_recall_percent": 100.0,
+        "all_anchors_count": 30,
+        "language_count": 28,
+        "language_metric_source": "OVERNIGHT_MASTER_REPORT.md; published automated Lingua assessment",
+        "terminal_count": 29,
+        "changed_count": 9,
+        "median_seconds": 2.293143549999513
+      },
+      {
+        "id": "qwen4",
+        "model": "Qwen3-4B base",
+        "scope": "en",
+        "n": 10,
+        "anchor_recall_percent": 100.0,
+        "all_anchors_count": 10,
+        "language_count": 9,
+        "language_metric_source": "OVERNIGHT_MASTER_REPORT.md; published automated Lingua assessment",
+        "terminal_count": 9,
+        "changed_count": 3,
+        "median_seconds": 1.655445200000031
+      },
+      {
+        "id": "qwen4",
+        "model": "Qwen3-4B base",
+        "scope": "ru",
+        "n": 10,
+        "anchor_recall_percent": 100.0,
+        "all_anchors_count": 10,
+        "language_count": 10,
+        "language_metric_source": "OVERNIGHT_MASTER_REPORT.md; published automated Lingua assessment",
+        "terminal_count": 10,
+        "changed_count": 3,
+        "median_seconds": 2.305724000000737
+      },
+      {
+        "id": "qwen4",
+        "model": "Qwen3-4B base",
+        "scope": "pl",
+        "n": 10,
+        "anchor_recall_percent": 100.0,
+        "all_anchors_count": 10,
+        "language_count": 9,
+        "language_metric_source": "OVERNIGHT_MASTER_REPORT.md; published automated Lingua assessment",
+        "terminal_count": 10,
+        "changed_count": 3,
+        "median_seconds": 2.5462621499991656
+      },
+      {
+        "id": "qwen06",
+        "model": "Qwen3-0.6B base",
+        "scope": "all",
+        "n": 30,
+        "anchor_recall_percent": 97.22222222222221,
+        "all_anchors_count": 27,
+        "language_count": 29,
+        "language_metric_source": "OVERNIGHT_MASTER_REPORT.md; published automated Lingua assessment",
+        "terminal_count": 30,
+        "changed_count": 15,
+        "median_seconds": 1.682324399999743
+      },
+      {
+        "id": "qwen06",
+        "model": "Qwen3-0.6B base",
+        "scope": "en",
+        "n": 10,
+        "anchor_recall_percent": 100.0,
+        "all_anchors_count": 10,
+        "language_count": 10,
+        "language_metric_source": "OVERNIGHT_MASTER_REPORT.md; published automated Lingua assessment",
+        "terminal_count": 10,
+        "changed_count": 6,
+        "median_seconds": 1.1716824499999348
+      },
+      {
+        "id": "qwen06",
+        "model": "Qwen3-0.6B base",
+        "scope": "ru",
+        "n": 10,
+        "anchor_recall_percent": 94.16666666666667,
+        "all_anchors_count": 8,
+        "language_count": 9,
+        "language_metric_source": "OVERNIGHT_MASTER_REPORT.md; published automated Lingua assessment",
+        "terminal_count": 10,
+        "changed_count": 6,
+        "median_seconds": 1.682324399999743
+      },
+      {
+        "id": "qwen06",
+        "model": "Qwen3-0.6B base",
+        "scope": "pl",
+        "n": 10,
+        "anchor_recall_percent": 97.5,
+        "all_anchors_count": 9,
+        "language_count": 10,
+        "language_metric_source": "OVERNIGHT_MASTER_REPORT.md; published automated Lingua assessment",
+        "terminal_count": 10,
+        "changed_count": 3,
+        "median_seconds": 1.92737169999873
+      },
+      {
+        "id": "humanizer12",
+        "model": "humanizer-12B",
+        "scope": "all",
+        "n": 10,
+        "anchor_recall_percent": 100.0,
+        "all_anchors_count": 10,
+        "language_count": 9,
+        "language_metric_source": "OVERNIGHT_MASTER_REPORT.md; published automated Lingua assessment",
+        "terminal_count": 10,
+        "changed_count": 10,
+        "median_seconds": 14.368333450000137
+      },
+      {
+        "id": "humanizer12",
+        "model": "humanizer-12B",
+        "scope": "en",
+        "n": 10,
+        "anchor_recall_percent": 100.0,
+        "all_anchors_count": 10,
+        "language_count": 9,
+        "language_metric_source": "OVERNIGHT_MASTER_REPORT.md; published automated Lingua assessment",
+        "terminal_count": 10,
+        "changed_count": 10,
+        "median_seconds": 14.368333450000137
+      },
+      {
+        "id": "rut5",
+        "model": "ruT5",
+        "scope": "all",
+        "n": 10,
+        "anchor_recall_percent": 76.66666666666666,
+        "all_anchors_count": 3,
+        "language_count": 10,
+        "language_metric_source": "OVERNIGHT_MASTER_REPORT.md; published automated Lingua assessment",
+        "terminal_count": 10,
+        "changed_count": 10,
+        "median_seconds": 2.5292906000004223
+      },
+      {
+        "id": "rut5",
+        "model": "ruT5",
+        "scope": "ru",
+        "n": 10,
+        "anchor_recall_percent": 76.66666666666666,
+        "all_anchors_count": 3,
+        "language_count": 10,
+        "language_metric_source": "OVERNIGHT_MASTER_REPORT.md; published automated Lingua assessment",
+        "terminal_count": 10,
+        "changed_count": 10,
+        "median_seconds": 2.5292906000004223
+      }
+    ],
+    "rules": "Anchor presence is not full meaning. Changed means word-list difference, not quality. Commercial runtime missing, not zero. Commercial comparison uses the same33 source IDs; full133 is not compared to commercial33."
+  },
+  "trace": {
+    "comparison": {
+      "title": "Linda Trace 1.3.0 vs Stylo (Burrows & Cosine Delta) & Writeprints Direct Comparison",
+      "timestamp": "2026-10-23 16:31:33",
+      "total_queries": 90,
+      "overall_summary": {
+        "Linda_Trace_1.3.0": {
+          "total_correct": 71,
+          "total_queries": 90,
+          "accuracy": 0.7888888888888889,
+          "total_time_sec": 1.9964935000025434,
+          "ms_per_doc": 22.18326111113937
+        },
+        "Stylo_Burrows_Delta": {
+          "total_correct": 64,
+          "total_queries": 90,
+          "accuracy": 0.7111111111111111,
+          "total_time_sec": 0.04991090000112308,
+          "ms_per_doc": 0.5545655555680342
+        },
+        "Stylo_Cosine_Delta": {
+          "total_correct": 58,
+          "total_queries": 90,
+          "accuracy": 0.6444444444444445,
+          "total_time_sec": 0.047657999999501044,
+          "ms_per_doc": 0.5295333333277894
+        },
+        "Writeprints_Centroid": {
+          "total_correct": 60,
+          "total_queries": 90,
+          "accuracy": 0.6666666666666666,
+          "total_time_sec": 0.28601850000086415,
+          "ms_per_doc": 3.177983333342935
+        }
+      },
+      "domain_runs": {
+        "science_russian": {
+          "test_name": "Scientific Articles: Russian (Human vs LLaMA-3.3 vs GPT-4-Turbo vs Gemma-2)",
+          "language": "ru",
+          "words_per_doc": 750,
+          "total_queries": 20,
+          "methods": {
+            "Linda_Trace_1.3.0": {
+              "correct": 19,
+              "accuracy": 0.95,
+              "time_sec": 0.5508469000014884,
+              "ms_per_doc": 27.54234500007442
+            },
+            "Stylo_Burrows_Delta": {
+              "correct": 19,
+              "accuracy": 0.95,
+              "time_sec": 0.01328069999908621,
+              "ms_per_doc": 0.6640349999543105
+            },
+            "Stylo_Cosine_Delta": {
+              "correct": 18,
+              "accuracy": 0.9,
+              "time_sec": 0.011918999998670188,
+              "ms_per_doc": 0.5959499999335094
+            },
+            "Writeprints_Centroid": {
+              "correct": 19,
+              "accuracy": 0.95,
+              "time_sec": 0.08353940000051807,
+              "ms_per_doc": 4.176970000025904
+            }
+          }
+        },
+        "science_english": {
+          "test_name": "Scientific Articles: English (ArXiv CS/AI vs Math vs Physics vs Biology)",
+          "language": "en",
+          "words_per_doc": 750,
+          "total_queries": 20,
+          "methods": {
+            "Linda_Trace_1.3.0": {
+              "correct": 17,
+              "accuracy": 0.85,
+              "time_sec": 0.4147205999997823,
+              "ms_per_doc": 20.736029999989114
+            },
+            "Stylo_Burrows_Delta": {
+              "correct": 16,
+              "accuracy": 0.8,
+              "time_sec": 0.010160000001633307,
+              "ms_per_doc": 0.5080000000816653
+            },
+            "Stylo_Cosine_Delta": {
+              "correct": 14,
+              "accuracy": 0.7,
+              "time_sec": 0.010155399999348447,
+              "ms_per_doc": 0.5077699999674223
+            },
+            "Writeprints_Centroid": {
+              "correct": 14,
+              "accuracy": 0.7,
+              "time_sec": 0.05984379999972589,
+              "ms_per_doc": 2.9921899999862944
+            }
+          }
+        },
+        "essays_students": {
+          "test_name": "Academic Essays: PELIC Human Student Authors (6 students)",
+          "language": "en",
+          "words_per_doc": 750,
+          "total_queries": 30,
+          "methods": {
+            "Linda_Trace_1.3.0": {
+              "correct": 18,
+              "accuracy": 0.6,
+              "time_sec": 0.5848951000007219,
+              "ms_per_doc": 19.496503333357396
+            },
+            "Stylo_Burrows_Delta": {
+              "correct": 14,
+              "accuracy": 0.4666666666666667,
+              "time_sec": 0.015133099999729893,
+              "ms_per_doc": 0.5044366666576632
+            },
+            "Stylo_Cosine_Delta": {
+              "correct": 13,
+              "accuracy": 0.43333333333333335,
+              "time_sec": 0.014037200000529992,
+              "ms_per_doc": 0.4679066666843331
+            },
+            "Writeprints_Centroid": {
+              "correct": 14,
+              "accuracy": 0.4666666666666667,
+              "time_sec": 0.07300209999993967,
+              "ms_per_doc": 2.4334033333313223
+            }
+          }
+        },
+        "news_russian": {
+          "test_name": "News Journalism: Russian Desks (Financial vs Health vs Social vs Culture)",
+          "language": "ru",
+          "words_per_doc": 750,
+          "total_queries": 20,
+          "methods": {
+            "Linda_Trace_1.3.0": {
+              "correct": 17,
+              "accuracy": 0.85,
+              "time_sec": 0.4460309000005509,
+              "ms_per_doc": 22.301545000027545
+            },
+            "Stylo_Burrows_Delta": {
+              "correct": 15,
+              "accuracy": 0.75,
+              "time_sec": 0.011337100000673672,
+              "ms_per_doc": 0.5668550000336836
+            },
+            "Stylo_Cosine_Delta": {
+              "correct": 13,
+              "accuracy": 0.65,
+              "time_sec": 0.011546400000952417,
+              "ms_per_doc": 0.5773200000476209
+            },
+            "Writeprints_Centroid": {
+              "correct": 13,
+              "accuracy": 0.65,
+              "time_sec": 0.06963320000068052,
+              "ms_per_doc": 3.481660000034026
+            }
+          }
+        }
+      }
+    },
+    "additional": {
+      "academic_science_news_evaluation.json": {
+        "title": "Linda Trace 1.3.0 Authorship Attribution Benchmark: Science, Essays, and News",
+        "timestamp": "2026-10-23 16:25:19",
+        "engine": "Linda Trace 1.3.0 Fast N-Gram Stylometric Core",
+        "overall_summary": {
+          "total_queries": 140,
+          "total_correct": 85,
+          "top1_accuracy": 0.6071428571428571
+        },
+        "subtests": {
+          "1A_academic_essays_human_students": {
+            "test_name": "Academic Essays: PELIC Human Student Authors",
+            "language": "en",
+            "target_words": 350,
+            "authors_count": 6,
+            "total_queries": 30,
+            "top1_correct": 15,
+            "top1_accuracy": 0.5,
+            "elapsed_seconds": 0.417073700000401
+          },
+          "1B_academic_essays_multiauthor": {
+            "test_name": "Academic Essays: Multi-Author (Human vs ChatGPT vs DeepSeek vs Gemma)",
+            "language": "en",
+            "target_words": 450,
+            "authors_count": 4,
+            "total_queries": 20,
+            "top1_correct": 14,
+            "top1_accuracy": 0.7,
+            "elapsed_seconds": 0.23221709999961604
+          },
+          "2A_scientific_articles_russian": {
+            "test_name": "Scientific Articles: Russian (Human vs LLaMA-3.3 vs GPT-4-Turbo vs Gemma-2)",
+            "language": "ru",
+            "target_words": 400,
+            "authors_count": 4,
+            "total_queries": 20,
+            "top1_correct": 13,
+            "top1_accuracy": 0.65,
+            "elapsed_seconds": 0.2484085000014602
+          },
+          "2B_scientific_articles_english": {
+            "test_name": "Scientific Articles: English ArXiv Disciplines & USGPO",
+            "language": "en",
+            "target_words": 400,
+            "authors_count": 5,
+            "total_queries": 25,
+            "top1_correct": 17,
+            "top1_accuracy": 0.68,
+            "elapsed_seconds": 0.2356129999989207
+          },
+          "3A_news_journalism_english": {
+            "test_name": "News & Journalism: English Desks (CNN, BBC, Reuters/Human, LLaMA, ChatGPT)",
+            "language": "en",
+            "target_words": 450,
+            "authors_count": 5,
+            "total_queries": 25,
+            "top1_correct": 11,
+            "top1_accuracy": 0.44,
+            "elapsed_seconds": 0.25885440000092785
+          },
+          "3B_news_journalism_russian": {
+            "test_name": "News & Journalism: Russian Desks (Financial, Health Investigative, Social Investigative, Culture)",
+            "language": "ru",
+            "target_words": 400,
+            "authors_count": 4,
+            "total_queries": 20,
+            "top1_correct": 15,
+            "top1_accuracy": 0.75,
+            "elapsed_seconds": 0.35354499999994005
+          }
+        }
+      },
+      "llama_blind_authorship_evaluation.json": {
+        "title": "Independent Blind LLaMA Authorship Evaluation",
+        "timestamp": "2026-10-23 16:09:23",
+        "engine": "Linda Trace 1.3.0 (Fast N-Gram Stylometric Core)",
+        "authors_evaluated": [
+          "llama_chat_books",
+          "llama_chat_news",
+          "llama_chat_abstracts",
+          "llama_chat_recipes",
+          "llama_3.1_llama-3.1-8b_en_fiction",
+          "llama_3.1_llama-3.1-8b_en_science"
+        ],
+        "tiers": {
+          "Small (~350 words)": {
+            "target_words": 350,
+            "authors_count": 6,
+            "total_queries": 30,
+            "top1_correct": 27,
+            "top1_accuracy": 0.9,
+            "elapsed_seconds": 0.3536124000002019
+          },
+          "Medium (~800 words)": {
+            "target_words": 800,
+            "authors_count": 6,
+            "total_queries": 30,
+            "top1_correct": 26,
+            "top1_accuracy": 0.8666666666666667,
+            "elapsed_seconds": 0.5534616000004462
+          },
+          "Large (~1800 words)": {
+            "target_words": 1800,
+            "authors_count": 6,
+            "total_queries": 30,
+            "top1_correct": 22,
+            "top1_accuracy": 0.7333333333333333,
+            "elapsed_seconds": 1.4519605999994383
+          }
+        }
+      },
+      "domain_volume_scaling_evaluation.json": {
+        "Academic Essays (PELIC Human Students)": {
+          "Small (~400w)": {
+            "target_words": 400,
+            "candidates_count": 6,
+            "queries_count": 30,
+            "correct": 12,
+            "accuracy": 0.4,
+            "elapsed_seconds": 0.3038445000001957
+          },
+          "Medium (~800w)": {
+            "target_words": 800,
+            "candidates_count": 6,
+            "queries_count": 30,
+            "correct": 16,
+            "accuracy": 0.5333333333333333,
+            "elapsed_seconds": 0.5816858999987744
+          },
+          "Large (~1500w)": {
+            "target_words": 1500,
+            "candidates_count": 6,
+            "queries_count": 30,
+            "correct": 15,
+            "accuracy": 0.5,
+            "elapsed_seconds": 1.2503842999994959
+          }
+        },
+        "Scientific Articles (AINL 2025 Russian Science)": {
+          "Small (~400w)": {
+            "target_words": 400,
+            "candidates_count": 4,
+            "queries_count": 20,
+            "correct": 13,
+            "accuracy": 0.65,
+            "elapsed_seconds": 0.25702950000049896
+          },
+          "Medium (~800w)": {
+            "target_words": 800,
+            "candidates_count": 4,
+            "queries_count": 20,
+            "correct": 20,
+            "accuracy": 1.0,
+            "elapsed_seconds": 0.5438309000001027
+          },
+          "Large (~1500w)": {
+            "target_words": 1500,
+            "candidates_count": 4,
+            "queries_count": 20,
+            "correct": 20,
+            "accuracy": 1.0,
+            "elapsed_seconds": 1.194301400000768
+          }
+        },
+        "News Journalism (Russian Media Desks)": {
+          "Small (~400w)": {
+            "target_words": 400,
+            "candidates_count": 4,
+            "queries_count": 20,
+            "correct": 15,
+            "accuracy": 0.75,
+            "elapsed_seconds": 0.22237630000017816
+          },
+          "Medium (~800w)": {
+            "target_words": 800,
+            "candidates_count": 4,
+            "queries_count": 20,
+            "correct": 17,
+            "accuracy": 0.85,
+            "elapsed_seconds": 0.5303277999992133
+          },
+          "Large (~1500w)": {
+            "target_words": 1500,
+            "candidates_count": 4,
+            "queries_count": 20,
+            "correct": 17,
+            "accuracy": 0.85,
+            "elapsed_seconds": 1.0289596999991772
+          }
+        }
+      },
+      "domain_en_volume_scaling.json": {
+        "English Scientific Articles (ArXiv & USGPO)": {
+          "Small (~400w)": {
+            "target_words": 400,
+            "candidates_count": 5,
+            "queries_count": 25,
+            "correct": 16,
+            "accuracy": 0.64,
+            "elapsed_seconds": 0.2775349000003189
+          },
+          "Medium (~800w)": {
+            "target_words": 800,
+            "candidates_count": 5,
+            "queries_count": 25,
+            "correct": 23,
+            "accuracy": 0.92,
+            "elapsed_seconds": 0.48236309999992955
+          },
+          "Large (~1500w)": {
+            "target_words": 1500,
+            "candidates_count": 5,
+            "queries_count": 25,
+            "correct": 20,
+            "accuracy": 0.8,
+            "elapsed_seconds": 1.095585499999288
+          }
+        },
+        "English News & Journalism (CNN, BBC, Reuters, LLaMA, ChatGPT)": {
+          "Small (~400w)": {
+            "target_words": 400,
+            "candidates_count": 5,
+            "queries_count": 25,
+            "correct": 11,
+            "accuracy": 0.44,
+            "elapsed_seconds": 0.2334149999987858
+          },
+          "Medium (~800w)": {
+            "target_words": 800,
+            "candidates_count": 5,
+            "queries_count": 25,
+            "correct": 11,
+            "accuracy": 0.44,
+            "elapsed_seconds": 0.46354909999899974
+          },
+          "Large (~1500w)": {
+            "target_words": 1500,
+            "candidates_count": 5,
+            "queries_count": 25,
+            "correct": 15,
+            "accuracy": 0.6,
+            "elapsed_seconds": 1.031850100000156
+          }
+        }
+      }
+    },
+    "embedded_authorship_engine_sha256": "4965db8b95be378e6a5e7823b03546ff190b05ebf32efeeb5d78f8a964284244",
+    "rules": "Mixed-domain reference-group retrieval. Scientific disciplines/news desks/AI model+genre pools are not human authors. Local baseline reproductions, not vendor Stylo/Writeprints applications."
+  },
+  "detector": {
+    "numbers": {
+      "pro": {
+        "hb": "81.0",
+        "oct": "84.0",
+        "unseen": "95.5",
+        "pl": "79.4",
+        "ru": "80.3",
+        "toefl": "5.5",
+        "mage_h": "2.0",
+        "chi_h": "0.2",
+        "fp_pl": "1.4",
+        "fp_ru": "0.6"
+      },
+      "lite": {
+        "hb": "69.4",
+        "oct": "75.8",
+        "unseen": "83.0",
+        "pl": "72.2",
+        "ru": "77.3",
+        "toefl": "2.2",
+        "mage_h": "0.4",
+        "chi_h": "0.0",
+        "fp_pl": "1.5",
+        "fp_ru": "1.2"
+      },
+      "speed_lite_s": "1-5",
+      "speed_measured_s": "1.2",
+      "corpus_windows": "149,000",
+      "_note": "Lite numbers: packaged Llama-filtered lg4 model (stealth-style rewrites added), 9 Oct 2026. Chicago plain on a random sample of 1500."
+    },
+    "labels": {
+      "en": {
+        "res_r1": "HumanizerBench: 16 rewriting tools, 1,675 texts <span class=\"note\">(kept only for testing, never used in training)</span>",
+        "res_r10": "Adult ESL (PELIC), 1,000",
+        "res_r11": "Adult ESL (W&I), 280",
+        "res_r12": "MAGE humans, 1,400",
+        "res_r2": "AI Humanizer Benchmark, Oct 2026: 363 texts <span class=\"note\">(separate check set, not used in training)</span>",
+        "res_r3": "Three unseen generators: 889 texts",
+        "res_r4": "Chicago Booth, plain AI",
+        "res_r5": "Chicago Booth, after StealthGPT",
+        "res_r6": "MAGE: short texts, old small models",
+        "res_r7": "TOEFL exam essays (non-native), 91",
+        "res_r8": "Chicago humans: news, books, reviews",
+        "res_r9": "School ELL essays (ELLIPSE), 1,500",
+        "cmp_pl": "Polish AI texts found",
+        "cmp_ru": "Russian AI texts found"
+      },
+      "ru": {
+        "res_r1": "HumanizerBench: 16 инструментов переписывания, 1 675 текстов <span class=\"note\">(только для проверки, в обучении не участвовали)</span>",
+        "res_r10": "Тексты взрослых учащихся (ESL / PELIC), 1 000",
+        "res_r11": "Взрослые ESL (W&I), 280",
+        "res_r12": "MAGE, люди, 1,400",
+        "res_r2": "AI Humanizer Benchmark, окт. 2026: 363 текста <span class=\"note\">(отдельный проверочный набор, в обучении не участвовал)</span>",
+        "res_r3": "Три неизвестных генератора: 889 текстов",
+        "res_r4": "Chicago Booth, обычный ИИ",
+        "res_r5": "Chicago Booth, после StealthGPT",
+        "res_r6": "MAGE: короткие тексты, старые малые модели",
+        "res_r7": "Эссе экзамена TOEFL (неносители), 91",
+        "res_r8": "Chicago, люди: новости, книги, отзывы",
+        "res_r9": "Школьные эссе ELL (ELLIPSE), 1 500",
+        "cmp_pl": "ИИ-тексты на польском, найдено",
+        "cmp_ru": "ИИ-тексты на русском, найдено"
+      },
+      "pl": {
+        "res_r1": "HumanizerBench: 16 narzędzi do przepisywania, 1675 tekstów <span class=\"note\">(tylko do testów, nie użyte w treningu)</span>",
+        "res_r10": "Dorośli uczący się ESL (PELIC), 1 000",
+        "res_r11": "Dorośli ESL (W&I), 280",
+        "res_r12": "MAGE, ludzie, 1,400",
+        "res_r2": "AI Humanizer Benchmark, paź. 2026: 363 teksty <span class=\"note\">(oddzielny zestaw kontrolny, nie użyty w treningu)</span>",
+        "res_r3": "Trzy nieznane generatory: 889 tekstów",
+        "res_r4": "Chicago Booth, zwykłe AI",
+        "res_r5": "Chicago Booth, po StealthGPT",
+        "res_r6": "MAGE: krótkie teksty, stare małe modele",
+        "res_r7": "Eseje egzaminacyjne TOEFL (autorzy nierodzimi), 91",
+        "res_r8": "Chicago (teksty ludzkie): wiadomości, książki, recenzje",
+        "res_r9": "Szkolne eseje ELL (ELLIPSE), 1 500",
+        "cmp_pl": "Teksty AI po polsku, wykryto",
+        "cmp_ru": "Teksty AI po rosyjsku, wykryto"
+      }
+    },
+    "assay_history": {
+      "rows": [
+        [
+          "res_r1",
+          "69.9",
+          "80.8",
+          "81.0",
+          "up",
+          "+0.2"
+        ],
+        [
+          "res_r2",
+          "81.8",
+          "81.3",
+          "84.0",
+          "up",
+          "+2.7"
+        ],
+        [
+          "res_r3",
+          "93.0",
+          "94.6",
+          "95.5",
+          "up",
+          "+0.9"
+        ],
+        [
+          "res_r4",
+          "99.7",
+          "99.8",
+          "99.8",
+          "eq",
+          "0.0"
+        ],
+        [
+          "res_r5",
+          "82.9",
+          "86.6",
+          "88.0",
+          "up",
+          "+1.4"
+        ],
+        [
+          "res_r6",
+          "44.5",
+          "45.9",
+          "46.6",
+          "up",
+          "+0.7"
+        ]
+      ],
+      "hurows": [
+        [
+          "res_r7",
+          "4.4",
+          "6.6",
+          "5.5",
+          "up",
+          "&minus;1.1"
+        ],
+        [
+          "res_r8",
+          "0.2",
+          "0.1",
+          "0.2",
+          "eq",
+          "+0.1"
+        ],
+        [
+          "res_r9",
+          "1.1",
+          "0.5",
+          "0.4",
+          "eq",
+          "&minus;0.1"
+        ],
+        [
+          "res_r10",
+          "0.7",
+          "0.4",
+          "0.4",
+          "eq",
+          "0.0"
+        ],
+        [
+          "res_r11",
+          "1.8",
+          "0.4",
+          "0.4",
+          "eq",
+          "0.0"
+        ],
+        [
+          "res_r12",
+          "1.1",
+          "0.9",
+          "2.0",
+          "dn",
+          "+1.1"
+        ]
+      ]
+    }
+  },
+  "provenance_limits": [
+    "No new inference was run.",
+    "Benchmark v4/Mini-v2 adapter hash linkage to installed Humanizer has not been established.",
+    "Detector full historical tables retained; denominators sometimes differ by model.",
+    "Reported review commercial_ready fields do not establish independent validation."
+  ]
+}

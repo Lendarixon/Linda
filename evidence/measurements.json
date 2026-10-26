@@ -1,0 +1,275 @@
+{
+  "as_of": "2026-10-26",
+  "measurement_type": "Developer-run experiments; not independent certification",
+  "detector": {
+    "source": "Linda_site/content/benchmark_numbers.json; original detailed detector results retained as detector-results.html",
+    "dataset": "HumanizerBench",
+    "n_ai_texts": 1675,
+    "rewriter_tools": 16,
+    "mode": "sensitive",
+    "detection_percent_rounded": {
+      "Assay": 81.0,
+      "Loupe": 69.4
+    },
+    "limits": "Detection rate is not overall accuracy. See human false alarms in the full results.",
+    "historical_competitors": {
+      "snapshot": "June–September 2026",
+      "same_n": 1675,
+      "published_detection_percent_rounded": {
+        "GPTZero": 47.7,
+        "Originality.ai": 47.2,
+        "Copyleaks": 39.2,
+        "Winston AI": 34.8,
+        "ZeroGPT": 19.3
+      },
+      "source": "Historical figures retained in Linda_site/build_site.py results_body and i18n/en.json res_vs_note; benchmark original texts/verdicts published by HumanizerBench",
+      "primary_dataset": "https://huggingface.co/datasets/HumanizerBench/humanizerbench",
+      "primary_methodology": "https://humanizerbench.com/methodology/",
+      "limits": "Competitor versions/thresholds are historical; human false alarm rates were not matched. Do not mix newer October-2026 results into this cohort."
+    }
+  },
+  "probe": {
+    "source": "LocalDocs/work/search_upgrade_20261023/reference/search/summary.json",
+    "date": "2026-10-23",
+    "documents": 300,
+    "queries": 36,
+    "metric": "Hit@5",
+    "rows": {
+      "probe_hybrid": {
+        "n": 36,
+        "hit1": 21,
+        "hit5": 27,
+        "mrr10": 0.6447089947089947
+      },
+      "sist2_native": {
+        "n": 36,
+        "hit1": 11,
+        "hit5": 11,
+        "mrr10": 0.3055555555555556
+      },
+      "sist2_or_diagnostic": {
+        "n": 36,
+        "hit1": 20,
+        "hit5": 24,
+        "mrr10": 0.5944444444444444
+      }
+    },
+    "photo_copy_retrieval": {
+      "n": 96,
+      "hit1": 96,
+      "task": "Transformed versions of known originals; not semantic image search"
+    },
+    "limits": "Historical snapshot. Small controlled corpus; separate sist2 query modes. Not proof of current-version or market-wide superiority."
+  },
+  "humanizer": {
+    "source": "детектор/experiments/style_benchmark_20261015/final_summary_with_v2.json",
+    "date": "2026-10-15",
+    "rows": [
+      {
+        "model": "qwen4",
+        "lang": "all",
+        "n": 30,
+        "perfect_anchor_retention": 1,
+        "perfect_retention_review": 1.0,
+        "language_match": 0.9333333333333333,
+        "facts_and_language": 0.9333333333333333
+      },
+      {
+        "model": "qwen4",
+        "lang": "en",
+        "n": 10,
+        "perfect_anchor_retention": 1,
+        "perfect_retention_review": 1.0,
+        "language_match": 0.9,
+        "facts_and_language": 0.9
+      },
+      {
+        "model": "qwen4",
+        "lang": "ru",
+        "n": 10,
+        "perfect_anchor_retention": 1,
+        "perfect_retention_review": 1.0,
+        "language_match": 1.0,
+        "facts_and_language": 1.0
+      },
+      {
+        "model": "qwen4",
+        "lang": "pl",
+        "n": 10,
+        "perfect_anchor_retention": 1,
+        "perfect_retention_review": 1.0,
+        "language_match": 0.9,
+        "facts_and_language": 0.9
+      },
+      {
+        "model": "qwen06",
+        "lang": "all",
+        "n": 30,
+        "perfect_anchor_retention": 0.9,
+        "perfect_retention_review": 0.8333333333333334,
+        "language_match": 0.9666666666666667,
+        "facts_and_language": 0.8
+      },
+      {
+        "model": "qwen06",
+        "lang": "en",
+        "n": 10,
+        "perfect_anchor_retention": 1,
+        "perfect_retention_review": 0.9,
+        "language_match": 1.0,
+        "facts_and_language": 0.9
+      },
+      {
+        "model": "qwen06",
+        "lang": "ru",
+        "n": 10,
+        "perfect_anchor_retention": 0.8,
+        "perfect_retention_review": 0.8,
+        "language_match": 0.9,
+        "facts_and_language": 0.7
+      },
+      {
+        "model": "qwen06",
+        "lang": "pl",
+        "n": 10,
+        "perfect_anchor_retention": 0.9,
+        "perfect_retention_review": 0.8,
+        "language_match": 1.0,
+        "facts_and_language": 0.8
+      },
+      {
+        "model": "humanizer12",
+        "lang": "all",
+        "n": 10,
+        "perfect_anchor_retention": 1,
+        "perfect_retention_review": 0.4,
+        "language_match": 0.9,
+        "facts_and_language": 0.3
+      },
+      {
+        "model": "humanizer12",
+        "lang": "en",
+        "n": 10,
+        "perfect_anchor_retention": 1,
+        "perfect_retention_review": 0.4,
+        "language_match": 0.9,
+        "facts_and_language": 0.3
+      },
+      {
+        "model": "rut5",
+        "lang": "all",
+        "n": 10,
+        "perfect_anchor_retention": 0.3,
+        "perfect_retention_review": 0.2,
+        "language_match": 1.0,
+        "facts_and_language": 0.2
+      },
+      {
+        "model": "rut5",
+        "lang": "ru",
+        "n": 10,
+        "perfect_anchor_retention": 0.3,
+        "perfect_retention_review": 0.2,
+        "language_match": 1.0,
+        "facts_and_language": 0.2
+      },
+      {
+        "model": "linda_v2",
+        "lang": "all",
+        "n": 30,
+        "perfect_anchor_retention": 0.9666666666666667,
+        "perfect_retention_review": 0.8666666666666667,
+        "language_match": 0.7666666666666667,
+        "facts_and_language": 0.6333333333333333
+      },
+      {
+        "model": "linda_v2",
+        "lang": "en",
+        "n": 10,
+        "perfect_anchor_retention": 1,
+        "perfect_retention_review": 1.0,
+        "language_match": 0.8,
+        "facts_and_language": 0.8
+      },
+      {
+        "model": "linda_v2",
+        "lang": "ru",
+        "n": 10,
+        "perfect_anchor_retention": 1,
+        "perfect_retention_review": 0.9,
+        "language_match": 0.5,
+        "facts_and_language": 0.4
+      },
+      {
+        "model": "linda_v2",
+        "lang": "pl",
+        "n": 10,
+        "perfect_anchor_retention": 0.9,
+        "perfect_retention_review": 0.7,
+        "language_match": 1.0,
+        "facts_and_language": 0.7
+      }
+    ],
+    "limits": "Research candidates; 30 inputs/model, 10/language. Tracked anchors are not semantic fidelity. Review metrics use model judgments, not independent human evaluation. Do not treat these as shipped-model certification."
+  },
+  "authorship": {
+    "source": "ForensicAuthorship/reports/experiments_20261022/ELTEC_INTERNATIONAL_BENCHMARK_REPORT.md",
+    "date": "2026-10-22",
+    "dataset": "ELTeC",
+    "novels": 57,
+    "authors": 19,
+    "authors_by_language": {
+      "en": 9,
+      "pl": 10
+    },
+    "split": "Leave-one-work-out",
+    "n": 57,
+    "top1_correct": {
+      "N-gram 1.1.0": 27,
+      "Neural XLM-R": 26,
+      "Features 1.0.0": 22
+    },
+    "limits": "Literary works, known candidate authors, EN/PL only. Ranking is not probability of identity or proof of authorship.",
+    "historical_outlier_comparison": {
+      "source": "ForensicAuthorship/reports/COMPETITIVE_BENCHMARK_REPORT.json",
+      "engine_version": "2.0.0",
+      "date": "2026-10-19",
+      "task": "Find the different writer among 4 texts",
+      "words_per_text": 2800,
+      "trials": 300,
+      "trials_per_language": 100,
+      "languages": [
+        "en",
+        "pl",
+        "ru"
+      ],
+      "correct": {
+        "linda_champion_fused_v2": 223,
+        "writeprints_static": 212,
+        "burrows_delta": 199
+      },
+      "short_text_350_words_correct": {
+        "Linda Fused 2.0": 147,
+        "Writeprints Static": 126,
+        "Burrows Delta": 96
+      },
+      "limits": "Reproduced methods on one held-out collection. Not tests of paid third-party products, current shipping-engine validation, legal admissibility or identity proof."
+    }
+  },
+  "releases": {
+    "detector": {
+      "version": "2.3.0.1",
+      "url": "https://github.com/Lendarixon/Linda/releases/tag/v2.3.0.1"
+    },
+    "probe": {
+      "version": "1.4.8",
+      "url": "https://github.com/Lendarixon/Linda-Probe/releases/tag/v1.4.8"
+    }
+  },
+  "licence_sources": [
+    "LocalDocs/PROBE_LICENSING.md",
+    "Linda_2100_Dev/linda_desktop/licensing.py:251-262",
+    "Linda_2100_Dev/linda_desktop/trace_pack.py",
+    "Linda_2100_Dev/linda_desktop/humanize_pack.py"
+  ]
+}
