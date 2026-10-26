@@ -30,7 +30,8 @@ const API_BASE='https://ninjagovlad--linda-pro-demo-web.modal.run';let memTok=''
 function tokenLoad(){try{return localStorage.getItem('linda_demo_token')||memTok}catch(e){return memTok}}
 function tokenSave(t){if(!t)return;memTok=t;try{localStorage.setItem('linda_demo_token',t)}catch(e){}}
 function apiFetch(path,opts={}){const h=Object.assign({},opts.headers||{});const t=tokenLoad();if(t)h['X-Linda-Token']=t;return fetch(API_BASE+path,Object.assign({},opts,{headers:h,mode:'cors',credentials:'omit'}))}
-function startLang(){const q=new URLSearchParams(location.search).get('lang');if(['en','pl','ru'].includes(q))return q;const n=(navigator.language||'en').slice(0,2).toLowerCase();return ['pl','ru'].includes(n)?n:'en'}
+function startLang(){const q=new URLSearchParams(location.search).get('lang');if(['en','pl','ru'].includes(q))return q;try{const saved=localStorage.getItem('linda_demo_language');if(['en','pl','ru'].includes(saved))return saved}catch(e){}return 'en'}
+function saveLang(value){try{localStorage.setItem('linda_demo_language',value)}catch(e){}try{const url=new URL(location.href);url.searchParams.set('lang',value);history.replaceState(null,'',url)}catch(e){}}
 
 const txt={
 en:{
@@ -255,7 +256,7 @@ apiError=e.message;$('retryBtn').textContent=txt[lang].retry;$('retryBtn').hidde
 finally{busy=false;updateUI()}
 }
 
-$('langSwitch').onclick=e=>{if(!busy&&e.target.dataset.lang){lang=e.target.dataset.lang;updateLang();updateUI()}};
+$('langSwitch').onclick=e=>{if(!busy&&e.target.dataset.lang){lang=e.target.dataset.lang;saveLang(lang);updateLang();updateUI()}};
 $('modeSwitch').onclick=e=>{if(!busy&&e.target.dataset.mode){mode=e.target.dataset.mode;updateUI()}};
 $('themeSwitch').onclick=e=>{if(!busy&&e.target.dataset.theme){document.documentElement.dataset.theme=e.target.dataset.theme;updateUI()}};
 $('detectorGrid').onclick=e=>{const el=e.target.closest('.tile');if(el&&!busy){detector=el.dataset.detector;updateUI()}};
