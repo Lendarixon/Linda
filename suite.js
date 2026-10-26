@@ -1,7 +1,8 @@
 (()=>{
  'use strict';
  const root=document.documentElement;
- try{const saved=localStorage.getItem('linda-site-theme');if(saved==='light'||saved==='dark')root.dataset.theme=saved}catch(e){}
+ root.dataset.theme='dark';
+ try{let saved=localStorage.getItem('linda-site-theme');if(saved!=='light'&&saved!=='dark')saved=localStorage.getItem('linda-theme');if(saved==='light'||saved==='dark')root.dataset.theme=saved}catch(e){}
  document.querySelectorAll('.suite-header .theme-toggle').forEach(button=>button.addEventListener('click',()=>{
   const value=root.dataset.theme==='light'?'dark':'light';root.dataset.theme=value;
   try{localStorage.setItem('linda-site-theme',value)}catch(e){}
@@ -41,3 +42,4 @@
   document.querySelectorAll('.reveal').forEach(element=>observer.observe(element));
  }
 })();
+
