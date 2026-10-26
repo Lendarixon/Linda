@@ -1,6 +1,6 @@
-# Linda Probe 1.4.6 — Privacy policy / Политика конфиденциальности / Polityka prywatności
+# Linda Probe — Privacy policy / Политика конфиденциальности / Polityka prywatności
 
-Date / Дата / Data: 25 October 2026
+Date / Дата / Data: 26 October 2026
 
 ## EN — Privacy policy
 
@@ -16,11 +16,11 @@ The controller is Vladyslav Manzyuk, Poland, operator of Linda Probe. For questi
 - **Support and refunds:** we process the information you send to lindapro.support@proton.me to handle your request and perform the contract (Article 6(1)(b)), comply with legal obligations (Article 6(1)(c)), and pursue our legitimate interests in providing support and maintaining security (Article 6(1)(f)). Please do not send unnecessary documents or credentials.
 - **Gift keys:** gift keys are verified offline. No data is sent for their verification.
 
-### Optional cloud features, recipients and transfers
+### Recipients and transfers
 
 Linda Probe does not send your documents or images to any cloud service; all search, OCR and AI features run on your device. Linda OCR is the author's own model. Optional AI models are downloaded after activation from Hugging Face (huggingface.co), which sees your IP address like any web download.
 
-Polar receives the licensing data described above and processes payments under its own privacy policy. Support correspondence passes through the email service used for lindapro.support@proton.me. Optional AI models are downloaded after activation from Hugging Face (huggingface.co), the host specified by the selected model's download URL in the model catalogue. The download host sees your IP address, as with any download. For Google's and Polar's processing, including international transfers, consult the privacy terms applicable to your account or transaction.
+Polar receives the licensing data described above and processes payments under its own privacy policy. Support correspondence passes through the email service used for lindapro.support@proton.me. Optional AI models are downloaded after activation from Hugging Face (huggingface.co), the host specified by the selected model's download URL in the model catalogue. The download host sees your IP address, as with any download. For Polar's processing, including international transfers, consult the privacy terms applicable to your account or transaction.
 
 ### Retention
 
@@ -28,7 +28,7 @@ Your documents, indexes and local caches remain on your device under your contro
 
 ### Your rights and complaints
 
-Subject to the GDPR's conditions, you have rights of access, rectification, erasure, restriction of processing and data portability, and the right to object to processing based on legitimate interests. Contact lindapro.support@proton.me to exercise your rights. You may lodge a complaint with the President of the Polish Personal Data Protection Office (Prezes UODO): [uodo.gov.pl](https://uodo.gov.pl/). Rights concerning Polar's or Google's own processing may be exercised with those providers.
+Subject to the GDPR's conditions, you have rights of access, rectification, erasure, restriction of processing and data portability, and the right to object to processing based on legitimate interests. Contact lindapro.support@proton.me to exercise your rights. You may lodge a complaint with the President of the Polish Personal Data Protection Office (Prezes UODO): [uodo.gov.pl](https://uodo.gov.pl/). Rights concerning Polar's own processing may be exercised with that provider.
 
 ### Usage statistics, profiling and data sales
 
@@ -48,11 +48,11 @@ The app does not collect usage statistics and contains no telemetry, analytics o
 - **Поддержка и возвраты:** мы обрабатываем сведения, которые вы отправляете на lindapro.support@proton.me, для решения обращения и исполнения договора, статья 6(1)(b), выполнения правовых обязанностей, статья 6(1)(c), и в законных интересах оказания поддержки и обеспечения безопасности, статья 6(1)(f). Не отправляйте ненужные документы или учётные данные.
 - **Подарочные ключи:** проверяются офлайн. При их проверке данные не передаются.
 
-### Облако, получатели и международные передачи
+### Получатели и международные передачи
 
 Linda Probe не отправляет ваши документы и изображения ни в какие облачные сервисы; поиск, OCR и ИИ-функции работают на вашем устройстве. Linda OCR — собственная модель автора. Необязательные ИИ-модели скачиваются после активации с Hugging Face (huggingface.co), который видит ваш IP-адрес, как при любой загрузке из интернета.
 
-Polar получает указанные данные лицензирования и обрабатывает платежи по собственной политике. Переписка поддержки проходит через почтовый сервис адреса lindapro.support@proton.me. Необязательные ИИ-модели загружаются после активации с хоста, указанного в адресе загрузки выбранной модели в каталоге моделей. Хост загрузки видит ваш IP-адрес, как при любой загрузке. Правила обработки Google и Polar, включая международные передачи, изложены в условиях конфиденциальности, применимых к вашему аккаунту или операции.
+Polar получает указанные данные лицензирования и обрабатывает платежи по собственной политике. Переписка поддержки проходит через почтовый сервис адреса lindapro.support@proton.me. Необязательные ИИ-модели загружаются после активации с хоста, указанного в адресе загрузки выбранной модели в каталоге моделей. Хост загрузки видит ваш IP-адрес, как при любой загрузке. Правила обработки Polar, включая международные передачи, изложены в условиях конфиденциальности, применимых к вашему аккаунту или операции.
 
 ### Хранение
 
@@ -60,7 +60,7 @@ Polar получает указанные данные лицензирован�
 
 ### Права и жалобы
 
-При соблюдении условий GDPR вы имеете право на доступ, исправление, удаление, ограничение обработки и переносимость данных, а также право возражать против обработки на основании законных интересов. Для реализации прав пишите на lindapro.support@proton.me. Вы можете подать жалобу председателю польского Управления по защите персональных данных (Prezes UODO): [uodo.gov.pl](https://uodo.gov.pl/). По вопросам собственной обработки Polar или Google можно обратиться к соответствующему провайдеру.
+При соблюдении условий GDPR вы имеете право на доступ, исправление, удаление, ограничение обработки и переносимость данных, а также право возражать против обработки на основании законных интересов. Для реализации прав пишите на lindapro.support@proton.me. Вы можете подать жалобу председателю польского Управления по защите персональных данных (Prezes UODO): [uodo.gov.pl](https://uodo.gov.pl/). По вопросам собственной обработки Polar можно обратиться к этому провайдеру.
 
 ### Статистика использования, профилирование и продажа данных
 
@@ -80,11 +80,11 @@ Administratorem danych osobowych jest Vladyslav Manzyuk, Polska, operator Linda 
 - **Wsparcie i zwroty:** przetwarzamy informacje przesłane na lindapro.support@proton.me w celu obsługi zgłoszenia i wykonania umowy, art. 6 ust. 1 lit. b, realizacji obowiązków prawnych, art. 6 ust. 1 lit. c, oraz w uzasadnionym interesie zapewnienia wsparcia i bezpieczeństwa, art. 6 ust. 1 lit. f. Nie przesyłaj zbędnych dokumentów ani danych dostępowych.
 - **Klucze podarunkowe:** są weryfikowane offline. Podczas ich weryfikacji żadne dane nie są przesyłane.
 
-### Chmura, odbiorcy i transfery międzynarodowe
+### Odbiorcy i transfery międzynarodowe
 
 Linda Probe nie wysyła Twoich dokumentów ani obrazów do żadnej usługi w chmurze; wyszukiwanie, OCR i funkcje AI działają na Twoim urządzeniu. Linda OCR to własny model autora. Opcjonalne modele AI są pobierane po aktywacji z Hugging Face (huggingface.co), który widzi Twój adres IP jak przy każdym pobieraniu z internetu.
 
-Polar otrzymuje wskazane dane licencyjne i przetwarza płatności według własnej polityki. Korespondencja wsparcia przechodzi przez usługę pocztową adresu lindapro.support@proton.me. Opcjonalne modele AI są pobierane po aktywacji z hosta wskazanego w adresie pobierania wybranego modelu w katalogu modeli. Host pobierania widzi Twój adres IP, jak przy każdym pobieraniu. Zasady przetwarzania przez Google i Polar, w tym transferów międzynarodowych, określają warunki prywatności właściwe dla Twojego konta lub transakcji.
+Polar otrzymuje wskazane dane licencyjne i przetwarza płatności według własnej polityki. Korespondencja wsparcia przechodzi przez usługę pocztową adresu lindapro.support@proton.me. Opcjonalne modele AI są pobierane po aktywacji z hosta wskazanego w adresie pobierania wybranego modelu w katalogu modeli. Host pobierania widzi Twój adres IP, jak przy każdym pobieraniu. Zasady przetwarzania przez Polar, w tym transferów międzynarodowych, określają warunki prywatności właściwe dla Twojego konta lub transakcji.
 
 ### Przechowywanie
 
@@ -92,8 +92,9 @@ Twoje dokumenty, indeksy i lokalna pamięć podręczna pozostają na Twoim urzą
 
 ### Prawa i skargi
 
-Na warunkach RODO przysługują Ci prawa dostępu, sprostowania, usunięcia, ograniczenia przetwarzania i przenoszenia danych oraz prawo sprzeciwu wobec przetwarzania opartego na uzasadnionych interesach. W celu realizacji praw napisz na lindapro.support@proton.me. Możesz złożyć skargę do Prezesa Urzędu Ochrony Danych Osobowych: [uodo.gov.pl](https://uodo.gov.pl/). Prawa dotyczące własnego przetwarzania danych przez Polar lub Google można realizować wobec tych dostawców.
+Na warunkach RODO przysługują Ci prawa dostępu, sprostowania, usunięcia, ograniczenia przetwarzania i przenoszenia danych oraz prawo sprzeciwu wobec przetwarzania opartego na uzasadnionych interesach. W celu realizacji praw napisz na lindapro.support@proton.me. Możesz złożyć skargę do Prezesa Urzędu Ochrony Danych Osobowych: [uodo.gov.pl](https://uodo.gov.pl/). Prawa dotyczące własnego przetwarzania danych przez Polar można realizować wobec tego dostawcy.
 
 ### Statystyki użytkowania, profilowanie i sprzedaż danych
 
 Aplikacja nie zbiera statystyk użytkowania i nie zawiera funkcji telemetrii, analityki ani raportowania awarii. Nie prowadzimy profilowania ani zautomatyzowanego podejmowania decyzji w rozumieniu art. 22 RODO. Nie sprzedajemy Twoich danych osobowych.
+

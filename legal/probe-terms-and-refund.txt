@@ -1,16 +1,16 @@
-# Linda Probe 1.4.6 — Terms and refund / Условия и возврат / Warunki i zwroty
+# Linda Probe — Terms and refund / Условия и возврат / Warunki i zwroty
 
-Date / Дата / Data: 25 October 2026
+Date / Дата / Data: 26 October 2026
 
 ## EN — Terms and refund
 
 Operator: Vladyslav Manzyuk, Poland. Support: lindapro.support@proton.me. Polar is the Merchant of Record. Tax and the final total are shown before payment.
 
-By using Linda Probe you accept these terms and `installer/EULA.txt`. You may install and use it to search files you are authorized to access. You are responsible for access permissions and backups. The software is provided as is, without guarantees of complete search or recognition. Mandatory consumer rights remain unaffected.
+By using Linda Probe you accept these terms and the [EULA](https://github.com/Lendarixon/Linda-Probe/blob/main/legal/EULA.txt). You may install and use it to search files you are authorized to access. You are responsible for access permissions and backups. The software is provided as is, without guarantees of complete search or recognition. Mandatory consumer rights remain unaffected.
 
 ### Editions and prices
 
-Free includes filename and exact-word content search, browsing, previews and manual tags. Pro adds semantic search, OCR for scans and searchable PDFs, photo search by description/example and automatic tags. All editions have no tariff limits on file count or processing speed. Processing is local; see `PRIVACY_POLICY.md` for the optional cloud OCR exception. Optional models download after activation and require compatible hardware and sufficient disk space. Linda detector keys do not unlock Probe.
+Free includes filename and exact-word content search, browsing, previews and manual tags. Pro adds semantic search, OCR for scans and searchable PDFs, photo search by description/example and automatic tags. All editions have no tariff limits on file count or processing speed. Processing is local. Optional models download after activation and require compatible hardware and sufficient disk space. Linda detector keys do not unlock Probe.
 
 | Pro licence | Price | Scope and duration |
 |---|---|---|
@@ -36,11 +36,11 @@ Polish law governs these terms, without depriving consumers of mandatory protect
 
 Оператор: Vladyslav Manzyuk, Польша. Поддержка: lindapro.support@proton.me. Polar — Merchant of Record. Налог и окончательная сумма отображаются до оплаты.
 
-Используя Linda Probe, вы принимаете эти условия и `installer/EULA.txt`. Программу можно устанавливать и использовать для поиска в файлах, к которым у вас есть законный доступ. Вы отвечаете за права доступа и резервные копии. Программа предоставляется «как есть», без гарантии полноты поиска и распознавания. Обязательные права потребителя сохраняются.
+Используя Linda Probe, вы принимаете эти условия и [EULA](https://github.com/Lendarixon/Linda-Probe/blob/main/legal/EULA.txt). Программу можно устанавливать и использовать для поиска в файлах, к которым у вас есть законный доступ. Вы отвечаете за права доступа и резервные копии. Программа предоставляется «как есть», без гарантии полноты поиска и распознавания. Обязательные права потребителя сохраняются.
 
 ### Редакции и цены
 
-Free: поиск по именам и точным словам в содержимом, проводник, предпросмотр и ручные метки. Pro добавляет смысловой поиск, OCR сканов и PDF с текстовым слоем, поиск фото по описанию/образцу и автоматические метки. Во всех редакциях нет тарифных ограничений числа файлов и скорости. Обработка локальная; исключение для необязательного облачного OCR см. в `PRIVACY_POLICY.md`. Необязательные модели скачиваются после активации; нужны совместимое оборудование и свободное место. Ключи детектора Linda не активируют Probe.
+Free: поиск по именам и точным словам в содержимом, проводник, предпросмотр и ручные метки. Pro добавляет смысловой поиск, OCR сканов и PDF с текстовым слоем, поиск фото по описанию/образцу и автоматические метки. Во всех редакциях нет тарифных ограничений числа файлов и скорости. Обработка локальная. Необязательные модели скачиваются после активации; нужны совместимое оборудование и свободное место. Ключи детектора Linda не активируют Probe.
 
 | Лицензия Pro | Цена | Объём и срок |
 |---|---|---|
@@ -66,11 +66,11 @@ Free: поиск по именам и точным словам в содерж�
 
 Operator: Vladyslav Manzyuk, Polska. Wsparcie: lindapro.support@proton.me. Polar jest Merchant of Record. Podatek i ostateczna kwota są wyświetlane przed płatnością.
 
-Korzystając z Linda Probe, akceptujesz te warunki oraz `installer/EULA.txt`. Możesz instalować program i przeszukiwać pliki, do których masz prawo dostępu. Odpowiadasz za uprawnienia dostępu i kopie zapasowe. Oprogramowanie jest udostępniane w obecnym stanie, bez gwarancji kompletności wyszukiwania i rozpoznawania. Obowiązkowe prawa konsumenta pozostają w mocy.
+Korzystając z Linda Probe, akceptujesz te warunki oraz [EULA](https://github.com/Lendarixon/Linda-Probe/blob/main/legal/EULA.txt). Możesz instalować program i przeszukiwać pliki, do których masz prawo dostępu. Odpowiadasz za uprawnienia dostępu i kopie zapasowe. Oprogramowanie jest udostępniane w obecnym stanie, bez gwarancji kompletności wyszukiwania i rozpoznawania. Obowiązkowe prawa konsumenta pozostają w mocy.
 
 ### Edycje i ceny
 
-Free obejmuje wyszukiwanie nazw i dokładnych słów w treści, przeglądanie, podgląd i ręczne tagi. Pro dodaje wyszukiwanie semantyczne, OCR skanów i plików PDF z warstwą tekstową, wyszukiwanie zdjęć po opisie/wzorze i automatyczne tagi. Żadna edycja nie ma taryfowych limitów liczby plików ani szybkości. Przetwarzanie jest lokalne; wyjątek dotyczący opcjonalnego OCR w chmurze przedstawia `PRIVACY_POLICY.md`. Opcjonalne modele są pobierane po aktywacji i wymagają zgodnego sprzętu oraz miejsca na dysku. Klucze detektora Linda nie aktywują Probe.
+Free obejmuje wyszukiwanie nazw i dokładnych słów w treści, przeglądanie, podgląd i ręczne tagi. Pro dodaje wyszukiwanie semantyczne, OCR skanów i plików PDF z warstwą tekstową, wyszukiwanie zdjęć po opisie/wzorze i automatyczne tagi. Żadna edycja nie ma taryfowych limitów liczby plików ani szybkości. Przetwarzanie jest lokalne. Opcjonalne modele są pobierane po aktywacji i wymagają zgodnego sprzętu oraz miejsca na dysku. Klucze detektora Linda nie aktywują Probe.
 
 | Licencja Pro | Cena | Zakres i czas |
 |---|---|---|
@@ -101,3 +101,4 @@ Warunki podlegają prawu polskiemu bez pozbawiania konsumenta obowiązkowej ochr
 **RU.** Модель лицензии: личное некоммерческое использование бесплатных функций Linda Probe (без ключа) лицензируется по Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/legalcode). Коммерческое использование (платная работа или клиенты, работа внутри компании, школы или иной организации, продукт или услуга для продажи) и все функции Pro требуют платного или подарочного ключа; любой платный ключ включает коммерческое использование в пределах лимитов пользователей и устройств, подарочный ключ (Personal) — для этого человека.
 
 **PL.** Model licencji: osobiste, niekomercyjne korzystanie z darmowych funkcji Linda Probe (bez klucza) jest licencjonowane na zasadach Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/legalcode). Użycie komercyjne (płatna praca lub klienci, użycie w firmie, szkole lub innej organizacji, produkt lub usługa na sprzedaż) oraz wszystkie funkcje Pro wymagają płatnego lub prezentowego klucza; każdy płatny klucz obejmuje użycie komercyjne w granicach limitów użytkowników i urządzeń, klucz prezentowy (Personal) — dla tej osoby.
+
