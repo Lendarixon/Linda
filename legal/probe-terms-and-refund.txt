@@ -1,6 +1,6 @@
 # Linda Probe — Terms and refund / Условия и возврат / Warunki i zwroty
 
-Date / Дата / Data: 26 October 2026
+Date / Дата / Data: 30 October 2026
 
 ## EN — Terms and refund
 
@@ -19,6 +19,8 @@ Free includes filename and exact-word content search, browsing, previews and man
 | Organization | USD 500/year | One organization at one site, up to 200 devices. Updates during the paid year. |
 
 New major versions or models may require a paid upgrade for Personal/Team. Organization renews automatically each year until cancelled in the Polar customer portal. Pro rights end with the paid term; Free features remain available.
+
+You can deliberately start a seven-day Pro trial in the app. The trial and an active temporary promo grant the same rights as a Personal licence, including commercial use, for one person on up to 3 devices until they end. One trial is available per Windows user and machine; removing a key does not restart or restore it. Promo keys work offline through the displayed date, inclusive in UTC, and are distinct from perpetual gift and purchased Personal keys. Neither the trial nor the promo creates a subscription or an automatic payment. When either expires, the app returns to Free; documents, indexes and downloaded models stay. Pro actions require an active licence, trial or promo. Starting a trial and verifying a promo require no network connection and send nothing over the network. Model downloads are optional and require internet, compatible hardware and sufficient disk space.
 
 ### Activation and gifts
 
@@ -50,6 +52,8 @@ Free: поиск по именам и точным словам в содерж�
 
 Новые основные версии или модели могут требовать платного обновления Personal/Team. Organization автоматически продлевается ежегодно до отмены в клиентском портале Polar. Права Pro заканчиваются с оплаченным сроком; функции Free остаются доступны.
 
+Вы можете самостоятельно запустить семидневный пробный период Pro в приложении. Пробный период и действующий временный промоключ дают те же права, что и лицензия Personal, включая коммерческое использование, для одного человека на 3 устройствах до окончания срока. Один пробный период доступен для каждого пользователя Windows на каждом компьютере; удаление ключа не запускает и не восстанавливает его. Промоключи работают офлайн до указанной даты включительно по UTC и отличаются от бессрочных подарочных и купленных ключей Personal. Пробный период и промоключ не создают подписку или автоматический платёж. По окончании срока приложение возвращается в Free; документы, индексы и скачанные модели сохраняются. Для действий Pro нужна действующая лицензия, пробный период или промоключ. Запуск пробного периода и проверка промоключа не требуют подключения к сети и ничего не передают по сети. Загрузка моделей необязательна; для неё нужны интернет, совместимое оборудование и свободное место на диске.
+
 ### Активация и подарки
 
 Для активации покупного ключа, освобождения устройства и периодической проверки нужен интернет. Polar получает ключ и специфичный для Probe хешированный идентификатор компьютера, а не содержимое документов. Локальный кеш активации защищён Windows DPAPI. Бессрочные ключи работают при недоступности сети для проверки; Organization истекает в сохранённую дату окончания оплаченного срока. Подтверждённый отзыв блокирует Pro при следующей успешной проверке. Покупки используют счётчик Polar на 3/20/200 устройств. Перед удалением программы используйте **Remove key** при доступной сети: само удаление не освобождает активацию.
@@ -80,6 +84,8 @@ Free obejmuje wyszukiwanie nazw i dokładnych słów w treści, przeglądanie, p
 
 Nowe główne wersje lub modele mogą wymagać płatnego uaktualnienia Personal/Team. Organization odnawia się automatycznie co roku do anulowania w portalu klienta Polar. Uprawnienia Pro kończą się wraz z opłaconym okresem; funkcje Free pozostają dostępne.
 
+Możesz samodzielnie uruchomić siedmiodniowy okres próbny Pro w aplikacji. Okres próbny i aktywny tymczasowy klucz promocyjny dają takie same prawa jak licencja Personal, w tym do użytku komercyjnego, jednej osobie na maksymalnie 3 urządzeniach do końca ich ważności. Jeden okres próbny przysługuje każdemu użytkownikowi Windows na każdym komputerze; usunięcie klucza nie uruchamia go ponownie ani nie przywraca. Klucze promocyjne działają offline do wyświetlonej daty włącznie według UTC i różnią się od bezterminowych kluczy podarunkowych i zakupionych kluczy Personal. Ani okres próbny, ani klucz promocyjny nie tworzą subskrypcji ani automatycznej płatności. Po wygaśnięciu aplikacja wraca do Free; dokumenty, indeksy i pobrane modele pozostają. Działania Pro wymagają aktywnej licencji, okresu próbnego lub klucza promocyjnego. Uruchomienie okresu próbnego i weryfikacja klucza promocyjnego nie wymagają połączenia z siecią i niczego przez nią nie wysyłają. Pobieranie modeli jest opcjonalne i wymaga internetu, zgodnego sprzętu oraz wolnego miejsca na dysku.
+
 ### Aktywacja i prezenty
 
 Aktywacja zakupionego klucza, zwalnianie urządzenia i okresowa weryfikacja wymagają internetu. Polar otrzymuje klucz i zahaszowany identyfikator komputera właściwy dla Probe, a nie treści dokumentów. Lokalną pamięć aktywacji chroni Windows DPAPI. Klucze bezterminowe działają nadal, gdy weryfikacja nie ma dostępu do sieci; Organization wygasa z zapisaną datą końca opłaconego okresu. Potwierdzone cofnięcie blokuje Pro przy następnej udanej weryfikacji. Zakupy korzystają z licznika Polar na 3/20/200 urządzeń. Przed odinstalowaniem wybierz **Remove key** przy połączeniu z internetem; samo odinstalowanie nie zwalnia aktywacji.
@@ -96,9 +102,9 @@ Warunki podlegają prawu polskiemu bez pozbawiania konsumenta obowiązkowej ochr
 
 ## Licence model / Модель лицензии / Model licencji
 
-**EN.** Licence model: personal, non-commercial use of Linda Probe's free features (no key) is licensed under Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/legalcode). Commercial use (paid work or clients, use inside a company, school or other organization, or in a product or service you sell) and all Pro features require a paid or gift licence key; every paid key includes commercial use within its user and device limits, and a gift key (Personal) includes commercial use for that person.
+**EN.** Licence model: personal, non-commercial use of Linda Probe's free features (no key) is licensed under Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/legalcode). Commercial use (paid work or clients, use inside a company, school or other organization, or in a product or service you sell) and all Pro features require a paid or gift licence key, an active trial or an active temporary promo; every paid key includes commercial use within its user and device limits, and a gift key (Personal) includes commercial use for that person.
 
-**RU.** Модель лицензии: личное некоммерческое использование бесплатных функций Linda Probe (без ключа) лицензируется по Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/legalcode). Коммерческое использование (платная работа или клиенты, работа внутри компании, школы или иной организации, продукт или услуга для продажи) и все функции Pro требуют платного или подарочного ключа; любой платный ключ включает коммерческое использование в пределах лимитов пользователей и устройств, подарочный ключ (Personal) — для этого человека.
+**RU.** Модель лицензии: личное некоммерческое использование бесплатных функций Linda Probe (без ключа) лицензируется по Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/legalcode). Коммерческое использование (платная работа или клиенты, работа внутри компании, школы или иной организации, продукт или услуга для продажи) и все функции Pro требуют платного или подарочного ключа, действующего пробного периода или временного промоключа; любой платный ключ включает коммерческое использование в пределах лимитов пользователей и устройств, подарочный ключ (Personal) — для этого человека.
 
-**PL.** Model licencji: osobiste, niekomercyjne korzystanie z darmowych funkcji Linda Probe (bez klucza) jest licencjonowane na zasadach Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/legalcode). Użycie komercyjne (płatna praca lub klienci, użycie w firmie, szkole lub innej organizacji, produkt lub usługa na sprzedaż) oraz wszystkie funkcje Pro wymagają płatnego lub prezentowego klucza; każdy płatny klucz obejmuje użycie komercyjne w granicach limitów użytkowników i urządzeń, klucz prezentowy (Personal) — dla tej osoby.
+**PL.** Model licencji: osobiste, niekomercyjne korzystanie z darmowych funkcji Linda Probe (bez klucza) jest licencjonowane na zasadach Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/legalcode). Użycie komercyjne (płatna praca lub klienci, użycie w firmie, szkole lub innej organizacji, produkt lub usługa na sprzedaż) oraz wszystkie funkcje Pro wymagają płatnego lub prezentowego klucza, aktywnego okresu próbnego lub tymczasowego klucza promocyjnego; każdy płatny klucz obejmuje użycie komercyjne w granicach limitów użytkowników i urządzeń, klucz prezentowy (Personal) — dla tej osoby.
 
