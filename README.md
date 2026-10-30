@@ -24,6 +24,10 @@ Clear warnings before analysis, safer uploads and model-folder moves, improved c
 The online demo processes your text on Modal servers; do not submit confidential material. It provides 12 successful checks, with a shared-network daily limit; up to 6,000 characters, TXT/MD/DOCX. The desktop app processes text locally and has no demo quota.
 <!-- release-2062:end -->
 
+## Also from this project
+
+[Linda Probe](https://lendarixon.github.io/Linda/probe.html?utm_source=github) is a Windows app that searches file names and the text inside documents on your own PC. Pro adds OCR for scanned PDFs and search by meaning.
+
 ## Windows app (no Python needed)
 Get it from the [Microsoft Store](https://apps.microsoft.com/detail/9NP66G69BQPN), or download **Linda-Setup.exe** from the [releases page](https://github.com/Lendarixon/Linda/releases/latest), install it and start it: the app downloads the models once (about 2.9 GB), then works offline, highlights the AI-looking passages and updates its models by itself. Free for personal non-commercial use; a commercial licence key ($10 person, $30 team of 10, $500 per year organization) covers the app, the command line and the models together ([how licensing works](LICENSING.md)). Source of the app: [desktop/](desktop).
 
