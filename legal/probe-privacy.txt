@@ -1,6 +1,6 @@
 # Linda Probe — Privacy policy / Политика конфиденциальности / Polityka prywatności
 
-Date / Дата / Data: 26 October 2026
+Date / Дата / Data: 30 October 2026
 
 ## EN — Privacy policy
 
@@ -10,7 +10,7 @@ The controller is Vladyslav Manzyuk, Poland, operator of Linda Probe. For questi
 
 ### Data, purposes and legal bases
 
-- **Local files:** search, indexing and OCR run locally on your device. Your documents are not sent to the operator. You choose which files the app can access.
+- **Local files:** search, indexing and OCR run locally on your device. Your documents are not sent to the operator. By default the app indexes your Documents, Desktop, Downloads and Pictures folders. You can add or remove folders in the app.
 - **Purchased licences:** activation and validation send your licence key and a Probe-specific hashed machine ID to Polar to administer your licence and device allowance. The hash is a device identifier, not anonymous data. The legal basis is performance of the licence contract (GDPR Article 6(1)(b)). The local activation cache is protected by Windows DPAPI. Use **Remove key** while online to release an activation before uninstalling; uninstalling alone does not release it.
 - **Payments and orders:** Polar is the Merchant of Record and processes payment and tax data under its own privacy policy, available through its checkout/customer portal. We receive order information from Polar needed for licence administration and support. Our legal bases are performance of the contract (Article 6(1)(b)) and applicable legal and accounting obligations (Article 6(1)(c)).
 - **Support and refunds:** we process the information you send to lindapro.support@proton.me to handle your request and perform the contract (Article 6(1)(b)), comply with legal obligations (Article 6(1)(c)), and pursue our legitimate interests in providing support and maintaining security (Article 6(1)(f)). Please do not send unnecessary documents or credentials.
@@ -42,7 +42,7 @@ The app does not collect usage statistics and contains no telemetry, analytics o
 
 ### Данные, цели и правовые основания
 
-- **Локальные файлы:** поиск, индексирование и OCR выполняются локально на вашем устройстве. Ваши документы не отправляются оператору. Вы выбираете файлы, к которым приложение имеет доступ.
+- **Локальные файлы:** поиск, индексирование и OCR выполняются локально на вашем устройстве. Ваши документы не отправляются оператору. По умолчанию приложение индексирует папки «Документы», «Рабочий стол», «Загрузки» и «Изображения». Вы можете добавлять и удалять папки в приложении.
 - **Покупные лицензии:** при активации и проверке в Polar передаются ключ лицензии и хешированный идентификатор компьютера, специфичный для Probe, для управления лицензией и числом устройств. Хеш является идентификатором устройства, а не анонимными данными. Основание — исполнение лицензионного договора, статья 6(1)(b) GDPR. Локальный кеш активации защищён Windows DPAPI. Перед удалением программы используйте **Remove key** при подключении к интернету для освобождения активации; само удаление её не освобождает.
 - **Платежи и заказы:** Polar является Merchant of Record и обрабатывает платёжные и налоговые данные по своей политике конфиденциальности, доступной при оплате и в клиентском портале. Мы получаем от Polar сведения о заказе, необходимые для управления лицензией и поддержки. Наши основания — исполнение договора, статья 6(1)(b), и применимые правовые обязанности, включая бухгалтерский учёт, статья 6(1)(c).
 - **Поддержка и возвраты:** мы обрабатываем сведения, которые вы отправляете на lindapro.support@proton.me, для решения обращения и исполнения договора, статья 6(1)(b), выполнения правовых обязанностей, статья 6(1)(c), и в законных интересах оказания поддержки и обеспечения безопасности, статья 6(1)(f). Не отправляйте ненужные документы или учётные данные.
@@ -74,7 +74,7 @@ Administratorem danych osobowych jest Vladyslav Manzyuk, Polska, operator Linda 
 
 ### Dane, cele i podstawy prawne
 
-- **Pliki lokalne:** wyszukiwanie, indeksowanie i OCR działają lokalnie na urządzeniu. Twoje dokumenty nie są przesyłane operatorowi. Wybierasz pliki, do których aplikacja ma dostęp.
+- **Pliki lokalne:** wyszukiwanie, indeksowanie i OCR działają lokalnie na urządzeniu. Twoje dokumenty nie są przesyłane operatorowi. Domyślnie aplikacja indeksuje foldery Dokumenty, Pulpit, Pobrane i Obrazy. Foldery możesz dodawać i usuwać w aplikacji.
 - **Zakupione licencje:** aktywacja i weryfikacja przesyłają do Polar klucz licencji i zahaszowany identyfikator komputera właściwy dla Probe w celu obsługi licencji oraz limitu urządzeń. Skrót jest identyfikatorem urządzenia, a nie danymi anonimowymi. Podstawą jest wykonanie umowy licencyjnej, art. 6 ust. 1 lit. b RODO. Lokalną pamięć aktywacji chroni Windows DPAPI. Przed odinstalowaniem wybierz **Remove key** przy połączeniu z internetem, aby zwolnić aktywację; samo odinstalowanie jej nie zwalnia.
 - **Płatności i zamówienia:** Polar działa jako Merchant of Record i przetwarza dane płatnicze oraz podatkowe według własnej polityki prywatności dostępnej przy płatności i w portalu klienta. Otrzymujemy od Polar informacje o zamówieniu potrzebne do obsługi licencji i wsparcia. Naszymi podstawami są wykonanie umowy, art. 6 ust. 1 lit. b, oraz właściwe obowiązki prawne, w tym księgowe, art. 6 ust. 1 lit. c.
 - **Wsparcie i zwroty:** przetwarzamy informacje przesłane na lindapro.support@proton.me w celu obsługi zgłoszenia i wykonania umowy, art. 6 ust. 1 lit. b, realizacji obowiązków prawnych, art. 6 ust. 1 lit. c, oraz w uzasadnionym interesie zapewnienia wsparcia i bezpieczeństwa, art. 6 ust. 1 lit. f. Nie przesyłaj zbędnych dokumentów ani danych dostępowych.
