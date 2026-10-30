@@ -1,18 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" xml:lang="en" width="600" height="640" viewBox="0 0 600 640" role="img" aria-labelledby="title">
-<title id="title">Which tool fits your needs?</title>
-<rect x="1" y="1" width="598" height="638" rx="18" fill="#f1f6fa" stroke="#b8cbdc" stroke-width="2"/>
-<g font-family="system-ui, -apple-system, Segoe UI, sans-serif">
-<text x="28" y="49" font-size="30" font-weight="600" fill="#233c56"><tspan x="28" dy="0">Which tool fits your needs?</tspan></text>
-<rect x="24" y="80" width="268" height="532" rx="12" fill="#fff" stroke="#b8cbdc"/>
-<text x="40" y="123" font-size="29" font-weight="600" fill="#233c56"><tspan x="40" dy="0">DocFetcher</tspan></text>
-<path d="M40 145 H276" stroke="#518b8f" stroke-width="4"/>
-<text x="40" y="188" font-size="26" fill="#233c56"><tspan x="40" dy="0">Open source</tspan></text>
-<text x="40" y="295" font-size="26" fill="#233c56"><tspan x="40" dy="0">Windows, Linux,</tspan><tspan x="40" dy="35">macOS</tspan></text>
-<text x="40" y="439" font-size="26" fill="#233c56"><tspan x="40" dy="0">Wildcards, fuzzy</tspan><tspan x="40" dy="35">and proximity</tspan><tspan x="40" dy="35">search</tspan></text>
-<rect x="308" y="80" width="268" height="532" rx="12" fill="#fff" stroke="#b8cbdc"/>
-<text x="324" y="123" font-size="29" font-weight="600" fill="#233c56"><tspan x="324" dy="0">Linda Probe</tspan></text>
-<path d="M324 145 H560" stroke="#518b8f" stroke-width="4"/>
-<text x="324" y="188" font-size="26" fill="#233c56"><tspan x="324" dy="0">Windows only</tspan></text>
-<text x="324" y="295" font-size="26" fill="#233c56"><tspan x="324" dy="0">Pro: local OCR</tspan><tspan x="324" dy="35">for scans</tspan></text>
-<text x="324" y="439" font-size="26" fill="#233c56"><tspan x="324" dy="0">Pro: search by</tspan><tspan x="324" dy="35">meaning</tspan></text>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" xml:lang="en" width="600" height="404" viewBox="0 0 600 404" role="img" aria-labelledby="title"><title id="title">Which tool fits your needs?</title><rect x="1" y="1" width="598" height="402" rx="18" fill="#f1f6fa" stroke="#b8cbdc" stroke-width="2"/><g font-family="Segoe UI, sans-serif"><text x="28" y="49" font-size="28" font-weight="600" fill="#233c56"><tspan x="28" dy="0">Which tool fits your needs?</tspan></text><rect x="24" y="80" width="268" height="300" rx="12" fill="#fff" stroke="#b8cbdc"/><text x="40" y="123" font-size="27" font-weight="600" fill="#233c56"><tspan x="40" dy="0">DocFetcher</tspan></text><path d="M40 145 H276" stroke="#518b8f" stroke-width="4"/><text x="40" y="178" font-size="22" fill="#233c56"><tspan x="40" dy="0">Free; Eclipse Public</tspan><tspan x="40" dy="30">License</tspan></text><text x="40" y="258" font-size="22" fill="#233c56"><tspan x="40" dy="0">Windows, Linux, macOS</tspan></text><text x="40" y="308" font-size="22" fill="#233c56"><tspan x="40" dy="0">Wildcards, fuzzy and</tspan><tspan x="40" dy="30">proximity search</tspan></text><rect x="308" y="80" width="268" height="240" rx="12" fill="#fff" stroke="#b8cbdc"/><text x="324" y="123" font-size="27" font-weight="600" fill="#233c56"><tspan x="324" dy="0">Linda Probe</tspan></text><path d="M324 145 H560" stroke="#518b8f" stroke-width="4"/><text x="324" y="178" font-size="22" fill="#233c56"><tspan x="324" dy="0">Windows only</tspan></text><text x="324" y="228" font-size="22" fill="#233c56"><tspan x="324" dy="0">Pro: local OCR for scans</tspan></text><text x="324" y="278" font-size="22" fill="#233c56"><tspan x="324" dy="0">Pro: search by meaning</tspan></text></g></svg>

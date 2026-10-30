@@ -1,18 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" xml:lang="pl" width="600" height="640" viewBox="0 0 600 640" role="img" aria-labelledby="title">
-<title id="title">Który program wybrać?</title>
-<rect x="1" y="1" width="598" height="638" rx="18" fill="#f1f6fa" stroke="#b8cbdc" stroke-width="2"/>
-<g font-family="system-ui, -apple-system, Segoe UI, sans-serif">
-<text x="28" y="49" font-size="30" font-weight="600" fill="#233c56"><tspan x="28" dy="0">Który program wybrać?</tspan></text>
-<rect x="24" y="80" width="268" height="532" rx="12" fill="#fff" stroke="#b8cbdc"/>
-<text x="40" y="123" font-size="29" font-weight="600" fill="#233c56"><tspan x="40" dy="0">DocFetcher</tspan></text>
-<path d="M40 145 H276" stroke="#518b8f" stroke-width="4"/>
-<text x="40" y="188" font-size="26" fill="#233c56"><tspan x="40" dy="0">Otwarty kod</tspan></text>
-<text x="40" y="295" font-size="26" fill="#233c56"><tspan x="40" dy="0">Windows, Linux,</tspan><tspan x="40" dy="35">macOS</tspan></text>
-<text x="40" y="439" font-size="26" fill="#233c56"><tspan x="40" dy="0">Symbole</tspan><tspan x="40" dy="35">wieloznaczne,</tspan><tspan x="40" dy="35">wyszukiwanie</tspan><tspan x="40" dy="35">rozmyte i</tspan><tspan x="40" dy="35">bliskość słów</tspan></text>
-<rect x="308" y="80" width="268" height="532" rx="12" fill="#fff" stroke="#b8cbdc"/>
-<text x="324" y="123" font-size="29" font-weight="600" fill="#233c56"><tspan x="324" dy="0">Linda Probe</tspan></text>
-<path d="M324 145 H560" stroke="#518b8f" stroke-width="4"/>
-<text x="324" y="188" font-size="26" fill="#233c56"><tspan x="324" dy="0">Tylko Windows</tspan></text>
-<text x="324" y="295" font-size="26" fill="#233c56"><tspan x="324" dy="0">Pro: lokalny OCR</tspan><tspan x="324" dy="35">skanów</tspan></text>
-<text x="324" y="439" font-size="26" fill="#233c56"><tspan x="324" dy="0">Pro:</tspan><tspan x="324" dy="35">wyszukiwanie po</tspan><tspan x="324" dy="35">znaczeniu</tspan></text>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" xml:lang="pl" width="600" height="434" viewBox="0 0 600 434" role="img" aria-labelledby="title"><title id="title">Który program wybrać?</title><rect x="1" y="1" width="598" height="432" rx="18" fill="#f1f6fa" stroke="#b8cbdc" stroke-width="2"/><g font-family="Segoe UI, sans-serif"><text x="28" y="49" font-size="28" font-weight="600" fill="#233c56"><tspan x="28" dy="0">Który program wybrać?</tspan></text><rect x="24" y="80" width="268" height="330" rx="12" fill="#fff" stroke="#b8cbdc"/><text x="40" y="123" font-size="27" font-weight="600" fill="#233c56"><tspan x="40" dy="0">DocFetcher</tspan></text><path d="M40 145 H276" stroke="#518b8f" stroke-width="4"/><text x="40" y="178" font-size="22" fill="#233c56"><tspan x="40" dy="0">Bezpłatny; Eclipse Public</tspan><tspan x="40" dy="30">License</tspan></text><text x="40" y="258" font-size="22" fill="#233c56"><tspan x="40" dy="0">Windows, Linux, macOS</tspan></text><text x="40" y="308" font-size="22" fill="#233c56"><tspan x="40" dy="0">Symbole wieloznaczne,</tspan><tspan x="40" dy="30">wyszukiwanie rozmyte i</tspan><tspan x="40" dy="30">bliskość słów</tspan></text><rect x="308" y="80" width="268" height="300" rx="12" fill="#fff" stroke="#b8cbdc"/><text x="324" y="123" font-size="27" font-weight="600" fill="#233c56"><tspan x="324" dy="0">Linda Probe</tspan></text><path d="M324 145 H560" stroke="#518b8f" stroke-width="4"/><text x="324" y="178" font-size="22" fill="#233c56"><tspan x="324" dy="0">Tylko Windows</tspan></text><text x="324" y="228" font-size="22" fill="#233c56"><tspan x="324" dy="0">Pro: lokalny OCR</tspan><tspan x="324" dy="30">skanów</tspan></text><text x="324" y="308" font-size="22" fill="#233c56"><tspan x="324" dy="0">Pro: wyszukiwanie po</tspan><tspan x="324" dy="30">znaczeniu</tspan></text></g></svg>
