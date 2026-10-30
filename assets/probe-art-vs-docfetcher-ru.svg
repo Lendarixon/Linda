@@ -1,15 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" xml:lang="ru" width="600" height="820" viewBox="0 0 600 820" role="img" aria-labelledby="title">
+<svg xmlns="http://www.w3.org/2000/svg" xml:lang="ru" width="600" height="640" viewBox="0 0 600 640" role="img" aria-labelledby="title">
 <title id="title">Что подходит для ваших задач?</title>
-<rect x="1" y="1" width="598" height="818" rx="18" fill="#f1f6fa" stroke="#b8cbdc" stroke-width="2"/>
+<rect x="1" y="1" width="598" height="638" rx="18" fill="#f1f6fa" stroke="#b8cbdc" stroke-width="2"/>
 <g font-family="system-ui, -apple-system, Segoe UI, sans-serif">
 <text x="28" y="49" font-size="30" font-weight="600" fill="#233c56"><tspan x="28" dy="0">Что подходит для ваших задач?</tspan></text>
-<rect x="24" y="80" width="268" height="712" rx="12" fill="#fff" stroke="#b8cbdc"/>
+<rect x="24" y="80" width="268" height="532" rx="12" fill="#fff" stroke="#b8cbdc"/>
 <text x="40" y="123" font-size="29" font-weight="600" fill="#233c56"><tspan x="40" dy="0">DocFetcher</tspan></text>
 <path d="M40 145 H276" stroke="#518b8f" stroke-width="4"/>
 <text x="40" y="188" font-size="26" fill="#233c56"><tspan x="40" dy="0">Открытый код</tspan></text>
 <text x="40" y="295" font-size="26" fill="#233c56"><tspan x="40" dy="0">Windows, Linux,</tspan><tspan x="40" dy="35">macOS</tspan></text>
 <text x="40" y="439" font-size="26" fill="#233c56"><tspan x="40" dy="0">Шаблоны,</tspan><tspan x="40" dy="35">нечёткий поиск и</tspan><tspan x="40" dy="35">близость слов</tspan></text>
-<rect x="308" y="80" width="268" height="712" rx="12" fill="#fff" stroke="#b8cbdc"/>
+<rect x="308" y="80" width="268" height="532" rx="12" fill="#fff" stroke="#b8cbdc"/>
 <text x="324" y="123" font-size="29" font-weight="600" fill="#233c56"><tspan x="324" dy="0">Linda Probe</tspan></text>
 <path d="M324 145 H560" stroke="#518b8f" stroke-width="4"/>
 <text x="324" y="188" font-size="26" fill="#233c56"><tspan x="324" dy="0">Только Windows</tspan></text>
