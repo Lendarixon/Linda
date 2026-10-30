@@ -12,7 +12,7 @@ The default legacy EXE profile is `%LOCALAPPDATA%/Linda-Pro`. A Store package us
 
 Desktop network activity includes Hugging Face model downloads and signed-manifest checks; GitHub installer downloads; and Polar licence activation, deactivation and periodic validation (about weekly). Polar receives the licence key, organization/activation identifiers, a random display label and a machine-derived identifier hash. The current implementation hashes a salted Windows MachineGuid; the machine name and original GUID are not sent by this path. Network providers can see connection metadata such as IP addresses. Paid licence state can be cached offline; this does not mean the desktop app never attempts a network connection after activation. Payment data is handled by Polar/its payment processors, under their policies.
 
-The static information site has no configured analytics or tracking cookies in its current source. GitHub Pages and linked services have their own infrastructure logs. **Modal/HF hosted demos are different:** using them sends the submitted text to the hosted service for processing. Use the installed desktop app for confidential texts; do not equate demo processing with local offline privacy.
+The information site sets no cookies and keeps only daily visit totals, without IP addresses or visitor identifiers. GitHub Pages and linked services have their own infrastructure logs. **Modal/HF hosted demos are different:** using them sends the submitted text to the hosted service for processing. Use the installed desktop app for confidential texts; do not equate demo processing with local offline privacy.
 
 ## Appropriate use and limitations
 
