@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:lang="pl" width="560" height="810" viewBox="0 0 560 810" role="img" aria-labelledby="title">
+<title id="title">Od zdania do pliku</title>
+<rect x="1" y="1" width="558" height="808" rx="18" fill="#f1f6fa" stroke="#b8cbdc" stroke-width="2"/>
+<g font-family="system-ui, -apple-system, Segoe UI, sans-serif">
+<text x="26" y="48" font-size="29" font-weight="600" fill="#233c56"><tspan x="26" dy="0">Od zdania do pliku</tspan></text>
+<rect x="26" y="82" width="508" height="142" rx="12" fill="#fff" stroke="#b8cbdc"/>
+<path d="M47 109 h25 l12 12 v40 H47 Z M72 109 v12 h12" fill="#e4edf6" stroke="#477e85" stroke-width="3"/>
+<path d="M55 133 h21 M55 144 h21" stroke="#477e85" stroke-width="3"/>
+<text x="108" y="121" font-size="28" font-weight="600" fill="#233c56"><tspan x="108" dy="0">Dokumenty</tspan></text>
+<text x="108" y="159" font-size="27" fill="#233c56"><tspan x="108" dy="0">Dodaj potrzebne foldery</tspan></text>
+<path d="M280 231 v20 m-7 -7 l7 7 7 -7" fill="none" stroke="#477e85" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="26" y="260" width="508" height="142" rx="12" fill="#fff" stroke="#b8cbdc"/>
+<rect x="46" y="289" width="38" height="45" rx="6" fill="#e4edf6" stroke="#477e85" stroke-width="3"/><path d="M54 301 h22 M54 312 h22 M54 323 h22" stroke="#477e85" stroke-width="3"/>
+<text x="108" y="299" font-size="28" font-weight="600" fill="#233c56"><tspan x="108" dy="0">Lokalny indeks</tspan></text>
+<text x="108" y="337" font-size="27" fill="#233c56"><tspan x="108" dy="0">Na Twoim komputerze</tspan></text>
+<path d="M280 409 v20 m-7 -7 l7 7 7 -7" fill="none" stroke="#477e85" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="26" y="438" width="508" height="142" rx="12" fill="#fff" stroke="#b8cbdc"/>
+<circle cx="65" cy="488" r="16" fill="none" stroke="#477e85" stroke-width="4"/><path d="M77 500 l15 15" stroke="#477e85" stroke-width="4"/>
+<text x="108" y="477" font-size="28" font-weight="600" fill="#233c56"><tspan x="108" dy="0">Wyszukiwanie</tspan></text>
+<text x="108" y="515" font-size="27" fill="#233c56"><tspan x="108" dy="0">Wpisz słowa, które</tspan><tspan x="108" dy="35">pamiętasz</tspan></text>
+<path d="M280 587 v20 m-7 -7 l7 7 7 -7" fill="none" stroke="#477e85" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="26" y="616" width="508" height="142" rx="12" fill="#fff" stroke="#b8cbdc"/>
+<path d="M47 643 h25 l12 12 v40 H47 Z M72 643 v12 h12" fill="#e4edf6" stroke="#477e85" stroke-width="3"/>
+<path d="M55 667 h21 M55 678 h21" stroke="#477e85" stroke-width="3"/>
+<text x="108" y="655" font-size="28" font-weight="600" fill="#233c56"><tspan x="108" dy="0">Wynik</tspan></text>
+<text x="108" y="693" font-size="27" fill="#233c56"><tspan x="108" dy="0">Podgląd pliku</tspan></text>
+</g></svg>
