@@ -42,4 +42,4 @@
   document.querySelectorAll('.reveal').forEach(element=>observer.observe(element));
  }
 })();
-
+document.head.append(Object.assign(document.createElement('script'),{src:'count.js'}));
