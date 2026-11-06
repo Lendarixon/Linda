@@ -1038,7 +1038,7 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
 }
 
 /* home: visible action, tiles read as clickable, no empty right column */
-.home-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3);margin:var(--s5) 0 0;max-width:34rem}
+.home-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3);margin:var(--s5) 0 0;max-width:none}
 .home-actions .button{justify-content:center;white-space:nowrap}
 .tile-go{position:absolute;top:var(--s4);right:var(--s4);z-index:2;font-size:1rem;line-height:1;opacity:.75;
   transition:transform .18s var(--ease),opacity .18s var(--ease)}
@@ -1048,4 +1048,32 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
 @media (max-width:760px){
   .home-actions{grid-template-columns:minmax(0,1fr);max-width:none}
   .home-actions .button{white-space:normal}
+}
+
+/* phones: both tiles and the action row fit the first screen */
+@media (max-width:760px){
+  .task-first{padding-top:var(--s6)}
+  .start-wall{gap:var(--s3)}
+  .start-wall>.live-tile{height:138px}
+  .start-wall>.live-tile .face{padding:var(--s4) var(--s4) 62px}
+  .tile-label{left:var(--s4);right:var(--s4);bottom:var(--s3)}
+  .tile-label .tile-name{font-size:1rem}
+  .home-actions{margin-top:var(--s3)}
+  .home-actions .button{min-height:44px}
+  .quiet-line{margin-top:var(--s3);font-size:.8125rem;line-height:1.45}
+}
+
+@media (max-width:760px){
+  .task-first .start-copy .lead{font-size:1rem;line-height:1.45;margin-bottom:var(--s4)}
+  .task-first .start-copy h1{font-size:clamp(1.75rem,1.3rem + 2.4vw,2.25rem);line-height:1.15}
+  .task-first .badge{margin-top:0}
+  .start-head{margin-bottom:var(--s4)}
+}
+
+/* two quiet notes, one per product, filling both columns */
+.quiet-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3) var(--s5);margin:var(--s5) 0 0}
+.quiet-row .quiet-line{margin:0}
+@media (max-width:760px){
+  .quiet-row{grid-template-columns:minmax(0,1fr);gap:var(--s2);margin-top:var(--s3)}
+  .quiet-row .quiet-line:last-child{display:none}
 }
