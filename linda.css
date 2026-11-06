@@ -904,3 +904,29 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
 @media print{
   body::before,body::after{display:none}
 }
+
+/* ===== 13d. Context rails: the side tiles follow the page and the section in view ===== */
+/* The 13c grid is the base. Here the filled squares change place and colour by page family
+   (html[data-rail-family]) and step by the section currently in view (body[data-rail-step]).
+   Only background-position and colour tokens change, so the swap animates on the 900ms curve. */
+@media (min-width:1872px){
+  body::before,body::after{transition:background-position .9s var(--ease),background-color .9s var(--ease)}
+  /* page families: a is the lead colour of the page, b..d its neighbours */
+  html[data-rail-family="text"]{--w5-a:color-mix(in srgb,var(--id-blue) var(--w5-fill),transparent);--w5-b:color-mix(in srgb,var(--id-teal) 18%,transparent);--w5-c:color-mix(in srgb,var(--id-blue) 10%,transparent);--w5-d:color-mix(in srgb,var(--id-teal) 28%,transparent)}
+  html[data-rail-family="docs"]{--w5-a:color-mix(in srgb,var(--id-teal) var(--w5-fill),transparent);--w5-b:color-mix(in srgb,var(--id-teal) 10%,transparent);--w5-c:color-mix(in srgb,var(--id-blue) 30%,transparent);--w5-d:color-mix(in srgb,var(--id-green) 22%,transparent)}
+  html[data-rail-family="edit"]{--w5-a:color-mix(in srgb,var(--id-violet) var(--w5-fill),transparent);--w5-b:color-mix(in srgb,var(--id-violet) 12%,transparent);--w5-c:color-mix(in srgb,var(--id-magenta) 26%,transparent);--w5-d:color-mix(in srgb,var(--id-blue) 24%,transparent)}
+  html[data-rail-family="price"]{--w5-a:color-mix(in srgb,var(--id-orange) var(--w5-fill),transparent);--w5-b:color-mix(in srgb,var(--id-orange) 12%,transparent);--w5-c:color-mix(in srgb,var(--id-blue) 26%,transparent);--w5-d:color-mix(in srgb,var(--id-teal) 22%,transparent)}
+  html[data-rail-family="business"]{--w5-a:color-mix(in srgb,var(--id-blue) 24%,transparent);--w5-b:color-mix(in srgb,var(--id-teal) 24%,transparent);--w5-c:color-mix(in srgb,var(--id-blue) 12%,transparent);--w5-d:color-mix(in srgb,var(--id-orange) 20%,transparent)}
+  html[data-rail-family="legal"]{--w5-a:color-mix(in srgb,var(--ink) 8%,transparent);--w5-b:color-mix(in srgb,var(--ink) 5%,transparent);--w5-c:transparent;--w5-d:transparent}
+  /* step 1: the resting arrangement from 13c (high, four colours) */
+  body[data-rail-step="1"]::before{background-position:128px 192px,0 64px,64px 320px,192px 448px,0 0,0 0}
+  body[data-rail-step="1"]::after{background-position:64px 192px,192px 64px,128px 320px,0 448px,0 0,0 0}
+  /* step 2: one tall column of two tiles plus a lone tile further down */
+  body[data-rail-step="2"]::before{background-position:64px 64px,64px 128px,192px 384px,0 0,0 0,0 0}
+  body[data-rail-step="2"]::after{background-position:128px 64px,128px 128px,0 384px,0 0,0 0,0 0}
+  /* step 3: a flat row across the top, quiet below */
+  body[data-rail-step="3"]::before{background-position:0 128px,64px 128px,128px 128px,192px 448px,0 0,0 0}
+  body[data-rail-step="3"]::after{background-position:192px 128px,128px 128px,64px 128px,0 448px,0 0,0 0}
+  body[data-rail-step="2"]::before,body[data-rail-step="3"]::before,body[data-rail-step="2"]::after,body[data-rail-step="3"]::after{animation:none}
+  body.is-menu-open::before,body.is-menu-open::after{opacity:.25}
+}

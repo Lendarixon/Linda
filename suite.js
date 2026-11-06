@@ -92,3 +92,59 @@
  }
 })();
 document.head.append(Object.assign(document.createElement('script'),{src:'count.js'}));
+/* Context rails: page family and per-section step for the wide-screen tile columns (see 13d). */
+(function () {
+  if (!window.matchMedia || !window.matchMedia('(min-width:1872px)').matches) return;
+  var file = (location.pathname.split('/').pop() || 'index.html').replace(/\.html?$/, '').replace(/-(ru|pl)$/, '');
+  var families = [
+    [/^(probe|versions|updates|results|detector-results|probe-)/, 'docs'],
+    [/^(humanizer|trace|stil)/, 'edit'],
+    [/^(pricing|downloads)/, 'price'],
+    [/^(business|developers)/, 'business'],
+    [/^(licensing|terms|refund|privacy|legal|trust|faq)/, 'legal'],
+    [/^(detector|oflayn|index|ru|pl|$)/, 'text']
+  ];
+  var family = 'text';
+  for (var i = 0; i < families.length; i++) if (families[i][0].test(file)) { family = families[i][1]; break; }
+  document.documentElement.setAttribute('data-rail-family', family);
+
+  /* the tile arrangement follows the section in view: two active steps alternate,
+     sections about prices, licences, FAQ or legal text take the quiet third step */
+  var main = document.querySelector('main') || document.body;
+  var sections = [].slice.call(main.querySelectorAll('section, article')).filter(function (section) {
+    return section.getBoundingClientRect().height > 260;
+  });
+  if (!sections.length) sections = [].slice.call(main.children);
+  var quiet = /price|licen|cennik|faktur|faq|trust|legal|licens|refund|privacy|terms|contact|zaufan|prywatn|warunk/i;
+  var step = 1, flips = 0;
+  document.body.setAttribute('data-rail-step', '1');
+  function apply(next) {
+    if (next === step) return;
+    step = next;
+    document.body.setAttribute('data-rail-step', String(next));
+  }
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        var label = (entry.target.id || '') + ' ' + (entry.target.className || '') + ' ' +
+          ((entry.target.querySelector('h1,h2') || {}).textContent || '');
+        if (quiet.test(label)) { apply(3); return; }
+        flips += 1;
+        apply(flips % 2 ? 2 : 1);
+      });
+    }, { rootMargin: '-42% 0px -42% 0px', threshold: 0 });
+    sections.forEach(function (section) { io.observe(section); });
+  }
+
+  /* an open menu dims the rails so the panel reads first */
+  var nav = document.getElementById('main-nav') || document.getElementById('suite-nav');
+  if (nav) {
+    var syncMenu = function () {
+      document.body.classList.toggle('is-menu-open', nav.classList.contains('is-open') ||
+        nav.classList.contains('open') || nav.hasAttribute('open'));
+    };
+    new MutationObserver(syncMenu).observe(nav, { attributes: true });
+    syncMenu();
+  }
+})();
