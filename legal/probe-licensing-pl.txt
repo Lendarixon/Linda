@@ -1,0 +1,26 @@
+TŁUMACZENIE ROBOCZE. Wersja angielska jest wiążąca.
+
+Linda Probe Free / Pro — 30 października 2026
+
+Free: wyszukiwanie po nazwach plików i dokładnych słowach w treści, przeglądanie, podgląd i ręczne tagi.
+Pro: wyszukiwanie semantyczne, OCR skanów i plików PDF z warstwą tekstową, wyszukiwanie zdjęć po opisie lub według wzoru, automatyczne tagi.
+Wszystkie edycje: brak taryfowych limitów liczby plików i szybkości przetwarzania. Przetwarzanie odbywa się lokalnie. Opcjonalne modele są pobierane po aktywacji i wymagają zgodnego sprzętu oraz wystarczającego miejsca na dysku. Klucze detektora Linda nie odblokowują Probe.
+
+Personal: 10 USD jednorazowo; jeden wskazany użytkownik, do 3 urządzeń.
+Team: 30 USD jednorazowo; do 10 wskazanych użytkowników, do 20 urządzeń.
+W przypadku Personal/Team zakupiona wersja i poprawki są bezterminowe; nowe wersje główne lub modele mogą wymagać płatnego uaktualnienia.
+Organization: 500 USD rocznie; jedna organizacja w jednej lokalizacji, do 200 urządzeń. Odnawia się automatycznie co roku do chwili anulowania w portalu klienta Polar. Obejmuje aktualizacje w opłaconym roku. Uprawnienia Pro wygasają wraz z opłaconym okresem; funkcje Free pozostają dostępne.
+
+Polar jest sprzedawcą rejestrowanym (Merchant of Record). Operator: Vladyslav Manzyuk, Polska. Podatek i ostateczna kwota są wyświetlane przed płatnością. Pełny zwrot na żądanie w ciągu 14 dni: lindapro.support@proton.me. Obowiązkowe prawa konsumenta pozostają nienaruszone.
+
+Internet jest potrzebny do aktywacji zakupionego klucza, zwolnienia urządzenia i okresowej weryfikacji. Polar otrzymuje klucz oraz zahaszowany identyfikator komputera właściwy dla Probe, a nie treść dokumentów. Lokalna pamięć aktywacji jest chroniona przez Windows DPAPI. Klucze bezterminowe działają nadal, gdy weryfikacja nie może połączyć się z siecią. Klucze Organization wygasają w zapisanej dacie końca opłaconego okresu. Potwierdzone cofnięcie blokuje funkcje Pro przy następnej udanej weryfikacji licencji.
+
+Podarunkowe klucze Personal to podpisane kupony Ed25519, bezterminowe i weryfikowane offline. Przeznaczone są dla jednej osoby i do 3 urządzeń; podarunki offline nie mają serwerowego licznika aktywacji. Zakupy korzystają z licznika Polar na 3/20/200 urządzeń. Odinstalowanie aplikacji nie zwalnia automatycznie zakupionej aktywacji; najpierw użyj opcji Remove key przy połączeniu z internetem.
+
+Możesz świadomie uruchomić w aplikacji siedmiodniowy okres próbny Pro. Okres próbny i aktywne tymczasowe uprawnienie promocyjne dają takie same prawa jak licencja Personal, w tym prawo do użytku komercyjnego, dla jednej osoby na maksymalnie 3 urządzeniach, do końca ich ważności. Jeden okres próbny jest dostępny dla każdego użytkownika Windows na każdym komputerze; usunięcie klucza nie uruchamia go ponownie ani nie przywraca. Klucze promocyjne działają offline do wyświetlonej daty włącznie, według UTC, i różnią się od bezterminowych kluczy podarunkowych oraz zakupionych kluczy Personal. Ani okres próbny, ani promocja nie tworzą subskrypcji ani automatycznej płatności. Po wygaśnięciu którejkolwiek z nich aplikacja wraca do Free; dokumenty, indeksy i pobrane modele pozostają. Działania Pro wymagają aktywnej licencji, okresu próbnego lub promocji. Uruchomienie okresu próbnego i weryfikacja promocji nie wymagają połączenia sieciowego i niczego nie wysyłają przez sieć. Pobieranie modeli jest opcjonalne i wymaga internetu, zgodnego sprzętu oraz wystarczającego miejsca na dysku.
+
+Uruchomienie okresu próbnego i weryfikacja promocji odbywają się offline i nie wysyłają niczego przez sieć, również do Polar. Windows DPAPI chroni lokalną pamięć dostępu powiązaną z komputerem. Lokalny znacznik w folderze danych użytkownika oraz znacznik w HKCU\Software\LindaProbe zapisują informację o wykorzystaniu okresu próbnego wyłącznie po to, aby uniemożliwić kolejny okres próbny temu użytkownikowi Windows na tym komputerze. Usunięcie klucza nie usuwa tych znaczników. Deinstalator wersji desktopowej zachowuje folder danych, chyba że wybierzesz usunięcie indeksów i modeli; ten wybór usuwa również znacznik plikowy, ale znacznik HKCU pozostaje po odinstalowaniu. Znaczniki nie wygasają automatycznie i nie można ich zresetować w aplikacji. Wersje ze sklepu Microsoft Store i z instalatora mogą przechowywać odrębne znaczniki.
+
+Model licencji: osobiste, niekomercyjne korzystanie z darmowych funkcji Linda Probe (bez klucza) jest licencjonowane na warunkach Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/legalcode). Użycie komercyjne (praca zarobkowa lub obsługa klientów, użycie w firmie, szkole lub innej organizacji, a także w produkcie lub usłudze przeznaczonej na sprzedaż) oraz wszystkie funkcje Pro wymagają płatnego lub podarunkowego klucza licencyjnego, aktywnego okresu próbnego albo aktywnego tymczasowego klucza promocyjnego; każdy płatny klucz obejmuje użycie komercyjne w granicach jego limitów użytkowników i urządzeń, a klucz podarunkowy (Personal) obejmuje użycie komercyjne przez tę osobę.
+
+Komponenty stron trzecich i wagi modeli zachowują własne licencje. Te płatne funkcje licencjonują sposób działania aplikacji Probe, a nie wyłączną własność modeli stron trzecich. Zobacz THIRD_PARTY_NOTICES.md.

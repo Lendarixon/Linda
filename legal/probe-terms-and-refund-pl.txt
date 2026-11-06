@@ -1,0 +1,43 @@
+TŁUMACZENIE ROBOCZE. Wersja angielska jest wiążąca.
+
+# Linda Probe — Warunki i zwroty
+
+Data: 30 października 2026
+
+## Warunki i zwroty
+
+Operator: Vladyslav Manzyuk, Polska. Wsparcie: lindapro.support@proton.me. Polar jest sprzedawcą rejestrowanym (Merchant of Record). Podatek i ostateczna kwota są wyświetlane przed płatnością.
+
+Korzystając z Linda Probe, akceptujesz niniejsze warunki oraz [EULA](https://github.com/Lendarixon/Linda-Probe/blob/main/legal/EULA.txt). Możesz zainstalować program i używać go do wyszukiwania w plikach, do których masz uprawnienia dostępu. Odpowiadasz za uprawnienia dostępu i kopie zapasowe. Oprogramowanie jest udostępniane w stanie, w jakim się znajduje, bez gwarancji kompletności wyszukiwania lub rozpoznawania. Obowiązkowe prawa konsumenta pozostają nienaruszone.
+
+### Edycje i ceny
+
+Free obejmuje wyszukiwanie po nazwach plików i dokładnych słowach w treści, przeglądanie, podgląd oraz ręczne tagi. Pro dodaje wyszukiwanie semantyczne, OCR skanów i plików PDF z warstwą tekstową, wyszukiwanie zdjęć po opisie lub według wzoru oraz automatyczne tagi. Wszystkie edycje nie mają taryfowych limitów liczby plików ani szybkości przetwarzania. Przetwarzanie odbywa się lokalnie. Opcjonalne modele są pobierane po aktywacji i wymagają zgodnego sprzętu oraz wystarczającego miejsca na dysku. Klucze detektora Linda nie odblokowują Probe.
+
+| Licencja Pro | Cena | Zakres i czas trwania |
+|---|---|---|
+| Personal | 10 USD jednorazowo | Jeden wskazany użytkownik, do 3 urządzeń. Zakupiona wersja i poprawki są bezterminowe. |
+| Team | 30 USD jednorazowo | Do 10 wskazanych użytkowników, do 20 urządzeń. Zakupiona wersja i poprawki są bezterminowe. |
+| Organization | 500 USD rocznie | Jedna organizacja w jednej lokalizacji, do 200 urządzeń. Aktualizacje w opłaconym roku. |
+
+Nowe wersje główne lub modele mogą wymagać płatnego uaktualnienia w przypadku Personal/Team. Organization odnawia się automatycznie co roku do chwili anulowania w portalu klienta Polar. Uprawnienia Pro wygasają wraz z opłaconym okresem; funkcje Free pozostają dostępne.
+
+Możesz świadomie uruchomić w aplikacji siedmiodniowy okres próbny Pro. Okres próbny i aktywne tymczasowe uprawnienie promocyjne dają takie same prawa jak licencja Personal, w tym prawo do użytku komercyjnego, dla jednej osoby na maksymalnie 3 urządzeniach, do końca ich ważności. Jeden okres próbny jest dostępny dla każdego użytkownika Windows na każdym komputerze; usunięcie klucza nie uruchamia go ponownie ani nie przywraca. Klucze promocyjne działają offline do wyświetlonej daty włącznie, według UTC, i różnią się od bezterminowych kluczy podarunkowych oraz zakupionych kluczy Personal. Ani okres próbny, ani promocja nie tworzą subskrypcji ani automatycznej płatności. Po wygaśnięciu którejkolwiek z nich aplikacja wraca do Free; dokumenty, indeksy i pobrane modele pozostają. Działania Pro wymagają aktywnej licencji, okresu próbnego lub promocji. Uruchomienie okresu próbnego i weryfikacja promocji nie wymagają połączenia sieciowego i niczego nie wysyłają przez sieć. Pobieranie modeli jest opcjonalne i wymaga internetu, zgodnego sprzętu oraz wystarczającego miejsca na dysku.
+
+### Aktywacja i prezenty
+
+Aktywacja zakupionego klucza, zwolnienie urządzenia i okresowa weryfikacja wymagają internetu. Polar otrzymuje klucz oraz zahaszowany identyfikator komputera właściwy dla Probe, a nie treść dokumentów. Windows DPAPI chroni lokalną pamięć aktywacji. Klucze bezterminowe działają nadal, gdy weryfikacja nie może połączyć się z siecią; klucze Organization wygasają w zapisanej dacie końca opłaconego okresu. Potwierdzone cofnięcie blokuje Pro przy następnej udanej weryfikacji licencji. Zakupione licencje korzystają z licznika Polar na 3/20/200 urządzeń. Przed odinstalowaniem użyj opcji **Remove key** przy połączeniu z internetem; samo odinstalowanie nie zwalnia aktywacji.
+
+Podarunkowe klucze Personal to bezterminowe, podpisane kupony Ed25519 weryfikowane offline. Są przeznaczone dla jednej osoby i do 3 urządzeń i nie mają serwerowego licznika aktywacji.
+
+### Zwrot i prawo właściwe
+
+Pełnego zwrotu możesz zażądać w ciągu 14 dni od zakupu przez lindapro.support@proton.me lub Polar. Zwrot powoduje cofnięcie zakupionego klucza; potwierdzone cofnięcie blokuje Pro przy następnej udanej weryfikacji licencji. Obowiązkowe prawa konsumenta pozostają nienaruszone, w tym prawa przysługujące poza tą dobrowolną polityką zwrotów.
+
+Niniejsze warunki podlegają prawu polskiemu, bez pozbawiania konsumentów obowiązkowej ochrony przysługującej na podstawie prawa ich miejsca zwykłego pobytu. Komponenty stron trzecich i wagi modeli zachowują własne licencje; płatne funkcje licencjonują sposób działania aplikacji Probe, a nie wyłączną własność modeli stron trzecich. Zobacz `THIRD_PARTY_NOTICES.md`.
+
+---
+
+## Model licencji
+
+Model licencji: osobiste, niekomercyjne korzystanie z darmowych funkcji Linda Probe (bez klucza) jest licencjonowane na warunkach Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/legalcode). Użycie komercyjne (praca zarobkowa lub obsługa klientów, użycie w firmie, szkole lub innej organizacji, a także w produkcie lub usłudze przeznaczonej na sprzedaż) oraz wszystkie funkcje Pro wymagają płatnego lub podarunkowego klucza licencyjnego, aktywnego okresu próbnego albo aktywnego tymczasowego klucza promocyjnego; każdy płatny klucz obejmuje użycie komercyjne w granicach jego limitów użytkowników i urządzeń, a klucz podarunkowy (Personal) obejmuje użycie komercyjne przez tę osobę.

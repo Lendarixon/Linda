@@ -1,0 +1,38 @@
+TŁUMACZENIE ROBOCZE. Wersja angielska jest wiążąca.
+
+# Linda Probe — Polityka prywatności
+
+Data: 30 października 2026
+
+## Polityka prywatności
+
+### Administrator i kontakt
+
+Administratorem danych osobowych jest Vladyslav Manzyuk, Polska, operator Linda Probe. W sprawach dotyczących danych osobowych oraz w celu realizacji swoich praw napisz na adres lindapro.support@proton.me.
+
+### Dane, cele i podstawy prawne
+
+- **Pliki lokalne:** wyszukiwanie, indeksowanie i OCR działają lokalnie na Twoim urządzeniu. Twoje dokumenty nie są wysyłane do operatora. Domyślnie aplikacja indeksuje foldery Dokumenty, Pulpit, Pobrane i Obrazy. Foldery możesz dodawać i usuwać w aplikacji.
+- **Zakupione licencje:** aktywacja i weryfikacja przesyłają do Polar klucz licencji oraz zahaszowany identyfikator komputera właściwy dla Probe w celu obsługi licencji i limitu urządzeń. Skrót jest identyfikatorem urządzenia, a nie danymi anonimowymi. Podstawą jest wykonanie umowy licencyjnej (art. 6 ust. 1 lit. b RODO). Lokalną pamięć aktywacji chroni Windows DPAPI. Przed odinstalowaniem użyj opcji **Remove key** przy połączeniu z internetem, aby zwolnić aktywację; samo odinstalowanie jej nie zwalnia.
+- **Płatności i zamówienia:** Polar jest sprzedawcą rejestrowanym (Merchant of Record) i przetwarza dane płatnicze oraz podatkowe na podstawie własnej polityki prywatności, dostępnej w procesie płatności i w portalu klienta. Otrzymujemy od Polar informacje o zamówieniu potrzebne do obsługi licencji i wsparcia. Naszymi podstawami prawnymi są wykonanie umowy (art. 6 ust. 1 lit. b) oraz właściwe obowiązki prawne i księgowe (art. 6 ust. 1 lit. c).
+- **Wsparcie i zwroty:** przetwarzamy informacje, które przesyłasz na adres lindapro.support@proton.me, aby obsłużyć zgłoszenie i wykonać umowę (art. 6 ust. 1 lit. b), spełnić obowiązki prawne (art. 6 ust. 1 lit. c) oraz realizować nasz uzasadniony interes polegający na zapewnieniu wsparcia i bezpieczeństwa (art. 6 ust. 1 lit. f). Nie przesyłaj zbędnych dokumentów ani danych dostępowych.
+- **Klucze podarunkowe:** klucze podarunkowe są weryfikowane offline. Ich weryfikacja nie wiąże się z przesyłaniem jakichkolwiek danych.
+- Uruchomienie okresu próbnego i weryfikacja promocji odbywają się offline i nie wysyłają niczego przez sieć, również do Polar. Windows DPAPI chroni lokalną pamięć dostępu powiązaną z komputerem. Lokalny znacznik w folderze danych użytkownika oraz znacznik w HKCU\Software\LindaProbe zapisują informację o wykorzystaniu okresu próbnego wyłącznie po to, aby uniemożliwić kolejny okres próbny temu użytkownikowi Windows na tym komputerze. Usunięcie klucza nie usuwa tych znaczników. Deinstalator wersji desktopowej zachowuje folder danych, chyba że wybierzesz usunięcie indeksów i modeli; ten wybór usuwa również znacznik plikowy, ale znacznik HKCU pozostaje po odinstalowaniu. Znaczniki nie wygasają automatycznie i nie można ich zresetować w aplikacji. Wersje ze sklepu Microsoft Store i z instalatora mogą przechowywać odrębne znaczniki.
+
+### Odbiorcy i transfery
+
+Linda Probe nie wysyła Twoich dokumentów ani obrazów do żadnej usługi w chmurze; wyszukiwanie, OCR i funkcje AI działają na Twoim urządzeniu. Linda OCR to własny model autora. Opcjonalne modele AI są pobierane po aktywacji z serwisu Hugging Face (huggingface.co), który widzi Twój adres IP, tak jak przy każdym pobieraniu z internetu.
+
+Polar otrzymuje opisane wyżej dane licencyjne i przetwarza płatności na podstawie własnej polityki prywatności. Korespondencja ze wsparciem przechodzi przez usługę pocztową używaną dla adresu lindapro.support@proton.me. Opcjonalne modele AI są pobierane po aktywacji z hosta wskazanego w adresie pobierania wybranego modelu w katalogu modeli. Host pobierania widzi Twój adres IP, tak jak przy każdym pobieraniu. W zakresie przetwarzania danych przez Polar, w tym transferów międzynarodowych, zapoznaj się z warunkami prywatności właściwymi dla Twojego konta lub transakcji.
+
+### Przechowywanie
+
+Twoje dokumenty, indeksy i lokalne pamięci podręczne pozostają na Twoim urządzeniu pod Twoją kontrolą. Korespondencję dotyczącą wsparcia i zwrotów oraz dane licencji i zamówień przechowujemy tak długo, jak jest to potrzebne do obsługi zgłoszenia, wykonania umowy oraz spełnienia właściwych ustawowych terminów przedawnienia i obowiązków księgowych. Przechowywanie danych przez Polar reguluje jego własna polityka prywatności.
+
+### Prawa i skargi
+
+Na warunkach określonych w RODO przysługują Ci prawa dostępu, sprostowania, usunięcia, ograniczenia przetwarzania i przenoszenia danych oraz prawo sprzeciwu wobec przetwarzania opartego na uzasadnionych interesach. W celu realizacji praw napisz na adres lindapro.support@proton.me. Możesz złożyć skargę do Prezesa Urzędu Ochrony Danych Osobowych (Prezes UODO): [uodo.gov.pl](https://uodo.gov.pl/). Prawa dotyczące przetwarzania danych przez samego Polar możesz realizować wobec tego dostawcy.
+
+### Statystyki użytkowania, profilowanie i sprzedaż danych
+
+Aplikacja nie zbiera statystyk użytkowania i nie zawiera funkcji telemetrii, analityki ani raportowania awarii. Nie prowadzimy profilowania ani zautomatyzowanego podejmowania decyzji w rozumieniu art. 22 RODO. Nie sprzedajemy Twoich danych osobowych.
