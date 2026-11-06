@@ -24,7 +24,12 @@
       fail: 'The online check is unavailable right now. The desktop app works offline.',
       ai: 'Looks AI-written', uncertain: 'Unclear', human: 'Looks human-written',
       score: 'AI score', marked: 'Sentences worth a look', none: 'No sentence stood out.',
-      again: 'Check another text', checking: 'Checking…', check: 'Check the text'
+      again: 'Check another text', checking: 'Checking…', check: 'Check the text',
+      s1: 'Sending the text…', s2: 'Splitting into sentences…', s3: 'Scoring each sentence…', s4: 'Almost there…',
+      hz: 'Make it sound more natural', hzRun: 'Rewriting…', hzDone: 'Rewritten — compare it with the original',
+      hzFail: 'The rewrite is unavailable right now.', hzNote: 'Style only: names, numbers and facts stay as they are.',
+      light: 'This is the lightweight Loupe model running in your browser. The desktop app runs the full ensemble locally.',
+      limit: 'The free checks for this browser are used up. The desktop app has no limit and works offline.'
     },
     ru: {
       empty: 'Сначала вставьте текст.',
@@ -33,7 +38,12 @@
       fail: 'Онлайн-проверка сейчас недоступна. Приложение работает офлайн.',
       ai: 'Похоже на ИИ', uncertain: 'Неясно', human: 'Похоже на человека',
       score: 'Оценка ИИ', marked: 'Фрагменты, на которые стоит взглянуть', none: 'Ни один фрагмент не выделился.',
-      again: 'Проверить другой текст', checking: 'Проверяю…', check: 'Проверить текст'
+      again: 'Проверить другой текст', checking: 'Проверяю…', check: 'Проверить текст',
+      s1: 'Отправляю текст…', s2: 'Разбиваю на предложения…', s3: 'Оцениваю каждое предложение…', s4: 'Почти готово…',
+      hz: 'Сделать текст естественнее', hzRun: 'Переписываю…', hzDone: 'Переписано — сравните с оригиналом',
+      hzFail: 'Переписывание сейчас недоступно.', hzNote: 'Только стиль: имена, числа и факты остаются как были.',
+      light: 'Это лёгкая модель Loupe прямо в браузере. В приложении на компьютере работает полный ансамбль — локально.',
+      limit: 'Бесплатные проверки для этого браузера закончились. В приложении лимита нет, и оно работает офлайн.'
     },
     pl: {
       empty: 'Najpierw wklej tekst.',
@@ -42,14 +52,23 @@
       fail: 'Sprawdzanie online jest teraz niedostępne. Aplikacja działa offline.',
       ai: 'Wygląda na AI', uncertain: 'Niepewne', human: 'Wygląda na ludzkie',
       score: 'Ocena AI', marked: 'Fragmenty warte uwagi', none: 'Żaden fragment się nie wyróżnił.',
-      again: 'Sprawdź inny tekst', checking: 'Sprawdzam…', check: 'Sprawdź tekst'
+      again: 'Sprawdź inny tekst', checking: 'Sprawdzam…', check: 'Sprawdź tekst',
+      s1: 'Wysyłam tekst…', s2: 'Dzielę na zdania…', s3: 'Oceniam każde zdanie…', s4: 'Prawie gotowe…',
+      hz: 'Brzmi naturalniej', hzRun: 'Przepisuję…', hzDone: 'Przepisane — porównaj z oryginałem',
+      hzFail: 'Przepisywanie jest teraz niedostępne.', hzNote: 'Tylko styl: nazwy, liczby i fakty zostają bez zmian.',
+      light: 'To lekki model Loupe działający w przeglądarce. Aplikacja na komputerze uruchamia pełny zespół lokalnie.',
+      limit: 'Bezpłatne sprawdzenia dla tej przeglądarki się skończyły. Aplikacja nie ma limitu i działa offline.'
     }
   }[lang] || null;
   if (!T) T = {
     empty: 'Paste a text first.', short: 'Add at least 20 words.', long: 'Too long for the demo.',
     fail: 'The online check is unavailable right now.', ai: 'Looks AI-written', uncertain: 'Unclear',
     human: 'Looks human-written', score: 'AI score', marked: 'Sentences worth a look',
-    none: 'No sentence stood out.', again: 'Check another text', checking: 'Checking…', check: 'Check the text'
+    none: 'No sentence stood out.', again: 'Check another text', checking: 'Checking…', check: 'Check the text',
+    s1: 'Sending…', s2: 'Splitting…', s3: 'Scoring…', s4: 'Almost there…',
+    hz: 'Make it sound more natural', hzRun: 'Rewriting…', hzDone: 'Rewritten', hzFail: 'Unavailable.',
+    hzNote: 'Style only.', light: 'Lightweight model in your browser; the desktop app runs the full ensemble locally.',
+    limit: 'The free checks for this browser are used up.'
   };
 
   function esc(s) {
@@ -105,9 +124,15 @@
       '<div class="hd-verdict ' + v + '"><b>' + esc(T[v] || T.uncertain) + '</b>' +
       '<span>' + esc(T.score) + ' ' + score + '%</span></div>' +
       '<div class="hd-text">' + html + '</div>' +
-      '<p class="hd-note">' + (marked ? esc(T.marked) : esc(T.none)) + '</p>';
+      '<p class="hd-note">' + (marked ? esc(T.marked) : esc(T.none)) + '</p>' +
+      '<div class="hd-hz"><button class="button hd-hz-btn" type="button">' + esc(T.hz) + '</button>' +
+      '<span class="hd-hz-note">' + esc(T.hzNote) + '</span></div>' +
+      '<div class="hd-hz-out" hidden></div>' +
+      '<p class="hd-light">' + esc(T.light) + '</p>';
     out.hidden = false;
     setState('done');
+    var hzBtn = out.querySelector('.hd-hz-btn');
+    if (hzBtn) hzBtn.addEventListener('click', runHumanizer);
   }
 
   var sample = card.getAttribute('data-sample');
@@ -121,6 +146,64 @@
     });
   }
 
+  var progTimer = null;
+  function progStart() {
+    if (err) err.hidden = true;
+    out.hidden = false;
+    out.innerHTML = '<div class="hd-prog"><i></i></div><p class="hd-prog-label">' + esc(T.s1) + '</p>';
+    var pct = 6, stage = 1;
+    progTimer = setInterval(function () {
+      pct = Math.min(94, pct + 4);
+      var next = pct < 30 ? 1 : pct < 62 ? 2 : pct < 88 ? 3 : 4;
+      stage = next;
+      var bar = out.querySelector('.hd-prog i');
+      var lab = out.querySelector('.hd-prog-label');
+      if (bar) bar.style.width = pct + '%';
+      if (lab) lab.textContent = T['s' + stage];
+    }, 420);
+  }
+  function progStop() {
+    if (progTimer) { clearInterval(progTimer); progTimer = null; }
+  }
+
+  async function runHumanizer() {
+    var box = out.querySelector('.hd-hz-out');
+    var hb = out.querySelector('.hd-hz-btn');
+    if (!box || !hb) return;
+    hb.disabled = true;
+    hb.textContent = T.hzRun;
+    box.hidden = false;
+    box.innerHTML = '<div class="hd-prog"><i style="width:40%"></i></div>';
+    try {
+      var r = await fetch(API + '/api/stylize', {
+        method: 'POST', mode: 'cors', credentials: 'omit',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: (ta.value || '').trim(), spans: null, detector: 'loupe' })
+      });
+      if (!r.ok) throw new Error('hz');
+      var j = await r.json();
+      var res = j.result || {};
+      var chs = Array.from(ta.value);
+      var changes = (res.changes || []).filter(function (c) { return c.status === 'changed'; })
+        .sort(function (a, b) { return a.start - b.start; });
+      var html = '', pos = 0;
+      changes.forEach(function (c) {
+        if (c.start < pos || c.end > chs.length) return;
+        html += esc(chs.slice(pos, c.start).join(''));
+        html += '<mark class="styled">' + esc(c.new || '') + '</mark>';
+        pos = c.end;
+      });
+      html += esc(chs.slice(pos).join(''));
+      box.innerHTML = '<p class="hd-hz-title">' + esc(T.hzDone) + '</p><div class="hd-text">' + html + '</div>';
+      hb.textContent = T.hz;
+      hb.disabled = false;
+    } catch (e) {
+      box.innerHTML = '<p class="hd-note">' + esc(T.hzFail) + '</p>';
+      hb.textContent = T.hz;
+      hb.disabled = false;
+    }
+  }
+
   btn.addEventListener('click', async function () {
     if (busy) return;
     var text = (ta.value || '').trim();
@@ -131,8 +214,8 @@
 
     busy = true;
     if (err) err.hidden = true;
-    out.hidden = true;
     setState('busy');
+    progStart();
     try {
       await getSession();
       var r = await fetch(API + '/api/detect', {
@@ -142,12 +225,16 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: text, mode: 'sensitive', detector: 'loupe' })
       });
+      if (r.status === 429) throw new Error('limit');
       if (!r.ok) throw new Error('detect');
       var j = await r.json();
       if (!j || !j.result) throw new Error('shape');
+      progStop();
       render(j.result);
     } catch (e) {
-      fail(T.fail);
+      progStop();
+      out.hidden = true;
+      fail(e && e.message === 'limit' ? T.limit : T.fail);
     } finally {
       busy = false;
     }

@@ -1329,3 +1329,22 @@ h1{font-weight:600}
   .home-steps,.home-why{margin-top:var(--s7)}
   .steps-list li,.why-grid article{padding:var(--s4)}
 }
+
+/* theme glyph: a true half disc, drawn with a clip so the split sits exactly on the centre */
+.theme-toggle{display:grid;place-items:center;line-height:0}
+.theme-toggle::before{content:"";display:block;width:18px;height:18px;margin:0;border:1.5px solid currentColor;
+  border-radius:50%;box-sizing:border-box;
+  background:linear-gradient(90deg,currentColor 0 50%,transparent 50% 100%);background-size:100% 100%}
+html[data-theme="light"] .theme-toggle::before{background:linear-gradient(90deg,currentColor 0 50%,transparent 50% 100%)}
+
+/* progress + humanizer inside the inline demo */
+.hd-prog{position:relative;height:6px;background:var(--raised,color-mix(in srgb,var(--ink) 10%,transparent));overflow:hidden}
+.hd-prog i{display:block;height:100%;width:6%;background:var(--accent);transition:width .4s linear}
+.hd-prog-label{margin:var(--s3) 0 0;font-size:.875rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.hd-hz{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3);margin:var(--s5) 0 0;padding-top:var(--s4);border-top:1px solid var(--line)}
+.hd-hz-btn{min-height:42px;white-space:nowrap}
+.hd-hz-note{font-size:.8125rem;color:var(--muted);max-width:46ch}
+.hd-hz-out{margin:var(--s4) 0 0}
+.hd-hz-title{margin:0 0 var(--s2);font-size:.875rem;font-weight:600;color:var(--success-fill)}
+.hd-text mark.styled{background:color-mix(in srgb,var(--success-fill) 18%,transparent);box-shadow:inset 0 -2px 0 var(--success-fill)}
+.hd-light{margin:var(--s4) 0 0;padding-top:var(--s3);border-top:1px solid var(--line);font-size:.8125rem;line-height:1.5;color:var(--muted)}
