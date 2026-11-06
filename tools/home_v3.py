@@ -17,7 +17,7 @@ T = {
         badge='Free for personal use · no account',
         d_name='Linda Detector', d_desc='Does this text look AI-written?',
         p_name='Linda Probe', p_desc='Where is that document?',
-        quiet='Inside Detector: <a href="humanizer{s}.html">Humanizer</a> rewrites stiff phrasing and <a href="authorship{s}.html">Trace</a> compares writing styles.',
+        quiet='Inside Detector: <a href="humanizer{s}.html">Humanizer</a> rewrites stiff phrasing and <a href="authorship{s}.html">Trace</a> compares writing styles. <a href="https://lendarixon.github.io/Linda/demo.html">Try the detector online<span aria-hidden="true">↗</span></a>',
         quiet2='Inside Probe: <a href="pricing{s}.html?app=probe">Probe Pro</a> adds meaning-based search, OCR for scans and search by photo.',
         cta1='Download for Windows', cta2='Try the detector online',
         audience='For teachers, editors, translators, students and offices.',
@@ -30,7 +30,7 @@ T = {
         badge='Бесплатно для личного использования · без аккаунта',
         d_name='Linda Detector', d_desc='Похож ли этот текст на ИИ?',
         p_name='Linda Probe', p_desc='Где этот документ?',
-        quiet='Внутри Detector: <a href="humanizer{s}.html">Гуманайзер</a> убирает канцелярит, <a href="authorship{s}.html">Trace</a> сравнивает стиль текстов.',
+        quiet='Внутри Detector: <a href="humanizer{s}.html">Гуманайзер</a> убирает канцелярит, <a href="authorship{s}.html">Trace</a> сравнивает стиль текстов. <a href="https://lendarixon.github.io/Linda/demo.html">Проверить текст в демо<span aria-hidden="true">↗</span></a>',
         quiet2='Внутри Probe: <a href="pricing{s}.html?app=probe">Probe Pro</a> ищет по смыслу, распознаёт сканы и находит файлы по фото.',
         cta1='Скачать для Windows', cta2='Проверить текст в демо',
         audience='Для учителей, редакторов, переводчиков, студентов и офисов.',
@@ -43,7 +43,7 @@ T = {
         badge='Bezpłatnie do użytku osobistego · bez konta',
         d_name='Linda Detector', d_desc='Czy ten tekst wygląda na AI?',
         p_name='Linda Probe', p_desc='Gdzie jest ten dokument?',
-        quiet='W Detectorze: <a href="humanizer{s}.html">Humanizer</a> poprawia sztywny styl, <a href="authorship{s}.html">Trace</a> porównuje styl tekstów.',
+        quiet='W Detectorze: <a href="humanizer{s}.html">Humanizer</a> poprawia sztywny styl, <a href="authorship{s}.html">Trace</a> porównuje styl tekstów. <a href="https://lendarixon.github.io/Linda/demo.html">Sprawdź tekst w demo<span aria-hidden="true">↗</span></a>',
         quiet2='W Probe: <a href="pricing{s}.html?app=probe">Probe Pro</a> dodaje wyszukiwanie po sensie, OCR skanów i szukanie po zdjęciu.',
         cta1='Pobierz dla Windows', cta2='Sprawdź tekst w demo',
         audience='Dla nauczycieli, redaktorów, tłumaczy, studentów i biur.',
@@ -59,7 +59,7 @@ HERO = '''<section class="task-first" id="products"><div class="start-head"><div
 <span class="face"><img class="tile-glyph-img" src="assets/probe-glyph.svg" alt="" width="64" height="58"></span>
 <span class="face search"><span class="search-q">budget presentation, spring</span><ul><li><b>PPT</b>Spring budget.pptx</li><li><b>DOC</b>Project notes.docx</li><li><b>PDF</b>Annual report.pdf</li></ul></span>
 </span><span class="tile-label"><span class="tile-name">{p_name}</span><span class="tile-desc">{p_desc}</span></span><span class="tile-go" aria-hidden="true">↗</span></a>
-</nav><div class="home-actions"><a class="button primary" href="downloads{s}.html">{cta1}<span aria-hidden="true">↗</span></a><a class="button" href="https://lendarixon.github.io/Linda/demo.html">{cta2}<span aria-hidden="true">↗</span></a></div><div class="quiet-row"><p class="quiet-line">{quiet}</p><p class="quiet-line">{quiet2}</p></div><p class="audience-line">{audience}</p></section>'''
+</nav><div class="home-actions"><a class="button primary" href="downloads{s}.html">{cta1}<span aria-hidden="true">↗</span></a></div><div class="quiet-row"><p class="quiet-line">{quiet}</p><p class="quiet-line">{quiet2}</p></div><p class="audience-line">{audience}</p></section>'''
 
 
 def section_span(s, start_marker):

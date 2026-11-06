@@ -1038,7 +1038,8 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
 }
 
 /* home: visible action, tiles read as clickable, no empty right column */
-.home-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3);margin:var(--s5) 0 0;max-width:none}
+.home-actions{display:flex;flex-wrap:wrap;gap:var(--s3);margin:var(--s5) 0 0}
+.home-actions .button{flex:0 1 auto;min-width:min(100%,18rem)}
 .home-actions .button{justify-content:center;white-space:nowrap}
 .tile-go{position:absolute;top:var(--s4);right:var(--s4);z-index:2;font-size:1rem;line-height:1;opacity:.75;
   transition:transform .18s var(--ease),opacity .18s var(--ease)}
@@ -1046,8 +1047,7 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
 .start-wall>.live-tile .face{padding-bottom:88px}
 .quiet-line{max-width:none}
 @media (max-width:760px){
-  .home-actions{grid-template-columns:minmax(0,1fr);max-width:none}
-  .home-actions .button{white-space:normal}
+  .home-actions .button{flex:1 1 100%;white-space:normal}
 }
 
 /* phones: both tiles and the action row fit the first screen */
