@@ -60,8 +60,60 @@ html[data-theme="light"] .btn-secondary{border-color:#7f858d}
 .sty-opt{border-left-width:4px}
 .footer{border-color:var(--border)}
 @media(max-width:1150px){.top-inner,.shell{padding-left:32px;padding-right:32px}}
-@media(max-width:720px){.top-inner{padding:12px 20px;row-gap:12px}.shell{padding:0 20px 32px}.desktop-link{margin-right:0}}
+/* one theme toggle like the site: show only the inactive theme button, as an icon */
+#themeSwitch{border:0}
+#themeSwitch button.active{display:none}
+#themeSwitch button{width:40px;min-height:40px;padding:0;border:1px solid var(--border)!important;font-size:0}
+#themeSwitch button::before{content:"\25D0";font-size:18px;line-height:1;color:var(--text)}
+.wordmark svg rect:first-child{fill:#1364b0}
+.site-nav-link{display:inline-flex;align-items:center;height:40px;padding:0 12px;color:var(--muted);font-size:14px;text-decoration:none}
+.site-nav-link:hover{color:var(--text);text-decoration:none}
+.desktop-link{height:40px}
+.switch button{min-height:38px;height:40px}
+#langSwitch button{width:40px}
+#themeSwitch button{height:40px}
+.header-tools{display:flex;align-items:center}
+.demo-cta{display:grid;grid-template-columns:1fr auto;align-items:center;gap:24px;margin:32px 0 0;padding:24px;border:1px solid var(--border);border-top:4px solid var(--cobalt);background:var(--panel)}
+.demo-cta h2{margin:0 0 6px;font-size:22px;font-weight:300}
+.demo-cta p{margin:0;color:var(--muted);font-size:14px;line-height:1.6}
+.demo-cta-actions{display:flex;gap:8px;flex-wrap:wrap}
+.demo-cta-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;font-weight:600;font-size:14px;text-decoration:none;border:1px solid var(--border);color:var(--text)}
+.demo-cta-actions a.primary{background:var(--cobalt);border-color:var(--cobalt);color:#fff}
+.demo-cta-actions a:hover{text-decoration:none;background:var(--raised)}
+.demo-cta-actions a.primary:hover{background:#2975c2}
+@media(max-width:1000px){.site-nav-link{display:none}}
+@media(max-width:720px){
+ .top-inner{min-height:56px;padding:8px 20px;flex-wrap:nowrap}
+ .shell{padding:0 20px 32px}
+ .header-tools{margin-left:auto;width:auto;flex:0 0 auto;justify-content:flex-end;flex-wrap:nowrap}
+ .desktop-link{display:none}
+ .demo-cta{grid-template-columns:1fr}
+ .demo-cta-actions a{flex:1 1 100%}
+}
+@media(max-width:480px){.demo-badge{display:none}.wordmark{font-size:26px}}
 </style>'''
+
+NAV_JS = r'''<script id="linda-site-links">(function(){
+var P={en:'',ru:'-ru',pl:'-pl'},HOME={en:'index.html',ru:'ru.html',pl:'pl.html'};
+var T={en:{p:'Prices & licences',b:'For business',h:'Need to check confidential files?',t:'The desktop app checks texts on your PC with no character or check limits. Licences are one-time, from $10.',d:'Get the desktop app',pr:'Prices & licences'},
+ru:{p:'Цены и лицензии',b:'Для бизнеса',h:'Нужно проверять конфиденциальные файлы?',t:'Программа для ПК проверяет тексты на вашем компьютере без лимитов на символы и проверки. Лицензия разовая, от $10.',d:'Скачать программу',pr:'Цены и лицензии'},
+pl:{p:'Ceny i licencje',b:'Dla firm',h:'Musisz sprawdzać poufne pliki?',t:'Aplikacja na komputer sprawdza teksty lokalnie, bez limitu znaków i sprawdzeń. Licencja jednorazowa, od 10 USD.',d:'Pobierz aplikację',pr:'Ceny i licencje'}};
+function lang(){var b=document.querySelector('#langSwitch button.active');var l=b&&b.dataset.lang;return P.hasOwnProperty(l)?l:'en'}
+var tools=document.querySelector('.header-tools'),dl=document.querySelector('.desktop-link');
+var a1=document.createElement('a'),a2=document.createElement('a');a1.className=a2.className='site-nav-link';a1.target=a2.target='_blank';a1.rel=a2.rel='noopener';
+if(tools&&dl){tools.insertBefore(a1,dl);tools.insertBefore(a2,dl)}
+var foot=document.querySelector('.footer');var cta=document.createElement('section');cta.className='demo-cta';
+cta.innerHTML='<div><h2></h2><p></p></div><div class="demo-cta-actions"><a class="primary" target="_blank" rel="noopener"></a><a target="_blank" rel="noopener"></a></div>';
+if(foot)foot.parentNode.insertBefore(cta,foot);
+function apply(){var l=lang(),t=T[l],s=P[l];
+a1.textContent=t.p;a1.href='pricing'+s+'.html';a2.textContent=t.b;a2.href='business'+s+'.html';
+cta.querySelector('h2').textContent=t.h;cta.querySelector('p').textContent=t.t;
+var c=cta.querySelectorAll('a');c[0].textContent=t.d;c[0].href='downloads'+s+'.html';c[1].textContent=t.pr;c[1].href='pricing'+s+'.html';
+document.querySelectorAll('a[href]').forEach(function(a){var h=a.getAttribute('href');
+ if(/^https:\/\/lendarixon\.github\.io\/Linda\/(index\.html)?$/.test(h)||a.dataset.siteHome)a.dataset.siteHome='1',a.setAttribute('href',HOME[l]);
+ else if(/(^|\/)trust(-ru|-pl)?\.html$/.test(h))a.setAttribute('href','trust'+s+'.html');});}
+apply();var sw=document.getElementById('langSwitch');if(sw)new MutationObserver(apply).observe(sw,{subtree:true,attributes:true,attributeFilter:['class']});
+})();</script>'''
 
 SAVE_THEME = ('<script id="linda-theme-save">document.getElementById(\'themeSwitch\').addEventListener(\'click\',function(e){'
               'var t=e.target&&e.target.dataset&&e.target.dataset.theme;if(t)try{localStorage.setItem(\'linda-site-theme\',t)}catch(x){}});'
@@ -73,9 +125,10 @@ def main():
     s = re.sub(r'<script id="linda-theme-init">.*?</script>', '', s, flags=re.S)
     s = re.sub(r'<style id="linda-2026">.*?</style>', '', s, flags=re.S)
     s = re.sub(r'<script id="linda-theme-save">.*?</script>', '', s, flags=re.S)
+    s = re.sub(r'<script id="linda-site-links">.*?</script>', '', s, flags=re.S)
     s = s.replace('<meta charset="utf-8">', '<meta charset="utf-8">' + THEME_INIT, 1)
     s = s.replace('</head>', CSS + '</head>', 1)
-    s = s.replace('</body>', SAVE_THEME + '</body>', 1)
+    s = s.replace('</body>', SAVE_THEME + NAV_JS + '</body>', 1)
     # same language order as every other page: EN RU PL
     s = s.replace('<button data-lang="pl">PL</button><button data-lang="ru">RU</button>',
                   '<button data-lang="ru">RU</button><button data-lang="pl">PL</button>')

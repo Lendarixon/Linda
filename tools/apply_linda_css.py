@@ -20,7 +20,7 @@ PALETTES = {
     'probe': {
         '#f1f6fa': ('#ffffff', '#191c20'), '#b8cbdc': ('#d7dbe1', '#31363c'), '#fff': ('#f3f5f7', '#202429'),
         '#233c56': ('#161a1f', '#eceff2'), '#518b8f': ('#00787a', '#5ecbcb'), '#477e85': ('#006c6e', '#5ecbcb'),
-        '#e6f1f2': ('#e2f1f1', '#14302f'), '#e4edf6': ('#ebeef2', '#202429'),
+        '#e6f1f2': ('#e2f1f1', '#14302f'), '#e4edf6': ('#ebeef2', '#202429'), '#8a929b': ('#8a929b', '#6c747d'),
     },
     'detector': {
         '#f1f6fa': ('#ffffff', '#191c20'), '#b8cbdc': ('#d7dbe1', '#31363c'), '#fff': ('#f3f5f7', '#202429'),
@@ -60,6 +60,9 @@ def themed_svgs():
         base = re.sub(r'rx="\d+"', 'rx="0"', base)
         base = re.sub(r'font-family="[^"]*"', f'font-family="{FONT}"', base)
         base = equalise_columns(base)
+        if '-vs-' in src.name:
+            # comparison cards: only the Linda column carries the product colour, the other tool stays neutral
+            base = re.sub(r'(<path d="M40 \d+ H\d+" stroke=")#518b8f', r'\1#8a929b', base, count=1)
         for idx, suffix in ((0, 'light'), (1, 'dark')):
             out = base
             # replace longest keys first so #fff does not eat #ffffff etc.
@@ -88,6 +91,18 @@ def theme_imgs(html):
     return IMG_SVG.sub(rep, html)
 
 
+LOGO_IMG = re.compile(r'<img class="(app-logo|brand-mark)" src="assets/(detector|probe)-logo\.png" alt="" width="(\d+)" height="(\d+)">')
+
+
+def app_tiles(html):
+    """App icons become identity-coloured Metro tiles with a transparent glyph (no baked-in light-blue square)."""
+    def rep(m):
+        cls, app = m.group(1), m.group(2)
+        return (f'<span class="{cls} app-tile is-{app}" aria-hidden="true">'
+                f'<img src="assets/{app}-glyph.svg" alt="" width="20" height="16"></span>')
+    return LOGO_IMG.sub(rep, html)
+
+
 def main():
     themed = themed_svgs()
     css_v = short_hash(ROOT / 'linda.css')
@@ -107,6 +122,7 @@ def main():
         html = re.sub(r'src="suite\.js(?:\?v=[^"]*)?"', f'src="suite.js?v={js_v}"', html)
         html = FIGURE_STYLE.sub('', html)
         html = theme_imgs(html)
+        html = app_tiles(html)
         # product pages carry their identity colour on the hero (eyebrow + window bar)
         family = re.sub(r'(-ru|-pl)?\.html$', '', page.name)
         if family in ('detector', 'probe', 'humanizer', 'authorship'):

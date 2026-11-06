@@ -106,6 +106,8 @@ code{font-family:"Cascadia Mono",Consolas,monospace;font-size:.9em;background:va
 
 /* ---------- 3. Page frame ---------- */
 .suite-main,body>main{display:block;max-width:var(--page);margin:0 auto;padding:0 var(--gutter);min-width:0}
+/* entrance motion moves content sideways; never let it create a horizontal scrollbar */
+html,body{overflow-x:clip}
 body>main .wrap{max-width:none;margin:0;padding:0}
 .suite-main>section,.suite-main>aside{margin:0 0 var(--section)}
 .suite-main>section:last-child{margin-bottom:var(--section)}
@@ -117,8 +119,14 @@ body>main:not(.suite-main){padding-bottom:var(--section)}
 .suite-header{position:sticky;top:0;z-index:50;height:var(--header-h);background:var(--header);border-bottom:1px solid var(--line)}
 .header-inner{max-width:var(--page);height:100%;margin:0 auto;padding:0 var(--gutter);display:flex;align-items:center;gap:var(--s5)}
 .brand{display:inline-flex;align-items:center;gap:var(--s3);flex-shrink:0;color:var(--ink)}
-.brand img{width:32px;height:32px;object-fit:contain}
-.brand span{font-family:var(--font-display);font-size:30px;font-weight:300;letter-spacing:-.04em;line-height:1;transform:translateY(-2px)}
+/* app icon = identity tile + transparent glyph (Detector blue, Probe teal) */
+.app-tile{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:32px;height:32px;background:var(--app-tone,var(--id-blue))}
+.app-tile.is-detector{--app-tone:var(--id-blue)}
+.app-tile.is-probe{--app-tone:var(--id-teal)}
+.app-tile img{display:block;width:62%;height:auto}
+.app-tile.is-probe img{width:58%}
+.brand .app-tile{width:32px;height:32px}
+.brand>span:not(.app-tile){font-family:var(--font-display);font-size:30px;font-weight:300;letter-spacing:-.04em;line-height:1;transform:translateY(-2px)}
 .header-inner nav{display:flex;align-items:stretch;height:100%;gap:var(--s5);margin-left:auto}
 .header-inner nav a{position:relative;display:flex;align-items:center;font-size:.875rem;color:var(--muted);white-space:nowrap}
 .header-inner nav a::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .25s var(--ease)}
@@ -206,7 +214,7 @@ details summary{cursor:pointer}
 .purchase-offer-grid article:nth-child(2){--tone:var(--id-teal);--tone-text:var(--id-teal-text)}
 .task-choice-brand{display:flex;align-items:center;gap:var(--s3);margin:0 0 var(--s5)}
 .task-choice-brand .app-logo{width:32px;height:32px}
-.task-choice-brand span{font-size:.8125rem;line-height:1.4;color:var(--muted)}
+.task-choice-brand span:not(.app-tile){font-size:.8125rem;line-height:1.4;color:var(--muted)}
 .task-choice-card h2{font-size:1.625rem;font-weight:400;line-height:1.25;margin:0 0 var(--s3)}
 .task-choice-card p{font-size:.9375rem;margin:0 0 var(--s5)}
 .task-choice-actions{display:flex;flex-direction:column;align-items:stretch;gap:0}
@@ -251,8 +259,9 @@ details summary{cursor:pointer}
 .catalogue-card{display:grid;grid-row:span 7;grid-template-rows:subgrid;row-gap:0;overflow:hidden}
 .catalogue-card[hidden]{display:none!important}
 .catalogue-cover{grid-row:1;position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s5);min-height:148px;padding:var(--pad);background:var(--tone);color:#fff;overflow:hidden}
-.catalogue-cover>span{position:relative;font-family:var(--font-display);font-size:1.75rem;font-weight:300;line-height:1.15;color:#fff;max-width:18ch}
-.catalogue-cover .app-logo{position:relative;width:56px;height:56px;padding:8px;background:#fff;flex-shrink:0}
+.catalogue-cover>span:not(.app-tile){position:relative;font-family:var(--font-display);font-size:1.75rem;font-weight:300;line-height:1.15;color:#fff;max-width:18ch}
+.catalogue-cover .app-logo{position:relative;width:64px;height:64px;background:none}
+.catalogue-cover .app-tile img{width:100%}
 .catalogue-card-content{grid-row:2/span 6;display:grid;grid-template-rows:subgrid;row-gap:0;padding:var(--pad)}
 .catalogue-card h3{font-size:1.75rem;font-weight:600;letter-spacing:-.02em;margin:0 0 var(--s2)}
 .catalogue-card h4{font-size:1.1875rem;font-weight:400;line-height:1.35;color:var(--ink);margin:0 0 var(--s3)}
@@ -273,6 +282,71 @@ details summary{cursor:pointer}
 .catalogue-evidence p{grid-area:text;margin:0;max-width:var(--measure)}
 .catalogue-evidence .button{grid-area:action}
 
+/* ---------- 7a. Start screen: live tiles (home) ---------- */
+.start-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--s7);margin:0 0 var(--s7)}
+.start-copy>h1{margin:0 0 var(--s4)}
+.start-copy>.lead{margin:0}
+.start-wall{--tile:128px;display:grid;grid-template-columns:repeat(4,var(--tile));grid-auto-rows:var(--tile);gap:8px}
+.live-tile{position:relative;display:block;overflow:hidden;background:var(--tone);color:#fff;text-decoration:none;transform-origin:left center;transition:box-shadow .15s}
+.live-tile.wide{grid-column:span 2}
+.live-tile.local{--tone:var(--id-green)}
+.live-tile.plans{--tone:var(--id-violet)}
+.live-tile:hover,.live-tile:focus-visible{box-shadow:inset 0 0 0 2px rgba(255,255,255,.6)}
+.live-tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.faces{display:flex;flex-direction:column;height:200%;animation:peek 8s linear infinite;animation-delay:var(--d,0s)}
+.faces:has(>.face:only-child){height:100%;animation:none}
+.live-tile:hover .faces,.live-tile:focus-visible .faces{animation-play-state:paused}
+@keyframes peek{0%,45%{transform:translateY(0);animation-timing-function:cubic-bezier(.1,.9,.2,1)}50.6%,94.4%{transform:translateY(-50%);animation-timing-function:cubic-bezier(.1,.9,.2,1)}100%{transform:translateY(0)}}
+.face{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;height:50%;padding:12px 12px 34px;min-height:0}
+.faces:has(>.face:only-child)>.face{height:100%}
+.tile-name{position:absolute;left:12px;right:12px;bottom:9px;z-index:1;font-size:.8125rem;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile-cap{display:block;font-size:.6875rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;opacity:.8}
+.tile-glyph-img{width:auto;height:46%;max-height:60px}
+.live-tile.wide .tile-glyph-img{height:42%}
+.tile-mark{font-family:var(--font-display);font-size:2.5rem;font-weight:300;line-height:1;letter-spacing:-.02em}
+.live-tile svg{width:44px;height:44px}
+.tile-big{font-family:var(--font-display);font-size:1.375rem;font-weight:300;line-height:1.2;text-align:center}
+.tile-price{font-family:var(--font-display);font-size:2.25rem;font-weight:300;line-height:1.1;letter-spacing:-.02em}
+.live-tile.plans .face{align-items:flex-start}
+.tile-sub{font-size:.8125rem;opacity:.85;margin-top:2px}
+.face.specimen,.face.search,.face.rewrite,.face.ranking{align-items:stretch;justify-content:flex-start;gap:6px;text-align:left}
+.spec-text{font-size:.8125rem;line-height:1.5;max-width:30ch}
+.spec-text mark{background:rgba(255,255,255,.18);color:#fff;box-shadow:inset 0 -2px 0 var(--warning-fill);padding:0 1px}
+.spec-meter{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;font-size:.6875rem;margin-top:auto}
+.spec-meter i{display:block;height:4px;background:rgba(255,255,255,.25)}
+.spec-meter b{display:block;height:100%;width:72%;background:var(--warning-fill)}
+.search-q{display:block;padding:3px 6px;border:1px solid rgba(255,255,255,.7);font-size:.6875rem;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.face.search ul{list-style:none;margin:0;padding:0;display:grid;gap:3px}
+.face.search li{display:flex;align-items:center;gap:6px;font-size:.6875rem;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
+.face.search li b{flex:0 0 26px;font-size:.5625rem;text-align:center;background:rgba(255,255,255,.2);color:#fff;padding:1px 0}
+.face.rewrite{gap:2px;font-size:.75rem;line-height:1.35;justify-content:center}
+.face.rewrite s{opacity:.7;text-decoration-thickness:1px}
+.rw-arrow{font-size:.875rem;line-height:1;opacity:.8}
+.rw-new{font-family:var(--font-display);font-size:1.125rem;font-weight:300;line-height:1.15}
+.face.ranking{gap:10px;justify-content:center}
+.rank-row{display:grid;grid-template-columns:12px minmax(0,1fr);align-items:center;gap:6px;font-size:.6875rem}
+.rank-row i{display:block;height:6px;width:var(--w);background:#fff}
+.rank-row:nth-child(n+3) i{opacity:.7}.rank-row:nth-child(n+4) i{opacity:.5}
+/* turnstile entrance, one tile after another */
+@keyframes turnstile{from{opacity:0;transform:perspective(900px) rotateY(-70deg)}to{opacity:1;transform:none}}
+.start-wall>.live-tile{animation:turnstile .7s var(--ease) both}
+.start-wall>.live-tile:nth-child(2){animation-delay:.06s}.start-wall>.live-tile:nth-child(3){animation-delay:.12s}
+.start-wall>.live-tile:nth-child(4){animation-delay:.18s}.start-wall>.live-tile:nth-child(5){animation-delay:.24s}
+.start-wall>.live-tile:nth-child(6){animation-delay:.3s}
+@media (max-width:1180px){
+  .start-head{grid-template-columns:minmax(0,1fr)}
+  .start-wall{grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:auto}
+  .live-tile{aspect-ratio:1}.live-tile.wide{aspect-ratio:auto}
+}
+@media (max-width:1180px) and (min-width:601px){.start-wall{max-width:760px}}
+@media (max-width:600px){
+  /* Metro panorama: the tile group scrolls sideways, the next tile peeks in at the edge */
+  .start-wall{--tile:124px;grid-template-columns:none;grid-template-rows:repeat(2,var(--tile));grid-auto-flow:column;grid-auto-columns:var(--tile);overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+  .start-wall::-webkit-scrollbar{display:none}
+  .live-tile{aspect-ratio:auto;scroll-snap-align:start}
+  .live-tile.wide{aspect-ratio:auto}
+}
+
 /* ---------- 8. Product pages ---------- */
 .hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s8);align-items:center;padding:var(--s8) 0 0}
 .hero-copy{min-width:0}
@@ -290,7 +364,7 @@ p .text-link,.checkout-note .text-link,li .text-link{display:inline;min-height:0
 .window-brand{font-family:var(--font-display);font-size:1.0625rem;font-weight:300;color:var(--ink)}
 .workspace-tabs{display:flex;background:var(--sunken);border-bottom:1px solid var(--line)}
 .workspace-tabs button{flex:1;display:flex;align-items:center;justify-content:center;gap:var(--s2);min-width:0;height:var(--control);padding:0 var(--s3);border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);font-size:.8125rem}
-.workspace-tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);background:var(--surface)}
+.workspace-tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--tone-text,var(--accent));background:var(--surface)}
 .workspace-tabs .app-logo,.workspace-tabs svg{width:16px;height:16px}
 .product-hero .workspace-tabs button:not([aria-selected="true"]){display:none}
 .mock-content{display:flex;min-height:330px}
@@ -312,7 +386,7 @@ p .text-link,.checkout-note .text-link,li .text-link{display:inline;min-height:0
 .colour-key i{width:16px;height:4px;background:var(--success-fill)}.colour-key i:nth-child(2){background:var(--warning-fill)}.colour-key i:last-child{background:var(--danger-fill)}
 #demo-panel-1{--tone:var(--id-teal);--tone-text:var(--id-teal-text)}
 .mock-search{display:flex;align-items:center;gap:var(--s3);min-height:var(--control);padding:var(--s2) var(--s3);margin:0 0 var(--s4);border:1px solid var(--tone-text);font-size:.8125rem}
-.mock-search .app-logo,.mock-search svg{width:16px;height:16px;color:var(--tone-text)}
+.mock-search .app-logo,.mock-search svg{width:20px;height:20px;color:var(--tone-text)}
 .mock-search span:last-child{margin-left:auto;color:var(--tone-text)}
 .mock-file{display:flex;align-items:center;gap:var(--s3);padding:var(--s3) 0;border-bottom:1px solid var(--line)}
 .file-icon{display:flex;align-items:center;justify-content:center;width:32px;height:36px;background:color-mix(in srgb,var(--tone) 18%,transparent);color:var(--tone-text);font-size:.5625rem;font-weight:700}
@@ -543,7 +617,7 @@ body>main:not(.suite-main) .sub{margin-bottom:var(--s5)}
 .prose li{margin:0 0 var(--s2)}
 .prose .note{font-size:.9375rem}
 .prose .article-figure{margin:var(--s6) 0;max-width:880px;min-width:0}
-.prose .article-diagram{max-width:min(600px,100%)}
+.prose .article-diagram{max-width:min(var(--measure),100%)}
 .prose .article-figure img{display:block;width:100%;height:auto;border:1px solid var(--line)}
 .prose .article-diagram img{border:0}
 .prose .article-figure figcaption{margin-top:var(--s2);font-size:.875rem;line-height:1.6;color:var(--muted)}
@@ -570,8 +644,52 @@ html[data-theme="dark"] .art-dark{display:block!important}
 .catalogue-card.reveal.is-visible:nth-child(3){animation-delay:.1s}
 .catalogue-card.reveal.is-visible:nth-child(4){animation-delay:.15s}
 [role="tabpanel"]:not([hidden]){animation:panel-in .35s var(--ease)}
+/* ---------- 13a. Metro motion ----------
+   Entrance: content arrives from the right in reading order (Windows "entrance" motion), 60ms stagger.
+   Live mock-ups: product hero windows play one short demonstration of the app on first view.
+   Pivot: the tab indicator slides between tabs. Everything is off under prefers-reduced-motion. */
+@keyframes enter-x{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+:is(.page-intro,.hero-copy,.start-copy,.release-page>.wrap,body>main>section:first-child>.wrap,body>main>.prose)>*{animation:enter-x .6s var(--ease) both}
+:is(.page-intro,.hero-copy,.start-copy,.release-page>.wrap,body>main>section:first-child>.wrap,body>main>.prose)>:nth-child(2){animation-delay:.06s}
+:is(.page-intro,.hero-copy,.start-copy,.release-page>.wrap,body>main>section:first-child>.wrap,body>main>.prose)>:nth-child(3){animation-delay:.12s}
+:is(.page-intro,.hero-copy,.start-copy,.release-page>.wrap,body>main>section:first-child>.wrap,body>main>.prose)>:nth-child(4){animation-delay:.18s}
+:is(.page-intro,.hero-copy,.start-copy,.release-page>.wrap,body>main>section:first-child>.wrap,body>main>.prose)>:nth-child(n+5){animation-delay:.24s}
+/* buttons: the arrow nudges toward its destination */
+.button>span,.btn>span[aria-hidden]{transition:transform .2s var(--ease)}
+.button:hover>span,.btn:hover>span[aria-hidden]{transform:translate(3px,-3px)}
+/* pivot indicator */
+.evidence-tabs{position:relative}
+.evidence-tabs.has-ink button[aria-selected="true"]{border-bottom-color:transparent}
+.evidence-tabs .tab-ink{position:absolute;left:0;bottom:0;height:3px;width:var(--ink-w,0);transform:translateX(var(--ink-x,0));background:var(--accent);transition:transform .35s var(--ease),width .35s var(--ease);pointer-events:none}
+/* live mock-ups (product heroes) */
+.product-stage.is-live .mock-content:not([hidden]) .marked{background:linear-gradient(var(--warning-soft),var(--warning-soft)) left/0 100% no-repeat;animation:mark-in .9s .9s var(--ease) forwards}
+@keyframes mark-in{to{background-size:100% 100%}}
+.product-stage.is-live .mock-content:not([hidden]) .text-lines i{transform-origin:left;animation:line-in .7s var(--ease) both}
+.product-stage.is-live .mock-content:not([hidden]) .text-lines i:nth-child(2){animation-delay:.12s}
+.product-stage.is-live .mock-content:not([hidden]) .text-lines i:nth-child(3){animation-delay:.24s}
+@keyframes line-in{from{transform:scaleX(0)}to{transform:none}}
+.product-stage.is-live .mock-content:not([hidden]) .colour-key i{animation:line-in .5s var(--ease) both}
+.product-stage.is-live .mock-content:not([hidden]) .colour-key i:nth-child(2){animation-delay:.1s}
+.product-stage.is-live .mock-content:not([hidden]) .colour-key i:nth-child(3){animation-delay:.2s}
+.product-stage.is-live .mock-content:not([hidden]) .mock-file{animation:enter-x .5s var(--ease) both}
+.product-stage.is-live .mock-content:not([hidden]) .mock-file:nth-of-type(2){animation-delay:.45s}
+.product-stage.is-live .mock-content:not([hidden]) .mock-file:nth-of-type(3){animation-delay:.53s}
+.product-stage.is-live .mock-content:not([hidden]) .mock-file:nth-of-type(4){animation-delay:.61s}
+.mock-search .typed{display:inline-block;overflow:hidden;white-space:nowrap;vertical-align:bottom}
+.product-stage.is-live .mock-search .typed{animation:type .6s steps(28,end) .1s both}
+@keyframes type{from{max-width:0}to{max-width:100%}}
+.product-stage.is-live .mock-search .typed::after{content:"";display:inline-block;width:1px;height:1em;margin-left:1px;vertical-align:-2px;background:currentColor;animation:caret 1s steps(1) 4}
+@keyframes caret{50%{opacity:0}}
+.product-stage.is-live .mock-content:not([hidden]) .rewritten{animation:enter-x .6s .7s var(--ease) both}
+.product-stage.is-live .mock-content:not([hidden]) .muted{transition:opacity .4s .6s}
+.product-stage.is-live .mock-content:not([hidden]) .rank i{transform-origin:left;animation:line-in .8s var(--ease) both}
+.product-stage.is-live .mock-content:not([hidden]) .rank:nth-of-type(2) i{animation-delay:.12s}
+.product-stage.is-live .mock-content:not([hidden]) .rank:nth-of-type(3) i{animation-delay:.24s}
+/* catalogue covers: the glyph tile slides in when the card enters */
+.catalogue-card.reveal.is-visible .catalogue-cover .app-tile{animation:enter-x .6s .15s var(--ease) both}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
+  .faces{transform:none!important}
   html{scroll-behavior:auto}
 }
 
@@ -638,8 +756,8 @@ html[data-theme="dark"] .art-dark{display:block!important}
 @media (max-width:600px){
   :root{--gutter:20px;--pad:20px;--gap:12px;--section:64px;--header-h:56px}
   body{font-size:15px}
-  .brand img{width:28px;height:28px}
-  .brand span{font-size:26px}
+  .brand .app-tile{width:28px;height:28px}
+  .brand>span:not(.app-tile){font-size:26px}
   .brand{gap:var(--s2)}
   .menu-toggle span{display:none}
   .menu-toggle{padding:0;width:var(--control-sm)}
@@ -667,9 +785,61 @@ html[data-theme="dark"] .art-dark{display:block!important}
   .footer-links a{min-height:40px}
 }
 @media (max-width:360px){
-  .brand span{display:none}
+  .brand{font-size:1.5rem;gap:var(--s2)}
+  .header-controls{gap:var(--s2)}
+  .language-switch a{width:36px}
+}
+@media (max-width:340px){
+  .brand>span:not(.app-tile){display:none}
 }
 @media print{
   .suite-header,.suite-footer,.skip-link{display:none}
   body{background:#fff;color:#000}
 }
+
+/* ===== 13b. Buyer-review fixes (Nov 2026) ===== */
+/* Product hero: one tool per page, so the strip reads as the app's page header, not a lone tab */
+.product-hero .workspace-tabs{background:var(--surface)}
+.product-hero .workspace-tabs button[aria-selected="true"]{flex:0 0 auto;justify-content:flex-start;padding:0 var(--s5);border-bottom-color:transparent;background:none;font-family:var(--font-display);font-size:1rem;color:var(--ink)}
+.product-hero .workspace-tabs .tab-ink{display:none}
+/* mock windows: footer row pinned to the bottom, so short tools do not leave a hole mid-window */
+.mock-editor{display:flex;flex-direction:column}
+.mock-editor>.mock-bottom,.mock-editor>small:last-child{margin-top:auto;padding-top:var(--s4)}
+.mock-editor .rank{margin:0 0 var(--s4)}
+/* real app screenshots: matted like a window, softened in the dark theme */
+main img[src*="probe-search-"],main img[src*="shot-"]{padding:var(--s2);background:var(--raised);border:1px solid var(--line)!important;box-sizing:border-box}
+html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] main img[src*="shot-"]{filter:brightness(.82) contrast(1.04)}
+/* scrolled tab strips show that there is more to the right */
+.evidence-tabs.is-scrollable{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 48px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 48px),transparent)}
+.evidence-tabs.is-scrollable.at-end{-webkit-mask-image:none;mask-image:none}
+/* home panorama on phones: fade on the right edge says "swipe" */
+@media (max-width:600px){
+  .start-wall{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 40px),transparent)}
+  .start-wall.at-end{-webkit-mask-image:none;mask-image:none}
+  /* touch targets: 44px minimum for header controls */
+  :root{--control-sm:44px}
+  .language-switch a{width:40px}
+}
+
+/* catalogue covers: Humanizer and Trace carry their own line glyphs */
+.catalogue-cover .cover-glyph{position:relative;flex:none;width:64px;height:64px;color:#fff}
+.catalogue-card.reveal.is-visible .catalogue-cover .cover-glyph{animation:enter-x .6s .15s var(--ease) both}
+/* business: three equal features, then the two licences side by side with their own actions */
+.business-features{margin-top:var(--s6)}
+.business-plans{margin-top:var(--gap)}
+.business-plans>.panel{display:flex;flex-direction:column}
+.business-plans>.panel>.btns{margin-top:auto;padding-top:var(--s5)}
+.business-plans .btns{grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))}
+.business-plans+.feature-business{margin-top:var(--gap)}
+/* downloads: two equal buttons per app */
+.download-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s2);margin:var(--s4) 0 var(--s2)}
+.download-card .download-actions{justify-self:stretch}
+.download-card .download-actions .button{width:100%;min-width:0;margin:0;justify-content:center}
+@media (max-width:420px){.download-actions{grid-template-columns:minmax(0,1fr)}}
+/* pricing: trial rules folded away, cards come first */
+.trial-rules{margin:var(--s3) 0 var(--s4);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.trial-rules>summary{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);min-height:var(--control);padding:var(--s3) 0;cursor:pointer;list-style:none;font-weight:600;font-size:.9375rem;color:var(--ink)}
+.trial-rules>summary::-webkit-details-marker{display:none}
+.trial-rules>summary::after{content:"+";font-family:var(--font-display);font-size:1.25rem;font-weight:300;color:var(--muted)}
+.trial-rules[open]>summary::after{content:"\2212"}
+.trial-rules>p{margin:0 0 var(--s4);font-size:.875rem;color:var(--muted)}
