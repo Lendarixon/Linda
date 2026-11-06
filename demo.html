@@ -95,7 +95,41 @@ html[data-theme="light"] .btn-secondary{border-color:#7f858d}
  .demo-cta-actions a{flex:1 1 100%}
 }
 @media(max-width:480px){.demo-badge{display:none}.wordmark{font-size:26px}}
-</style></head><body>
+</style><style>
+/* ===== Demo restyle: same Metro identity as the site (flat surfaces, one accent, no gradients) ===== */
+:root,html[data-theme="dark"]{--bg:#161a1f;--panel:#1c2128;--raised:#232830;--border:#2f353e;--text:#eceff2;--muted:#9aa3ae;--accent:#1364b0;--accent-light:rgba(19,100,176,.16);--loupe:#00787a;--assay:#1364b0;--ai:#d9544b;--human:#137738;--uncertain:#e19b1b}
+html[data-theme="light"]{--bg:#f2f4f7;--panel:#fff;--raised:#e9edf2;--border:#d3dae2;--text:#14181d;--muted:#5a636e;--accent:#1364b0;--accent-light:rgba(19,100,176,.12);--loupe:#00787a;--assay:#1364b0}
+body{background:var(--bg);color:var(--text);font-family:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif}
+.top{background:var(--panel);border-bottom:1px solid var(--border)}
+.shell{max-width:1440px;padding:20px 24px 40px}
+.app-grid{grid-template-columns:232px minmax(0,1fr) 320px;gap:20px;align-items:start}
+.tile{border:1px solid var(--border);background:var(--panel);border-radius:0}
+.tile.active{border-color:var(--loupe);background:color-mix(in srgb,var(--loupe) 14%,var(--panel))}
+.tile-header{background:transparent;border-bottom:1px solid var(--border)}
+.editor-card,.highlight,.status,.empty-result{border:1px solid var(--border);background:var(--panel);border-radius:0;box-shadow:none}
+.editor-card{padding:20px}
+.input-frame textarea,textarea{background:var(--raised);border:1px solid var(--border);border-radius:0;color:var(--text);font-size:15px;line-height:1.6}
+textarea:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.toolbar .btn,.btn{background:var(--accent);border:1px solid var(--accent);border-radius:0;color:#fff;font-weight:600;padding:10px 18px;min-height:44px}
+.toolbar .btn:hover{background:color-mix(in srgb,var(--accent) 86%,#000)}
+.toolbar .btn-secondary{background:transparent;border:1px solid var(--border);color:var(--text)}
+.toolbar .btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.switch{border:1px solid var(--border);border-radius:0;background:var(--raised)}
+.switch button{border-radius:0;min-height:36px}
+.switch button[aria-pressed="true"],.switch .on{background:var(--accent);color:#fff}
+.empty-result{border-style:dashed;color:var(--muted)}
+.highlight-head,.tile-header h2,.tile-header h3{font-weight:600;letter-spacing:.01em}
+.meta,.metric{border-radius:0}
+.metric{background:var(--raised);border:1px solid var(--border)}
+.warn{border:1px solid var(--uncertain);border-left:4px solid var(--uncertain);background:color-mix(in srgb,var(--uncertain) 12%,var(--panel));color:var(--text);border-radius:0}
+html[data-theme="light"] .warn{background:color-mix(in srgb,var(--uncertain) 14%,#fff);color:#4a3200}
+.an-prog .lp-bar{border-radius:0;height:8px;border:0;background:var(--raised)}
+.an-prog .lp-bar i{border-radius:0;background:var(--accent)}
+.an-prog .lp-bar.busy i{background-image:none;background:var(--accent);animation:none}
+.sty-opt{border-radius:0;border-left-width:4px}
+@media (max-width:1100px){.app-grid{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head><body>
 <header class="top"><div class="top-inner"><a class="wordmark" href="https://lendarixon.github.io/Linda/" target="_blank" rel="noopener"><svg width="34" height="34" viewBox="0 0 100 100" aria-hidden="true" style="flex:none"><rect width="100" height="100" fill="#1ba1e2"/><rect x="14" y="24" width="72" height="12" fill="#fff"/><rect x="14" y="44" width="32" height="12" fill="#fff"/><rect x="52" y="44" width="34" height="12" fill="#e51400"/><rect x="14" y="64" width="52" height="12" fill="#fff"/></svg>linda</a><span class="demo-badge" data-i18n="demoBadge">FREE DEMO</span><div class="header-tools"><a class="desktop-link" href="https://lendarixon.github.io/Linda/" target="_blank" rel="noopener" data-i18n="download">Get the desktop app</a><div class="switch" id="langSwitch" aria-label="Language"><button data-lang="en" class="active">EN</button><button data-lang="ru">RU</button><button data-lang="pl">PL</button></div><div class="switch" id="themeSwitch" aria-label="Theme"><button data-theme="light" id="lightBtn">Light</button><button data-theme="dark" class="active" id="darkBtn">Dark</button></div></div></div></header>
 <main class="shell"><section class="intro"><div><h1 id="pageTitle">Check a text. See the evidence.</h1><p id="pageSubtitle">Try Linda Loupe and Linda Assay in your browser.</p></div><div class="allowance"><strong id="remaining">Initializing…</strong><span id="introHeader">Free online demo</span></div></section>
 <div class="app-grid"><aside class="sidebar"><h2 class="section-title" data-i18n="modelTitle">Detector</h2><div class="grid" id="detectorGrid"><div class="tile active" data-detector="loupe" role="button" tabindex="0"><div class="tile-header">Linda Loupe</div><div class="tile-body" id="loupeDesc"></div></div><div class="tile" data-detector="assay" role="button" tabindex="0"><div class="tile-header">Linda Assay</div><div class="tile-body" id="assayDesc"></div></div></div><section class="side-section"><h2 class="section-title" data-i18n="thresholdTitle">Detection mode</h2><div class="switch" id="modeSwitch"><button data-mode="sensitive" class="active" id="sensBtn">Sensitive</button><button data-mode="precise" id="precBtn">Precise</button></div><p class="mode-note" data-i18n="modeHint"></p></section><h2 class="section-title limits-title" id="restrictionsHeader">Demo limits</h2><div class="limit-copy"><span id="restrictionsText"></span></div></aside>
