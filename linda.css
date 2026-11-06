@@ -950,3 +950,5 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
 .licence-guide b{color:var(--ink);font-weight:600}
 .business-tracks{margin:var(--s6) 0}
 .business-tracks h3{margin-top:0}
+
+.audience-line{margin:var(--s4) 0 0;font-size:.86rem;color:var(--muted);letter-spacing:.01em}
