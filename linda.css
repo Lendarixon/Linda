@@ -1331,10 +1331,12 @@ h1{font-weight:600}
 }
 
 /* theme glyph: a true half disc, drawn with a clip so the split sits exactly on the centre */
-.theme-toggle{display:grid;place-items:center;line-height:0}
-.theme-toggle::before{content:"";display:block;width:18px;height:18px;margin:0;border:1.5px solid currentColor;
-  border-radius:50%;box-sizing:border-box;
-  background:linear-gradient(90deg,currentColor 0 50%,transparent 50% 100%);background-size:100% 100%}
+/* the glyph is absolutely centred: the button still holds a text node, so a grid
+   would give it a second row and push the disc off-centre */
+.theme-toggle{position:relative;display:block;line-height:0;font-size:0}
+.theme-toggle::before{content:"";position:absolute;inset:0;margin:auto;width:18px;height:18px;
+  border:1.5px solid currentColor;border-radius:50%;box-sizing:border-box;
+  background:linear-gradient(90deg,currentColor 0 50%,transparent 50% 100%)}
 html[data-theme="light"] .theme-toggle::before{background:linear-gradient(90deg,currentColor 0 50%,transparent 50% 100%)}
 
 /* progress + humanizer inside the inline demo */
