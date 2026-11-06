@@ -148,3 +148,13 @@ document.head.append(Object.assign(document.createElement('script'),{src:'count.
     syncMenu();
   }
 })();
+
+/* explicit language choice wins over the browser-language redirect on the home pages */
+document.querySelectorAll('.language-switch a[href], .header-tools .language-switch a').forEach(function (link) {
+  link.addEventListener('click', function () {
+    try {
+      var lang = (link.getAttribute('hreflang') || link.textContent || '').trim().toLowerCase().slice(0, 2);
+      if (lang === 'en' || lang === 'ru' || lang === 'pl') sessionStorage.setItem('lindaLang', lang);
+    } catch (e) {}
+  });
+});

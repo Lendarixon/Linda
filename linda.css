@@ -930,3 +930,8 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
   body[data-rail-step="2"]::before,body[data-rail-step="3"]::before,body[data-rail-step="2"]::after,body[data-rail-step="3"]::after{animation:none}
   body.is-menu-open::before,body.is-menu-open::after{opacity:.25}
 }
+
+/* 13e. Language switch: a real tap target on phones (buyer reviews: "small and easy to miss") */
+@media (max-width:640px){
+  .language-switch a{width:44px;height:44px;font-size:.8rem}
+}
