@@ -1078,3 +1078,136 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
 }
 
 .quiet-line a{white-space:nowrap}
+
+/* ===== 14. Home hero v4: structured product tiles, one grid for everything ===== */
+.task-first{--hero-gap:var(--s4)}
+.start-copy{max-width:46rem}
+.start-wall{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--hero-gap);grid-auto-rows:auto}
+.start-wall>.live-tile.product-tile{position:relative;display:grid;grid-template-rows:auto 1fr auto;gap:var(--s4);
+  height:clamp(248px,21vw,272px);aspect-ratio:auto;padding:var(--s5);overflow:hidden;
+  background:var(--tone);color:#fff;animation:none;transform:none;
+  box-shadow:0 18px 40px -26px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.14)}
+.start-wall>.live-tile.product-tile::after{content:"";position:absolute;inset:auto 0 0;height:46%;pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.28))}
+.start-wall>.live-tile.product-tile:hover,.start-wall>.live-tile.product-tile:focus-visible{box-shadow:0 22px 50px -22px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.2)}
+.pt-head{position:relative;z-index:2;display:flex;align-items:center;gap:var(--s3)}
+.pt-icon{height:26px;width:auto;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
+.pt-kind{font-size:.75rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:.82}
+.pt-preview{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:center;gap:9px;
+  padding:var(--s4);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16)}
+.pp-line{display:block;height:8px;background:rgba(255,255,255,.34)}
+.pp-line i{display:block;height:100%;width:var(--w,80%);background:rgba(255,255,255,.82)}
+.pp-line.pp-hit i{background:var(--warning-fill)}
+.pp-tag{align-self:flex-start;margin-top:2px;font-size:.6875rem;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;opacity:.9;box-shadow:inset 0 -2px 0 var(--warning-fill)}
+.pp-file{display:flex;align-items:center;gap:10px}
+.pp-file b{flex:0 0 auto;padding:2px 5px;font-size:.625rem;font-weight:700;letter-spacing:.06em;
+  background:rgba(255,255,255,.9);color:#0b0e12}
+.pp-file i{display:block;height:8px;width:var(--w,70%);background:rgba(255,255,255,.66)}
+.pt-foot{position:relative;z-index:2;display:flex;flex-direction:column;gap:2px}
+.pt-name{font-family:var(--font-display);font-size:1.125rem;font-weight:600;line-height:1.25}
+.pt-desc{font-size:.9375rem;line-height:1.35;opacity:.86}
+.start-wall>.live-tile .tile-go{top:var(--s5);right:var(--s5);opacity:.9}
+
+/* one grid for tiles, buttons and notes: every edge lines up */
+.home-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--hero-gap);margin:var(--hero-gap) 0 0}
+.home-actions .button{width:100%;min-width:0;min-height:46px;white-space:nowrap;justify-content:center}
+.quiet-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--hero-gap);margin:var(--s4) 0 0}
+.quiet-row .quiet-line{margin:0;font-size:.9375rem;line-height:1.5}
+.audience-line{margin:var(--s4) 0 0}
+
+@media (max-width:900px){
+  .start-wall>.live-tile.product-tile{height:clamp(240px,34vw,280px)}
+}
+@media (max-width:760px){
+  .start-copy{max-width:none}
+  .start-wall{grid-template-columns:minmax(0,1fr);gap:var(--s2)}
+  .start-wall>.live-tile.product-tile{height:250px;padding:var(--s4)}
+  .home-actions{grid-template-columns:minmax(0,1fr);gap:var(--s3)}
+  .home-actions .button{min-height:44px;white-space:normal}
+  .quiet-row{grid-template-columns:minmax(0,1fr);gap:var(--s2);margin-top:var(--s3)}
+  .quiet-row .quiet-line{font-size:.875rem}
+}
+
+/* per-product buttons: filled in the product's own tone, exactly under their tile */
+.home-actions .bt-detector{background:var(--id-blue);border-color:var(--id-blue);color:#fff}
+.home-actions .bt-probe{background:var(--id-teal);border-color:var(--id-teal);color:#fff}
+.home-actions .bt-detector:hover{background:color-mix(in srgb,var(--id-blue) 86%,#000)}
+.home-actions .bt-probe:hover{background:color-mix(in srgb,var(--id-teal) 86%,#000)}
+.pt-icon{height:26px;width:26px;object-fit:contain}
+.start-copy .badge{margin-top:var(--s4)}
+
+/* the two home tiles carry their product tone (classes are bespoke, so set it explicitly) */
+.start-wall>.live-tile.pe-detector{--tone:var(--id-blue)}
+.start-wall>.live-tile.pe-probe{--tone:var(--id-teal)}
+h1{font-weight:600}
+
+@media (max-width:760px){
+  .start-wall>.live-tile.product-tile{height:152px;padding:var(--s3) var(--s4);gap:var(--s2)}
+  .pt-preview{padding:var(--s3);gap:7px}
+  .pp-line{height:7px}
+  .pt-name{font-size:1.0625rem}
+  .pt-desc{font-size:.875rem}
+  .start-head,.start-copy{margin-bottom:var(--s4)}
+}
+
+/* previews carry real sample content, same box in both tiles */
+.pp-text,.pp-q,.pp-files,.pp-tag{flex:0 0 auto}
+.pt-preview{height:104px;gap:6px;justify-content:center}
+.pp-text{display:block;font-size:.8125rem;line-height:1.45;color:rgba(255,255,255,.92)}
+.pp-text mark{background:rgba(255,255,255,.2);color:#fff;padding:0 2px;box-shadow:inset 0 -2px 0 var(--warning-fill)}
+.pp-tag{align-self:flex-start;font-size:.625rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.95}
+.pp-q{display:block;align-self:stretch;padding:3px 7px;font-size:.75rem;line-height:1.3;
+  border:1px solid rgba(255,255,255,.6);color:rgba(255,255,255,.95);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp-files{display:flex;flex-direction:column;gap:5px}
+.pp-file{display:flex;align-items:center;gap:8px;font-size:.75rem;line-height:1.2;color:rgba(255,255,255,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp-file b{flex:0 0 auto;padding:1px 4px;font-size:.5625rem;font-weight:700;letter-spacing:.04em;background:rgba(255,255,255,.92);color:#0b0e12}
+@media (max-width:760px){
+  .pt-preview{height:64px;padding:var(--s2) var(--s3)}
+  .pp-text{font-size:.75rem;line-height:1.35}
+  .pp-file{font-size:.6875rem}
+}
+
+.pp-meter{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;flex:0 0 auto;margin-top:2px}
+.pp-meter i{display:block;height:4px;background:rgba(255,255,255,.3);position:relative}
+.pp-meter i::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--w,60%);background:var(--warning-fill)}
+.pp-meter b{font-size:.6875rem;font-weight:600;letter-spacing:.04em;opacity:.9}
+
+/* ===== 15. Calm side rails: no blinking, the squares drift with the scroll and take the page's colour ===== */
+@media (min-width:1872px){
+  body::before,body::after{animation:none!important;transform:translate3d(0,var(--rail-y,0px),0);
+    will-change:transform;transition:opacity .8s var(--ease)}
+  body::before,body::after{--w5-fill:24%}
+  html[data-theme="light"] body::before,html[data-theme="light"] body::after{--w5-fill:16%}
+  /* the page decides the palette; these are the ones the rails use */
+  html[data-rail-family="text"] body::before,html[data-rail-family="text"] body::after{
+    --w5-a:color-mix(in srgb,var(--id-blue) 26%,transparent);--w5-b:color-mix(in srgb,var(--id-teal) 20%,transparent);
+    --w5-c:color-mix(in srgb,var(--id-blue) 12%,transparent);--w5-d:color-mix(in srgb,var(--id-teal) 16%,transparent)}
+  html[data-rail-family="docs"] body::before,html[data-rail-family="docs"] body::after{
+    --w5-a:color-mix(in srgb,var(--id-teal) 26%,transparent);--w5-b:color-mix(in srgb,var(--id-teal) 14%,transparent);
+    --w5-c:color-mix(in srgb,var(--id-blue) 18%,transparent);--w5-d:color-mix(in srgb,var(--id-green) 16%,transparent)}
+  html[data-rail-family="edit"] body::before,html[data-rail-family="edit"] body::after{
+    --w5-a:color-mix(in srgb,var(--id-violet) 26%,transparent);--w5-b:color-mix(in srgb,var(--id-violet) 13%,transparent);
+    --w5-c:color-mix(in srgb,var(--id-magenta) 16%,transparent);--w5-d:color-mix(in srgb,var(--id-blue) 14%,transparent)}
+  html[data-rail-family="price"] body::before,html[data-rail-family="price"] body::after{
+    --w5-a:color-mix(in srgb,var(--id-orange) 24%,transparent);--w5-b:color-mix(in srgb,var(--id-orange) 12%,transparent);
+    --w5-c:color-mix(in srgb,var(--id-blue) 14%,transparent);--w5-d:color-mix(in srgb,var(--id-teal) 12%,transparent)}
+  html[data-rail-family="business"] body::before,html[data-rail-family="business"] body::after{
+    --w5-a:color-mix(in srgb,var(--id-blue) 22%,transparent);--w5-b:color-mix(in srgb,var(--id-teal) 20%,transparent);
+    --w5-c:color-mix(in srgb,var(--id-blue) 10%,transparent);--w5-d:color-mix(in srgb,var(--id-orange) 14%,transparent)}
+  html[data-rail-family="legal"] body::before,html[data-rail-family="legal"] body::after{
+    --w5-a:color-mix(in srgb,var(--ink) 9%,transparent);--w5-b:color-mix(in srgb,var(--ink) 6%,transparent);
+    --w5-c:transparent;--w5-d:transparent}
+  /* sections calm the decoration down instead of rearranging it */
+  body[data-rail-step="2"]::before,body[data-rail-step="2"]::after{opacity:.7}
+  body[data-rail-step="3"]::before,body[data-rail-step="3"]::after{opacity:.4}
+  body.is-menu-open::before,body.is-menu-open::after{opacity:.2}
+}
+@media (prefers-reduced-motion:reduce){
+  body::before,body::after{transform:none!important}
+}
+@media print{body::before,body::after{display:none!important}}
+
+/* one fixed arrangement (no per-section reshuffle): the squares stay put and only drift */
+body[data-rail-step]::before{background-position:128px 192px,0 64px,64px 320px,192px 448px,0 0,0 0}
+body[data-rail-step]::after{background-position:64px 192px,192px 64px,128px 320px,0 448px,0 0,0 0}

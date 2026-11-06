@@ -92,6 +92,23 @@
  }
 })();
 document.head.append(Object.assign(document.createElement('script'),{src:'count.js'}));
+/* Side rails: the decorative squares drift with the scroll (no blinking, no reshuffle). */
+(function () {
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if (reduce || !window.matchMedia('(min-width:1872px)').matches) return;
+  var root = document.documentElement, ticking = false;
+  function shift() {
+    ticking = false;
+    var y = window.pageYOffset || root.scrollTop || 0;
+    var v = Math.min(y * 0.12, 160);
+    root.style.setProperty('--rail-y', (-v).toFixed(1) + 'px');
+  }
+  function onScroll() { if (!ticking) { ticking = true; window.requestAnimationFrame(shift); } }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  shift();
+})();
+
 /* Context rails: page family and per-section step for the wide-screen tile columns (see 13d). */
 (function () {
   if (!window.matchMedia || !window.matchMedia('(min-width:1872px)').matches) return;
