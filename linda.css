@@ -1208,11 +1208,23 @@ h1{font-weight:600}
 }
 @media print{body::before,body::after{display:none!important}}
 
-/* one fixed arrangement (no per-section reshuffle): the squares stay put and only drift */
-body[data-rail-step]::before{background-position:128px 192px,0 64px,64px 320px,192px 448px,0 0,0 0}
-body[data-rail-step]::after{background-position:64px 192px,192px 64px,128px 320px,0 448px,0 0,0 0}
-
 /* a help section left with one block must not sit in half the page */
 .catalogue-help{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s6)}
-.catalogue-help>div{max-width:var(--measure)}
+.catalogue-help>div{max-width:none}
 .catalogue-evidence,.privacy-strip{max-width:none}
+
+/* ===== 16. Rails that visibly change with the scroll (still calm: no keyframes) ===== */
+@media (min-width:1872px){
+  body::before,body::after{transition:background-position .9s var(--ease),opacity .7s var(--ease)}
+  /* four arrangements: the lit squares move one cell at a time as sections pass */
+  body[data-rail-step="1"]::before{background-position:128px 192px,0 64px,64px 320px,192px 448px,0 0,0 0}
+  body[data-rail-step="1"]::after{background-position:64px 192px,192px 64px,128px 320px,0 448px,0 0,0 0}
+  body[data-rail-step="2"]::before{background-position:64px 128px,128px 320px,192px 64px,0 256px,0 0,0 0}
+  body[data-rail-step="2"]::after{background-position:192px 128px,64px 320px,128px 64px,0 256px,0 0,0 0}
+  body[data-rail-step="3"]::before{background-position:0 256px,192px 128px,64px 64px,128px 384px,0 0,0 0}
+  body[data-rail-step="3"]::after{background-position:0 256px,128px 128px,192px 64px,64px 384px,0 0,0 0}
+  body[data-rail-step="4"]::before{background-position:192px 384px,64px 256px,0 128px,128px 64px,0 0,0 0}
+  body[data-rail-step="4"]::after{background-position:192px 384px,128px 256px,0 128px,64px 64px,0 0,0 0}
+  /* calm sections dim instead of moving */
+  body[data-rail-quiet="1"]::before,body[data-rail-quiet="1"]::after{opacity:.62}
+}

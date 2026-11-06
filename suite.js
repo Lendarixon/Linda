@@ -125,34 +125,47 @@ document.head.append(Object.assign(document.createElement('script'),{src:'count.
   for (var i = 0; i < families.length; i++) if (families[i][0].test(file)) { family = families[i][1]; break; }
   document.documentElement.setAttribute('data-rail-family', family);
 
-  /* the tile arrangement follows the section in view: two active steps alternate,
-     sections about prices, licences, FAQ or legal text take the quiet third step */
+  /* the squares step through four arrangements as the page scrolls, so every page shows
+     the same calm movement; price, licence, FAQ and legal sections additionally dim them */
   var main = document.querySelector('main') || document.body;
-  var sections = [].slice.call(main.querySelectorAll('section, article')).filter(function (section) {
-    return section.getBoundingClientRect().height > 260;
-  });
-  if (!sections.length) sections = [].slice.call(main.children);
   var quiet = /price|licen|cennik|faktur|faq|trust|legal|licens|refund|privacy|terms|contact|zaufan|prywatn|warunk/i;
-  var step = 1, flips = 0;
-  document.body.setAttribute('data-rail-step', '1');
+  var step = 0, quietOn = null, raf = false;
   function apply(next) {
     if (next === step) return;
     step = next;
     document.body.setAttribute('data-rail-step', String(next));
   }
-  if ('IntersectionObserver' in window) {
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        var label = (entry.target.id || '') + ' ' + (entry.target.className || '') + ' ' +
-          ((entry.target.querySelector('h1,h2') || {}).textContent || '');
-        if (quiet.test(label)) { apply(3); return; }
-        flips += 1;
-        apply(flips % 2 ? 2 : 1);
-      });
-    }, { rootMargin: '-42% 0px -42% 0px', threshold: 0 });
-    sections.forEach(function (section) { io.observe(section); });
+  function quietNow() {
+    var mid = window.innerHeight * 0.5;
+    var hit = document.elementFromPoint(Math.round(window.innerWidth * 0.5), Math.round(mid));
+    var node = hit;
+    while (node && node !== document.body) {
+      var label = (node.id || '') + ' ' + (node.className || '');
+      if (quiet.test(label)) return true;
+      node = node.parentElement;
+    }
+    return false;
   }
+  function pick() {
+    raf = false;
+    var doc = document.documentElement;
+    var max = (doc.scrollHeight || document.body.scrollHeight) - window.innerHeight;
+    var progress = max > 40 ? Math.min(1, Math.max(0, (window.pageYOffset || 0) / max)) : 0;
+    apply(1 + Math.min(3, Math.floor(progress * 4)));
+    var q = quietNow();
+    if (q !== quietOn) {
+      quietOn = q;
+      document.body.setAttribute('data-rail-quiet', q ? '1' : '0');
+    }
+  }
+  function onScroll() {
+    if (raf) return;
+    raf = true;
+    window.requestAnimationFrame(pick);
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  pick();
 
   /* an open menu dims the rails so the panel reads first */
   var nav = document.getElementById('main-nav') || document.getElementById('suite-nav');
