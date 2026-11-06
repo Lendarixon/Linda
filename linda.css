@@ -954,13 +954,10 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
 .audience-line{margin:var(--s4) 0 0;font-size:.86rem;color:var(--muted);letter-spacing:.01em}
 
 /* ===== 13h. Symmetry: the start wall is one filled block, paired buttons match ===== */
-.start-wall{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:var(--tile)}
-.start-wall>.live-tile.wide{grid-column:auto}
 @media (max-width:600px){
   .start-wall{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none;grid-auto-flow:row;grid-auto-columns:auto;
     --tile:112px;overflow-x:visible;scroll-snap-type:none;-webkit-mask-image:none;mask-image:none}
-  .start-wall>.live-tile.wide{grid-column:auto}
-}
+  }
 .hero-actions{display:flex;flex-wrap:wrap;align-items:stretch}
 .hero-actions .button{flex:1 1 0;min-width:0;justify-content:center}
 
@@ -968,10 +965,7 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
 @media (max-width:600px){.suite-footer{grid-template-columns:minmax(0,1fr)}}
 .suite-footer p{max-width:32ch}
 
-.start-wall>.live-tile{height:var(--tile);min-height:0}
-.start-wall>.live-tile>.faces{height:100%}
 
-.start-wall>.live-tile{aspect-ratio:auto;width:auto}
 
 /* symmetry: two equal cards, then one full-width note */
 @media (min-width:601px){
@@ -980,3 +974,17 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
 }
 
 @media (min-width:601px){.suite-footer>div:first-child{grid-column:auto}}
+
+/* the start wall fills its block exactly: two wide tiles then four squares, no gaps */
+.start-wall{grid-template-columns:repeat(4,minmax(0,1fr))}
+.start-wall>.live-tile{aspect-ratio:1}
+.start-wall>.live-tile.wide{aspect-ratio:auto}
+
+/* phones: two wide tiles across, then four squares in a 2x2 block — full width, no sideways scrolling */
+@media (max-width:600px){
+  .start-wall{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-flow:row;overflow:visible;
+    grid-template-rows:none;grid-auto-rows:auto;scroll-snap-type:none;scrollbar-width:auto;
+    -webkit-mask-image:none;mask-image:none}
+  .start-wall>.live-tile{aspect-ratio:auto;min-height:104px}
+  .start-wall>.live-tile.wide{grid-column:span 2}
+}

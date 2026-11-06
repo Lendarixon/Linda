@@ -66,6 +66,13 @@ def wall(t):
 <span class="face"><span class="tile-mark" aria-hidden="true">A·B</span></span>
 <span class="face ranking" title="{e['trace_cap']}"><span class="rank-row"><b>A</b><i style="--w:86%"></i></span><span class="rank-row"><b>B</b><i style="--w:54%"></i></span><span class="rank-row"><b>C</b><i style="--w:31%"></i></span></span>
 </span><span class="tile-name">{e['trace']}</span></a>
+<a class="live-tile local" href="trust{s}.html" style="--d:5.2s"><span class="faces">
+<span class="face">{LOCK}</span>
+<span class="face"><span class="tile-big">{e['langs']}</span></span>
+</span><span class="tile-name">{e['local']}</span></a>
+<a class="live-tile plans" href="pricing{s}.html"><span class="faces">
+<span class="face"><span class="tile-price">{e['price']}</span><span class="tile-sub">{e['price_txt']}</span></span>
+</span><span class="tile-name">{e['price_cap']}</span></a>
 </nav>'''
 
 
