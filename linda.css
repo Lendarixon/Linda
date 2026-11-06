@@ -1294,3 +1294,38 @@ h1{font-weight:600}
 
 .hd-sample{align-self:center;background:none;border:0;padding:0;font:inherit;font-size:.875rem;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .hd-sample:hover{color:var(--ink)}
+
+/* ===== 18. Proof strip, how-it-works, why-the-app (structure borrowed from the detectors that sell) ===== */
+.proof-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s4);margin:var(--s6) 0 0;
+  padding:0;list-style:none;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.proof-strip li{display:flex;flex-direction:column;gap:2px;padding:var(--s4) 0}
+.proof-strip b{font-family:var(--font-display);font-size:1.25rem;font-weight:600;line-height:1.2}
+.proof-strip span{font-size:.8125rem;line-height:1.4;color:var(--muted)}
+
+.home-steps{margin:var(--s8) 0 0}
+.steps-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s5);margin:var(--s5) 0 0;padding:0;list-style:none;counter-reset:step}
+.steps-list li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--s3);align-items:start;
+  padding:var(--s5);border:1px solid var(--line);background:var(--surface)}
+.step-n{display:grid;place-items:center;width:28px;height:28px;background:color-mix(in srgb,var(--accent) 16%,transparent);
+  color:var(--accent);font-size:.875rem;font-weight:700;font-variant-numeric:tabular-nums}
+.steps-list b{display:block;margin:0 0 var(--s2);font-size:1rem}
+.steps-list p{margin:0;font-size:.9375rem;line-height:1.5;color:var(--muted)}
+
+.home-why{margin:var(--s8) 0 0}
+.why-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s4);margin:var(--s5) 0 0}
+.why-grid article{padding:var(--s5);border:1px solid var(--line);background:var(--surface);border-left:3px solid color-mix(in srgb,var(--accent) 60%,transparent)}
+.why-grid h3{margin:0 0 var(--s2);font-size:1rem;font-weight:600}
+.why-grid p{margin:0;font-size:.9375rem;line-height:1.55;color:var(--muted)}
+
+@media (max-width:900px){
+  .proof-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .steps-list{grid-template-columns:minmax(0,1fr)}
+  .why-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:760px){
+  .proof-strip{gap:var(--s3);margin-top:var(--s5)}
+  .proof-strip b{font-size:1.0625rem}
+  .proof-strip span{font-size:.75rem}
+  .home-steps,.home-why{margin-top:var(--s7)}
+  .steps-list li,.why-grid article{padding:var(--s4)}
+}

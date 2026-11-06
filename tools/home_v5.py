@@ -32,6 +32,11 @@ T = {
         help_h='How do the paid tools work?',
         help_p='A Detector licence unlocks the Humanizer and Trace. Meaning-based search, OCR and photo search need a separate Probe Pro licence. You do not have to buy both.',
         help_cta='Prices and licences',
+        proof=[('3','languages: English, Polish, Russian'),('Offline','the desktop app never uploads your text'),('$10','one-time, no subscription'),('No account','install and use')],
+        steps_h='How it works',
+        steps=[('Paste a text','Any prose: an essay, an article, a work e-mail. At least 20 words.'),('Read the verdict','A score and the exact sentences that pushed it up, highlighted in place.'),('Install the app','The same check offline, with no character limit, plus the Humanizer and Trace.')],
+        why_h='Why people keep the desktop app',
+        why=[('Your text stays yours','No upload, no account, no training on your documents. The desktop app is the same check without the server.'),('Three languages','English, Polish and Russian, with the same model for each.'),('One payment','Personal $10, Team $30, no subscription and no per-word credits.'),('Editable, not just flagged','The Humanizer rewrites stiff phrasing and shows you what changed before you use it.')],
         sample='The implementation of the proposed methodology facilitates a substantial improvement in overall operational efficiency. Furthermore, it is important to note that the utilization of advanced analytical frameworks enables organizations to achieve enhanced outcomes across multiple dimensions of performance. It is therefore recommended that stakeholders consider the adoption of these practices in order to maximize the realization of potential benefits.',
         sample_btn='Try an example',
         faq_trace='No. Trace compares your texts and ranks how similar their style is. Genre, length, editing and shared sources all change the result, so it is a clue, not proof.',
@@ -55,6 +60,11 @@ T = {
         help_h='Как устроены платные возможности?',
         help_p='Лицензия Detector открывает Гуманайзер и Trace. Для поиска по смыслу, OCR и поиска по фото нужна отдельная лицензия Probe Pro. Покупать обе необязательно.',
         help_cta='Цены и лицензии',
+        proof=[('3','языка: английский, польский, русский'),('Офлайн','приложение не отправляет текст в облако'),('$10','разово, без подписки'),('Без аккаунта','поставили и работаете')],
+        steps_h='Как это работает',
+        steps=[('Вставьте текст','Любая связная проза: эссе, статья, рабочее письмо. Не меньше 20 слов.'),('Посмотрите вердикт','Оценка и конкретные предложения, которые её подняли, — подсвечены прямо в тексте.'),('Поставьте приложение','Та же проверка офлайн, без ограничения по символам, плюс Гуманайзер и Trace.')],
+        why_h='Зачем оставляют приложение',
+        why=[('Текст остаётся вашим','Без загрузки в облако, без аккаунта, без обучения на ваших документах. Приложение — та же проверка, но без сервера.'),('Три языка','Английский, польский и русский — на одной и той же модели.'),('Один платёж','Personal $10, Team $30 — без подписки и без кредитов за слова.'),('Не только флажок','Гуманайзер переписывает канцелярит и показывает, что изменил, до того как вы это примените.')],
         sample='Внедрение предложенной методологии способствует существенному повышению общей операционной эффективности. Кроме того, важно отметить, что использование продвинутых аналитических инструментов позволяет организациям достигать улучшенных результатов по многим направлениям деятельности. Таким образом, заинтересованным сторонам рекомендуется рассмотреть внедрение указанных практик для максимальной реализации потенциальных выгод.',
         sample_btn='Попробовать на примере',
         faq_trace='Нет. Trace сравнивает ваши тексты и показывает, насколько похож их стиль. На результат влияют жанр, объём, редактирование и общие источники — это подсказка, а не доказательство.',
@@ -78,6 +88,11 @@ T = {
         help_h='Jak działają płatne funkcje?',
         help_p='Licencja Detector odblokowuje Humanizera i Trace. Wyszukiwanie po sensie, OCR i szukanie po zdjęciu wymagają osobnej licencji Probe Pro. Nie trzeba kupować obu.',
         help_cta='Ceny i licencje',
+        proof=[('3','języki: angielski, polski, rosyjski'),('Offline','aplikacja nie wysyła tekstu do chmury'),('$10','jednorazowo, bez subskrypcji'),('Bez konta','instalujesz i działasz')],
+        steps_h='Jak to działa',
+        steps=[('Wklej tekst','Dowolna ciągła proza: esej, artykuł, służbowy e-mail. Co najmniej 20 słów.'),('Zobacz werdykt','Ocena i konkretne zdania, które ją podniosły — podświetlone w tekście.'),('Zainstaluj aplikację','To samo sprawdzenie offline, bez limitu znaków, plus Humanizer i Trace.')],
+        why_h='Dlaczego zostaje się z aplikacją',
+        why=[('Tekst zostaje Twój','Bez wysyłania do chmury, bez konta, bez trenowania na Twoich dokumentach. Aplikacja to to samo sprawdzenie, tylko bez serwera.'),('Trzy języki','Angielski, polski i rosyjski na tym samym modelu.'),('Jedna płatność','Personal $10, Team $30 — bez subskrypcji i bez kredytów za słowa.'),('Nie tylko flaga','Humanizer przepisuje sztywny styl i pokazuje, co zmienił, zanim to przyjmiesz.')],
         sample='Wdrożenie proponowanej metodologii umożliwia istotną poprawę ogólnej efektywności operacyjnej. Ponadto należy zauważyć, że wykorzystanie zaawansowanych narzędzi analitycznych pozwala organizacjom osiągać lepsze wyniki w wielu obszarach działalności. Zaleca się zatem rozważenie wdrożenia tych praktyk w celu maksymalizacji potencjalnych korzyści.',
         sample_btn='Wypróbuj na przykładzie',
         faq_trace='Nie. Trace porównuje Twoje teksty i pokazuje, jak podobny jest ich styl. Na wynik wpływają gatunek, długość, redakcja i wspólne źródła — to podpowiedź, nie dowód.',
@@ -87,7 +102,7 @@ T = {
 STORE_DETECTOR = 'https://apps.microsoft.com/detail/9NP66G69BQPN'
 GH_DETECTOR = 'https://github.com/Lendarixon/Linda/releases/latest'
 
-HERO = '''<section class="task-first" id="products"><div class="start-copy"><p class="eyebrow">{eyebrow}</p><h1>{h1}</h1><p class="lead">{lead}</p></div><div class="hd-card" data-hd data-state="idle" data-sample="{sample}"><label class="hd-label" for="hd-input">{placeholder}</label><textarea class="hd-input" id="hd-input" rows="6" spellcheck="false"></textarea><div class="hd-row"><button class="button primary hd-check" type="button">{check}</button><button class="text-link hd-sample" type="button">{sample_btn}</button><span class="hd-hint">{note}</span></div><p class="hd-error" hidden></p><div class="hd-result" hidden></div></div><section class="home-download" id="download"><div class="hd-dl-copy"><h2>{dl_h}</h2><p>{dl_p}</p></div><div class="hd-dl-actions"><a class="button primary" href="''' + STORE_DETECTOR + '''">{dl_store}<span aria-hidden="true">↗</span></a><a class="button" href="''' + GH_DETECTOR + '''">{dl_gh}<span aria-hidden="true">↗</span></a><a class="text-link" href="pricing{s}.html">{dl_price}<span aria-hidden="true">↗</span></a></div></section><section class="home-probe"><div><span class="eyebrow">Linda Probe</span><h2>{probe_h}</h2><p>{probe_p}</p></div><a class="button" href="probe{s}.html">{probe_cta}<span aria-hidden="true">↗</span></a></section><section class="catalogue-help"><div><h2>{help_h}</h2><p>{help_p}</p><a class="text-link" href="pricing{s}.html">{help_cta}<span aria-hidden="true">↗</span></a></div></section><aside class="privacy-strip">[LOCK]<div><h3>{privacy_h}</h3><p>{privacy_p}</p></div></aside>'''
+HERO = '''<section class="task-first" id="products"><div class="start-copy"><p class="eyebrow">{eyebrow}</p><h1>{h1}</h1><p class="lead">{lead}</p></div><div class="hd-card" data-hd data-state="idle" data-sample="{sample}"><label class="hd-label" for="hd-input">{placeholder}</label><textarea class="hd-input" id="hd-input" rows="6" spellcheck="false"></textarea><div class="hd-row"><button class="button primary hd-check" type="button">{check}</button><button class="text-link hd-sample" type="button">{sample_btn}</button><span class="hd-hint">{note}</span></div><p class="hd-error" hidden></p><div class="hd-result" hidden></div></div><ul class="proof-strip">{proof_html}</ul><section class="home-download" id="download"><div class="hd-dl-copy"><h2>{dl_h}</h2><p>{dl_p}</p></div><div class="hd-dl-actions"><a class="button primary" href="''' + STORE_DETECTOR + '''">{dl_store}<span aria-hidden="true">↗</span></a><a class="button" href="''' + GH_DETECTOR + '''">{dl_gh}<span aria-hidden="true">↗</span></a><a class="text-link" href="pricing{s}.html">{dl_price}<span aria-hidden="true">↗</span></a></div></section><section class="home-steps"><div class="section-heading"><h2>{steps_h}</h2></div><ol class="steps-list">{steps_html}</ol></section><section class="home-why"><div class="section-heading"><h2>{why_h}</h2></div><div class="why-grid">{why_html}</div></section><section class="home-probe"><div><span class="eyebrow">Linda Probe</span><h2>{probe_h}</h2><p>{probe_p}</p></div><a class="button" href="probe{s}.html">{probe_cta}<span aria-hidden="true">↗</span></a></section><section class="catalogue-help"><div><h2>{help_h}</h2><p>{help_p}</p><a class="text-link" href="pricing{s}.html">{help_cta}<span aria-hidden="true">↗</span></a></div></section><aside class="privacy-strip">[LOCK]<div><h3>{privacy_h}</h3><p>{privacy_p}</p></div></aside>'''
 
 
 def main():
@@ -125,6 +140,13 @@ def main():
             'pl': 'Zainstaluj aplikację: tam sprawdzanie odbywa się lokalnie. Ta strona wysyła tekst na serwer — nie wklejaj tu poufnych dokumentów.',
         }[lang]
 
+        vals['proof_html'] = ''.join(
+            '<li><b>' + a + '</b><span>' + b + '</span></li>' for a, b in d['proof'])
+        vals['steps_html'] = ''.join(
+            '<li><span class="step-n">' + str(i + 1) + '</span><div><b>' + t + '</b><p>' + p + '</p></div></li>'
+            for i, (t, p) in enumerate(d['steps']))
+        vals['why_html'] = ''.join(
+            '<article><h3>' + t + '</h3><p>' + p + '</p></article>' for t, p in d['why'])
         hero = HERO.format(**vals).replace('[LOCK]', lock)
         s = s[:i] + hero + s[j:]
         s = s.replace('<!--FAQ-->', faq)
