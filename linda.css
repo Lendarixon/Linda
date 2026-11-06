@@ -959,7 +959,7 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
     --tile:112px;overflow-x:visible;scroll-snap-type:none;-webkit-mask-image:none;mask-image:none}
   }
 .hero-actions{display:flex;flex-wrap:wrap;align-items:stretch}
-.hero-actions .button{flex:1 1 0;min-width:0;justify-content:center}
+.hero-actions .button{flex:0 0 auto;white-space:nowrap;justify-content:center;min-width:min(100%,13.5rem)}
 
 @media (min-width:601px){.suite-footer{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:600px){.suite-footer{grid-template-columns:minmax(0,1fr)}}
@@ -1013,7 +1013,7 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
 .product-hero::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:var(--tone)}
 .product-hero::after{content:"";position:absolute;inset:auto 0 0;height:120px;pointer-events:none;opacity:.5;
   -webkit-mask-image:linear-gradient(180deg,transparent,#000);mask-image:linear-gradient(180deg,transparent,#000)}
-.product-hero.detector::after{background:repeating-linear-gradient(180deg,color-mix(in srgb,var(--tone) 22%,transparent) 0 1px,transparent 1px 14px)}
+.product-hero.detector::after{background-image:radial-gradient(color-mix(in srgb,var(--tone) 40%,transparent) 1px,transparent 1.4px);background-size:12px 12px}
 .product-hero.probe::after{background:repeating-linear-gradient(180deg,color-mix(in srgb,var(--tone) 26%,transparent) 0 6px,transparent 6px 18px)}
 .product-hero.humanizer::after{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--tone) 20%,transparent) 0 1px,transparent 1px 12px)}
 .product-hero.authorship::after{background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--tone) 24%,transparent) 0 2px,transparent 2px 22px)}
@@ -1023,4 +1023,16 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
 @media (max-width:760px){
   .product-hero{padding:var(--s6) var(--s5)}
   .product-hero::after{height:70px}
+}
+
+/* product buttons: equal pair, no squeezing, product colour */
+.hero-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3);align-items:stretch}
+.hero-actions>p,.hero-actions>.text-link{grid-column:1/-1}
+.hero-actions .button{white-space:nowrap;justify-content:center;min-width:0;padding:0 var(--s4)}
+.product-hero .button.primary{background:var(--tone);border-color:var(--tone);color:#fff}
+.product-hero .button.primary:hover,.product-hero .button.primary:focus-visible{background:color-mix(in srgb,var(--tone) 84%,#000)}
+.product-hero .text-link{color:var(--tone-text)}
+@media (max-width:520px){
+  .hero-actions{grid-template-columns:minmax(0,1fr)}
+  .hero-actions .button{white-space:normal}
 }
