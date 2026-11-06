@@ -843,3 +843,64 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
 .trial-rules>summary::after{content:"+";font-family:var(--font-display);font-size:1.25rem;font-weight:300;color:var(--muted)}
 .trial-rules[open]>summary::after{content:"\2212"}
 .trial-rules>p{margin:0 0 var(--s4);font-size:.875rem;color:var(--muted)}
+
+/* ===== 13c. Wide-screen margins ===== */
+/* Above 1872px the 1280px column leaves 296px or more of empty background on each side.
+   Two fixed columns of Metro start-screen tiles fill it: 56px squares on an 8px gap,
+   mostly 1px outlines, four identity squares at low opacity, mirrored left and right.
+   Decoration only: no pointer events, z-index -1 so in-flow content paints above it,
+   masked out toward the bottom, one square steps one cell every 8s. */
+@media (min-width:1600px){
+  body::before,body::after{
+    --w5-w:min(248px,calc((100vw - var(--page)) / 2 - 48px));
+    --w5-fill:22%;
+    --w5-a:color-mix(in srgb,var(--id-blue) var(--w5-fill),transparent);
+    --w5-b:color-mix(in srgb,var(--id-teal) var(--w5-fill),transparent);
+    --w5-c:color-mix(in srgb,var(--id-violet) var(--w5-fill),transparent);
+    --w5-d:color-mix(in srgb,var(--id-orange) var(--w5-fill),transparent);
+    content:"";
+    position:fixed;
+    top:140px;
+    bottom:0;
+    width:var(--w5-w);
+    z-index:-1;
+    pointer-events:none;
+    background-image:linear-gradient(var(--w5-b),var(--w5-b)),linear-gradient(var(--w5-a),var(--w5-a)),linear-gradient(var(--w5-c),var(--w5-c)),linear-gradient(var(--w5-d),var(--w5-d)),linear-gradient(90deg,var(--line) 0 1px,transparent 1px 55px,var(--line) 55px 56px,transparent 56px),linear-gradient(180deg,var(--line) 0 1px,transparent 1px 55px,var(--line) 55px 56px,transparent 56px);
+    background-size:56px 56px,56px 56px,56px 56px,56px 56px,64px 64px,64px 64px;
+    background-repeat:no-repeat,no-repeat,no-repeat,no-repeat,repeat,repeat;
+    -webkit-mask-image:linear-gradient(180deg,#000 0 52%,rgba(0,0,0,.45) 76%,transparent 100%);
+    mask-image:linear-gradient(180deg,#000 0 52%,rgba(0,0,0,.45) 76%,transparent 100%);
+  }
+  /* left margin: teal, blue, violet, orange on rows 3, 1, 5, 7 */
+  body::before{
+    left:calc((100vw - var(--page)) / 4 - var(--w5-w) / 2);
+    background-position:128px 192px,0 64px,64px 320px,192px 448px,0 0,0 0;
+    animation:w5-flip-l 8s var(--ease) infinite alternate;
+  }
+  /* right margin: the same tiles mirrored across the page axis */
+  body::after{
+    right:calc((100vw - var(--page)) / 4 - var(--w5-w) / 2);
+    background-position:64px 192px,192px 64px,128px 320px,0 448px,0 0,0 0;
+    animation:w5-flip-r 8s var(--ease) infinite alternate;
+  }
+  /* one square steps one cell down and back: 600ms of an 8s cycle */
+  @keyframes w5-flip-l{
+    0%,86%{background-position:128px 192px,0 64px,64px 320px,192px 448px,0 0,0 0}
+    93.5%,100%{background-position:128px 256px,0 64px,64px 320px,192px 448px,0 0,0 0}
+  }
+  @keyframes w5-flip-r{
+    0%,86%{background-position:64px 192px,192px 64px,128px 320px,0 448px,0 0,0 0}
+    93.5%,100%{background-position:64px 256px,192px 64px,128px 320px,0 448px,0 0,0 0}
+  }
+  html[data-theme="light"] body::before,html[data-theme="light"] body::after{--w5-fill:14%}
+}
+/* a full 4-column grid needs 248px, so the margins stay empty below 1280 + 2 * (248 + 48) = 1872px */
+@media (min-width:1600px) and (max-width:1871.98px){
+  body::before,body::after{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  body::before,body::after{animation:none}
+}
+@media print{
+  body::before,body::after{display:none}
+}
