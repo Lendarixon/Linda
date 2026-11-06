@@ -1036,3 +1036,16 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
   .hero-actions{grid-template-columns:minmax(0,1fr)}
   .hero-actions .button{white-space:normal}
 }
+
+/* home: visible action, tiles read as clickable, no empty right column */
+.home-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3);margin:var(--s5) 0 0;max-width:34rem}
+.home-actions .button{justify-content:center;white-space:nowrap}
+.tile-go{position:absolute;top:var(--s4);right:var(--s4);z-index:2;font-size:1rem;line-height:1;opacity:.75;
+  transition:transform .18s var(--ease),opacity .18s var(--ease)}
+.live-tile:hover .tile-go,.live-tile:focus-visible .tile-go{opacity:1;transform:translate(2px,-2px)}
+.start-wall>.live-tile .face{padding-bottom:88px}
+.quiet-line{max-width:none}
+@media (max-width:760px){
+  .home-actions{grid-template-columns:minmax(0,1fr);max-width:none}
+  .home-actions .button{white-space:normal}
+}
