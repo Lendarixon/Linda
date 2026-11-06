@@ -1228,3 +1228,69 @@ h1{font-weight:600}
   /* calm sections dim instead of moving */
   body[data-rail-quiet="1"]::before,body[data-rail-quiet="1"]::after{opacity:.62}
 }
+
+/* ===== 17. Home is the demo: paste, check, result, then download ===== */
+.task-first{padding-top:var(--s7)}
+.task-first .start-copy{max-width:44rem}
+.task-first .start-copy h1{max-width:22ch}
+.hd-card{margin:var(--s6) 0 0;padding:var(--s5);border:1px solid var(--line);background:var(--surface);
+  box-shadow:0 20px 44px -30px rgba(0,0,0,.7)}
+.hd-label{display:block;margin:0 0 var(--s3);font-size:.875rem;color:var(--muted)}
+.hd-input{display:block;width:100%;min-height:132px;padding:var(--s4);border:1px solid var(--line);
+  background:var(--bg);color:var(--ink);font:inherit;font-size:1rem;line-height:1.6;resize:vertical}
+.hd-input:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.hd-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s4);margin:var(--s4) 0 0}
+.hd-row .button{min-height:46px;white-space:nowrap}
+.hd-hint{font-size:.8125rem;line-height:1.45;color:var(--muted);max-width:44ch}
+.hd-error{margin:var(--s3) 0 0;font-size:.875rem;color:var(--danger-fill)}
+.hd-result{margin:var(--s5) 0 0;padding:var(--s4);border:1px solid var(--line);background:var(--bg)}
+.hd-verdict{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--s3);margin:0 0 var(--s3)}
+.hd-verdict b{font-family:var(--font-display);font-size:1.125rem;font-weight:600}
+.hd-verdict span{font-size:.875rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.hd-verdict.ai b{color:var(--danger-fill)}
+.hd-verdict.human b{color:var(--success-fill)}
+.hd-verdict.uncertain b{color:var(--warning-fill)}
+.hd-text{font-size:.9375rem;line-height:1.7;white-space:pre-wrap;word-break:break-word;max-height:340px;overflow:auto}
+.hd-text mark{background:color-mix(in srgb,var(--danger-fill) 22%,transparent);color:inherit;box-shadow:inset 0 -2px 0 var(--danger-fill);padding:0 1px}
+.hd-text mark.uncertain{background:color-mix(in srgb,var(--warning-fill) 22%,transparent);box-shadow:inset 0 -2px 0 var(--warning-fill)}
+.hd-note{margin:var(--s3) 0 0;font-size:.8125rem;color:var(--muted)}
+
+.home-download{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s6);align-items:center;
+  margin:var(--s8) 0 0;padding:var(--s6);border:1px solid var(--line);background:var(--surface)}
+.home-download h2{margin:0 0 var(--s2);font-size:1.375rem}
+.home-download p{margin:0;color:var(--muted);max-width:52ch}
+.hd-dl-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3)}
+.hd-dl-actions .button{min-height:46px;white-space:nowrap}
+.hd-dl-actions .text-link{width:100%}
+
+.home-probe{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s6);align-items:center;
+  margin:var(--s6) 0 0;padding:var(--s6);border:1px solid var(--line);background:var(--surface);
+  border-left:3px solid var(--id-teal)}
+.home-probe h2{margin:var(--s2) 0 var(--s3);font-size:1.375rem}
+.home-probe p{margin:0;color:var(--muted);max-width:58ch}
+.home-probe .button{white-space:nowrap}
+
+@media (max-width:900px){
+  .home-download,.home-probe{grid-template-columns:minmax(0,1fr)}
+  .hd-dl-actions .text-link{width:auto}
+}
+@media (max-width:760px){
+  .task-first{padding-top:var(--s5)}
+  .task-first .start-copy h1{max-width:none}
+  .hd-card{padding:var(--s4)}
+  .hd-input{min-height:110px;font-size:.9375rem}
+  .hd-row{gap:var(--s3)}
+  .hd-row .button{width:100%;justify-content:center}
+  .hd-hint{font-size:.75rem}
+  .home-download,.home-probe{padding:var(--s5)}
+}
+
+/* the paste field is the point of the page: make it the brightest surface on screen */
+.hd-card{background:var(--surface);border-color:color-mix(in srgb,var(--accent) 34%,var(--line))}
+.hd-input{background:var(--surface-2,var(--bg));border-color:color-mix(in srgb,var(--accent) 24%,var(--line));font-size:1.0625rem}
+.hd-input::placeholder{color:color-mix(in srgb,var(--muted) 78%,transparent)}
+.hd-result{border-color:color-mix(in srgb,var(--accent) 22%,var(--line));background:var(--surface-2,var(--bg))}
+.hd-text mark{background:color-mix(in srgb,var(--danger-fill) 16%,transparent)}
+
+.hd-sample{align-self:center;background:none;border:0;padding:0;font:inherit;font-size:.875rem;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.hd-sample:hover{color:var(--ink)}
