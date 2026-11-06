@@ -1211,3 +1211,8 @@ h1{font-weight:600}
 /* one fixed arrangement (no per-section reshuffle): the squares stay put and only drift */
 body[data-rail-step]::before{background-position:128px 192px,0 64px,64px 320px,192px 448px,0 0,0 0}
 body[data-rail-step]::after{background-position:64px 192px,192px 64px,128px 320px,0 448px,0 0,0 0}
+
+/* a help section left with one block must not sit in half the page */
+.catalogue-help{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s6)}
+.catalogue-help>div{max-width:var(--measure)}
+.catalogue-evidence,.privacy-strip{max-width:none}
