@@ -1366,3 +1366,17 @@ html[data-theme="light"] .theme-toggle::before{background:linear-gradient(90deg,
   .home-result,.home-limits{margin-top:var(--s7)}
   .res-grid article,.home-limits{padding:var(--s4)}
 }
+
+/* header controls: three equal squares in every language, no word beside the hamburger */
+.menu-toggle span{display:none!important}
+.menu-toggle{width:var(--control-sm);min-width:var(--control-sm);padding:0;margin-left:auto}
+@media (max-width:1080px){
+  .menu-toggle{margin-left:auto}
+  .header-controls{gap:var(--s2)}
+}
+
+/* business: a product chip above every feature so Detector, Trace and Probe are not mixed up */
+.feat-for{display:inline-block;margin:0 0 var(--s3);padding:2px 8px;
+  font-size:.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  background:color-mix(in srgb,var(--tone) 16%,transparent);color:var(--tone-text)}
+.feature-comparison .feat-for{background:color-mix(in srgb,var(--id-magenta) 16%,transparent);color:var(--id-magenta-text)}
