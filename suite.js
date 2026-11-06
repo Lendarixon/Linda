@@ -7,6 +7,10 @@
   const value=root.dataset.theme==='light'?'dark':'light';root.dataset.theme=value;
   try{localStorage.setItem('linda-site-theme',value)}catch(e){}
  }));
+ // Mark the current section in the main navigation (same page in any language).
+ const here=(location.pathname.split('/').pop()||'index.html').replace(/-(ru|pl)\.html$/,'.html').replace(/^(ru|pl)\.html$/,'index.html');
+ const family={'pricing.html':'pricing.html','downloads.html':'downloads.html','results.html':'results.html','detector-results.html':'results.html'};
+ document.querySelectorAll('.suite-header nav a').forEach(a=>{const target=(a.getAttribute('href')||'').split('#')[0].replace(/-(ru|pl)\.html$/,'.html');if(target&&!a.classList.contains('nav-demo')&&target!=='index.html'&&family[here]===target)a.setAttribute('aria-current','page')});
  const menu=document.querySelector('.suite-header nav'),toggle=document.querySelector('.suite-header .menu-toggle');
  if(menu&&toggle){toggle.addEventListener('click',()=>{const open=toggle.getAttribute('aria-expanded')!=='true';toggle.setAttribute('aria-expanded',String(open));menu.classList.toggle('is-open',open)});
   menu.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{menu.classList.remove('is-open');toggle.setAttribute('aria-expanded','false')}));
