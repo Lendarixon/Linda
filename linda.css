@@ -935,3 +935,18 @@ html[data-theme="dark"] main img[src*="probe-search-"],html[data-theme="dark"] m
 @media (max-width:640px){
   .language-switch a{width:44px;height:44px;font-size:.8rem}
 }
+
+/* ===== 13g. Plain answers: audience strip, licence guide, business tracks ===== */
+.audience-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s3);margin:var(--s6) 0 0}
+.audience{display:flex;flex-direction:column;gap:var(--s1);padding:var(--s4);border:1px solid var(--line);background:var(--raised)}
+.audience b{font-size:.92rem;font-weight:600;line-height:1.3;color:var(--ink)}
+.audience span{font-size:.82rem;line-height:1.45;color:var(--muted)}
+@media (max-width:1000px){.audience-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.audience-strip{grid-template-columns:minmax(0,1fr)}}
+.licence-guide{margin:var(--s6) 0 0;padding:var(--s5);border:1px solid var(--line);background:var(--raised)}
+.licence-guide h3{margin:0 0 var(--s3)}
+.licence-guide ul{margin:0;padding-left:20px;display:grid;gap:var(--s2)}
+.licence-guide li{color:var(--muted);line-height:1.55}
+.licence-guide b{color:var(--ink);font-weight:600}
+.business-tracks{margin:var(--s6) 0}
+.business-tracks h3{margin-top:0}
