@@ -199,8 +199,6 @@ T = {
             "competitions on regulation, institutions and artificial intelligence. My essays are published in Poland "
             "and abroad; I work where economics, law and technology meet — dispersed knowledge, the information "
             "content of prices, and the rules autonomous agents will need.",
-            "In my work I want to support research and analysis, monitoring of the Sejm's work, and the preparation "
-            "of materials for legislative work.",
             "Alongside essays I build software: <strong>Linda</strong>, a local detector of AI-generated text, and "
             "<strong>Linda Probe</strong>, a local document search tool with OCR. Both run entirely on the user's "
             "computer.",
@@ -306,8 +304,6 @@ T = {
             "о регулировании, институтах и искусственном интеллекте. Эссе выходят в Польше и за рубежом; работаю "
             "на стыке экономики, права и технологий — рассеянное знание, информационное содержание цен и правила, "
             "которые понадобятся автономным агентам.",
-            "В работе хочу заниматься исследованием и аналитикой, мониторингом работы Сейма и подготовкой "
-            "материалов для законодательной работы.",
             "Помимо эссе я делаю программы: <strong>Linda</strong> — локальный детектор текста, написанного ИИ, и "
             "<strong>Linda Probe</strong> — локальный поиск по документам с OCR. Обе работают целиком на "
             "компьютере пользователя.",
@@ -413,8 +409,6 @@ T = {
             "esejów o regulacji, instytucjach i sztucznej inteligencji. Eseje publikuję w Polsce i za granicą; "
             "pracuję na przecięciu ekonomii, prawa i technologii — wiedza rozproszona, informacyjna treść cen "
             "i reguły, których będą potrzebować autonomiczne agenty.",
-            "W pracy chcę wspierać research i analizy, monitorowanie prac Sejmu oraz przygotowanie materiałów dla "
-            "prac legislacyjnych.",
             "Obok esejów piszę programy: <strong>Linda</strong> — lokalny detektor tekstu generowanego przez AI — "
             "i <strong>Linda Probe</strong> — lokalną wyszukiwarkę dokumentów z OCR. Oba działają wyłącznie na "
             "komputerze użytkownika.",
