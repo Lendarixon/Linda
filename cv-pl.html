@@ -1,0 +1,238 @@
+<!doctype html><html lang="pl" data-theme="dark"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script data-linda-theme-init>(function(){var t='dark';try{var s=localStorage.getItem('linda-site-theme');if(s!=='light'&&s!=='dark')s=localStorage.getItem('linda-theme');if(s==='light'||s==='dark')t=s;}catch(e){}document.documentElement.dataset.theme=t;})();</script>
+<title>Vladyslav Manzyuk — CV</title><meta name="description" content="Vladyslav Manzyuk — student politologii na Uniwersytecie Warszawskim, eseista, autor Lindy.">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<link rel="icon" href="assets/detector-logo.png">
+<link rel="stylesheet" href="linda.css?v=19eb33cd1d">
+<style>
+/* ---------- CV page: same tokens as the site, no product navigation ---------- */
+.cv-header .header-controls{margin-left:auto}
+.cv-tag{font-size:.6875rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding-left:var(--s4);border-left:1px solid var(--line);white-space:nowrap}
+.cv-main>section{margin:0 0 var(--s7)}
+.cv-hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:var(--s7);align-items:start;padding:var(--s7) 0 0}
+.cv-hero h1{font-family:var(--font-display);font-size:clamp(2.6rem,1.5rem + 3.6vw,4.6rem);font-weight:300;line-height:1.02;letter-spacing:-.04em;margin:0}
+.cv-role{font-size:1.125rem;line-height:1.55;color:var(--muted);max-width:44ch;margin:var(--s4) 0 var(--s5)}
+.cv-meta{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4);margin:0 0 var(--s5);font-size:.875rem;color:var(--muted)}
+.cv-meta span{display:inline-flex;align-items:center;gap:6px}
+.cv-meta a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.cv-meta a:hover{color:var(--ink)}
+.cv-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3) var(--s4)}
+.cv-focus{margin:var(--s5) 0 0;padding-top:var(--s4);border-top:1px solid var(--line);font-size:.8125rem;line-height:1.5;letter-spacing:.02em;color:var(--muted);max-width:46ch}
+.cv-wall{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.cv-tile{position:relative;display:flex;flex-direction:column;gap:var(--s2);min-height:150px;padding:16px;background:var(--tone);color:#fff;overflow:hidden}
+.cv-tile .k{font-size:.6875rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;opacity:.85}
+.cv-tile .n{font-family:var(--font-display);font-size:clamp(1.9rem,1.4rem + 1.3vw,2.75rem);font-weight:300;line-height:1;letter-spacing:-.03em}
+.cv-tile .t{margin-top:auto;font-size:.75rem;line-height:1.4;opacity:.92}
+.cv-prose p{font-size:1.0625rem;line-height:1.7;color:var(--muted);max-width:var(--measure);margin:0 0 var(--s4)}
+.cv-prose p:last-child{margin-bottom:0}
+.cv-prose strong{color:var(--ink);font-weight:600}
+.cv-panel{background:var(--surface);border:1px solid var(--line);padding:var(--s5);display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:var(--s6)}
+.cv-panel h3{font-size:1.375rem;font-weight:400;margin:0 0 var(--s2)}
+.cv-panel .sub{font-size:.9375rem;color:var(--muted);margin:0 0 var(--s4)}
+.cv-panel .deg{font-size:1rem;line-height:1.55;margin:0 0 var(--s2)}
+.cv-panel .gpa{font-size:.9375rem;color:var(--muted);margin:0}
+.cv-areas{list-style:none;margin:0;padding:0}
+.cv-areas li{font-size:.9375rem;line-height:1.5;color:var(--muted);padding:9px 0;border-bottom:1px solid var(--line)}
+.cv-areas li:first-child{padding-top:0}
+.cv-areas li:last-child{border-bottom:0;padding-bottom:0}
+.cv-awards{border-top:1px solid var(--line);margin-top:var(--s2)}
+.cv-award{display:grid;grid-template-columns:92px minmax(0,1fr);gap:var(--s5);padding:var(--s5) 0;border-bottom:1px solid var(--line)}
+.cv-award .yr{font-family:var(--font-display);font-size:1.5rem;font-weight:300;line-height:1.1;color:var(--muted)}
+.cv-award .place{display:block;font-size:.6875rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:0 0 var(--s2)}
+.cv-award h3{font-size:1.25rem;font-weight:400;line-height:1.3;margin:0 0 var(--s2);max-width:52ch}
+.cv-award .org{font-size:.9375rem;line-height:1.5;color:var(--muted);max-width:70ch}
+.cv-award p{margin:var(--s2) 0 0;font-size:.9375rem;line-height:1.55;color:var(--muted);max-width:70ch}
+.cv-award .pub{color:var(--ink)}
+.cv-pubs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap)}
+.cv-pub{position:relative;display:flex;flex-direction:column;gap:var(--s2);padding:var(--s5);background:var(--surface);border:1px solid var(--line);text-decoration:none;color:var(--ink);min-height:170px}
+.cv-pub::before{content:"";position:absolute;left:-1px;right:-1px;top:-1px;height:3px;background:var(--id-blue)}
+.cv-pub:hover{border-color:var(--line-strong);text-decoration:none}
+.cv-pub .d{font-size:.75rem;color:var(--muted)}
+.cv-pub .ti{font-family:var(--font-display);font-size:1.375rem;font-weight:300;line-height:1.25;letter-spacing:-.015em}
+.cv-pub .src{margin-top:auto;font-size:.8125rem;color:var(--muted);display:flex;align-items:center;gap:var(--s2)}
+.cv-pub .src::after{content:"\2197"}
+.cv-more{margin:var(--s4) 0 0;font-size:.9375rem}
+.cv-journals{border-top:1px solid var(--line);margin-top:var(--s6)}
+.cv-jrow{display:grid;grid-template-columns:88px minmax(0,1fr) 190px;gap:var(--s4);padding:var(--s4) 0;border-bottom:1px solid var(--line);font-size:.9375rem;line-height:1.5}
+.cv-jrow .v{color:var(--muted)}
+.cv-jrow .s{color:var(--muted);text-align:right}
+.cv-projects{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap)}
+.cv-project{position:relative;display:flex;flex-direction:column;gap:var(--s3);padding:var(--s5);background:var(--surface);border:1px solid var(--line);text-decoration:none;color:var(--ink);min-height:230px}
+.cv-project::before{content:"";position:absolute;left:-1px;right:-1px;top:-1px;height:3px;background:var(--tone)}
+.cv-project:hover{border-color:var(--line-strong);text-decoration:none}
+.cv-project .head{display:flex;align-items:center;gap:var(--s3)}
+.cv-project h3{font-size:1.25rem;font-weight:400;margin:0}
+.cv-project p{margin:0;font-size:.9375rem;line-height:1.6;color:var(--muted)}
+.cv-project .go{margin-top:auto;font-size:.8125rem;color:var(--muted);display:flex;align-items:center;gap:var(--s2)}
+.cv-project .go::after{content:"\2197"}
+.cv-inside{margin:var(--gap) 0 0;padding:var(--s5);background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--id-violet)}
+.cv-inside h3{font-size:1rem;font-weight:600;margin:0 0 var(--s2)}
+.cv-inside p{margin:0;font-size:.9375rem;line-height:1.6;color:var(--muted);max-width:80ch}
+.cv-inside a{color:var(--accent);text-decoration:none}
+.cv-inside a:hover{text-decoration:underline;text-underline-offset:3px}
+.cv-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap)}
+.cv-list{list-style:none;margin:0;padding:0}
+.cv-list li{display:flex;justify-content:space-between;gap:var(--s4);font-size:.9375rem;line-height:1.5;padding:10px 0;border-bottom:1px solid var(--line)}
+.cv-list li:last-child{border-bottom:0;padding-bottom:0}
+.cv-list .lv{color:var(--muted);text-align:right;flex:none}
+.cv-note{margin:var(--gap) 0 0;padding:var(--s5);background:var(--surface);border:1px solid var(--line);font-size:.9375rem;line-height:1.6;color:var(--muted);max-width:90ch}
+.cv-note b{color:var(--ink);font-weight:600}
+.cv-footer .cv-foot-note{font-size:.75rem;color:var(--muted);max-width:52ch}
+@media(max-width:1000px){
+  .cv-hero{grid-template-columns:minmax(0,1fr);gap:var(--s6);padding-top:var(--s6)}
+  .cv-wall{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .cv-tile{min-height:132px;padding:12px}
+  .cv-panel{grid-template-columns:minmax(0,1fr);gap:var(--s5)}
+}
+@media(max-width:760px){
+  .cv-wall{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cv-pubs,.cv-projects,.cv-two{grid-template-columns:minmax(0,1fr)}
+  .cv-award{grid-template-columns:64px minmax(0,1fr);gap:var(--s4)}
+  .cv-award .yr{font-size:1.25rem}
+  .cv-jrow{grid-template-columns:64px minmax(0,1fr);gap:var(--s2) var(--s4)}
+  .cv-jrow .s{grid-column:2;text-align:left}
+  .cv-tag{display:none}
+}
+@media(max-width:520px){
+  .cv-tile .n{font-size:1.6rem}
+  .cv-tile .t{font-size:.6875rem}
+  .cv-tile{min-height:118px}
+  .cv-actions .button{width:100%}
+}
+@media print{
+  html,html[data-theme]{--bg:#fff;--surface:#fff;--raised:#f4f4f4;--ink:#111;--muted:#3d3d3d;--line:#c9c9c9;--line-strong:#555;--accent:#111}
+  .suite-header,.suite-footer,.cv-actions,.cv-focus,.skip-link{display:none!important}
+  body{background:#fff;color:#111;font-size:9.4pt;line-height:1.45}
+  .cv-main{padding:0;max-width:none}
+  .cv-hero{padding-top:0;grid-template-columns:minmax(0,1.5fr) minmax(0,.5fr);gap:18px}
+  .cv-hero h1{font-size:26pt;line-height:1}
+  .cv-role{font-size:10pt;margin:8px 0 10px}
+  .cv-meta{font-size:8.4pt;margin-bottom:0}
+  .cv-main>section{margin-bottom:13px}
+  .section-heading{margin-bottom:8px}
+  .section-heading h2{font-size:15pt}
+  .eyebrow{font-size:7.4pt;margin-bottom:4px}
+  .cv-prose p{font-size:9.4pt;line-height:1.45;margin-bottom:6px}
+  .cv-award{padding:9px 0;grid-template-columns:70px minmax(0,1fr);gap:14px}
+  .cv-award .yr{font-size:11pt}
+  .cv-award h3{font-size:10.5pt}
+  .cv-award .org,.cv-award p{font-size:8.8pt;line-height:1.4;margin-top:4px}
+  .cv-pub{padding:10px;min-height:0}
+  .cv-pub .ti{font-size:11pt}
+  .cv-pub .d,.cv-pub .src{font-size:8pt}
+  .cv-pubs{gap:8px}
+  .cv-jrow{padding:6px 0;font-size:8.8pt}
+  .cv-more{margin-top:6px;font-size:8.8pt}
+  .cv-journals{margin-top:8px}
+  .cv-project{padding:10px;min-height:0;gap:6px}
+  .cv-project h3{font-size:11pt}
+  .cv-project p{font-size:8.8pt;line-height:1.4}
+  .cv-project .go{font-size:8pt}
+  .cv-inside,.cv-note{padding:9px 11px;font-size:8.6pt;line-height:1.45;margin-top:8px}
+  .cv-list li{font-size:8.8pt;padding:4px 0}
+  .cv-panel{padding:11px;gap:16px}
+  .cv-panel h3{font-size:11pt}
+  .cv-panel .sub,.cv-panel .gpa{font-size:8.6pt}
+  .cv-panel .deg{font-size:8.8pt}
+  .cv-areas li{font-size:8.6pt;padding:3px 0}
+  .cv-tile{background:#eee!important;color:#111!important;min-height:0;padding:8px;gap:2px}
+  .cv-tile .k{font-size:6.6pt;opacity:1;color:#333}
+  .cv-tile .n{font-size:15pt}
+  .cv-tile .t{font-size:6.8pt;opacity:1;color:#333;line-height:1.3}
+  .cv-wall{gap:5px}
+  .cv-award,.cv-pub,.cv-project,.cv-note,.cv-inside,.cv-tile,.cv-jrow{break-inside:avoid}
+  .cv-pubs,.cv-two{break-inside:avoid}
+  .cv-hero{break-inside:avoid}
+  /* projects keep two columns in print: side by side they are short enough to stay on one page */
+  .cv-projects{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .cv-project{padding:8px 10px;gap:3px}
+  .cv-project .head{gap:8px}
+  .cv-project .head .app-tile{width:22px;height:22px}
+  .cv-project h3{font-size:10pt}
+  .cv-pub,.cv-project,.cv-note,.cv-inside,.cv-panel,.cv-tile{border-color:#c9c9c9!important}
+  .cv-pub::before,.cv-project::before{background:#111!important}
+  .cv-prose p,.cv-award p,.cv-award .org,.cv-project p,.cv-list li{color:#333}
+  a{color:#111}
+  .cv-pub,.cv-project{text-decoration:none}
+}
+</style></head><body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="suite-header cv-header"><div class="header-inner">
+<a class="brand" href="index.html" aria-label="Linda"><span class="brand-mark app-tile is-detector" aria-hidden="true"><img src="assets/detector-glyph.svg" alt="" width="20" height="16"></span><span>linda</span></a>
+<span class="cv-tag">Curriculum vitae</span>
+<div class="header-controls"><button class="theme-toggle" type="button" aria-label="Change colour theme">◐</button>
+<div class="language-switch" aria-label="Language"><a href="cv.html" lang="en" hreflang="en">EN</a><a href="cv-ru.html" lang="ru" hreflang="ru">RU</a><a href="cv-pl.html" lang="pl" hreflang="pl" aria-current="true">PL</a></div></div>
+</div></header>
+<main class="suite-main cv-main" id="main">
+
+<section class="cv-hero">
+<div class="cv-hero-copy">
+<span class="eyebrow">Curriculum vitae · Warszawa 2026</span>
+<h1>Vladyslav Manzyuk</h1>
+<p class="cv-role">Politologia · instytucje · eseje o regulacji, wiedzy i technologii</p>
+<p class="cv-meta"><span>Cegielnia, Polska</span><span>Obywatel Ukrainy · karta pobytu w Polsce</span><span><a href="mailto:v.manzyuk@student.uw.edu.pl">v.manzyuk@student.uw.edu.pl</a></span></p>
+<div class="cv-actions">
+<a class="button primary" href="mailto:v.manzyuk@student.uw.edu.pl">Napisz e-mail<span aria-hidden="true">↗</span></a>
+<button class="button" type="button" onclick="window.print()">Drukuj lub zapisz PDF<span aria-hidden="true">↗</span></button>
+<a class="text-link" href="https://mises.org/profile/vladyslav-manzyuk">Profil na Mises Wire<span aria-hidden="true">↗</span></a>
+</div>
+<p class="cv-focus">Ekonomia austriacka · wiedza rozproszona w koordynacji społecznej · teoria informacji · regulacja AI</p>
+</div>
+<div class="cv-wall"><div class="cv-tile" style="--tone:var(--id-blue)"><span class="k">Independent Institute</span><span class="n">1.</span><span class="t">Konkurs esejów studenckich, 2026 — 57 prac z 13 krajów</span></div><div class="cv-tile" style="--tone:var(--id-violet)"><span class="k">UNIDROIT</span><span class="n">5.</span><span class="t">Konkurs esejów, 2026 — 341 prac z 64 krajów</span></div><div class="cv-tile" style="--tone:var(--id-teal)"><span class="k">Uniwersytet Warszawski</span><span class="n">4,56</span><span class="t">Średnia ocen na 5,00</span></div><div class="cv-tile" style="--tone:var(--id-green)"><span class="k">Mises Wire</span><span class="n">2</span><span class="t">Artykuły opublikowane w 2026 roku</span></div></div>
+</section>
+
+<section id="profile">
+<div class="section-heading"><span class="eyebrow">Profil</span><h2>Politolog, który pisze i tworzy programy.</h2></div>
+<div class="cv-prose"><p>Student trzeciego roku politologii na Uniwersytecie Warszawskim, laureat międzynarodowych konkursów esejów o regulacji, instytucjach i sztucznej inteligencji. Eseje publikuję w Polsce i za granicą; pracuję na przecięciu ekonomii, prawa i technologii — wiedza rozproszona, informacyjna treść cen i reguły, których będą potrzebować autonomiczne agenty.</p><p>W pracy chcę wspierać research i analizy, monitorowanie prac Sejmu oraz przygotowanie materiałów dla prac legislacyjnych.</p><p>Obok esejów piszę programy: <strong>Linda</strong> — lokalny detektor tekstu generowanego przez AI — i <strong>Linda Probe</strong> — lokalną wyszukiwarkę dokumentów z OCR. Oba działają wyłącznie na komputerze użytkownika.</p></div>
+</section>
+
+<section id="education">
+<div class="section-heading"><span class="eyebrow">Wykształcenie</span><h2>Uniwersytet Warszawski.</h2></div>
+<div class="cv-panel">
+<div><h3>Uniwersytet Warszawski</h3><p class="sub">Wydział Nauk Politycznych i Studiów Międzynarodowych</p>
+<p class="deg">Politologia, studia licencjackie · październik 2024 – czerwiec 2027 (planowane)</p><p class="gpa">Średnia ocen: 4,56 / 5,00</p></div>
+<div><span class="eyebrow">Kluczowe obszary</span><ul class="cv-areas"><li>Metodologia i analiza danych społecznych</li><li>Ekonomia polityczna i filozofia polityki</li><li>Porównawcze systemy polityczne</li><li>Prawo konstytucyjne</li><li>Administracja publiczna</li><li>Komunikacja polityczna</li></ul></div>
+</div>
+</section>
+
+<section id="awards">
+<div class="section-heading"><span class="eyebrow">Nagrody</span><h2>Cztery międzynarodowe konkursy.</h2></div>
+<div class="cv-awards"><article class="cv-award"><div class="yr">2026</div><div><span class="place">I miejsce</span><h3>Dostojewski, Hayek i wiedza, której nie da się wyrazić</h3><div class="org">Student Essay Competition, The Independent Institute</div><p>Wybrany spośród 57 prac z 13 krajów — jedyna praca z Polski.</p><p class="pub">Publikacja: The Independent Review, zima 2026/27.</p></div></article><article class="cv-award"><div class="yr">2026</div><div><span class="place">V miejsce</span><h3>Autonomiczne agenty AI i potrzeba instrumentu UNIDROIT</h3><div class="org">UNIDROIT Essay Competition, stulecie instytutu</div><p>341 prac z 64 krajów.</p><p class="pub">Zaproszenie do publikacji w Uniform Law Review.</p></div></article><article class="cv-award"><div class="yr">2026</div><div><span class="place">Laureat</span><h3>Student Award Competition</h3><div class="org">Center for International Relations, Waszyngton</div><p>Jeden z trzech zwycięskich tekstów, 14 krajów — jedyna praca z Polski.</p><p class="pub">Publikacja: International Affairs Forum, 2026, nr 48.</p></div></article><article class="cv-award"><div class="yr">2025</div><div><span class="place">III miejsce</span><h3>„Geopolityka ponad biurokracją”</h3><div class="org">Centre of Excellence in Social Sciences i Centre of Migration Research UW (projekt Horyzont Europa)</div><p>Praca o polityce sąsiedztwa i rozszerzenia Unii Europejskiej.</p></div></article></div>
+</section>
+
+<section id="publications">
+<div class="section-heading"><span class="eyebrow">Publikacje</span><h2>Mises Wire i czasopisma.</h2></div>
+<div class="cv-pubs"><a class="cv-pub" href="https://mises.org/mises-wire/civilizations-are-transaction-costs"><span class="d">6 czerwca 2026</span><span class="ti">Civilizations Are Transaction Costs</span><span class="src">Mises Wire · Mises Institute</span></a><a class="cv-pub" href="https://mises.org/mises-wire/inflation-communication-and-noise"><span class="d">25 kwietnia 2026</span><span class="ti">Inflation, Communication, and Noise</span><span class="src">Mises Wire · Mises Institute</span></a></div>
+<p class="cv-more"><a class="text-link" href="https://mises.org/profile/vladyslav-manzyuk">Profil autora i wszystkie artykuły na Mises.org<span aria-hidden="true">↗</span></a></p>
+<div class="cv-journals"><div class="cv-jrow"><span class="v">2026/27</span><span class="w">Dostojewski, Hayek i wiedza, której nie da się wyrazić</span><span class="s">The Independent Review</span></div><div class="cv-jrow"><span class="v">2026</span><span class="w">Tekst konkursowy Student Award Competition</span><span class="s">International Affairs Forum · nr 48</span></div><div class="cv-jrow"><span class="v">—</span><span class="w">Autonomiczne agenty AI i potrzeba instrumentu UNIDROIT</span><span class="s">Uniform Law Review · zaproszenie</span></div></div>
+</section>
+
+<section id="projects">
+<div class="section-heading"><span class="eyebrow">Projekty</span><h2>Programy, które tworzę.</h2></div>
+<div class="cv-projects"><a class="cv-project" href="https://github.com/Lendarixon/Linda" style="--tone:var(--id-detector)"><span class="head"><span class="app-tile is-detector" aria-hidden="true"><img src="assets/detector-glyph.svg" alt="" width="20" height="16"></span><h3>Linda</h3></span><p>Autorski, lokalny detektor tekstu generowanego przez AI dla języka angielskiego, rosyjskiego i polskiego. Modele transformerowe i cechy stylometryczne; aplikacja na Windows, tekst nie opuszcza komputera.</p><span class="go">github.com/Lendarixon/Linda</span></a><a class="cv-project" href="https://github.com/Lendarixon/Linda-Probe" style="--tone:var(--id-probe)"><span class="head"><span class="app-tile is-probe" aria-hidden="true"><img src="assets/probe-glyph.svg" alt="" width="20" height="16"></span><h3>Linda Probe</h3></span><p>Lokalna wyszukiwarka dokumentów dla Windows z OCR i wyszukiwaniem semantycznym. Indeksowanie i wyszukiwanie wyłącznie na komputerze użytkownika.</p><span class="go">github.com/Lendarixon/Linda-Probe</span></a></div>
+<div class="cv-inside"><h3>Także w Linda Detector</h3><p><a href="humanizer.html">Humanizer</a> przepisuje sztywne, szablonowe zdania i pokazuje każdą zmianę obok oryginału. <a href="authorship.html">Trace</a> porównuje styl tekstów i szereguje, jak bardzo są podobne — to wskazówka do sprawdzenia, nie dowód autorstwa.</p></div>
+</section>
+
+<section id="skills">
+<div class="section-heading"><span class="eyebrow">Umiejętności i języki</span><h2>Research, źródła i pięć języków.</h2></div>
+<div class="cv-two">
+<div class="cv-panel" style="grid-template-columns:minmax(0,1fr);display:block">
+<span class="eyebrow">Research i narzędzia</span><ul class="cv-list"><li><span>Research i pisanie analityczne</span></li><li><span>Praca ze źródłami</span></li><li><span>Analiza danych społecznych</span></li><li><span>Python</span></li></ul></div>
+<div class="cv-panel" style="grid-template-columns:minmax(0,1fr);display:block">
+<span class="eyebrow">Języki</span><ul class="cv-list"><li><span>Ukraiński</span><span class="lv">ojczysty</span></li><li><span>Rosyjski</span><span class="lv">ojczysty</span></li><li><span>Polski</span><span class="lv">B2</span></li><li><span>Angielski</span><span class="lv">B2, certyfikat UW</span></li><li><span>Niemiecki</span><span class="lv">A2</span></li></ul></div>
+</div>
+<div class="cv-note"><b>Rekomendacja.</b> Dysponuję listem rekomendacyjnym od Center for International Relations (Waszyngton), wystawionym w innym celu (stypendium rektora UW); mogę go udostępnić na życzenie.</div>
+<div class="cv-note">Wyrażam zgodę na przetwarzanie moich danych osobowych dla potrzeb niezbędnych do realizacji procesu rekrutacji (zgodnie z RODO).</div>
+</section>
+
+</main>
+<footer class="suite-footer cv-footer"><div>
+<a class="brand" href="index.html"><span class="app-logo app-tile is-detector" aria-hidden="true"><img src="assets/detector-glyph.svg" alt="" width="20" height="16"></span><span>linda</span></a>
+<p class="cv-foot-note">Strona nieindeksowana: nie ma jej w nawigacji serwisu, wyszukiwarki jej nie widzą.</p>
+<small>© 2026 Vladyslav Manzyuk</small></div>
+<div class="footer-links"><a href="https://mises.org/profile/vladyslav-manzyuk">Mises.org</a><a href="https://github.com/Lendarixon">GitHub</a><a href="mailto:v.manzyuk@student.uw.edu.pl">E-mail</a></div>
+<div class="footer-links"><a href="index.html">Linda</a></div>
+</footer>
+<script>(function(){var root=document.documentElement;document.querySelectorAll('.cv-header .theme-toggle').forEach(function(b){b.addEventListener('click',function(){var v=root.dataset.theme==='light'?'dark':'light';root.dataset.theme=v;try{localStorage.setItem('linda-site-theme',v)}catch(e){}})});})();</script>
+</body></html>
