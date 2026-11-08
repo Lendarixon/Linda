@@ -88,6 +88,11 @@ CSS = """
 .cv-inside a:hover{text-decoration:underline;text-underline-offset:3px}
 .cv-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap)}
 .cv-list{list-style:none;margin:0;padding:0}
+.cv-shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cv-shot{position:relative;margin:0;overflow:hidden;background:var(--surface);border:1px solid var(--line)}
+.cv-shot img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:cover;filter:saturate(.94)}
+.cv-shot figcaption{position:absolute;left:0;right:0;bottom:0;padding:26px 14px 11px;font-size:.75rem;line-height:1.35;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.72))}
+.cv-shot::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);pointer-events:none}
 .cv-list li{display:flex;justify-content:space-between;gap:var(--s4);font-size:.9375rem;line-height:1.5;padding:10px 0;border-bottom:1px solid var(--line)}
 .cv-list li:last-child{border-bottom:0;padding-bottom:0}
 .cv-list .lv{color:var(--muted);text-align:right;flex:none}
@@ -103,6 +108,9 @@ CSS = """
 @media(max-width:760px){
   .cv-wall{grid-template-columns:repeat(2,minmax(0,1fr))}
   .cv-pubs,.cv-projects,.cv-two{grid-template-columns:minmax(0,1fr)}
+  .cv-shots{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cv-shots .cv-shot:last-child:nth-child(odd){grid-column:1/-1}
+  .cv-shots .cv-shot:last-child:nth-child(odd) img{aspect-ratio:16/10}
   .cv-award{grid-template-columns:64px minmax(0,1fr);gap:var(--s4)}
   .cv-award .yr{font-size:1.25rem}
   .cv-jrow{grid-template-columns:64px minmax(0,1fr);gap:var(--s2) var(--s4)}
@@ -166,6 +174,12 @@ CSS = """
   .cv-project .head .app-tile{width:22px;height:22px}
   .cv-project h3{font-size:10pt}
   .cv-pub,.cv-project,.cv-note,.cv-inside,.cv-panel,.cv-tile{border-color:#c9c9c9!important}
+  .cv-shots{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .cv-shots .cv-shot:last-child:nth-child(odd){grid-column:auto}
+  .cv-shots .cv-shot:last-child:nth-child(odd) img{aspect-ratio:1}
+  .cv-shot{border-color:#c9c9c9!important;break-inside:avoid}
+  .cv-shot img{filter:grayscale(.15) saturate(.8)}
+  .cv-shot figcaption{padding:14px 8px 6px;font-size:6.4pt}
   .cv-pub::before,.cv-project::before{background:#111!important}
   .cv-prose p,.cv-award p,.cv-award .org,.cv-project p,.cv-list li{color:#333}
   a{color:#111}
@@ -267,6 +281,12 @@ T = {
                  'next to the original. <a href="authorship.html">Trace</a> compares writing styles and ranks how '
                  'similar texts are — a clue for review, not proof of authorship.',
         sk_h="Skills and languages", sk_h2="Research, sources, and five languages.",
+        shots_h="In the field",
+        shots=[
+            ("cv-photo-athens.jpg", "Acropolis, Athens — fieldwork on institutions older than the state"),
+            ("cv-photo-studio.jpg", "“Polska, co dalej?” — a televised panel on Poland's political direction"),
+            ("cv-photo-convention.jpg", "Tabletop RPG convention — running a session for new players"),
+        ],
         sk_sub="Research and tools",
         skills=["Research and analytical writing", "Work with primary sources", "Social data analysis", "Python"],
         lang_sub="Languages",
@@ -372,6 +392,12 @@ T = {
                  'рядом с оригиналом. <a href="authorship.html">Trace</a> сравнивает стиль текстов и ранжирует, '
                  'насколько они похожи, — это подсказка для проверки, а не доказательство авторства.',
         sk_h="Навыки и языки", sk_h2="Research, источники и пять языков.",
+        shots_h="В поле",
+        shots=[
+            ("cv-photo-athens.jpg", "Акрополь, Афины — институты старше государства"),
+            ("cv-photo-studio.jpg", "«Polska, co dalej?» — телевизионная дискуссия о политическом курсе Польши"),
+            ("cv-photo-convention.jpg", "Конвент настольных игр — веду сессию для новых игроков"),
+        ],
         sk_sub="Research и инструменты",
         skills=["Research и аналитическое письмо", "Работа с источниками", "Анализ социальных данных", "Python"],
         lang_sub="Языки",
@@ -477,6 +503,12 @@ T = {
                  'zmianę obok oryginału. <a href="authorship.html">Trace</a> porównuje styl tekstów i szereguje, '
                  'jak bardzo są podobne — to wskazówka do sprawdzenia, nie dowód autorstwa.',
         sk_h="Umiejętności i języki", sk_h2="Research, źródła i pięć języków.",
+        shots_h="W terenie",
+        shots=[
+            ("cv-photo-athens.jpg", "Akropol, Ateny — instytucje starsze niż państwo"),
+            ("cv-photo-studio.jpg", "„Polska, co dalej?” — telewizyjna dyskusja o kierunku politycznym Polski"),
+            ("cv-photo-convention.jpg", "Konwent gier fabularnych — prowadzę sesję dla nowych graczy"),
+        ],
         sk_sub="Research i narzędzia",
         skills=["Research i pisanie analityczne", "Praca ze źródłami", "Analiza danych społecznych", "Python"],
         lang_sub="Języki",
@@ -521,6 +553,10 @@ def page(t):
         f'<p>{desc}</p><span class="go">{link}</span></a>'
         for name, desc, url, link, tone, glyph, w, h in t["proj"])
     skills = "".join(f"<li><span>{s}</span></li>" for s in t["skills"])
+    shots = "".join(
+        f'<figure class="cv-shot"><img src="assets/{src}" alt="{alt}" loading="lazy" width="1100" height="1100">'
+        f'<figcaption>{alt}</figcaption></figure>'
+        for src, alt in t["shots"])
     langs = "".join(f'<li><span>{n}</span><span class="lv">{lv}</span></li>' for n, lv in t["langs"])
     foot_links = "".join(f'<a href="{u}">{l}</a>' for l, u in t["foot_links"])
     lang_links = "".join(
@@ -591,6 +627,11 @@ def page(t):
 <div class="section-heading"><span class="eyebrow">{t["proj_h"]}</span><h2>{t["proj_h2"]}</h2></div>
 <div class="cv-projects">{projects}</div>
 <div class="cv-inside"><h3>{t["inside_h"]}</h3><p>{t["inside_p"]}</p></div>
+</section>
+
+<section id="field">
+<div class="section-heading"><span class="eyebrow">{t["shots_h"]}</span></div>
+<div class="cv-shots">{shots}</div>
 </section>
 
 <section id="skills">

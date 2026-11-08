@@ -73,6 +73,11 @@
 .cv-inside a:hover{text-decoration:underline;text-underline-offset:3px}
 .cv-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap)}
 .cv-list{list-style:none;margin:0;padding:0}
+.cv-shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cv-shot{position:relative;margin:0;overflow:hidden;background:var(--surface);border:1px solid var(--line)}
+.cv-shot img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:cover;filter:saturate(.94)}
+.cv-shot figcaption{position:absolute;left:0;right:0;bottom:0;padding:26px 14px 11px;font-size:.75rem;line-height:1.35;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.72))}
+.cv-shot::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);pointer-events:none}
 .cv-list li{display:flex;justify-content:space-between;gap:var(--s4);font-size:.9375rem;line-height:1.5;padding:10px 0;border-bottom:1px solid var(--line)}
 .cv-list li:last-child{border-bottom:0;padding-bottom:0}
 .cv-list .lv{color:var(--muted);text-align:right;flex:none}
@@ -88,6 +93,9 @@
 @media(max-width:760px){
   .cv-wall{grid-template-columns:repeat(2,minmax(0,1fr))}
   .cv-pubs,.cv-projects,.cv-two{grid-template-columns:minmax(0,1fr)}
+  .cv-shots{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cv-shots .cv-shot:last-child:nth-child(odd){grid-column:1/-1}
+  .cv-shots .cv-shot:last-child:nth-child(odd) img{aspect-ratio:16/10}
   .cv-award{grid-template-columns:64px minmax(0,1fr);gap:var(--s4)}
   .cv-award .yr{font-size:1.25rem}
   .cv-jrow{grid-template-columns:64px minmax(0,1fr);gap:var(--s2) var(--s4)}
@@ -151,6 +159,12 @@
   .cv-project .head .app-tile{width:22px;height:22px}
   .cv-project h3{font-size:10pt}
   .cv-pub,.cv-project,.cv-note,.cv-inside,.cv-panel,.cv-tile{border-color:#c9c9c9!important}
+  .cv-shots{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .cv-shots .cv-shot:last-child:nth-child(odd){grid-column:auto}
+  .cv-shots .cv-shot:last-child:nth-child(odd) img{aspect-ratio:1}
+  .cv-shot{border-color:#c9c9c9!important;break-inside:avoid}
+  .cv-shot img{filter:grayscale(.15) saturate(.8)}
+  .cv-shot figcaption{padding:14px 8px 6px;font-size:6.4pt}
   .cv-pub::before,.cv-project::before{background:#111!important}
   .cv-prose p,.cv-award p,.cv-award .org,.cv-project p,.cv-list li{color:#333}
   a{color:#111}
@@ -212,6 +226,11 @@
 <div class="section-heading"><span class="eyebrow">Projects</span><h2>Tools I build and ship.</h2></div>
 <div class="cv-projects"><a class="cv-project" href="https://github.com/Lendarixon/Linda" style="--tone:var(--id-detector)"><span class="head"><span class="app-tile is-detector" aria-hidden="true"><img src="assets/detector-glyph.svg" alt="" width="20" height="16"></span><h3>Linda</h3></span><p>A local detector of AI-generated text for English, Russian and Polish. Transformer models combined with stylometric features, packaged as a Windows application: the text never leaves the machine.</p><span class="go">github.com/Lendarixon/Linda</span></a><a class="cv-project" href="https://github.com/Lendarixon/Linda-Probe" style="--tone:var(--id-probe)"><span class="head"><span class="app-tile is-probe" aria-hidden="true"><img src="assets/probe-glyph.svg" alt="" width="20" height="16"></span><h3>Linda Probe</h3></span><p>Local document search for Windows with OCR and semantic search. Documents are indexed and searched only on the user's computer.</p><span class="go">github.com/Lendarixon/Linda-Probe</span></a></div>
 <div class="cv-inside"><h3>Also inside Linda Detector</h3><p><a href="humanizer.html">Humanizer</a> rewrites stiff, templated sentences and shows every change next to the original. <a href="authorship.html">Trace</a> compares writing styles and ranks how similar texts are — a clue for review, not proof of authorship.</p></div>
+</section>
+
+<section id="field">
+<div class="section-heading"><span class="eyebrow">In the field</span></div>
+<div class="cv-shots"><figure class="cv-shot"><img src="assets/cv-photo-athens.jpg" alt="Acropolis, Athens — fieldwork on institutions older than the state" loading="lazy" width="1100" height="1100"><figcaption>Acropolis, Athens — fieldwork on institutions older than the state</figcaption></figure><figure class="cv-shot"><img src="assets/cv-photo-studio.jpg" alt="“Polska, co dalej?” — a televised panel on Poland's political direction" loading="lazy" width="1100" height="1100"><figcaption>“Polska, co dalej?” — a televised panel on Poland's political direction</figcaption></figure><figure class="cv-shot"><img src="assets/cv-photo-convention.jpg" alt="Tabletop RPG convention — running a session for new players" loading="lazy" width="1100" height="1100"><figcaption>Tabletop RPG convention — running a session for new players</figcaption></figure></div>
 </section>
 
 <section id="skills">
