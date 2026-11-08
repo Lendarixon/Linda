@@ -11,7 +11,7 @@ import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-MAIL = "v.manzyuk@student.uw.edu.pl"
+MAIL = "manzyukvladyslav@gmail.com"
 MISES = "https://mises.org/profile/vladyslav-manzyuk"
 GH = "https://github.com/Lendarixon"
 LINDA = "https://github.com/Lendarixon/Linda"
@@ -181,7 +181,7 @@ T = {
         tag="Curriculum vitae",
         eyebrow="Curriculum vitae · Warsaw 2026",
         role="Political science · institutions · essays on regulation, knowledge and technology",
-        place="Cegielnia, Poland",
+        place="Warsaw, Poland",
         status="Ukrainian citizen · residence permit in Poland",
         mail_cta="Write an e-mail",
         print_cta="Print or save as PDF",
@@ -191,7 +191,7 @@ T = {
             ("Independent Institute", "1st", "Student essay competition, 2026 — 57 entries from 13 countries"),
             ("UNIDROIT", "5th", "Essay competition, 2026 — 341 entries from 64 countries"),
             ("University of Warsaw", "4.56", "Grade point average, out of 5.00"),
-            ("Mises Wire", "2", "Articles published in 2026"),
+            ("Published", "3", "Articles in 2026 — Mises Wire and International Affairs Forum"),
         ],
         profile_h="Profile", profile_h2="A political scientist who writes and builds.",
         profile=[
@@ -250,7 +250,8 @@ T = {
         mises_more="Author profile and all articles on Mises.org",
         journals=[
             ("2026/27", "Dostoevsky, Hayek and knowledge that cannot be expressed", "The Independent Review"),
-            ("2026", "Winning essay, Student Award Competition", "International Affairs Forum · no. 48"),
+            ("2026", "Who Governs the Algorithm? The Epistemic Case Against Centralized AI Rulemaking",
+             "International Affairs Forum · May 2026, no. 48, p. 48"),
             ("—", "Autonomous AI agents and the need for a UNIDROIT instrument", "Uniform Law Review · invited"),
         ],
         proj_h="Projects", proj_h2="Tools I build and ship.",
@@ -273,9 +274,7 @@ T = {
         lang_sub="Languages",
         langs=[("Ukrainian", "native"), ("Russian", "native"), ("Polish", "B2"),
                ("English", "B2, University of Warsaw certificate"), ("German", "A2")],
-        rec_h="Recommendation",
-        rec="A letter of recommendation from the Center for International Relations (Washington) is available on "
-            "request. It was issued for another purpose — the University of Warsaw rector's scholarship.",
+        rec_h="", rec="",
         consent="I consent to the processing of my personal data for the purposes necessary to carry out the "
                 "recruitment process (GDPR).",
         foot_note="Unlisted page: it is not linked from the site navigation and is excluded from search engines.",
@@ -289,7 +288,7 @@ T = {
         tag="Curriculum vitae",
         eyebrow="Curriculum vitae · Варшава, 2026",
         role="Политология · институты · эссе о регулировании, знании и технологиях",
-        place="Цегельня, Польша",
+        place="Варшава, Польша",
         status="Гражданин Украины · карта побыту в Польше",
         mail_cta="Написать письмо",
         print_cta="Печать или PDF",
@@ -299,7 +298,7 @@ T = {
             ("Independent Institute", "1-е", "Конкурс студенческих эссе, 2026 — 57 работ из 13 стран"),
             ("UNIDROIT", "5-е", "Конкурс эссе, 2026 — 341 работа из 64 стран"),
             ("Варшавский университет", "4,56", "Средний балл из 5,00"),
-            ("Mises Wire", "2", "Статьи, опубликованные в 2026 году"),
+            ("Опубликовано", "3", "Статьи в 2026 году — Mises Wire и International Affairs Forum"),
         ],
         profile_h="Профиль", profile_h2="Политолог, который пишет и делает программы.",
         profile=[
@@ -358,7 +357,8 @@ T = {
         mises_more="Профиль автора и все статьи на Mises.org",
         journals=[
             ("2026/27", "Достоевский, Хайек и знание, которое нельзя выразить", "The Independent Review"),
-            ("2026", "Конкурсный текст Student Award Competition", "International Affairs Forum · № 48"),
+            ("2026", "Who Governs the Algorithm? The Epistemic Case Against Centralized AI Rulemaking",
+             "International Affairs Forum · май 2026, № 48, с. 48"),
             ("—", "Автономные агенты ИИ и необходимость инструмента UNIDROIT", "Uniform Law Review · приглашение"),
         ],
         proj_h="Проекты", proj_h2="Программы, которые я делаю.",
@@ -381,9 +381,7 @@ T = {
         lang_sub="Языки",
         langs=[("Украинский", "родной"), ("Русский", "родной"), ("Польский", "B2"),
                ("Английский", "B2, сертификат Варшавского университета"), ("Немецкий", "A2")],
-        rec_h="Рекомендация",
-        rec="Есть рекомендательное письмо от Center for International Relations (Вашингтон); оно выдавалось для "
-            "другой цели — стипендии ректора Варшавского университета — и предоставляется по запросу.",
+        rec_h="", rec="",
         consent="Согласен на обработку моих персональных данных в целях, необходимых для проведения процесса "
                 "рекрутации (GDPR).",
         foot_note="Страница не в индексе: её нет в навигации сайта, поисковые системы её не видят.",
@@ -397,7 +395,7 @@ T = {
         tag="Curriculum vitae",
         eyebrow="Curriculum vitae · Warszawa 2026",
         role="Politologia · instytucje · eseje o regulacji, wiedzy i technologii",
-        place="Cegielnia, Polska",
+        place="Warszawa, Polska",
         status="Obywatel Ukrainy · karta pobytu w Polsce",
         mail_cta="Napisz e-mail",
         print_cta="Drukuj lub zapisz PDF",
@@ -407,7 +405,7 @@ T = {
             ("Independent Institute", "1.", "Konkurs esejów studenckich, 2026 — 57 prac z 13 krajów"),
             ("UNIDROIT", "5.", "Konkurs esejów, 2026 — 341 prac z 64 krajów"),
             ("Uniwersytet Warszawski", "4,56", "Średnia ocen na 5,00"),
-            ("Mises Wire", "2", "Artykuły opublikowane w 2026 roku"),
+            ("Opublikowane", "3", "Artykuły w 2026 roku — Mises Wire i International Affairs Forum"),
         ],
         profile_h="Profil", profile_h2="Politolog, który pisze i tworzy programy.",
         profile=[
@@ -466,7 +464,8 @@ T = {
         mises_more="Profil autora i wszystkie artykuły na Mises.org",
         journals=[
             ("2026/27", "Dostojewski, Hayek i wiedza, której nie da się wyrazić", "The Independent Review"),
-            ("2026", "Tekst konkursowy Student Award Competition", "International Affairs Forum · nr 48"),
+            ("2026", "Who Governs the Algorithm? The Epistemic Case Against Centralized AI Rulemaking",
+             "International Affairs Forum · maj 2026, nr 48, s. 48"),
             ("—", "Autonomiczne agenty AI i potrzeba instrumentu UNIDROIT", "Uniform Law Review · zaproszenie"),
         ],
         proj_h="Projekty", proj_h2="Programy, które tworzę.",
@@ -489,9 +488,7 @@ T = {
         lang_sub="Języki",
         langs=[("Ukraiński", "ojczysty"), ("Rosyjski", "ojczysty"), ("Polski", "B2"),
                ("Angielski", "B2, certyfikat UW"), ("Niemiecki", "A2")],
-        rec_h="Rekomendacja",
-        rec="Dysponuję listem rekomendacyjnym od Center for International Relations (Waszyngton), wystawionym w "
-            "innym celu (stypendium rektora UW); mogę go udostępnić na życzenie.",
+        rec_h="", rec="",
         consent="Wyrażam zgodę na przetwarzanie moich danych osobowych dla potrzeb niezbędnych do realizacji "
                 "procesu rekrutacji (zgodnie z RODO).",
         foot_note="Strona nieindeksowana: nie ma jej w nawigacji serwisu, wyszukiwarki jej nie widzą.",
@@ -610,7 +607,6 @@ def page(t):
 <div class="cv-panel" style="grid-template-columns:minmax(0,1fr);display:block">
 <span class="eyebrow">{t["lang_sub"]}</span><ul class="cv-list">{langs}</ul></div>
 </div>
-<div class="cv-note"><b>{t["rec_h"]}.</b> {t["rec"]}</div>
 <div class="cv-note">{t["consent"]}</div>
 </section>
 
