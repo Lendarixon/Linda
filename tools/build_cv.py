@@ -91,7 +91,6 @@ CSS = """
 .cv-shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .cv-shot{position:relative;margin:0;overflow:hidden;background:var(--surface);border:1px solid var(--line)}
 .cv-shot img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:cover;filter:saturate(.94)}
-.cv-shot figcaption{position:absolute;left:0;right:0;bottom:0;padding:26px 14px 11px;font-size:.75rem;line-height:1.35;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.72))}
 .cv-shot::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);pointer-events:none}
 .cv-list li{display:flex;justify-content:space-between;gap:var(--s4);font-size:.9375rem;line-height:1.5;padding:10px 0;border-bottom:1px solid var(--line)}
 .cv-list li:last-child{border-bottom:0;padding-bottom:0}
@@ -179,7 +178,6 @@ CSS = """
   .cv-shots .cv-shot:last-child:nth-child(odd) img{aspect-ratio:1}
   .cv-shot{border-color:#c9c9c9!important;break-inside:avoid}
   .cv-shot img{filter:grayscale(.15) saturate(.8)}
-  .cv-shot figcaption{padding:14px 8px 6px;font-size:6.4pt}
   .cv-pub::before,.cv-project::before{background:#111!important}
   .cv-prose p,.cv-award p,.cv-award .org,.cv-project p,.cv-list li{color:#333}
   a{color:#111}
@@ -554,8 +552,7 @@ def page(t):
         for name, desc, url, link, tone, glyph, w, h in t["proj"])
     skills = "".join(f"<li><span>{s}</span></li>" for s in t["skills"])
     shots = "".join(
-        f'<figure class="cv-shot"><img src="assets/{src}" alt="{alt}" loading="lazy" width="1100" height="1100">'
-        f'<figcaption>{alt}</figcaption></figure>'
+        f'<figure class="cv-shot"><img src="assets/{src}" alt="{alt}" loading="lazy" width="1100" height="1100"></figure>'
         for src, alt in t["shots"])
     langs = "".join(f'<li><span>{n}</span><span class="lv">{lv}</span></li>' for n, lv in t["langs"])
     foot_links = "".join(f'<a href="{u}">{l}</a>' for l, u in t["foot_links"])

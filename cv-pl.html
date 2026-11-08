@@ -76,7 +76,6 @@
 .cv-shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .cv-shot{position:relative;margin:0;overflow:hidden;background:var(--surface);border:1px solid var(--line)}
 .cv-shot img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:cover;filter:saturate(.94)}
-.cv-shot figcaption{position:absolute;left:0;right:0;bottom:0;padding:26px 14px 11px;font-size:.75rem;line-height:1.35;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.72))}
 .cv-shot::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);pointer-events:none}
 .cv-list li{display:flex;justify-content:space-between;gap:var(--s4);font-size:.9375rem;line-height:1.5;padding:10px 0;border-bottom:1px solid var(--line)}
 .cv-list li:last-child{border-bottom:0;padding-bottom:0}
@@ -164,7 +163,6 @@
   .cv-shots .cv-shot:last-child:nth-child(odd) img{aspect-ratio:1}
   .cv-shot{border-color:#c9c9c9!important;break-inside:avoid}
   .cv-shot img{filter:grayscale(.15) saturate(.8)}
-  .cv-shot figcaption{padding:14px 8px 6px;font-size:6.4pt}
   .cv-pub::before,.cv-project::before{background:#111!important}
   .cv-prose p,.cv-award p,.cv-award .org,.cv-project p,.cv-list li{color:#333}
   a{color:#111}
@@ -230,7 +228,7 @@
 
 <section id="field">
 <div class="section-heading"><span class="eyebrow">W terenie</span></div>
-<div class="cv-shots"><figure class="cv-shot"><img src="assets/cv-photo-athens.jpg" alt="Akropol, Ateny — instytucje starsze niż państwo" loading="lazy" width="1100" height="1100"><figcaption>Akropol, Ateny — instytucje starsze niż państwo</figcaption></figure><figure class="cv-shot"><img src="assets/cv-photo-studio.jpg" alt="„Polska, co dalej?” — telewizyjna dyskusja o kierunku politycznym Polski" loading="lazy" width="1100" height="1100"><figcaption>„Polska, co dalej?” — telewizyjna dyskusja o kierunku politycznym Polski</figcaption></figure><figure class="cv-shot"><img src="assets/cv-photo-convention.jpg" alt="Konwent gier fabularnych — prowadzę sesję dla nowych graczy" loading="lazy" width="1100" height="1100"><figcaption>Konwent gier fabularnych — prowadzę sesję dla nowych graczy</figcaption></figure></div>
+<div class="cv-shots"><figure class="cv-shot"><img src="assets/cv-photo-athens.jpg" alt="Akropol, Ateny — instytucje starsze niż państwo" loading="lazy" width="1100" height="1100"></figure><figure class="cv-shot"><img src="assets/cv-photo-studio.jpg" alt="„Polska, co dalej?” — telewizyjna dyskusja o kierunku politycznym Polski" loading="lazy" width="1100" height="1100"></figure><figure class="cv-shot"><img src="assets/cv-photo-convention.jpg" alt="Konwent gier fabularnych — prowadzę sesję dla nowych graczy" loading="lazy" width="1100" height="1100"></figure></div>
 </section>
 
 <section id="skills">
