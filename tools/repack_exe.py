@@ -34,6 +34,9 @@ EXTRA_MODULES: set[str] = {
     "linda_desktop.trace.projection_2d", "linda_desktop.trace.runtime_manifest",
     "linda_desktop.trace.trace_config", "linda_desktop.trace.trace_updater",
     "linda_desktop.trace.report_builder", "linda_desktop.trace.vendor.linda_stylometry",
+    # 2.4.0.0: Trace corpora (SVG charts, compare-with-corpus, corpus builder; lazily
+    # imported from linda_desktop.app) and the opt-in one-pass segmenter (engine.py).
+    "linda_desktop.trace_corpora", "linda_pro.segmenter",
 }  # новые модули приложения: вписать сюда имя, чтобы он попал в exe (char_ngrams_model.json едет файлом в _internal/linda_desktop/trace/)
 
 
