@@ -248,6 +248,26 @@ def test_corners_are_square_everywhere():
         assert "var(--radius)!important" not in text, name
 
 
+def test_no_token_resolves_to_itself():
+    """A `--x: var(--x)` declaration is a cycle: the property becomes invalid at computed-value
+    time, so `background: var(--primary-hover)` on the CTA hover painted nothing at all.
+    """
+    for name in ("index.html", "desktop-shell.css"):
+        text = (WEB / name).read_text(encoding="utf-8")
+        cycles = [t for t in re.findall(r"(--[a-z0-9-]+)\s*:\s*var\(\1\)", text)]
+        assert not cycles, (name, cycles)
+
+
+def test_action_button_hover_has_a_real_colour():
+    """C-01 regression guard: the hover fill must be a literal or a different token."""
+    idx = (WEB / "index.html").read_text(encoding="utf-8")
+    decl = re.search(r"--primary-hover:\s*([^;]+);", idx)
+    assert decl, "index.html lost --primary-hover"
+    value = decl.group(1).strip()
+    assert value != "var(--primary-hover)", "--primary-hover is self-referential"
+    assert re.fullmatch(r"#[0-9a-fA-F]{3,8}", value), value
+
+
 if __name__ == "__main__":
     print(f"{'theme':9s} {'accent':9s} {'token':26s} {'fg':9s} {'bg':9s} ratio")
     worst = None
