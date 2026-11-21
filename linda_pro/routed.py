@@ -288,6 +288,13 @@ class RoutedLindaPro:
                 score = sum((agg[k] - t["z"][k][0]) / t["z"][k][1] for k in t["voters"]) / len(t["voters"])
             ai, hi = (t["thr_p03"], t["thr_sensitive"]) if self.mode == "precise" else (t["thr_sensitive"], t["thr_p5"])
             verdict = "ai" if score > ai else "uncertain" if score > hi else "human"
+            if self.tier_pref == "speed" and backend == "pl":
+                sp = self.pool.items.get(t["heat"]["essay"]["voter"])
+                if isinstance(sp, SpeedOnnx) and sp.conformal is not None:
+                    nwords = len(texts[i].split())
+                    verdict = sp.conformal_verdict(float(score), nwords, flat_thr=-1.0)
+                    if verdict == "ai" and score <= ai:
+                        verdict = "uncertain" if score > hi else "human"
             thr_w = t["heat"]["essay"]["win_thr_1"]
             wl = [{"first_word": a, "last_word": b, "essay": float(s), "multi": float(m), "flag": bool(s > thr_w)} for (_, a, b), s, m in zip(wins[i], raw[ke][i], raw[km][i])]
             tot = sum(w["last_word"] - w["first_word"] for w in wl) or 1
