@@ -171,21 +171,32 @@ class RoutedLindaPro:
     @property
     def mean(self) -> dict:
         t = self.tier(self.cur_lang)
-        return {COMPAT[k]: t["z"][t["heat"][k]["voter"]][0] for k in ("essay", "multi")} | {COMPAT["stylo"]: t["z"][self._stylo_key(t)][0]}
+        out = {COMPAT[k]: t["z"][t["heat"][k]["voter"]][0] for k in ("essay", "multi")}
+        sk = self._stylo_key(t)
+        if sk:
+            out[COMPAT["stylo"]] = t["z"][sk][0]
+        return out
 
     @property
     def std(self) -> dict:
         t = self.tier(self.cur_lang)
-        return {COMPAT[k]: t["z"][t["heat"][k]["voter"]][1] for k in ("essay", "multi")} | {COMPAT["stylo"]: t["z"][self._stylo_key(t)][1]}
+        out = {COMPAT[k]: t["z"][t["heat"][k]["voter"]][1] for k in ("essay", "multi")}
+        sk = self._stylo_key(t)
+        if sk:
+            out[COMPAT["stylo"]] = t["z"][sk][1]
+        return out
 
     @staticmethod
-    def _stylo_key(t: dict) -> str:
-        return next(v for v in t["voters"] if v.startswith("stylo"))
+    def _stylo_key(t: dict) -> str | None:
+        """None when the tier has no stylometry voter (routing 1.4.1: PL/RU run essay+multi only)."""
+        return next((v for v in t["voters"] if v.startswith("stylo")), None)
 
     def _factory(self, key: str):
         """linda_essay / linda_multi_v2 (имена 1.x) -> главный голос текущего языка для тепловой карты; настоящие имена голосов работают как есть."""
         t = self.tier(self.cur_lang)
         real = {"linda_essay": t["heat"]["essay"]["voter"], "linda_multi_v2": t["heat"]["multi"]["voter"], "stylo7c": self._stylo_key(t)}.get(key, key)
+        if real is None:  # stylo7c asked for on a tier without stylometry: fall back to the essay voice
+            real = t["heat"]["essay"]["voter"]
         return self.pool.get(real)
 
     # --- анализ ---------------------------------------------------------------------------------------
@@ -267,6 +278,9 @@ class RoutedLindaPro:
         res = []
         for i in range(len(texts)):
             agg = {k: (raw[k][i] if k.startswith("stylo") else top25(raw[k][i])) for k in t["voters"]}
+            voters = {COMPAT["essay"]: agg[ke], COMPAT["multi"]: agg[km]}
+            if ks:
+                voters[COMPAT["stylo"]] = agg[ks]
             wts = t.get("weights")  # merged-таблица: заморозка DEV с весами голосов; без поля — среднее z, как в 2.0
             if wts:
                 score = sum(float(wts.get(k, 0.0)) * (agg[k] - t["z"][k][0]) / t["z"][k][1] for k in t["voters"])
@@ -279,7 +293,7 @@ class RoutedLindaPro:
             tot = sum(w["last_word"] - w["first_word"] for w in wl) or 1
             share = sum(w["last_word"] - w["first_word"] for w in wl if w["flag"]) / tot
             res.append({"verdict": verdict, "mode": self.mode, "essay": float(agg[ke]), "ens_z": float(score), "score": float(score), "ai_share": float(share), "windows": wl,
-                        "voters": {COMPAT["essay"]: agg[ke], COMPAT["multi"]: agg[km], COMPAT["stylo"]: agg[ks]}, "n_windows": len(wl),
+                        "voters": voters, "n_windows": len(wl),
                         "language": orig, "routing": {"voters": list(t["voters"]), "config": t.get("config", ""), "backend": backend if backend != orig else None}})
             if orig not in self.table.get("languages", {}):
                 if orig == "uk":
