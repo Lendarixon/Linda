@@ -273,6 +273,7 @@ class Engine:
             self.dets = None
             self._backend = None
             self._routed_lang = None
+            self.doc_lang = None
             # Factory caches form cycles; release GPU sessions on device changes.
             import gc
             gc.collect()
@@ -653,6 +654,58 @@ class Engine:
 
     SEGMENTER_DIR = "seg_l14"  # qa_models/models/seg_l14: one-pass token segmenter (opt-in mode)
     _seg = None
+    doc_lang = None  # language reported for the document being analysed (never the backend)
+
+    # (voice, language) pairs whose installed v2 token head beat the context path on the
+    # held-out test set (TRAIN_TOKEN_HEAD.md): AUC / F1@0.20 = 0.762/0.539 essay-en,
+    # 0.748/0.374 essay-pl, 0.708/0.320 multi-pl, negative-FPR 5.0% at p = 0.20.
+    # multi-en (0.720/0.251) stays out: below its all-positive ceiling (0.529). RU has no
+    # head at all (no RU training data), so RU keeps the context path by construction.
+    TOKEN_HEADS_V2 = {("essay", "en"), ("essay", "pl"), ("multi", "pl")}
+
+    def document_language(self, det, res: dict | None = None) -> str | None:
+        """The language the head must match, or None when it cannot be established.
+
+        `det.cur_lang` is the *backend* the routed pool scored with: routed.py maps any
+        language it has no routing entry for onto "en" or "ru" (uk -> ru backend, and
+        `cur_lang` falls back to "en" when the detected language is not in the table). A
+        Ukrainian document therefore looks English to a gate that reads cur_lang, which is
+        exactly the wrong-pairing case measured at 17.7% human-token FPR. Read the reported
+        language first (`res`, or `self.doc_lang` set by `run`) and refuse rather than guess.
+        """
+        lang = ((res or {}).get("language")
+                or getattr(self, "doc_lang", None)
+                or getattr(det, "cur_lang", None))
+        if not isinstance(lang, str):
+            return None
+        lang = lang.strip().lower()
+        return lang if lang in ("en", "pl", "ru") else None
+
+    def token_head_voice(self, det, voice: str, res: dict | None = None):
+        """(voter, info) when this voice's installed head is a validated v2 head for the
+        document's language, else None.
+
+        A head opts in only if it is schema 2, its own `voice`/`lang` keys match the pair
+        asked for, and that pair is in TOKEN_HEADS_V2. Any probe failure returns None:
+        absence of evidence must never promote markup to the token path. `res` is the
+        detection result whose reported `language` decides the pair (see document_language).
+        """
+        from linda_pro.voters import token_head_info
+
+        lang = self.document_language(det, res)
+        if lang is None:
+            return None
+        if (voice, lang) not in self.TOKEN_HEADS_V2:
+            return None
+        voter = det._factory("linda_essay" if voice == "essay" else "linda_multi_v2")
+        if not callable(getattr(voter, "token_scores", None)) or not getattr(voter, "has_token_scores", True):
+            return None
+        info = token_head_info(voter.model_dir)
+        if not info or int(info.get("schema") or 1) < 2 or not info.get("calibrated"):
+            return None
+        if info.get("voice") != voice or info.get("lang") != lang:
+            return None
+        return voter, info
 
     def segmenter_dir(self) -> Path:
         return Path(config.models_root()) / "models" / self.SEGMENTER_DIR
@@ -674,15 +727,24 @@ class Engine:
         return self._seg
 
     def sentence_mode(self, nwords: int = 0, det=None, allow_tokens: bool = True, skip=()) -> str:
-        """auto uses the Lite token output, but scores Pro sentences with the document
-        voters in context (falling back to the legacy modes below).
-        Measured reason (logs/relight_20261011/threshold_scan.json): the shipped Pro token
-        head does not separate human from AI sentences. On 280-380 word human paragraphs its
-        median sentence score is 0.93, against 0.83 for a single AI sentence inserted into
-        that same text, so no cut-off separates them: at the recorded 0.20 threshold it marks
-        every human sentence AI (FPR 1.00), and reaching FPR 0.00 needs 0.99, which also
-        drops AI recall to 0.00. Pro therefore keeps the context path in auto; the explicit
-        tokens mode stays available and is labelled as the unvalidated auxiliary head.
+        """auto takes the token path when the installed heads are the validated v2 ones;
+        otherwise it scores Pro sentences with the document voters in context.
+
+        v2 heads (tmp/tokenhead_20261120/TRAIN_TOKEN_HEAD.md, held-out test, product
+        aggregation path): essay/en AUC 0.762 F1@0.20 0.539, essay/pl 0.748/0.374,
+        multi/pl 0.708/0.320, with the negative-token false-positive rate held at 5.0%
+        at p = 0.20 — against 0.601/0.276, 0.587/0.162, 0.536/0.164 for the shipped
+        head. That is why auto may use them for exactly those voice/language pairs
+        (`TOKEN_HEADS_V2`). multi/en measures 0.720/0.251, below its all-positive
+        ceiling (0.529), so its column keeps the derived view and the context path.
+        The pair is also checked against the head's own `voice`/`lang` keys, so a PL
+        head sitting in a directory that also serves RU is never used for RU.
+        The reason the v1 head was refused (logs/relight_20261011/threshold_scan.json):
+        on 280-380 word human paragraphs its median sentence score was 0.93 against
+        0.83 for a single AI sentence inserted into the same text — no cut-off
+        separated them (FPR 1.00 at 0.20, recall 0.00 at the 0.99 needed for FPR 0.00).
+        Explicit settings are untouched: `tokens` still forces the token path where a
+        head is installed, and every other choice still forces its own mode.
         hybrid = every sentence is scored alone AND in its context and the higher score counts: a lone strongly-AI sentence still lights up, and a whole AI text is no longer shown as human
         sentence by sentence (alone, a sentence is too short for models calibrated on ~300-word windows: on whole-AI essays it flagged about a quarter of the sentences, the context score about 95%);
         context = every sentence is scored together with its neighbours (~CONTEXT_WORDS words around it), so the colour changes sentence by sentence and boundaries are found to the sentence;
@@ -709,6 +771,15 @@ class Engine:
                 pass  # capability probing may fail too; preserve legacy fallback
         if s == "tokens":
             s = "auto"
+        # Pro, auto, a validated v2 head installed for this voice/language: the token
+        # path is the more accurate markup source (see the docstring numbers). The head
+        # must match the *reported* document language (res), never the routed backend.
+        if s == "auto" and allow_tokens and det is not None and getattr(self, "tier", "full") != "speed":
+            try:
+                if self.token_head_voice(det, "essay") is not None:
+                    return "tokens"
+            except Exception:  # noqa: BLE001 — probing must never pick a mode by accident
+                pass
         if s == "auto" and getattr(self, "tier", "full") == "speed":
             return "context"  # Lite: предложение в окружении ~120 слов (см. THRESHOLDS_LITE), а не окна ~300 слов
         if s == "auto":
@@ -820,6 +891,9 @@ class Engine:
                 from .single_model import run as run_single
                 return run_single(self,det,text,mode,chosen_models[0])
             res = det.detect([text])[0]
+            # The token-head gate must match the *reported* document language, not the
+            # routed backend (routed.py maps uk onto en/ru). Set before any markup branch.
+            self.doc_lang = res.get("language")
             known_tokens = res.pop("_lite_token_scores", [])
             # Routed backend may score uk/other via ru/en — report the original.
             if "_orig_lang" in locals() and _orig_lang not in ("en", "pl", "ru"):
@@ -872,18 +946,25 @@ class Engine:
                         head = load_token_head(voter.model_dir)
                         center, scale = float(head["center"]), float(head["scale"])
                     token_rows = _sentence_token_evidence(text, spans, scores, center, scale)
+                    multi_col = None
                     if getattr(self, "tier", "full") != "speed":
-                        # Multi keeps its own token head and calibration but no longer
-                        # runs its own token pass: the Essay token evidence is reused
-                        # and read through the Multi head's center/scale. A second
-                        # full pass through the other transformer cost as much as the
-                        # Essay pass, for a head this app already documents as
-                        # unvalidated (sentence_mode: the shipped Pro token head does
-                        # not separate human from AI sentences), and the two voices
-                        # token scores agree too weakly to justify it (0.29-0.49
-                        # correlation on shared tokens, work/bench_tokens_20261120.md).
-                        # Document verdicts never read these rows; sentence-level
-                        # Multi (hybrid/context/smooth/full) still runs its own pass.
+                        # A v2 Multi head for this language is a validated second measurement
+                        # (multi/pl: AUC 0.708, F1@0.20 0.320 — TRAIN_TOKEN_HEAD.md), so it
+                        # gets its own pass. Without one the Multi column is read through its
+                        # own calibration from the Essay evidence: the two voices' token
+                        # scores agree too weakly (0.29-0.49 correlation on shared tokens,
+                        # work/bench_tokens_20261120.md) for a real second measurement to be
+                        # faked, but a whole extra transformer pass for an unvalidated head
+                        # (multi/en) is not worth it either.
+                        multi_col = self.token_head_voice(det, "multi")
+                    if multi_col is not None:
+                        multi_voter, multi_info = multi_col
+                        mtokens = multi_voter.token_scores(text)
+                        mscores = sorted(((int(a), int(b), float(z)) for a, b, z in mtokens if b > a),
+                                         key=lambda token: (token[0], token[1]))
+                        multi_token_rows = _sentence_token_evidence(
+                            text, spans, mscores, float(multi_info["center"]), float(multi_info["scale"]))
+                    elif getattr(self, "tier", "full") != "speed":
                         multi_voter = det._factory("linda_multi_v2")
                         multi_head = load_token_head(multi_voter.model_dir)
                         multi_token_rows = _sentence_token_evidence(

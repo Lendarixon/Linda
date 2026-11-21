@@ -487,7 +487,7 @@
  "set_sec_device": "Checking and device",
  "set_sec_updates": "Updates and about",
  "set_sent": "Sentence highlighting",
- "set_sent_auto": "Automatic: token highlighting when available; otherwise sentences and context (recommended)",
+ "set_sent_auto": "Automatic: token highlighting where the language has a validated head (English, Polish); sentences and context otherwise (recommended)",
  "set_sent_full": "Single sentences (experimental, less reliable)",
  "set_sent_segmenter": "Segmenter: one-pass span model highlights whole sentences; needs the optional seg_l14 model folder",
  "set_sent_smooth": "Sliding windows of ~300 words: accurate boundaries, a few seconds more on a CPU",

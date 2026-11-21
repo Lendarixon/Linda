@@ -487,7 +487,7 @@
  "set_sec_device": "Sprawdzanie i urządzenie",
  "set_sec_updates": "Aktualizacje i program",
  "set_sent": "Podświetlanie zdań",
- "set_sent_auto": "Automatycznie: podświetlenie tokenów, gdy dostępne; w pozostałych przypadkach zdania i kontekst (zalecane)",
+ "set_sent_auto": "Automatycznie: podświetlenie tokenów, gdy język ma zweryfikowaną głowicę (angielski, polski); w pozostałych przypadkach zdania i kontekst (zalecane)",
  "set_sent_full": "Pojedyncze zdania (opcja eksperymentalna, mniej wiarygodna)",
  "set_sent_segmenter": "Segmenter: model jednego przebiegu zaznacza całe zdania; wymaga opcjonalnego folderu modelu seg_l14",
  "set_sent_smooth": "Przesuwne okna ~300 słów: dokładne granice, na procesorze kilka sekund dłużej",
