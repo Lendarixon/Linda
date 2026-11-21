@@ -115,3 +115,46 @@ the night branches.
 - Verified semantically, not just by clean merge: `batch_chunks` present at
   `humanize_pack.py:372`, RU pairs present in `engine.py:664-665`, lang-aware head
   lookup present in `voters.py:85-100`.
+
+---
+
+# N6 — SHIP-verdict branch merges (2026-11-21)
+
+Night N6-A folded the two SHIP-verdict branches into `night/release-2.5`.
+
+## 1. Merges
+
+| Branch | HEAD | Merge commit | Effect |
+|---|---|---|---|
+| `night/speed2` | `115b2b7` | `083e21d` | PRO ONNX graph freezes the batch axis (`static_batch`, `batch: "static1"`) — 2.55x on DirectML, verdicts identical. Touches `linda_desktop/onnx_gpu.py` + `tests/test_onnx_gpu.py` only. |
+| `night/lite2` | `929585e` | `cfddcae` | Length-binned split-conformal thresholds for `SpeedOnnx` (+abstain band), resolves 5 PL false positives. New `linda_pro/speed_conformal.json`, `SpeedOnnx.load_conformal`/`conformal_verdict`, caller in `routed.py:293-295`, `tests/test_lite_conformal.py`. |
+| `night/lite3` | — | — | **Not merged — branch does not exist.** `git log night/lite3` → unknown revision; no `LITE_RETRAIN_NIGHT.md` verdict file anywhere under either `tmp/night_20261121/`. Nothing to gate on, so skipped per the N6 rule. |
+
+Both merges were clean (`ort` strategy, zero conflicts). The expected `voters.py`
+collision with night/pack15's lang-gate never materialised: pack15 added
+`load_token_head(model_dir, lang)` / `_head_calibration` (lines 60-100) while lite2
+appended `load_conformal`/`conformal_verdict` at line 430+ — disjoint regions.
+Both changes are present in the merged file, no manual resolution needed.
+
+## 2. Test run
+
+venv `C:/Users/ninja/Desktop/детектор/.venv/Scripts/python.exe` (pytest 9.1.1),
+`PYTHONPATH`/`PYTHONHOME` unset, `pytest tests -q`, 216.12 s.
+
+**666 passed, 11 failed, 0 collection errors.**
+
+The 11 failures are all members of the documented pre-existing environment set
+(updater / Store packaging / installer: `UpdateError: Application updates are
+managed by Microsoft Store` and relatives). `test_license_api::test_download_through_api_and_settings`,
+previously failing, now passes — so 666 vs the 660 of N4B, and the failure count
+dropped 12 → 11. No new failure names.
+
+## 3. State
+
+- `night/release-2.5` checked out, both merge commits on top of `383fb8c`.
+- `git status` clean apart from pre-existing untracked night artefacts.
+- No push. `rc/2.4` untouched. PID 18877 untouched. CPU only.
+- Spot-checked post-merge: `static_batch` present in `onnx_gpu.py:30-88` with the
+  frozen batch axis, `speed_conformal.json` present with 4 bins / `abstain_margin`
+  0.05, `routed.py:293` routes through `conformal_verdict`, and pack15's lang-aware
+  head lookup survives at `voters.py:85-100`.
