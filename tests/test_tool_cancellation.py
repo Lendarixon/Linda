@@ -51,12 +51,23 @@ def test_generation_stopping_criterion_checks_request_event(monkeypatch):
  class Tensor:
   shape=(1,8)
   def to(self,*args):return self
+  def __getitem__(self,i):return self
+  def __setitem__(self,i,v):pass
+ class FakeTorch:
+  # batch path needs the few torch symbols a padded prompt batch uses
+  long='long'
+  @staticmethod
+  def full(shape,value,dtype=None):return Tensor()
+  @staticmethod
+  def zeros(shape,dtype=None):return Tensor()
+  @staticmethod
+  def no_grad():return nullcontext()
  class Model:
   def parameters(self):return iter([types.SimpleNamespace(device='cpu')])
   def generate(self,*args,**kwargs):
    criterion=kwargs['stopping_criteria'][0]
    observed.append(criterion(None,None));event.set();observed.append(criterion(None,None));return []
- monkeypatch.setitem(sys.modules,'torch',types.SimpleNamespace(no_grad=nullcontext))
+ monkeypatch.setitem(sys.modules,'torch',types.SimpleNamespace(no_grad=nullcontext,long='long',full=lambda shape,value,dtype=None:Tensor(),zeros=lambda shape,dtype=None:Tensor()))
  monkeypatch.setitem(sys.modules,'transformers',types.SimpleNamespace(StoppingCriteria=object,StoppingCriteriaList=list))
  backend=humanize_pack.HumanizerBackend();backend.model=Model();backend.tok=types.SimpleNamespace(apply_chat_template=lambda *a,**kw:{'input_ids':Tensor(),'attention_mask':Tensor()},pad_token_id=0)
  with pytest.raises(task_cancel.ToolCancelled):
