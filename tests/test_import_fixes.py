@@ -79,6 +79,31 @@ def test_pdf_two_column_reading_order():
     assert text.index("Left column") < text.index("Right column")
 
 
+def test_pdf_dedupes_overlapping_layers_and_xobject_echo():
+    from linda_desktop.document_formats import extract_pdf_pages
+
+    class _FakePage:
+        class mediabox:
+            width = 600.0
+        def extract_text(self, visitor_text=None):
+            if visitor_text is None:
+                return "Slide Title\nBullet one here"
+            # Simulated inner XObject fragments + overlapping duplicate + Do summary echo
+            visitor_text("Slide Title", [1, 0, 0, 1, 0, 0], [1, 0, 0, 1, 50, 500], None, 24.0)
+            visitor_text("Slide Title", [1, 0, 0, 1, 0, 0], [1, 0, 0, 1, 50, 500], None, 24.0)
+            visitor_text("Bullet", [1, 0, 0, 1, 0, 0], [1, 0, 0, 1, 50, 450], None, 14.0)
+            visitor_text("one here", [1, 0, 0, 1, 0, 0], [1, 0, 0, 1, 100, 450], None, 14.0)
+            visitor_text("Slide Title\nBullet one here", [1, 0, 0, 1, 0, 0], [1, 0, 0, 1, 0, 0], None, 12.0)
+            return ""
+
+    class _FakeReader:
+        pages = [_FakePage()]
+
+    out = "\n".join(extract_pdf_pages(_FakeReader()))
+    assert out.count("Slide Title") == 1
+    assert out.count("Bullet one here") == 1
+
+
 def test_compare_multi_file_upload_and_matrix(tmp_path, monkeypatch):
     monkeypatch.setenv("LINDA_HOME", str(tmp_path / "home"))
     monkeypatch.setenv("LINDA_MODELS_HOME", str(tmp_path / "models"))

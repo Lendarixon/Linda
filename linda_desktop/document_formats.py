@@ -185,7 +185,7 @@ def extract_extended(ext,data):
 
 _HYPHEN_END=re.compile(r'[A-Za-z\u00c0-\u024f\u0400-\u04ff][-\u00ad\u2010]$')
 _LOWER_START=re.compile(r'^[a-z\u00df-\u024f\u0430-\u044f\u0451]')
-_NO_SPACE_BEFORE=re.compile(r'^[.,;:!?\)\]\}%\u00bb\u201d\u2019]')
+_NO_SPACE_BEFORE=re.compile(r'^(?:[,;:!?\)\]\}%\u00bb\u201d\u2019]|\.(?!\.))')
 _SENT_END=re.compile(r'[.!?\u2026\u00bb\u201d\)]$')
 
 
@@ -235,13 +235,13 @@ def _split_two_columns(frags, page_width):
     if len(frags) < 8 or page_width < 300:
         return [frags]
     xs=sorted(f[0] for f in frags)
-    lo, hi=page_width * 0.25, page_width * 0.75
+    lo, hi=page_width * 0.30, page_width * 0.70
     best_gap, mid_x=0.0, 0.0
     for a, b in zip(xs, xs[1:]):
         if lo <= (a + b) / 2.0 <= hi and (b - a) > best_gap:
             best_gap=b - a
             mid_x=(a + b) / 2.0
-    if best_gap < 14.0:
+    if best_gap < 24.0:
         return [frags]
     left=[f for f in frags if f[0] < mid_x]
     right=[f for f in frags if f[0] >= mid_x]
@@ -250,6 +250,13 @@ def _split_two_columns(frags, page_width):
     left_ys={round(f[1] / 6.0) for f in left}
     right_ys={round(f[1] / 6.0) for f in right}
     if len(left_ys) < 4 or len(right_ys) < 4:
+        return [frags]
+    ly_min, ly_max=min(f[1] for f in left), max(f[1] for f in left)
+    ry_min, ry_max=min(f[1] for f in right), max(f[1] for f in right)
+    if min(ly_max, ry_max) <= max(ly_min, ry_min):
+        return [frags]
+    crossing=sum(1 for f in left if f[0] + len(f[3].strip()) * f[2] * 0.42 > mid_x + 12.0)
+    if crossing > max(1, len(left) // 5):
         return [frags]
     return [left, right]
 
@@ -287,12 +294,26 @@ def extract_pdf_pages(reader):
     page_groups=[]
     for page in reader.pages:
         frags=[]
+        seen_words=set()
+        seen_pos=set()
         def _visitor(text, cm, tm, font_dict, font_size):
             if not text or not text.strip():
                 return
+            s=text.strip()
+            if '\n' in s and frags:
+                words=s.split()
+                if words and sum(1 for w in words if w in seen_words) >= 0.8 * len(words):
+                    return
             x=float(cm[0]) * float(tm[4]) + float(cm[2]) * float(tm[5]) + float(cm[4])
             y=float(cm[1]) * float(tm[4]) + float(cm[3]) * float(tm[5]) + float(cm[5])
             fs=abs(float(font_size or 0.0)) or 10.0
+            if frags and frags[-1][3].strip() == s and (abs(frags[-1][2] - fs) > 0.5 or (abs(frags[-1][0] - x) <= 2.0 and abs(frags[-1][1] - y) <= 2.0)):
+                return
+            pos_key=(round(x / 2.0), round(y / 2.0), s)
+            if pos_key in seen_pos:
+                return
+            seen_pos.add(pos_key)
+            seen_words.update(s.split())
             frags.append((x, y, fs, text))
         try:
             page.extract_text(visitor_text=_visitor)
