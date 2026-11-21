@@ -159,6 +159,95 @@ def test_accent_is_reachable_for_every_theme():
         assert f'html[data-theme="light"][data-accent="{accent}"]' in html, accent
 
 
+def test_action_button_uses_the_on_primary_pair_in_every_theme():
+    """C-02: the CTA is a flat --primary fill, so its label must be --on-primary, not black.
+
+    Client bug 7 measured black on the contrast-theme blue at 3.33:1; the gradient it replaced
+    ended on #82bcfc at 1.99:1 with white text.
+    """
+    idx = (WEB / "index.html").read_text(encoding="utf-8")
+    # 1. no gradient fill anywhere on the action button
+    for block in re.findall(r"\.btn-analyze\s*\{([^}]*)\}", idx):
+        assert "gradient" not in block, "the action button must not use a gradient"
+    # 2. the contrast theme must not paint it black
+    assert not re.search(r'html\[data-theme="contrast"\][^{]*\.btn-analyze[^{]*\{[^}]*color:#000', idx)
+    assert re.search(r'html\[data-theme="contrast"\] \.btn-analyze[^{]*\{[^}]*color:var\(--on-primary', idx)
+    # 3. and the pair itself passes in every theme
+    for theme in ("dark", "light", "contrast"):
+        tok = tokens_for(theme, "cobalt")
+        assert ratio(tok["--on-primary"], tok["--primary"]) >= MIN_RATIO, (theme, tok["--primary"])
+
+
+def test_deep_verdict_inks_are_not_painted_black_in_the_contrast_theme():
+    """Client bug 7: --human-deep #00692f and --uncertain-deep #8f5f00 with black ink failed AA.
+
+    The contrast theme keeps bright status fills and gives them black ink through
+    --verdict-ink; index.html reads it as var(--verdict-ink,#000), so either an explicit
+    declaration or the #000 fallback satisfies the contract.
+    """
+    shell = (WEB / "desktop-shell.css").read_text(encoding="utf-8")
+    contrast = shell[shell.index('html[data-theme="contrast"]'):]
+    contrast = contrast[:contrast.index("\n}") + 2]
+    idx = (WEB / "index.html").read_text(encoding="utf-8")
+    declares = "--verdict-ink:#000" in contrast or "--verdict-ink: #000" in contrast
+    falls_back = "var(--verdict-ink,#000)" in idx or "var(--verdict-ink, #000)" in idx
+    assert declares or falls_back, "the contrast theme needs a black-ink token for status fills"
+    # the blanket rule must not target the CTA or the cabinet actions any more
+    blanket = [m for m in re.findall(r'html\[data-theme="contrast"\][^{]*\{color:#000!important\}', idx)]
+    for rule in blanket:
+        assert ".btn-analyze" not in rule, "the contrast blanket still paints the CTA black"
+    # bright status fills with black ink stay far above AA
+    for fill in ("#7bff9e", "#ffb020", "#ff8080"):
+        assert ratio("#000000", fill) >= MIN_RATIO, fill
+
+
+def test_control_heights_are_only_44_and_36():
+    """C-07: controls take their height from one of two tokens, 44px or 36px.
+
+    Only chrome tiers may hard-code a height: tabs (38px), the status-bar chips (22px)
+    and the 36px retry/language buttons. Everything else must resolve through
+    --ld-control / --ld-control-sm, so a new ad-hoc min-height fails this guard.
+    """
+    shell = (WEB / "desktop-shell.css").read_text(encoding="utf-8")
+    assert "--ld-control:44px" in shell
+    assert "--ld-control-sm:36px" in shell
+    # the two tokens are actually wired to the control tiers
+    wired = [(s.strip(), b) for s, b in re.findall(r"([^{}]+)\{([^}]*)\}", shell)
+             if "min-height:var(--ld-control" in b]
+    assert any("button" in s and "min-height:var(--ld-control)" in b for s, b in wired)
+    assert any("btn-upload" in s and "var(--ld-control-sm)" in b for s, b in wired), wired
+    # no other control selector may invent a height outside the documented chrome tiers
+    body = re.sub(r"/\*.*?\*/", "", shell, flags=re.S)
+    literals = set()
+    for sel, block in re.findall(r"([^{}]+)\{([^}]*)\}", body):
+        flat = " ".join(sel.split())
+        if not re.search(r"button|input|select|textarea", flat):
+            continue
+        for h in re.findall(r"min-height:(\d+)px", block):
+            literals.add((flat[:70], int(h)))
+    allowed = {
+        (".ld-desktop .tab", 38),
+        (".ld-desktop .lp-input", 40),
+        (".ld-desktop .ld-statusbar button", 22),
+        ('.ld-desktop #statusIndicator[data-error="true"] .ld-retry', 36),
+        (".ld-desktop .ld-language", 36),
+        # superseded by the generic 44px rule (higher specificity); kept as the pre-shell fallback
+        (".ld-desktop .btn-analyze", 42),
+    }
+    unexpected = sorted(literals - allowed)
+    assert not unexpected, unexpected
+
+
+def test_corners_are_square_everywhere():
+    """C-06: Modern Metro — no radius token, no pill leftovers, no !important hacks."""
+    for name in ("index.html", "desktop-shell.css", "cabinet.html"):
+        text = (WEB / name).read_text(encoding="utf-8")
+        leftovers = [v for v in re.findall(r"border-radius:\s*([^;}]+)", text)
+                    if v.strip() not in ("0", "50%", "0!important", "50%!important")]
+        assert not leftovers, (name, leftovers[:5])
+        assert "var(--radius)!important" not in text, name
+
+
 if __name__ == "__main__":
     print(f"{'theme':9s} {'accent':9s} {'token':26s} {'fg':9s} {'bg':9s} ratio")
     worst = None
