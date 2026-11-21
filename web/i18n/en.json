@@ -236,7 +236,6 @@
  "gran_sentence": "Experimental: each sentence is scored on its own, which is much less reliable than a window of text.",
  "gran_smooth": "Colours follow sliding windows of about 300 words, so boundaries are accurate to roughly 100 words; a single sentence is not scored on its own.",
  "gran_tokens": "Token scores are combined by sentence. Surrounding context can affect scores for short insertions.",
- "gran_tokens_sentence": "Model token features are combined into a score for each sentence. The share of highlighted AI sentences and the document score are different measures.",
  "gran_window": "Fast mode: colours show blocks of about 300 words (every sentence in a block gets the score of the block). Choose sliding windows in Settings for finer boundaries.",
  "h_bulk_move": "Move selected to…",
  "h_clear": "Delete ALL history",

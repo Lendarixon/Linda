@@ -278,3 +278,67 @@ if __name__ == "__main__":
             worst = (theme, accent, tok, fg, bg, r)
     print("\nlowest ratio:", worst[:5], f"{worst[-1]:.2f}:1")
     sys.exit(0)
+
+
+# --- M2 (Neon markup audit 2026-11-20): solid AI badges need a white-ink fill ------------
+
+BADGE_RULES = (
+    ("index.html", r"(?m)^\.sent-tag\.ai\s*\{([^}]*)\}"),
+    ("index.html", r"html:not\(\[data-theme=\"contrast\"\]\)\s*\.verdict-badge\.ai\{([^}]*)\}"),
+    ("cabinet.html", r"(?m)^\.cab-badge\.ai\s*\{([^}]*)\}"),
+    ("cabinet.html", r"\.v-pill\.ai\s*\{([^}]*)\}"),
+)
+# The contrast theme paints .sent-tag.ai with its own darker fill (index.html), so it is
+# checked against that literal rather than --ai-deep.
+CONTRAST_BADGE_FILL = "#8a0010"
+
+
+def _badge_fill(name, pattern):
+    text = (WEB / name).read_text(encoding="utf-8")
+    blocks = re.findall(pattern, text)
+    assert blocks, f"{name}: rule {pattern!r} is gone"
+    block = blocks[-1]
+    m = re.search(r"background(?:-color)?:\s*([^;]+)", block)
+    assert m, (name, pattern, block)
+    return m.group(1).strip()
+
+
+def test_ai_badges_use_the_deep_fill_not_the_pale_accent():
+    """White 900-weight 0.6rem text on --ai #e8635a was 3.30:1 in the dark theme (M2)."""
+    for name, pattern in BADGE_RULES:
+        fill = _badge_fill(name, pattern)
+        assert "var(--ai-deep" in fill, f"{name}: badge still fills with the pale accent ({fill})"
+
+
+def test_ai_badge_white_ink_meets_aa_in_every_theme():
+    expected = {"dark": 4.5, "light": 4.5, "contrast": 4.5}
+    for theme, floor in expected.items():
+        tok = tokens_for(theme, "cobalt")
+        for name, pattern in BADGE_RULES:
+            fill = _badge_fill(name, pattern)
+            if theme == "contrast":
+                # the contrast theme keeps its own dark red for the sentence tag
+                colour = CONTRAST_BADGE_FILL if "sent-tag" in pattern else tok["--ai-deep"]
+            else:
+                colour = tok["--ai-deep"]
+            r = ratio("#ffffff", colour)
+            assert r >= floor, f"{theme} {name} {pattern}: white on {colour} = {r:.2f}"
+            assert r >= expected[theme] - 1e-9
+
+
+def test_sentence_tag_white_text_is_above_aa_including_the_dark_theme():
+    """Regression pin on the measured pair: dark must never fall back to the 3.30:1 accent."""
+    dark = tokens_for("dark", "cobalt")
+    assert ratio("#ffffff", dark["--ai"]) < MIN_RATIO  # the value that shipped the bug
+    assert ratio("#ffffff", dark["--ai-deep"]) >= MIN_RATIO
+    idx = (WEB / "index.html").read_text(encoding="utf-8")
+    assert ratio("#ffffff", CONTRAST_BADGE_FILL) >= CONTRAST_THEME_MIN
+    assert f'background:{CONTRAST_BADGE_FILL}!important' in idx
+
+
+def test_heatmap_card_follows_the_theme_surface_not_a_hardcoded_dark_tile():
+    """L1: the inline skin pinned .heatmap-card to #191c20, ignoring --bg-card in contrast."""
+    idx = (WEB / "index.html").read_text(encoding="utf-8")
+    pinned = re.findall(r"\.heatmap-card\{background:#191c20", idx)
+    assert not pinned, "the heatmap card is hard-coded to the dark tile again"
+    assert ".heatmap-card{background:var(--bg-card" in idx

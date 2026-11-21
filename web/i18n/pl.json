@@ -236,7 +236,6 @@
  "gran_sentence": "Opcja eksperymentalna: każde zdanie oceniane jest osobno — to znacznie mniej wiarygodne niż analiza okna tekstu.",
  "gran_smooth": "Podświetlenie bazuje na przesuwnych oknach o wielkości ok. 300 słów, a granice są dokładne do ok. 100 słów; pojedyncze zdania nie są oceniane osobno.",
  "gran_tokens": "Oceny tokenów są łączone według zdań. Otaczający kontekst może wpływać na ocenę krótkich wstawek.",
- "gran_tokens_sentence": "Cechy tokenów modeli są łączone w ocenę każdego zdania. Udział podświetlonych zdań AI i ocena całego dokumentu to różne miary.",
  "gran_window": "Tryb szybki: kolory odpowiadają blokom ok. 300 słów (każde zdanie w bloku otrzymuje ocenę całego bloku). Aby uzyskać dokładniejsze granice, wybierz przesuwne okna w ustawieniach.",
  "h_bulk_move": "Przenieś zaznaczone do…",
  "h_clear": "Usuń CAŁĄ historię",
