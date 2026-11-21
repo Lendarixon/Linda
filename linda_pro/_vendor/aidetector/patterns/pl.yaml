@@ -1,0 +1,43 @@
+# Маркеры риторических тиков LLM для польского.
+
+antithesis:
+  - 'nie\s+\S+[^.!?]{0,40}\b(?:tylko|ale|lecz)\b'
+  - 'to\s+nie[^.!?]{0,30}\bto\s'
+
+simile_markers:
+  - '\bjak\b'
+  - '\bniczym\b'
+  - '\bjakby\b'
+  - '\bprzypomina\b'
+  - '\bna\s+kształt\b'
+
+conclusive_markers:
+  - '\boznacza\b'
+  - '\bsymbolizuje\b'
+  - '\bstanowi\b'
+  - '\bsłowem\b'
+  - '\bostatecznie\b'
+  - '\bw\s+istocie\b'
+
+# Как и для ru.yaml — без крупного корпусного исследования под рукой, это
+# подборка по общему наблюдению за типичными оборотами. Менее надёжно, чем
+# EN-список, держим вес правила ниже.
+tell_words:
+  - '\bzagłębi(?:ć|amy|a)\s+się\b'
+  - '\bkluczow(?:ą|ej|e)\s+rolę\b'
+  - '\bwarto\s+zauważyć\b'
+  - '\bnależy\s+podkreślić\b'
+  - '\bwe\s+współczesnym\s+świecie\b'
+  - '\bkompleksow(?:y|a|e)\s+podejście\b'
+  - '\bwielowymiarow(?:y|a|e)\b'
+  - '\binnowacyjn(?:y|a|e)\b'
+  - '\bunikaln(?:y|a|e)\b'
+  - '\bnieodłączn(?:y|a|e)\b'
+  - '\bniewątpliwie\b'
+  - '\bpodsumowując\b'
+  - '\bistotne\s+jest\b'
+  - '\bodkryć\s+potencjał\b'
+
+dash_char: "—"
+short_clause_max_words: 4
+triad_min_run: 3

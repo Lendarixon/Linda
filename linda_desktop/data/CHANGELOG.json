@@ -1,0 +1,460 @@
+[
+  {
+    "version": "2.1.0.0",
+    "date": "2026-10-23",
+    "title": {
+      "en": "System language and localized model startup",
+      "ru": "Язык системы и локализованный запуск моделей",
+      "pl": "Język systemu i zlokalizowane uruchamianie modeli"
+    },
+    "notes": {
+      "en": "Windows display language is selected on first launch (English fallback). An explicit language choice is saved. Legacy automatic Russian defaults migrate to the system language. Localized startup screen shows app/model versions and preparation stages using the supplied Linda artwork. Fixed duplicate model warmup, unnecessary wait for update servers, and warmup of both selected detector tiers. Saved preload-off is respected. Model weights and scoring thresholds are unchanged.",
+      "ru": "При первом запуске выбирается язык интерфейса Windows (для остальных языков — английский). Ручной выбор сохраняется. Старый автоматический русский по умолчанию заменяется языком системы. Локализованный экран запуска показывает версии приложения и моделей и этапы подготовки с графикой Linda из папки дизайна. Исправлены повторный прогрев, ожидание сервера обновлений и прогрев обоих выбранных наборов. Отключённая предзагрузка сохраняется. Веса моделей и пороги не менялись.",
+      "pl": "Przy pierwszym uruchomieniu wybierany jest język interfejsu Windows (dla innych języków: angielski). Ręczny wybór jest zapisywany. Dawne automatyczne ustawienie rosyjskiego jest zastępowane językiem systemu. Zlokalizowany ekran startowy pokazuje wersje aplikacji i modeli oraz etapy przygotowania z dostarczoną grafiką Linda. Naprawiono podwójne rozgrzewanie, czekanie na serwer aktualizacji i przygotowanie obu wybranych zestawów. Wyłączone ładowanie wstępne jest respektowane. Wagi modeli i progi pozostają bez zmian."
+    }
+  },
+  {
+    "version": "2.0.7.0",
+    "date": "2026-10-17",
+    "title": {
+      "en": "Audit fixes: language-aware cleaning, sentence splitter, unsupported-language warning",
+      "ru": "Исправления аудита: очистка по языку, сплиттер предложений, предупреждение о языке",
+      "pl": "Poprawki audytu: czyszczenie wg jezyka, podzialzdan, ostrzezenie o jezyku"
+    },
+    "notes": {
+      "en": "- Language-aware cleaning: RU/PL/EN text is cleaned with its own script (homoglyphs no longer flip in Russian); hybrid/full sentence scoring now uses the same cleaning as context/document paths. Models 1.3.4 and thresholds are unchanged in code, but RU needs threshold re-validation on held-out data before release claims.- Sentence splitter: Ukrainian capitals split correctly; Dr./U.S./A. S. initials no longer break highlighting; zero-width space no longer glues sentences.- Unsupported languages: German/French score as en with an explicit unreliable-result warning; Ukrainian scores as ru with its own warning; plain English and empty text behaviour unchanged.- Token-path fallback now records token_path_error in the result and logs it instead of silent downgrade; dead single-model branch removed (single-model path unchanged via single_model.run).",
+      "ru": "- Очистка по языку: RU/PL/EN чистятся своим скриптом (гомоглифы больше не переворачивают русский); hybrid/full считают по очищенным предложениям, как context/документ. Модели 1.3.4 и пороги в коде не менялись, но RU нужна перепроверка порогов на отложенной выборке до релизных заявлений.- Сплиттер: украинские заглавные делятся корректно; Dr./U.S./А. С. не рвут подсветку; zero-width space больше не склеивает предложения.- Чужие языки: немецкий/французский считаются как en с явным предупреждением о ненадежности; украинский — как ru со своим предупреждением; короткие английские тексты работают как раньше.- Откат токенного пути теперь пишет token_path_error в результат и лог вместо тихого отката; мертвая ветка одиночной модели убрана (путь single_model.run без изменений).",
+      "pl": "- Czyszczenie wg jezyka: RU/PL/EN czyszczone wlasnym skryptem; hybrid/full licza na wyczyszczonych zdaniach jak context/dokument. Modele 1.3.4 i progi w kodzie bez zmian, ale RU wymaga ponownej walidacji progow na danych hold-out przed deklaracjami wydania.\n- Podzial zdan: ukrainskie wielkie litery dziela sie poprawnie; Dr./U.S./inicjaly nie rwana podswietlenia; zero-width space nie skleja zdan.\n- Inne jezyki: niemiecki/francuski liczone jako en z wyraznym ostrzezeniem o niewiarygodnosci; ukrainski jako ru z wlasnym ostrzezeniem; krotkie teksty angielskie bez zmian.\n- Awaryjny tryb tokenow zapisuje token_path_error w wyniku i logu zamiast cichego powrotu; martwa galaz pojedynczego modelu usunieta (sciezka single_model.run bez zmian)."
+    }
+  },
+  {
+    "version": "2.0.6.2",
+    "date": "2026-10-17",
+    "title": {
+      "en": "Clearer guidance and safer document handling",
+      "ru": "Понятные предупреждения и безопасная работа с документами",
+      "pl": "Czytelniejsze wskazówki i bezpieczna obsługa dokumentów"
+    },
+    "notes": {
+      "pl": "• Przed analizą aplikacja wyraźnie ostrzega, gdy tekst ma mniej niż zalecane 300 słów lub przypomina listę, formularz albo slajdy.\n• Jaśniejsze informacje o obsługiwanych plikach. Po nieudanym wczytaniu analiza pozostaje zablokowana do poprawienia tekstu lub wybrania prawidłowego pliku, osobno dla każdej karty.\n• Bezpieczniejsze przenoszenie modeli: ochrona przed nakładającymi się folderami i usunięciem nowej kopii; porządkowanie tylko własnych plików tymczasowych.\n• Poprawiono anulowanie analizy w Linda Loupe oraz ukrywanie ścieżek profilu i modeli w metadanych diagnostycznych.\n• Modele 1.3.4, tokenizatory i progi oceny pozostają bez zmian. Wynik nie jest dowodem autorstwa; krótkie wstawki AI mogą pozostać niewykryte.",
+      "ru": "• До анализа приложение заметно предупреждает, если текст короче рекомендуемых 300 слов или похож на список, анкету либо текст слайдов.\n• Понятнее указаны поддерживаемые файлы. После неудачной загрузки анализ блокируется до правки текста или выбора подходящего файла, отдельно для каждой вкладки.\n• Безопаснее перенос моделей: защита от пересекающихся папок и удаления новой копии; очистка только собственных временных файлов.\n• Исправлена отмена анализа Linda Loupe; пути профиля и моделей скрываются в метаданных диагностики.\n• Модели 1.3.4, токенизаторы и пороги оценки не менялись. Результат не доказывает авторство; короткие ИИ-вставки могут быть пропущены.",
+      "en": "• Clear warnings appear before analysis when text is shorter than the recommended 300 words or resembles a list, form or slide text.\n• Supported file types are explained more clearly. After a failed upload, analysis stays blocked until the text is edited or a supported file is loaded, independently for each tab.\n• Safer model moves prevent overlapping folders from deleting the new copy; cleanup removes only the job's own temporary files.\n• Fixed cancellation during Linda Loupe analysis and redacted profile and model paths in diagnostic metadata.\n• Models 1.3.4, tokenizers and scoring thresholds are unchanged. Results do not prove authorship; short AI inserts may still be missed."
+    }
+  },
+  {
+    "version": "2.0.6.1",
+    "date": "2026-10-16",
+    "title": {
+      "en": "Clear guidance before checking text",
+      "pl": "Czytelne wskazówki przed analizą",
+      "ru": "Понятные подсказки перед проверкой"
+    },
+    "notes": {
+      "en": "• Live warnings appear before analysis for texts under the recommended 300 words and list-like layouts. 300 words do not guarantee accuracy.\n• Supported file types and unsupported PowerPoint presentations are explained before upload. A rejected replacement cannot accidentally trigger analysis of old text. Upload timeouts and malformed responses are handled.\n• Models 1.3.4 and detector thresholds are unchanged. A low AI score is not proof of human authorship.",
+      "pl": "• Ostrzeżenia przed analizą dotyczą tekstów krótszych niż zalecane 300 słów i układu przypominającego listę. 300 słów nie gwarantuje poprawnego wyniku.\n• Obsługiwane formaty i brak obsługi prezentacji PowerPoint są wyjaśnione przed wczytaniem. Odrzucony plik nie pozwala przypadkowo przeanalizować poprzedniego tekstu. Poprawiono obsługę limitów czasu i błędnych odpowiedzi.\n• Modele 1.3.4 i progi detektora pozostają bez zmian. Niski wynik AI nie dowodzi autorstwa człowieka.",
+      "ru": "• До анализа появляются предупреждения о тексте короче рекомендуемых 300 слов и структуре из коротких пунктов. 300 слов не гарантируют точность.\n• Заранее указаны поддерживаемые форматы и отсутствие поддержки PowerPoint. После отказа загрузки нельзя случайно проверить старый текст. Исправлены тайм-ауты и некорректные ответы загрузки.\n• Модели 1.3.4 и пороги детектора не менялись. Низкая оценка ИИ не доказывает человеческое авторство."
+    }
+  },
+  {
+    "version": "2.0.6.0",
+    "date": "2026-10-11",
+    "title": {
+      "en": "Consistent GPU inference and local highlighting",
+      "ru": "Согласованные GPU-оценки и локальная разметка",
+      "pl": "Spójne oceny GPU i lokalne oznaczenia"
+    },
+    "notes": {
+      "en": "• Assay uses FP32 stable DirectML on Windows to reduce CPU/GPU score drift; Loupe remains on CPU. GPU memory use is higher than FP16; 4 GB compatibility is not certified.\n• Assay samples the same context anchors on CPU/GPU.\n• Model identity, independent Essay/Multi evidence, Unicode offsets and document extraction are corrected.\n• Selected highlighting, counters, word shares and exports stay synchronized. Document confidence and local coverage are separate.\n• Weights remain 1.3.4. Short AI inserts and edited texts may still be missed; these fixes do not certify detection accuracy.",
+      "ru": "• Assay использует стабильный FP32 DirectML в Windows для уменьшения расхождений CPU/GPU; Loupe работает на CPU. Расход видеопамяти выше FP16; совместимость с 4 ГБ не сертифицирована.\n• Assay использует одинаковые опорные контексты на CPU/GPU.\n• Исправлены имя модели, независимые данные Essay/Multi, Unicode-смещения и извлечение документов.\n• Выбранная подсветка, счётчики, доли слов и экспорт синхронизированы. Оценка документа и локальное покрытие — разные показатели.\n• Веса остаются 1.3.4. Короткие ИИ-вставки и редактированные тексты могут быть пропущены; эти исправления не сертифицируют точность детекции.",
+      "pl": "• Assay używa stabilnego FP32 DirectML w Windows, aby ograniczyć różnice CPU/GPU; Loupe pozostaje na CPU. Zużycie VRAM jest wyższe niż FP16; zgodność z 4 GB nie została potwierdzona.\n• Assay wybiera te same konteksty na CPU/GPU.\n• Poprawiono identyfikację modelu, niezależne dane Essay/Multi, przesunięcia Unicode i odczyt dokumentów.\n• Podświetlenie, liczniki, udziały słów i eksport są zsynchronizowane. Ocena dokumentu i lokalne pokrycie to oddzielne wskaźniki.\n• Wagi pozostają 1.3.4. Krótkie wstawki AI i edytowane teksty mogą pozostać niewykryte; poprawki nie certyfikują dokładności."
+    }
+  },
+  {
+    "version": "2.0.5.3",
+    "date": "2026-10-11",
+    "title": {
+      "ru": "Исправления после переименования",
+      "en": "Fixes after the rename",
+      "pl": "Poprawki po zmianie nazwy"
+    },
+    "notes": {
+      "ru": "• Подсказки при первом запуске показываются на языке интерфейса (раньше всегда по-русски).\n• В заголовке отчётов (PDF и HTML) появился значок Linda; краткий PDF-отчёт больше не пишет старое название.\n• Установщик показывает правильный размер Linda Loupe — около 0,3 ГБ.\n• Модели, вердикты и ключи лицензий не изменились.",
+      "en": "• First-run tips now use the interface language (they were always in Russian).\n• Reports (PDF and HTML) show the Linda mark in the header; the short PDF report no longer prints the old name.\n• The installer shows the correct Linda Loupe size, about 0.3 GB.\n• Models, verdicts and licence keys are unchanged.",
+      "pl": "• Wskazówki przy pierwszym uruchomieniu są w języku interfejsu (wcześniej zawsze po rosyjsku).\n• Raporty (PDF i HTML) mają znak Linda w nagłówku; krótki raport PDF nie pokazuje już starej nazwy.\n• Instalator pokazuje poprawny rozmiar Linda Loupe — ok. 0,3 GB.\n• Modele, werdykty i klucze licencyjne bez zmian."
+    }
+  },
+  {
+    "version": "2.0.5.2",
+    "date": "2026-10-10",
+    "title": {
+      "ru": "Linda: новые названия и логотип",
+      "en": "Linda: new names and logo",
+      "pl": "Linda: nowe nazwy i logo"
+    },
+    "notes": {
+      "ru": "• Linda — теперь общее имя продукта. Полный ансамбль Linda-Pro называется Linda Assay, быстрая версия Linda-Pro Lite — Linda Loupe.\n• Модели, вердикты, настройки и ключи лицензий не изменились, ключи работают как прежде.\n• Новый логотип в стиле Metro: плитка с тремя строками текста, кусок средней подсвечен — как разметка ИИ в самом приложении. Новая иконка приложения, установщика и меню «Пуск».\n• Логотип в шапке приложения подстраивается под светлую и тёмную тему.",
+      "en": "• Linda is now the name of the product. The full ensemble Linda-Pro is now called Linda Assay, the fast version Linda-Pro Lite is Linda Loupe.\n• Models, verdicts, settings and licence keys are unchanged; keys work as before.\n• New Metro-style logo: a tile with three lines of text, part of the middle one highlighted, just like the AI marking in the app. New icon for the app, the installer and the Start menu.\n• The logo in the app header follows the light/dark theme.",
+      "pl": "• Linda to teraz nazwa produktu. Pełny zespół Linda-Pro nazywa się teraz Linda Assay, szybka wersja Linda-Pro Lite — Linda Loupe.\n• Modele, werdykty, ustawienia i klucze licencyjne bez zmian; klucze działają jak dotąd.\n• Nowe logo w stylu Metro: kafelek z trzema wierszami tekstu, fragment środkowego podświetlony — tak jak oznaczanie AI w aplikacji. Nowa ikona aplikacji, instalatora i menu Start.\n• Logo w nagłówku aplikacji dopasowuje się do jasnego/ciemnego motywu."
+    }
+  },
+  {
+    "version": "2.0.5.1",
+    "date": "2026-10-10",
+    "title": {
+      "ru": "Linda-Pro Lite: разметка вдвое быстрее",
+      "en": "Linda-Pro Lite: highlighting twice as fast",
+      "pl": "Linda-Pro Lite: podświetlanie dwa razy szybsze"
+    },
+    "notes": {
+      "ru": "• Linda-Pro Lite берёт оценки токенов для разметки из тех же проходов модели, что считают вердикт, и дочитывает только остальной текст: разметка примерно в 2 раза быстрее (наш замер: 2,1 → 1,0 с на 1 000 слов на 4 потоках), точность разметки не ниже прежней (на смешанных текстах 85% верных меток слов, ложная метка «ИИ» у 3% человеческих слов).\n• Вердикты не изменились.",
+      "en": "• Linda-Pro Lite takes the token scores for highlighting from the same model passes that compute the verdict and reads only the rest of the text: highlighting is about 2x faster (our measurement: 2.1 -> 1.0 s per 1,000 words on 4 threads) with no loss of highlighting accuracy (85% of words labelled correctly on mixed texts, false AI mark on 3% of human words).\n• Verdicts are unchanged.",
+      "pl": "• Linda-Pro Lite bierze oceny tokenów do podświetlania z tych samych przebiegów modelu, które liczą werdykt, i doczytuje tylko resztę tekstu: podświetlanie ok. 2 razy szybsze (nasz pomiar: 2,1 -> 1,0 s na 1000 słów przy 4 wątkach) bez utraty dokładności (85% poprawnych etykiet słów na tekstach mieszanych, fałszywe AI u 3% słów ludzkich).\n• Werdykty bez zmian."
+    }
+  },
+  {
+    "version": "2.0.5.0",
+    "date": "2026-10-10",
+    "title": {
+      "ru": "Версия 2.5: разметка по токенам — точнее при той же скорости",
+      "en": "Version 2.5: token-level highlighting, more accurate at the same speed",
+      "pl": "Wersja 2.5: podświetlanie na poziomie tokenów, dokładniejsze przy tej samej szybkości"
+    },
+    "notes": {
+      "ru": "• Разметка предложений теперь строится по токенам за тот же проход модели, что и вердикт, а не повторными прогонами по кускам текста. Linda-Pro Lite размечает текст в 3 800 слов примерно за 4–6 с на современном процессоре вместо огромных однородных кусков в 2.0.4.x.\n• Точность разметки на смешанных текстах «человек + ИИ» с известной границей (наш замер, EN/RU/PL): Linda-Pro — верная метка у 90% слов (2.0.4.x: 90% ценой многих повторных прогонов), Linda-Pro Lite — 88% (2.0.4.x: 67%); у человеческих слов ложная метка «ИИ» около 3%.\n• Вердикт и его точность не изменились: модели те же, пороги те же.\n• Если документ в целом «неясно», а ИИ отмечен почти во всём тексте, в блоке «Авторство» пишется «ИИ»; если не отмечено ничего — «неясно», а не «смешанное».\n• Прокрутка текста больше не пропадает после смены набора моделей.\n• Быстрее открываются история и сравнение документов.",
+      "en": "• Sentence highlighting is now computed from tokens in the same model pass as the verdict instead of repeated passes over pieces of the text. Linda-Pro Lite highlights a 3,800-word text in about 4-6 s on a modern processor, without the huge uniform blocks of 2.0.4.x.\n• Highlighting accuracy on mixed human + AI texts with a known boundary (our measurement, EN/RU/PL): Linda-Pro labels 90% of words correctly (2.0.4.x: 90% at the cost of many repeated passes), Linda-Pro Lite 88% (2.0.4.x: 67%); about 3% of human words get a false \"AI\" mark.\n• The verdict and its accuracy are unchanged: same models, same thresholds.\n• If the document as a whole is \"unclear\" but AI is marked in almost all of the text, the Authorship box says \"AI\"; if nothing is marked it says \"unclear\" instead of \"mixed\".\n• Text scrolling no longer stops working after the model set is changed.\n• History and document comparison open faster.",
+      "pl": "• Podświetlanie zdań liczone jest teraz z tokenów w tym samym przebiegu modelu co werdykt, zamiast wielokrotnych przebiegów po fragmentach tekstu. Linda-Pro Lite podświetla tekst 3800 słów w ok. 4-6 s na nowoczesnym procesorze, bez ogromnych jednolitych bloków z 2.0.4.x.\n• Dokładność podświetlania na tekstach mieszanych człowiek + AI ze znaną granicą (nasz pomiar, EN/RU/PL): Linda-Pro - poprawna etykieta 90% słów (2.0.4.x: 90% kosztem wielu przebiegów), Linda-Pro Lite - 88% (2.0.4.x: 67%); ok. 3% słów ludzkich dostaje fałszywe oznaczenie „AI”.\n• Werdykt i jego dokładność bez zmian: te same modele, te same progi.\n• Gdy dokument jako całość jest „niejasny”, a AI zaznaczono prawie w całym tekście, blok „Autorstwo” pokazuje „AI”; gdy nic nie zaznaczono - „niejasne” zamiast „mieszane”.\n• Przewijanie tekstu nie przestaje działać po zmianie zestawu modeli.\n• Historia i porównanie dokumentów otwierają się szybciej."
+    }
+  },
+  {
+    "version": "2.0.4.2",
+    "date": "2026-10-10",
+    "title": {
+      "ru": "Честнее вердикт и разметка предложений",
+      "en": "A more honest verdict and sentence highlighting",
+      "pl": "Uczciwszy werdykt i podświetlanie zdań"
+    },
+    "notes": {
+      "ru": "• Linda-Pro Lite: исправлена разметка предложений. Раньше почти весь текст окрашивался как «возможно ИИ» — и у людей, и у ИИ-текстов, — а предложений «ИИ» не было вовсе. Теперь в ИИ-текстах около 9 из 10 слов отмечены «ИИ», у людей — 0–3%.\n• Вердикт больше не спорит с разметкой: если программа говорит «написан человеком», а заметная часть текста (от четверти слов) отмечена как ИИ, вердикт становится «неясно».\n• Linda-Pro Lite осторожнее: если модель Lite видит признаки ИИ выше своего порога, а общий балл ниже, вердикт «неясно», а не «человек» (так ИИ-текст с ручной правкой больше не выдаётся за человеческий). В режиме «Оба набора» это действует и на вердикт Lite.\n• Зона «возможно ИИ» в разметке Lite стала шире и начинается там же, где зона «неясно» у вердикта.",
+      "en": "• Linda-Pro Lite: sentence highlighting is fixed. Before, almost the whole text was coloured \"possibly AI\" for human and AI texts alike, and no sentence was ever marked \"AI\". Now about 9 in 10 words of AI texts are marked \"AI\", and 0-3% of words in human texts.\n• The verdict no longer contradicts the highlighting: if the app says \"written by a human\" while a noticeable part of the text (a quarter of the words or more) is marked AI, the verdict becomes \"unclear\".\n• Linda-Pro Lite is more careful: when the Lite model sees AI above its own threshold but the combined score is lower, the verdict is \"unclear\" instead of \"human\" (an AI text edited by hand is no longer passed off as human). In the \"Both sets\" mode this also applies to the Lite verdict.\n• The \"possibly AI\" band of Lite highlighting is wider and starts where the \"unclear\" zone of the verdict starts.",
+      "pl": "• Linda-Pro Lite: poprawione podświetlanie zdań. Wcześniej prawie cały tekst był oznaczany jako „możliwe AI” — zarówno u ludzi, jak i w tekstach AI — a żadne zdanie nie dostawało oznaczenia „AI”. Teraz w tekstach AI około 9 na 10 słów jest oznaczonych „AI”, u ludzi 0–3%.\n• Werdykt nie przeczy już podświetleniu: jeśli program mówi „napisany przez człowieka”, a znaczna część tekstu (co najmniej ćwierć słów) jest oznaczona jako AI, werdykt zmienia się na „niejasne”.\n• Linda-Pro Lite jest ostrożniejsza: gdy model Lite widzi AI powyżej własnego progu, a łączny wynik jest niższy, werdykt brzmi „niejasne”, a nie „człowiek” (tekst AI poprawiony ręcznie nie uchodzi już za ludzki). W trybie „Oba zestawy” dotyczy to też werdyktu Lite.\n• Pasmo „możliwe AI” w podświetleniu Lite jest szersze i zaczyna się tam, gdzie strefa „niejasne” werdyktu."
+    }
+  },
+  {
+    "version": "2.0.4.1",
+    "date": "2026-10-09",
+    "title": {
+      "ru": "Исправления: закрытие, перезапуск и обновление",
+      "en": "Fixes: closing, restarting and updating",
+      "pl": "Poprawki: zamykanie, restart i aktualizacja"
+    },
+    "notes": {
+      "ru": "• Закрытое окно больше не оставляет программу висеть в диспетчере задач; новый запуск сам завершает старую зависшую копию и не открывает её старый интерфейс.\n• Загрузка моделей в память при запуске больше не мешает перезапуску для обновления («Завершите проверку» без всякой проверки) и применению новых моделей.\n• Сообщения об ошибках кнопки обновления остаются на экране дольше.",
+      "en": "• Closing the window no longer leaves the program hanging in the Task Manager; a new launch ends an old hung copy by itself and no longer opens its old interface.\n• Loading the models into memory at start no longer blocks the restart for an update (\"finish the check\" with no check running) or the applying of new models.\n• Error messages of the update buttons stay on screen longer.",
+      "pl": "• Zamknięcie okna nie zostawia już programu wiszącego w Menedżerze zadań; nowe uruchomienie samo kończy starą zawieszoną kopię i nie otwiera jej starego interfejsu.\n• Ładowanie modeli do pamięci przy starcie nie blokuje już restartu do aktualizacji („zakończ sprawdzanie”, choć nic nie jest sprawdzane) ani zastosowania nowych modeli.\n• Komunikaty o błędach przycisków aktualizacji pozostają na ekranie dłużej."
+    }
+  },
+  {
+    "version": "2.0.4.0",
+    "date": "2026-10-09",
+    "title": {
+      "ru": "Версия 2.4: Linda-Pro Lite, два набора и два вердикта",
+      "en": "Version 2.4: Linda-Pro Lite, two sets and two verdicts",
+      "pl": "Wersja 2.4: Linda-Pro Lite, dwa zestawy i dwa werdykty"
+    },
+    "notes": {
+      "ru": "• Новый, улучшенный Linda-Pro Lite (около 0,3 ГБ): модель дообучена на текстах, переписанных «стелс»-гуманайзерами, без Llama; лучше находит замаскированный ИИ-текст, работает на любом процессоре.\n• Новый режим «Оба набора» (Настройки → Модели): рядом с вердиктом Linda-Pro показывается вердикт Lite для сравнения.\n• Если установлен только Linda-Pro Lite, интерфейс показывает только его: без строк и кнопок моделей Essay и Multi; в отчётах (PDF, Markdown) названия моделей совпадают с установленным набором.\n• Выбор набора при установке и в настройках, выбор видеокарты сохранён.",
+      "en": "• New, improved Linda-Pro Lite (about 0.3 GB): retrained on texts rewritten by stealth humanizers, without Llama; it finds disguised AI text better and runs on any processor.\n• New \"Both sets\" mode (Settings > Models): next to the Linda-Pro verdict the app shows the Lite verdict for comparison.\n• With only Linda-Pro Lite installed, the interface shows only it: no rows or buttons for the Essay and Multi models; model names in reports (PDF, Markdown) match the installed set.\n• Choice of set in the installer and in Settings; the graphics-card choice is kept.",
+      "pl": "• Nowy, ulepszony Linda-Pro Lite (około 0,3 GB): douczony na tekstach przepisanych przez „stealth” humanizery, bez Llama; lepiej wykrywa zamaskowany tekst AI i działa na każdym procesorze.\n• Nowy tryb „Oba zestawy” (Ustawienia > Modele): obok werdyktu Linda-Pro aplikacja pokazuje werdykt Lite dla porównania.\n• Gdy zainstalowany jest tylko Linda-Pro Lite, interfejs pokazuje tylko jego: bez wierszy i przycisków modeli Essay i Multi; nazwy modeli w raportach (PDF, Markdown) odpowiadają zainstalowanemu zestawowi.\n• Wybór zestawu w instalatorze i w ustawieniach; wybór karty graficznej zachowany."
+    }
+  },
+  {
+    "version": "2.0.3.7",
+    "date": "2026-10-09",
+    "title": {
+      "ru": "Linda-Pro Lite: лёгкий набор для любых компьютеров",
+      "en": "Linda-Pro Lite: a light set for any computer",
+      "pl": "Linda-Pro Lite: lekki zestaw dla każdego komputera"
+    },
+    "notes": {
+      "ru": "• Два набора моделей: Linda-Pro (самая точная, лучше с видеокартой) и Linda-Pro Lite (около 0,3 ГБ, работает на любом процессоре, текст на 3 800 слов за секунды). При установке и позже в настройках («Модели») можно выбрать любой из них или оба.\n• Lite находит заметно меньше ИИ-текстов после «гуманизаторов», чем Linda-Pro (на 10–14 пунктов в наших замерах, на текстах с маскировкой — сильно меньше); для важного текста берите Linda-Pro.\n• Если на компьютере нет видеокарты, приложение само использует Lite. Модели скачиваются автоматически.",
+      "en": "• Two model sets: Linda-Pro (the most accurate, best with a graphics card) and Linda-Pro Lite (about 0.3 GB, runs on any processor, a 3,800-word text in seconds). Choose either one or both during installation and later in Settings (\"Models\").\n• Lite finds noticeably fewer AI texts after \"humanizers\" than Linda-Pro (10-14 points lower in our measurements, much lower on deliberately disguised texts); use Linda-Pro for an important text.\n• On a computer without a graphics card the app uses Lite by itself. Models download automatically.",
+      "pl": "• Dwa zestawy modeli: Linda-Pro (najdokładniejszy, najlepiej z kartą graficzną) i Linda-Pro Lite (około 0,3 GB, działa na każdym procesorze, tekst 3800 słów w kilka sekund). Podczas instalacji i później w ustawieniach („Modele”) można wybrać jeden z nich lub oba.\n• Lite znajduje wyraźnie mniej tekstów AI po „humanizerach” niż Linda-Pro (o 10–14 punktów w naszych pomiarach, przy celowo zamaskowanych tekstach znacznie mniej); do ważnego tekstu użyj Linda-Pro.\n• Na komputerze bez karty graficznej aplikacja sama używa Lite. Modele pobierają się automatycznie."
+    }
+  },
+  {
+    "version": "2.0.3.6",
+    "date": "2026-10-08",
+    "title": {
+      "ru": "Понятнее и удобнее",
+      "en": "Clearer and more convenient",
+      "pl": "Czytelniej i wygodniej"
+    },
+    "notes": {
+      "ru": "• После загрузки новых моделей программа предлагает «Перезапустить» вместо повторной кнопки «Обновить модели».\n• Старое сообщение о неудачной установке («Installer exit code 5») больше не показывается при каждом запуске, если эта версия уже установлена.\n• При проверке нескольких файлов строки таблицы больше не мигают.\n• Короткий текст (меньше 150 слов): над результатом заметное предупреждение, что оценка может быть неточной.\n• Правую панель результатов можно растянуть или сузить за разделитель между текстом и результатом (двойной щелчок — вернуть).\n• Окно загрузок встроенного браузера больше не закрывает кнопки сверху справа.",
+      "en": "• After new models are downloaded the app now offers “Restart” instead of showing the “Update models” button again.\n• An old failed-install message (“Installer exit code 5”) is no longer shown at every start once that version is installed.\n• Rows of the batch table no longer flicker while several files are being checked.\n• Short text (under 150 words): a clear warning above the result that the estimate may be inaccurate.\n• The results panel can be widened or narrowed by dragging the divider between the text and the results (double-click resets it).\n• The built-in downloads flyout no longer covers the buttons at the top right.",
+      "pl": "• Po pobraniu nowych modeli program proponuje „Uruchom ponownie” zamiast ponownie pokazywać przycisk aktualizacji modeli.\n• Stary komunikat o nieudanej instalacji („Installer exit code 5”) nie jest już pokazywany przy każdym uruchomieniu, gdy ta wersja jest już zainstalowana.\n• Wiersze tabeli nie migają już podczas sprawdzania kilku plików.\n• Krótki tekst (poniżej 150 słów): wyraźne ostrzeżenie nad wynikiem, że ocena może być niedokładna.\n• Panel wyników można poszerzyć lub zwęzić przeciągając separator między tekstem a wynikami (podwójne kliknięcie przywraca).\n• Okno pobierania wbudowanej przeglądarki nie zasłania już przycisków w prawym górnym rogu."
+    }
+  },
+  {
+    "version": "2.0.3.4",
+    "date": "2026-10-06",
+    "title": {
+      "ru": "Надёжное обновление",
+      "en": "More reliable updates",
+      "pl": "Pewniejsze aktualizacje"
+    },
+    "notes": {
+      "ru": "• Обновление больше не срывается, если открыть программу во время установки: она покажет сообщение и откроется сама после обновления.\n• Повторный запуск при уже открытом окне выводит окно на передний план и не открывает браузер.",
+      "en": "• Updates no longer fail if you open the app during installation: it shows a message and opens by itself when the update is done.\n• Launching the app again while its window is open brings that window to the front instead of opening a browser.",
+      "pl": "• Aktualizacja nie przerywa się już, gdy uruchomisz program w trakcie instalacji: pokaże komunikat i otworzy się sam po aktualizacji.\n• Ponowne uruchomienie przy otwartym oknie wysuwa to okno na wierzch i nie otwiera przeglądarki."
+    }
+  },
+  {
+    "version": "2.0.3.3",
+    "date": "2026-10-06",
+    "title": {
+      "ru": "Вкладки для нескольких текстов",
+      "en": "Tabs for several texts",
+      "pl": "Karty dla kilku tekstów"
+    },
+    "notes": {
+      "ru": "• Вкладки: можно держать несколько текстов рядом (до 8, кнопка «+» или Ctrl+T). У каждой вкладки свой текст, файл и результат, переключение ничего не теряет.\n• Проверка привязана к своей вкладке: пока она идёт, можно печатать в другой, а когда закончится, у вкладки загорится зелёная точка. Одновременно идёт одна проверка.\n• Файл из проводника («Проверить в Linda-Pro») открывается в новой вкладке и не затирает текущий текст.\n• Закрытие вкладки с идущей проверкой её отменяет.",
+      "en": "• Tabs: keep several texts side by side (up to 8, the + button or Ctrl+T). Each tab has its own text, file and result, and switching loses nothing.\n• A check belongs to its own tab: while it runs you can type in another one, and when it finishes the tab shows a green dot. One check runs at a time.\n• A file from Explorer (“Check in Linda-Pro”) opens in a new tab and does not overwrite the current text.\n• Closing a tab whose check is running cancels that check.",
+      "pl": "• Karty: kilka tekstów obok siebie (do 8, przycisk + lub Ctrl+T). Każda karta ma własny tekst, plik i wynik, a przełączanie niczego nie gubi.\n• Sprawdzanie należy do swojej karty: gdy trwa, można pisać w innej, a po zakończeniu karta pokazuje zieloną kropkę. Naraz trwa jedno sprawdzanie.\n• Plik z Eksploratora („Sprawdź w Linda-Pro”) otwiera się w nowej karcie i nie nadpisuje bieżącego tekstu.\n• Zamknięcie karty z trwającym sprawdzaniem anuluje je."
+    }
+  },
+  {
+    "version": "2.0.3.2",
+    "date": "2026-10-06",
+    "title": {
+      "ru": "Автообновление моделей, защита от «дурака», краткая справка",
+      "en": "Automatic model updates, protection against silly input, a short summary",
+      "pl": "Automatyczna aktualizacja modeli, ochrona przed błędnymi danymi, krótkie zaświadczenie"
+    },
+    "notes": {
+      "ru": "• Автообновление моделей: когда выходит релиз с новыми моделями, они скачиваются в фоне, проверяются и заменяют старые (старые файлы и кэш удаляются). Включено по умолчанию, выключается в настройках.\n• Защита от неверных данных: тексты на неподдерживаемых языках (арабский, китайский, греческий и др.) получают понятное сообщение вместо ложного вердикта; двоичный файл под видом .txt отклоняется; ошибки файлов объясняются понятными словами; кодировки Windows-1251 и UTF-16 читаются верно; для немецкого и украинского текста показывается предупреждение.\n• Краткая справка на одну страницу (PDF) для преподавателя или редактора: вердикт, что он значит, цифры, самые подозрительные предложения и оговорка, что это не доказательство.\n• Проверено 70 «глупых» сценариев (пустые и огромные тексты, странные файлы, неверные пути, быстрые клики) — без сбоев.",
+      "en": "• Automatic model updates: when a release brings new models they download in the background, are verified and replace the old ones (old files and caches are removed). On by default, can be turned off in Settings.\n• Protection against wrong input: texts in unsupported languages (Arabic, Chinese, Greek and others) get a clear message instead of a false verdict; a binary file renamed .txt is rejected; file errors are explained in plain words; Windows-1251 and UTF-16 files are read correctly; German and Ukrainian texts show a warning.\n• A one-page PDF summary for a teacher or editor: the verdict, what it means, the figures, the most suspicious sentences and a note that it is not proof.\n• 70 “silly” scenarios were tested (empty and huge texts, odd files, wrong paths, rapid clicks) with no failures.",
+      "pl": "• Automatyczna aktualizacja modeli: gdy wydanie przynosi nowe modele, są pobierane w tle, weryfikowane i zastępują stare (stare pliki i pamięć podręczna są usuwane). Domyślnie włączona, można wyłączyć w ustawieniach.\n• Ochrona przed błędnymi danymi: teksty w nieobsługiwanych językach (arabski, chiński, grecki i inne) dostają jasny komunikat zamiast fałszywego werdyktu; plik binarny z rozszerzeniem .txt jest odrzucany; błędy plików są wyjaśniane prostymi słowami; kodowania Windows-1251 i UTF-16 są czytane poprawnie; dla tekstu niemieckiego i ukraińskiego pokazywane jest ostrzeżenie.\n• Jednostronicowe zaświadczenie PDF dla nauczyciela lub redaktora: werdykt, jego znaczenie, liczby, najbardziej podejrzane zdania i zastrzeżenie, że to nie dowód.\n• Przetestowano 70 „głupich” scenariuszy (puste i ogromne teksty, dziwne pliki, błędne ścieżki, szybkie kliknięcia) bez awarii."
+    }
+  },
+  {
+    "version": "2.0.3.1",
+    "date": "2026-10-06",
+    "title": {
+      "ru": "Простой режим, тур для новичков, выбор папки для моделей и «Проверить в Linda-Pro»",
+      "en": "Simple mode, a tour for beginners, models folder choice and “Check in Linda-Pro”",
+      "pl": "Tryb prosty, wprowadzenie dla początkujących, wybór folderu modeli i „Sprawdź w Linda-Pro”"
+    },
+    "notes": {
+      "ru": "• Простой режим по умолчанию: один экран, вердикт простыми словами, предупреждения о ненадёжных случаях (короткий текст, смесь языков, много цифр) и «Больше всего похожи на ИИ»; кнопка «Подробно» возвращает все панели.\n• Тур на 3 шага при первом запуске (можно пропустить; «Показать подсказки снова» — в настройках).\n• Папка для моделей: выбор в установщике, при первом запуске и в настройках, с переносом уже скачанных моделей. Перед скачиванием проверяется место на диске, показывается оценка времени.\n• Первая проверка больше не ждёт: модели готовятся в фоне сразу после запуска; в шапке видно, на чём считается; в настройках есть «Проверить скорость».\n• «Проверить в Linda-Pro» в меню проводника для файлов .docx, .pdf, .txt, .md (отметка в установщике), кнопка «Проверить буфер», файл можно перетащить в любое место окна.\n• «Сохранить диагностику» для письма в поддержку: версии, видеокарты, логи, без текстов проверок.\n• Шрифт 150%, подсказки к терминам, исправлены светлая и контрастная темы, стрелка у блока «Для опытных».",
+      "en": "• Simple mode by default: one screen, a verdict in plain words, warnings for unreliable cases (short text, mixed languages, many numbers) and “Most similar to AI”; the Detailed button brings all panels back.\n• A 3-step tour on first start (skippable; “Show the tips again” is in Settings).\n• Models folder: choose it in the installer, on first start and in Settings, with moving of the models already downloaded. Free space is checked before a download and a time estimate is shown.\n• The first check no longer waits: models are prepared in the background right after start; the header shows what computes; Settings has Check speed.\n• “Check in Linda-Pro” in the Explorer menu for .docx, .pdf, .txt, .md files (a checkbox in the installer), a Check clipboard button, and files can be dropped anywhere in the window.\n• Save diagnostics for a support e-mail: versions, graphics cards, logs, no checked texts.\n• 150% font, hints for terms, fixed light and high-contrast themes, the arrow of the Advanced block.",
+      "pl": "• Tryb prosty domyślnie: jeden ekran, werdykt prostymi słowami, ostrzeżenia o niepewnych przypadkach (krótki tekst, mieszane języki, dużo cyfr) i „Najbardziej przypominają AI”; przycisk Szczegółowy przywraca wszystkie panele.\n• Wprowadzenie w 3 krokach przy pierwszym uruchomieniu (można pominąć; „Pokaż wskazówki ponownie” w ustawieniach).\n• Folder modeli: wybór w instalatorze, przy pierwszym uruchomieniu i w ustawieniach, z przeniesieniem już pobranych modeli. Przed pobraniem sprawdzane jest miejsce na dysku i pokazywany szacowany czas.\n• Pierwsze sprawdzenie nie czeka: modele przygotowują się w tle zaraz po starcie; nagłówek pokazuje, na czym liczy program; w ustawieniach jest „Sprawdź szybkość”.\n• „Sprawdź w Linda-Pro” w menu Eksploratora dla plików .docx, .pdf, .txt, .md (pole wyboru w instalatorze), przycisk „Sprawdź schowek”, plik można upuścić w dowolnym miejscu okna.\n• „Zapisz diagnostykę” do wiadomości dla wsparcia: wersje, karty graficzne, logi, bez tekstów sprawdzeń.\n• Czcionka 150%, podpowiedzi do pojęć, poprawione motywy jasny i kontrastowy, strzałka bloku „Zaawansowane”."
+    }
+  },
+  {
+    "version": "2.0.3.0",
+    "date": "2026-10-06",
+    "title": {
+      "ru": "Проще и нагляднее: полосы прогресса, быстрые настройки, автовыбор видеокарты",
+      "en": "Simpler and clearer: progress bars, quick settings, automatic GPU choice",
+      "pl": "Prościej i czytelniej: paski postępu, szybkie ustawienia, automatyczny wybór karty"
+    },
+    "notes": {
+      "ru": "• Окно настроек больше не скрывается под верхней панелью.\n• Видеокарта выбирается автоматически надёжнее: дискретная карта определяется по объёму видеопамяти, самая мощная идёт первой.\n• Полосы прогресса при загрузке и чтении файла, анализе, пакетной проверке и сравнении документов.\n• Язык интерфейса переключается кнопками RU / PL / EN в шапке; у настроек появилась иконка шестерёнки; тема, размер шрифта и выбор устройства вынесены в левую панель.\n• Выбор режима и моделей убран в сворачиваемый блок «Для опытных»: по умолчанию экран проще.\n• Список изменений в программе показывает только номера и названия обновлений со ссылкой на полный список.\n• Кнопка «Проверить обновления» перенесена в раздел обновлений.",
+      "en": "• The settings window no longer hides under the top bar.\n• Automatic graphics-card choice is more reliable: a discrete card is recognised by its video memory and the most powerful one comes first.\n• Progress bars for file upload and reading, analysis, batch checks and document comparison.\n• The interface language switches with RU / PL / EN buttons in the header; settings got a gear icon; theme, font size and device choice moved to the left panel.\n• Analysis mode and model choice moved into a collapsible Advanced block, so the default screen is simpler.\n• The in-app change list shows only version numbers and titles with a link to the full list.\n• The Check for updates button moved to the updates section.",
+      "pl": "• Okno ustawień nie chowa się już pod górnym paskiem.\n• Automatyczny wybór karty graficznej jest pewniejszy: karta dyskretna jest rozpoznawana po pamięci wideo, najmocniejsza jest pierwsza.\n• Paski postępu przy wczytywaniu i odczycie pliku, analizie, sprawdzaniu wsadowym i porównywaniu dokumentów.\n• Język interfejsu przełączają przyciski RU / PL / EN w nagłówku; ustawienia mają ikonę koła zębatego; motyw, rozmiar czcionki i wybór urządzenia przeniesiono do lewego panelu.\n• Wybór trybu i modeli przeniesiono do zwijanego bloku „Zaawansowane”: domyślny ekran jest prostszy.\n• Lista zmian w programie pokazuje tylko numery i tytuły aktualizacji z linkiem do pełnej listy.\n• Przycisk „Sprawdź aktualizacje” przeniesiono do sekcji aktualizacji."
+    }
+  },
+  {
+    "version": "2.0.2.21",
+    "date": "2026-10-06",
+    "title": {
+      "ru": "Новый ансамбль моделей 1.3: русский, польский и английский",
+      "en": "New model ensemble 1.3: Russian, Polish and English",
+      "pl": "Nowy zespół modeli 1.3: rosyjski, polski i angielski"
+    },
+    "notes": {
+      "ru": "• Новые модели 1.3 (Essay и Multi, объединённые из трёх обученных вариантов) для всех трёх языков. Английский теперь идёт тем же путём, что русский и польский, на общих моделях: при смене языка они не перезагружаются.\n• Польский: на тестовом наборе обнаружение ИИ выросло с 39% до 80% при ложных 0,9% (было 0,3%); русский: с 57% до 78% при тех же 0,6% ложных; английский: свежие модели и «очеловеченные» тексты ловятся заметно чаще (HumanizerBench 70% → 81%).\n• Честно: на английском чуть выросли ложные срабатывания на текстах не носителей языка (экзаменационные эссе TOEFL: 4,4% → 6,6% на 91 тексте) и на «правленых людях». В режиме «Точный» те же эссе TOEFL дают 1,1% ложных (1 из 91), но английский ИИ ловится реже (HumanizerBench 69%). Для школ и вузов используйте его.\n• Пакет моделей около 4 ГБ; пик видеопамяти около 1,6 ГБ. Обновление не удаляет старые папки моделей.\nПорог вердикта заморожен по dev-данным; наборы сайта в подборе не участвовали.",
+      "en": "• New 1.3 models (Essay and Multi, each merged from three trained variants) for all three languages. English now uses the same routed path as Russian and Polish, on shared models: switching language no longer reloads them.\n• Polish: on the main test set detection of AI text rose from 39% to 80% at 0.9% false flags (was 0.3%); Russian: 57% to 78% at the same 0.6% false flags; English: recent-model and humanized texts are caught noticeably more often (HumanizerBench 70% to 81%).\n• Honest limits: in English, false flags rose slightly on non-native writing (TOEFL exam essays: 4.4% to 6.6% on 91 texts) and on lightly edited human text. In Precise mode the same TOEFL essays give 1.1% false flags (1 of 91), at the cost of catching fewer English AI texts (HumanizerBench 69%). Use it for schools and universities.\n• The model package is about 4 GB; peak GPU memory is about 1.6 GB. The update does not delete old model folders.\nThe verdict threshold was frozen on development data; the website test sets were not used for selection.",
+      "pl": "• Nowe modele 1.3 (Essay i Multi, każdy scalony z trzech wytrenowanych wariantów) dla wszystkich trzech języków. Angielski idzie teraz tą samą ścieżką co rosyjski i polski, na wspólnych modelach: zmiana języka nie przeładowuje ich.\n• Polski: na głównym zestawie testowym wykrywanie tekstu AI wzrosło z 39% do 80% przy 0,9% fałszywych alarmów (było 0,3%); rosyjski: z 57% do 78% przy tych samych 0,6%; angielski: teksty nowych modeli i „uczłowieczone” są wykrywane wyraźnie częściej (HumanizerBench 70% do 81%).\n• Uczciwie: w angielskim nieco wzrosły fałszywe alarmy na tekstach osób niebędących native speakerami (eseje TOEFL: 4,4% do 6,6% na 91 tekstach) i na lekko redagowanych tekstach ludzi. W trybie Dokładnym te same eseje TOEFL dają 1,1% fałszywych alarmów (1 z 91), ale angielski tekst AI jest wykrywany rzadziej (HumanizerBench 69%). Użyj go w szkołach i na uczelniach.\n• Pakiet modeli ma około 4 GB; szczyt pamięci GPU około 1,6 GB. Aktualizacja nie usuwa starych folderów modeli.\nPróg werdyktu zamrożono na danych deweloperskich; zestawy ze strony nie brały udziału w doborze."
+    }
+  },
+  {
+    "version": "2.0.2.20",
+    "date": "2026-10-04",
+    "title": {
+      "ru": "Защита данных, PDF-отчёты и исправление белого окна",
+      "en": "Data protection, PDF reports and blank-window fix",
+      "pl": "Ochrona danych, raporty PDF i naprawa białego okna"
+    },
+    "notes": {
+      "ru": "• PDF-отчёты теперь строятся встроенной библиотекой без Edge, Chrome или Brave. Единая вёрстка A4 включает векторные диаграммы, карту структуры, метрики, отмеченный текст и Unicode для русского, английского и польского. Молчаливое переключение на старый экспортёр устранено.\n• PDF/DOCX разбираются отдельным процессом Windows LPAC с ограничениями доступа к файлам и сети. Сохраняются лимиты: 20 секунд, 512 МиБ, вход 20 МБ, результат 4 МБ, PDF до 500 страниц; для DOCX ограничены число элементов и распаковка.\n• История шифруется DPAPI текущего пользователя Windows. Существующие записи мигрируют в защищённое хранилище; запись выполняется атомарно, очистка учитывает политику хранения.\n• Черновики перезапуска и обновления страницы также защищены DPAPI. Новый текст не сохраняется открыто в sessionStorage; прежние черновики переносятся с сохранением текста.\n• Журнал аудита защищён цепочкой HMAC, отдельной контрольной точкой и восстановлением незавершённой записи. Ручная очистка отключена; журнал хранится согласно политике организации.\n• Исправлено белое окно WebView2 после сворачивания: поверхность перерисовывается без перезагрузки страницы и потери введённого текста. Сохранён тёмный фон окна.\n• Добавлен явный PerMonitorV2 DPI-манифест, сохранена поддержка длинных путей Windows для временного обработчика документов.\n• DirectML проверяет фактически используемый провайдер. При смене CPU/GPU освобождаются прежние сессии и обновляется статус устройства.\n• Исправлены подготовка изолированного обработчика документов и обработка его ошибок: повреждённые документы не блокируют последующую работу и не показывают внутренние пути пользователю.\n• Сохранены фоновое скачивание обновления, скрытая установка, повторное открытие программы и восстановление несохранённого текста. Основной канал предлагает обычный Windows-установщик, отдельно от Dev.\nВеса моделей, калибровки и коммерческие условия не менялись.",
+      "en": "• PDF reports now use the bundled renderer without Edge, Chrome or Brave. One A4 layout includes vector charts, structure map, metrics, annotated text and Unicode for English, Russian and Polish. Silent switching to the old exporter has been removed.\n• PDF/DOCX parsing runs in a separate Windows LPAC process with restricted file and network access. Limits remain: 20 seconds, 512 MiB, 20 MB input, 4 MB output and 500 PDF pages; DOCX entry count and expansion are bounded.\n• Current-user Windows DPAPI encrypts history. Existing records migrate into protected storage; writes are atomic and deletion respects retention policy.\n• Restart and page-refresh drafts also use DPAPI. New text is no longer stored in plaintext sessionStorage; legacy drafts migrate while preserving text.\n• The audit ledger uses an HMAC chain, independent checkpoint and recovery of interrupted writes. Manual clearing is disabled; organization retention policy controls storage.\n• Fixed the blank WebView2 window after minimizing: the surface repaints without reloading the page or losing input. The dark window background is retained.\n• An explicit PerMonitorV2 DPI manifest is included, with Windows long-path support for the temporary document worker.\n• DirectML checks the actual execution provider. Switching CPU/GPU releases previous sessions and refreshes device status.\n• Fixed isolated document-worker preparation and error handling: damaged documents do not block subsequent work or expose internal paths to users.\n• Background update download, hidden installation, automatic relaunch and unsaved-text recovery remain supported. The stable channel serves the normal Windows installer separately from Dev.\nModel weights, calibrations and commercial terms are unchanged.",
+      "pl": "• Raporty PDF używają teraz wbudowanego renderera bez Edge, Chrome ani Brave. Jeden układ A4 zawiera wykresy wektorowe, mapę struktury, metryki, oznaczony tekst i Unicode dla polskiego, angielskiego i rosyjskiego. Usunięto ciche przełączanie na stary eksport.\n• PDF/DOCX są odczytywane w osobnym procesie Windows LPAC z ograniczonym dostępem do plików i sieci. Limity: 20 sekund, 512 MiB, wejście 20 MB, wynik 4 MB, PDF do 500 stron; DOCX ma limity liczby elementów i rozpakowania.\n• DPAPI bieżącego użytkownika Windows szyfruje historię. Istniejące rekordy są migrowane do chronionego magazynu; zapis jest atomowy, a usuwanie uwzględnia retencję.\n• Szkice po restarcie i odświeżeniu strony również używają DPAPI. Nowy tekst nie jest zapisywany jawnie w sessionStorage; stare szkice są migrowane z zachowaniem tekstu.\n• Dziennik audytu używa łańcucha HMAC, osobnego punktu kontrolnego i odtwarzania przerwanych zapisów. Ręczne czyszczenie jest wyłączone; obowiązuje retencja organizacji.\n• Naprawiono białe okno WebView2 po minimalizacji: powierzchnia jest odrysowywana bez przeładowania strony i utraty tekstu. Zachowano ciemne tło okna.\n• Dodano jawny manifest PerMonitorV2 DPI oraz obsługę długich ścieżek Windows dla tymczasowego procesu dokumentów.\n• DirectML sprawdza rzeczywistego dostawcę wykonania. Zmiana CPU/GPU zwalnia poprzednie sesje i odświeża stan urządzenia.\n• Poprawiono przygotowanie izolowanego procesu dokumentów i błędy: uszkodzone dokumenty nie blokują dalszej pracy ani nie ujawniają wewnętrznych ścieżek.\n• Zachowano pobieranie aktualizacji w tle, ukrytą instalację, ponowne otwarcie aplikacji i odtwarzanie tekstu. Kanał stabilny udostępnia zwykły instalator Windows oddzielnie od Dev.\nWagi modeli, kalibracje i warunki komercyjne pozostają bez zmian."
+    }
+  },
+  {
+    "version": "2.0.2.17",
+    "date": "2026-10-04",
+    "title": {
+      "ru": "Обновления, документы, одиночные модели и Metro UI",
+      "en": "Updates, documents, single models and Metro UI",
+      "pl": "Aktualizacje, dokumenty, pojedyncze modele i Metro UI"
+    },
+    "notes": {
+      "ru": "• Скачивание обновления в фоне, скрытая установка и автоматическое повторное открытие программы; исправлено зависание помощника после успешной установки.\n• После отказа установщика открывается предыдущая версия, сохраняется ошибка и доступна повторная попытка; отказный пакет не запускается снова автоматически.\n• Несохранённый текст восстанавливается после обновления; временный черновик удаляется после подтверждения, учитываются запреты хранения.\n• Повторные клики обновления блокируются; заметки относятся к предлагаемой версии. Перезапуск запрещён при анализе, очереди и разборе документа.\n• Проверяются подпись, размер, версия и хеш пакета. При ошибке обновления моделей откатываются изменённые, добавленные и удалённые файлы вместе с манифестом; исправлены открытые файлы Windows.\n• Отмена привязана к заданию и вкладке, включая раннюю отмену, перезагрузку страницы и разрыв связи. Отменённый результат не сохраняется в историю.\n• PDF/DOCX разбираются в отдельном процессе: 20 секунд, 512 МиБ, вход 20 МБ, результат 4 МБ, PDF до 500 страниц; ограничены число файлов и распаковка DOCX. Интерфейс остаётся доступен при разборе.\n• Поздний ответ загрузки не подменяет новый ввод; повреждённые документы дают ошибку и позволяют продолжить работу.\n• Одиночный legacy-режим запускает только выбранную модель. CPU загружает голоса по требованию; предварительная загрузка остаётся отдельной настройкой.\n• Одиночный вердикт и вероятность согласованы с историей и JSON/CSV/HTML-отчётами; экспорт указывает выбранную модель и область анализа.\n• Stylo без подсветки не показывает NaN, выдуманные доли или ложное утверждение о человеческом авторстве. Исправлены пустые scores и текстовая аналитика без меток.\n• Неопределённые предложения не экспортируются как явные ИИ-сигналы. Отсутствие подсветки не подтверждает человеческое авторство.\n• Точный режим доступен только с полным ансамблем; интерфейс сбрасывает несовместимый выбор, API отклоняет его до загрузки моделей. Routed поддерживает полный ансамбль.\n• Старый результат сбрасывается после изменения текста, режима или модели. Исправлены уверенность вердикта «человек», нулевой score, проценты и открытие истории.\n• Настройки сохраняются атомарно; усилены проверки Origin/Host и защита от iframe. CSV защищён от формул; соблюдаются политики истории, экспорта, папок и лицензии.\n• Metro UI: плоские цвета, прямые углы, клавиатурный фокус, reduced-motion. История / Пакет / Сравнение расположены по центру окна, на узком окне — отдельной строкой.\n• Опрос состояния имеет таймаут, переводы не перерисовываются постоянно, ошибки обновления показаны без блокирующего окна.\n• На сайте мобильное меню закрывается по Escape, выбору раздела и клику снаружи; добавлен полный список изменений.\nВеса и калибровки не менялись.",
+      "en": "• Background update download, hidden installation and automatic app relaunch; fixed the helper waiting indefinitely after a successful install.\n• Installer failure reopens the previous app, records the error and allows retry; failed packages are not automatically relaunched.\n• Unsaved text is restored after updating; temporary drafts are acknowledged and removed, respecting storage policies.\n• Duplicate update clicks are blocked, notes match the offered version, and restart is blocked during analysis, queued work or document parsing.\n• Package signature, size, version and checksum are verified. Failed model updates roll back changed, added and deleted files with the manifest; fixed open-file handling on Windows.\n• Cancellation belongs to a job and tab, covering early cancellation, page reload and disconnect. Cancelled results are not stored in history.\n• PDF/DOCX use a separate process: 20-second timeout, 512 MiB memory cap, 20 MB input, 4 MB output, PDF up to 500 pages; DOCX entry and expansion limits. Parsing keeps HTTP responsive.\n• Late uploads cannot overwrite newer input; damaged documents fail without blocking subsequent work.\n• Legacy single mode executes only the selected model. CPU voters load on demand, with optional preload.\n• Single verdict/probability agree with history and JSON/CSV/HTML exports, including model and analysis scope.\n• Stylo without sentence evidence no longer displays NaN, fabricated authorship shares or a human-authorship claim. Missing scores and text analytics without labels are handled correctly.\n• Uncertain sentences are not exported as explicit AI signals. Missing highlighting does not establish human authorship.\n• Precise mode requires the full ensemble; UI resets incompatible choices and API rejects them before model loading. Routed calibration supports the full ensemble.\n• Editing text, mode or model invalidates stale results. Fixed human-verdict confidence, zero scores, history percentages and opening history records.\n• Atomic settings; Origin/Host and iframe protections; CSV formula escaping; storage/export/folder/licence policies respected.\n• Metro UI: flat colours, square corners, keyboard focus and reduced motion. History / Batch / Compare centred on the window, using a separate row on narrow windows.\n• Status polling has a timeout; translations no longer redraw continually; update errors avoid blocking dialogs.\n• Website mobile menu closes on Escape, navigation and outside clicks; full release notes added.\nWeights and calibrations are unchanged.",
+      "pl": "• Pobieranie aktualizacji w tle, ukryta instalacja i ponowne otwarcie aplikacji; usunięto zawieszanie pomocnika po instalacji.\n• Błąd instalatora przywraca poprzednią aplikację, zapisuje komunikat i pozwala ponowić próbę; błędny pakiet nie uruchamia się automatycznie.\n• Przywracanie niezapisanego tekstu po aktualizacji; tymczasowy szkic jest usuwany po potwierdzeniu, z uwzględnieniem zasad przechowywania.\n• Blokada powtórnych kliknięć, informacje dla oferowanej wersji oraz blokada restartu podczas analizy, kolejki i odczytu dokumentu.\n• Weryfikacja podpisu, rozmiaru, wersji i sumy pakietu. Nieudana aktualizacja modeli cofa zmienione, dodane i usunięte pliki wraz z manifestem; poprawiono otwarte pliki Windows.\n• Anulowanie przypisane do zadania i karty, także przed rejestracją, przy odświeżeniu i utracie połączenia. Anulowany wynik nie trafia do historii.\n• PDF/DOCX w osobnym procesie: 20 sekund, 512 MiB, wejście 20 MB, wynik 4 MB, PDF do 500 stron; limity liczby plików i rozpakowania DOCX. Serwer pozostaje dostępny.\n• Spóźniony wynik wczytania nie zastępuje nowego tekstu; uszkodzony dokument nie blokuje dalszej pracy.\n• Tryb pojedynczy legacy uruchamia wybrany model. Modele CPU ładowane na żądanie; opcjonalne ładowanie wstępne pozostaje dostępne.\n• Wynik i prawdopodobieństwo pojedynczego modelu zgodne z historią oraz JSON/CSV/HTML; eksport zawiera model i zakres analizy.\n• Stylo bez podświetlenia nie pokazuje NaN, wymyślonych udziałów ani twierdzenia o ludzkim autorstwie. Poprawiono brakujące wyniki i analizę zdań bez etykiet.\n• Niepewne zdania nie są eksportowane jako wyraźne sygnały AI; brak podświetlenia nie potwierdza ludzkiego autorstwa.\n• Tryb precyzyjny wymaga wszystkich modeli; interfejs resetuje niezgodny wybór, API odrzuca go przed ładowaniem. Routed obsługuje pełny zespół.\n• Zmiana tekstu, trybu lub modelu usuwa nieaktualny wynik; poprawiono pewność wyniku ludzkiego, zera, procenty i otwieranie historii.\n• Atomowy zapis ustawień, ochrona Origin/Host i iframe, zabezpieczenie CSV przed formułami oraz zasady historii, eksportu, katalogów i licencji.\n• Metro UI: płaskie kolory, prostokątne elementy, fokus klawiatury i ograniczony ruch. Historia / Pakiet / Porównanie na środku okna, w osobnym wierszu przy małej szerokości.\n• Limit czasu odpytywania stanu, brak ciągłego odrysowywania tłumaczeń, błędy aktualizacji bez blokującego okna.\n• Menu mobilne strony zamyka się klawiszem Escape, wyborem sekcji i kliknięciem poza nim; pełna lista zmian na stronie.\nWagi i kalibracje bez zmian."
+    }
+  },
+  {
+    "version": "2.0.2.4",
+    "date": "2026-10-03",
+    "title": {
+      "ru": "Верный вердикт и уверенность",
+      "pl": "Poprawny werdykt i pewność",
+      "en": "Correct verdict and confidence"
+    },
+    "notes": {
+      "ru": "Исправлено: надпись «Написан ИИ» не зависит от результата (теперь показывает настоящий вердикт); процент — это уверенность в показанном вердикте, у человеческих текстов больше не 80-90% «ИИ».",
+      "pl": "Naprawiono: napis „Napisane przez AI” nie zależy już od wyniku (pokazuje prawdziwy werdykt); procent to pewność pokazanego werdyktu, teksty ludzkie nie mają już 80-90% „AI”.",
+      "en": "Fixed: the Written by AI label no longer ignores the result (it shows the real verdict); the percentage is the confidence in the shown verdict, human texts no longer show 80-90% AI."
+    },
+    "notes_ru": "Исправлено: надпись «Написан ИИ» не зависит от результата (теперь показывает настоящий вердикт); процент — это уверенность в показанном вердикте, у человеческих текстов больше не 80-90% «ИИ»."
+  },
+  {
+    "version": "2.0.2.3",
+    "date": "2026-10-03",
+    "title": {
+      "ru": "Счётчики подсветки и единые эталоны",
+      "pl": "Liczniki podświetlenia i wspólne wzorce",
+      "en": "Highlight counters and consistent references"
+    },
+    "notes": {
+      "ru": "Исправлены счётчики ИИ / неясных / человека над подсветкой (показывали нули и не менялись при переключении вкладок); эталонный график в PDF-отчёте совпадает с панелью приложения.",
+      "pl": "Naprawiono liczniki AI / niepewnych / człowieka nad podświetleniem (pokazywały zera i nie zmieniały się po przełączeniu kart); wykres wzorcowy w raporcie PDF zgadza się z panelem aplikacji.",
+      "en": "Fixed the AI / uncertain / human counters above the highlight (they showed zeros and ignored tab switches); the reference chart in the PDF report now matches the app panel."
+    },
+    "notes_ru": "Исправлены счётчики ИИ / неясных / человека над подсветкой (показывали нули и не менялись при переключении вкладок); эталонный график в PDF-отчёте совпадает с панелью приложения."
+  },
+  {
+    "version": "2.0.2.2",
+    "date": "2026-10-03",
+    "title": {
+      "ru": "Быстрая проверка на видеокарте",
+      "pl": "Szybkie sprawdzanie na karcie graficznej",
+      "en": "Fast checks on the graphics card"
+    },
+    "notes": {
+      "ru": "Исправлен выбор видеокарты (проверка могла идти на встроенной графике и занимать минуты); длинные тексты считаются за секунды; новая проверка отменяет незаконченную.",
+      "pl": "Naprawiono wybór karty graficznej (sprawdzanie mogło działać na zintegrowanej grafice i trwać minuty); długie teksty liczą się w sekundy; nowe sprawdzenie anuluje niedokończone.",
+      "en": "Fixed the graphics card choice (checks could run on the integrated GPU and take minutes); long texts take seconds; a new check cancels an unfinished one."
+    },
+    "notes_ru": "Исправлен выбор видеокарты (проверка могла идти на встроенной графике и занимать минуты); длинные тексты считаются за секунды; новая проверка отменяет незаконченную."
+  },
+  {
+    "version": "2.0.2.1",
+    "date": "2026-10-03",
+    "title": {
+      "ru": "Без ограничения длины текста",
+      "pl": "Bez limitu długości tekstu",
+      "en": "No text length limit"
+    },
+    "notes": {
+      "ru": "Убран предел в 20 000 слов: можно проверять тексты любой длины (чем длиннее, тем дольше проверка).",
+      "pl": "Usunięto limit 20 000 słów: można sprawdzać teksty dowolnej długości (im dłuższy, tym dłużej trwa sprawdzanie).",
+      "en": "Removed the 20,000-word limit: texts of any length can be checked (the longer the text, the longer the check)."
+    },
+    "notes_ru": "Убран предел в 20 000 слов: можно проверять тексты любой длины (чем длиннее, тем дольше проверка)."
+  },
+  {
+    "version": "2.0.2",
+    "date": "2026-10-03",
+    "title": {
+      "ru": "Обновление в одно нажатие",
+      "pl": "Aktualizacja jednym kliknięciem",
+      "en": "One-click update"
+    },
+    "notes": {
+      "ru": "Исправлено обновление приложения: после загрузки появляется кнопка «Перезапустить и обновить», приложение само устанавливает новую версию и запускается заново.",
+      "pl": "Naprawiono aktualizację aplikacji: po pobraniu pojawia się przycisk „Uruchom ponownie i zaktualizuj”, aplikacja sama instaluje nową wersję i uruchamia się ponownie.",
+      "en": "Fixed the app update: after the download a Restart and update button appears, and the app installs the new version by itself and starts again."
+    },
+    "notes_ru": "Исправлено обновление приложения: после загрузки появляется кнопка «Перезапустить и обновить», приложение само устанавливает новую версию и запускается заново."
+  },
+  {
+    "version": "2.0.1",
+    "date": "2026-10-03",
+    "title": {
+      "ru": "Исправлен экспорт отчётов",
+      "pl": "Naprawiony eksport raportów",
+      "en": "Report export fixed"
+    },
+    "notes": {
+      "ru": "Кнопки экспорта (PDF, HTML, CSV, JSON, Markdown) в окне приложения теперь открывают окно «Сохранить как». Работает и в полном окне истории.",
+      "pl": "Przyciski eksportu (PDF, HTML, CSV, JSON, Markdown) w oknie aplikacji otwierają teraz okno „Zapisz jako”. Działa też w pełnym oknie historii.",
+      "en": "The export buttons (PDF, HTML, CSV, JSON, Markdown) in the app window now open a Save As dialog. This also works in the full history window."
+    },
+    "notes_ru": "Кнопки экспорта (PDF, HTML, CSV, JSON, Markdown) в окне приложения теперь открывают окно «Сохранить как». Работает и в полном окне истории."
+  },
+  {
+    "version": "2.0.0",
+    "date": "2026-10-03",
+    "title": {
+      "ru": "Linda-Pro 2.0: отчёты, обновления без переустановки, три языка",
+      "pl": "Linda-Pro 2.0: raporty, aktualizacje bez reinstalacji, trzy języki",
+      "en": "Linda-Pro 2.0: reports, updates without reinstalling, three languages"
+    },
+    "notes": {
+      "ru": "PDF-отчёт с графиками (а также HTML, CSV, JSON); обновления скачиваются в фоне, применяются после перезапуска, с откатом при сбое; интерфейс на русском, польском и английском; настройка внешнего вида (тема, акцент, плотность, шрифт, углы); для организаций: пакетная проверка папки, журнал аудита, политики в enterprise.json. Исправлен счётчик слов и символов. Модели не менялись.",
+      "pl": "Raport PDF z wykresami (a także HTML, CSV, JSON); aktualizacje pobierają się w tle i działają po restarcie, z wycofaniem przy błędzie; interfejs po polsku, rosyjsku i angielsku; ustawienia wyglądu (motyw, akcent, gęstość, czcionka, rogi); dla organizacji: sprawdzanie folderów, dziennik audytu, polityki w enterprise.json. Naprawiono licznik słów i znaków. Modele bez zmian.",
+      "en": "PDF report with charts (plus HTML, CSV, JSON); updates download in the background and apply after a restart, with rollback on failure; interface in Russian, Polish and English; appearance settings (theme, accent, density, font, corners); for organizations: folder batch checks, audit log, policies in enterprise.json. Fixed the word and character counter. The models are unchanged."
+    },
+    "notes_ru": "PDF-отчёт с графиками (а также HTML, CSV, JSON); обновления скачиваются в фоне, применяются после перезапуска, с откатом при сбое; интерфейс на русском, польском и английском; настройка внешнего вида; для организаций: пакетная проверка папки, журнал аудита, политики в enterprise.json. Исправлен счётчик слов и символов. Модели не менялись."
+  },
+  {
+    "version": "1.2.1",
+    "date": "2026-09-28",
+    "title": {
+      "ru": "Кабинет 2.0",
+      "pl": "Gabinet 2.0",
+      "en": "Cabinet 2.0"
+    },
+    "notes": {
+      "ru": "Кабинет: история с папками, пакетная проверка, сравнение документов; тихие обновления с откатом.",
+      "pl": "Gabinet: historia z folderami, sprawdzanie wsadowe, porównywanie dokumentów; ciche aktualizacje z wycofywaniem.",
+      "en": "Cabinet: history with folders, batch checks, document comparison; quiet updates with rollback."
+    },
+    "notes_ru": "Кабинет: история с папками, пакетная проверка, сравнение документов; тихие обновления с откатом."
+  },
+  {
+    "version": "1.2.0",
+    "date": "2026-09-12",
+    "title": {
+      "ru": "Структура и аналитика",
+      "pl": "Struktura i analityka",
+      "en": "Structure and analytics"
+    },
+    "notes": {
+      "ru": "Структура текста и аналитика рядом с вердиктом; журнал истории локально на компьютере.",
+      "pl": "Struktura tekstu i analityka obok werdyktu; dziennik historii lokalnie na komputerze.",
+      "en": "Text structure and analytics next to the verdict; history log stored locally on your computer."
+    },
+    "notes_ru": "Структура текста и аналитика рядом с вердиктом; журнал истории локально на компьютере."
+  },
+  {
+    "version": "1.1.0",
+    "date": "2026-08-20",
+    "title": {
+      "ru": "Ансамбль из трёх моделей",
+      "pl": "Zespół trzech modeli",
+      "en": "Three-model ensemble"
+    },
+    "notes": {
+      "ru": "Ансамбль из трёх моделей, режимы Sensitive/Precise, офлайн-работа после загрузки моделей.",
+      "pl": "Zespół trzech modeli, tryby Sensitive/Precise, praca offline po pobraniu modeli.",
+      "en": "Three-model ensemble, Sensitive/Precise modes, offline work after downloading the models."
+    },
+    "notes_ru": "Ансамбль из трёх моделей, режимы Sensitive/Precise, офлайн-работа после загрузки моделей."
+  }
+]

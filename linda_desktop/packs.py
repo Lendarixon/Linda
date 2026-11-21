@@ -1,0 +1,116 @@
+# -*- coding: utf-8 -*-
+"""Downloadable licensed packs: trace (forensic authorship) and humanizer tiers.
+
+Trace engine ships with the app; its READY marker is written after verify.
+Humanizer weights download on demand (lite ~1.2 ГБ, full ~8 ГБ) from HF.
+Every pack API requires a licence (any tier, including subscription).
+"""
+from __future__ import annotations
+
+import json
+import threading
+from pathlib import Path
+
+from . import config
+
+_pack_lock = threading.Lock()
+_pack_job = {"phase": "idle", "pack": "", "done": 0, "total": 0, "error": ""}
+
+
+def probe() -> dict:
+    from . import humanize_pack, licensing, trace_pack  # noqa: PLC0415
+
+    return {"trace": trace_pack.status(), "humanizer": humanize_pack.status(),
+            "licensed": licensing.public_state()["licensed"]}
+
+
+def job_snapshot() -> dict:
+    return dict(_pack_job)
+
+
+def _set_job(**kw) -> None:
+    with _pack_lock:
+        _pack_job.update(kw)
+
+
+def _poll_sizes(stop, variants):
+    """Пока качается base, показываем живые байты: сумма файлов растёт, итог — оценка."""
+    from . import humanize_pack  # noqa: PLC0415
+
+    while not stop.is_set():
+        try:
+            done = 0
+            total = 0
+            for v in variants:
+                d = humanize_pack.variant_dirs(v)
+                sz = sum(p.stat().st_size for p in d["root"].rglob("*") if p.is_file()) if d["root"].is_dir() else 0
+                done += sz
+                total += max(humanize_pack.estimated_bytes(v), sz)
+            _set_job(done=done, total=total)
+        except Exception:
+            pass
+        stop.wait(1.0)
+
+
+def download(pack: str) -> dict:
+    """Start (synchronously, caller threads it) downloading a pack. Returns final state."""
+    from . import humanize_pack  # noqa: PLC0415
+
+    with _pack_lock:
+        if _pack_job["phase"] == "running":
+            raise RuntimeError("another pack download is running")
+        _pack_job.update(phase="running", pack=pack, done=0, total=100, error="")
+    stop = None
+    poll = None
+    try:
+        if pack == "humanizer-lite":
+            import threading as _th
+
+            _set_job(total=humanize_pack.estimated_bytes("lite"))
+            stop, poll = _start_poll(["lite"])
+            humanize_pack.download_base("lite")
+        elif pack == "humanizer-full":
+            import threading as _th
+
+            _set_job(total=humanize_pack.estimated_bytes("full"))
+            stop, poll = _start_poll(["full"])
+            humanize_pack.download_base("full")
+        elif pack == "humanizer-all":
+            import threading as _th
+
+            _set_job(total=humanize_pack.estimated_bytes("lite") + humanize_pack.estimated_bytes("full"))
+            stop, poll = _start_poll(["lite", "full"])
+            if not humanize_pack.installed("lite"):
+                humanize_pack.download_base("lite")
+            humanize_pack.download_base("full")
+        elif pack == "trace":
+            from . import trace_pack  # noqa: PLC0415
+
+            if not trace_pack.installed():
+                raise RuntimeError("trace payload missing")
+        else:
+            raise ValueError("unknown pack")
+        with _pack_lock:
+            _pack_job.update(phase="ready", done=_pack_job.get("total", 100))
+    except Exception as e:  # noqa: BLE001
+        with _pack_lock:
+            _pack_job.update(phase="error", error=str(e)[:300])
+        raise
+    finally:
+        try:
+            if stop is not None:
+                stop.set()
+            if poll is not None:
+                poll.join(timeout=2.0)
+        except Exception:
+            pass
+    return job_snapshot()
+
+
+def _start_poll(variants):
+    import threading as _th
+
+    stop = _th.Event()
+    poll = _th.Thread(target=_poll_sizes, args=(stop, variants), daemon=True)
+    poll.start()
+    return stop, poll

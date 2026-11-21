@@ -1,0 +1,1184 @@
+# -*- coding: utf-8 -*-
+"""Detector engine: loads Linda-Pro from the app data folder and produces the result the UI needs (verdict, windows, sentence heat map)."""
+from __future__ import annotations
+
+import json
+from bisect import bisect_left
+import numpy as np
+import math
+import os
+import re
+import subprocess
+import threading
+from pathlib import Path
+
+from . import config
+from .sentences import split_sentences_with_offsets
+
+ALL_MODELS = ("linda_essay", "linda_multi_v2", "stylo7c")
+
+# 1.3-beta language split: EN is strictly the classic 1.1 ensemble
+# (Essay-D + Multi-D + Stylo-D with the original windowed calibration);
+# PL/RU go through calibration/routing.json. Never mix both GPU pools at once.
+CLASSIC_LANG = "en"
+ROUTED_LANGS = ("pl", "ru")
+
+
+def _sig(m: float, c: float, s: float) -> float:
+    return 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, (m - c) / s))))
+
+
+def _smooth_lite_tokens(text, scores, radius=64):
+    """Average local evidence across disjoint inference edges, within paragraphs.
+
+    A quarter of the 254-token context on either side suppresses chunk-edge
+    spikes without mixing paragraphs (including mixed authorship boundaries).
+    This only aggregates existing scores; it never reads tokens again.
+    """
+    if not scores:
+        return scores
+    values = np.asarray([z for _, _, z in scores], dtype=np.float64)
+    if not np.isfinite(values).all():
+        raise ValueError("Nonfinite token scores")
+    kernel = np.ones(2 * radius + 1) / (2 * radius + 1)
+    ends = [m.end() for m in re.finditer(r"\n\s*\n", text)] + [len(text) + 1]
+    first = 0
+    for end in ends:
+        last = first
+        while last < len(scores) and scores[last][0] < end:
+            last += 1
+        if last > first:
+            values[first:last] = np.convolve(
+                np.pad(values[first:last], (radius, radius), mode="edge"), kernel, mode="valid")
+        first = last
+    return [(a, b, float(z)) for (a, b, _), z in zip(scores, values)]
+
+
+def _sentence_token_evidence(text, spans, tokens, center, scale):
+    """Aggregate one model's original-offset tokens without inventing sources."""
+    scores = []
+    for a, b, z in tokens:
+        a, b, z = int(a), int(b), float(z)
+        if not 0 <= a <= b <= len(text) or not math.isfinite(z):
+            raise ValueError("Invalid original token evidence")
+        if b > a:
+            scores.append((a, b, z))
+    # Stable ordering preserves byte tokens sharing a Unicode character span.
+    scores.sort(key=lambda x: (x[0], x[1]))
+    rows, first = [], 0
+    for span in spans:
+        while first < len(scores) and scores[first][1] <= span.start:
+            first += 1
+        values, j = [], first
+        while j < len(scores) and scores[j][0] < span.end:
+            if scores[j][1] > span.start:
+                values.append(scores[j][2])
+            j += 1
+        if not values:
+            raise ValueError("Missing sentence token evidence")
+        mean = sum(values) / len(values)
+        rows.append((mean, _sig(mean, center, scale)))
+    return rows
+
+
+_DISCRETE = re.compile(r"\b(rtx|gtx|geforce|quadro|titan|tesla|radeon rx|radeon pro|radeon vii)\b|\barc\W*(tm\W*)?[ab]\d", re.I)
+
+
+def _registry_adapters() -> list[tuple[str, int]]:
+    """(name, dedicated video memory in bytes) of every display adapter from the Windows registry: fast, needs no PowerShell and, unlike WMI AdapterRAM (32-bit, capped at 4 GB),
+    reports the real size of modern cards."""
+    if os.name != "nt":
+        return []
+    try:
+        import winreg
+
+        out: list[tuple[str, int]] = []
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}") as root:
+            i = 0
+            while True:
+                try:
+                    sub = winreg.EnumKey(root, i)
+                except OSError:
+                    break
+                i += 1
+                if not sub.isdigit():
+                    continue
+                try:
+                    with winreg.OpenKey(root, sub) as k:
+                        name = str(winreg.QueryValueEx(k, "DriverDesc")[0]).strip()
+                        try:
+                            mem = winreg.QueryValueEx(k, "HardwareInformation.qwMemorySize")[0]
+                            mem = int.from_bytes(mem, "little") if isinstance(mem, (bytes, bytearray)) else int(mem)
+                        except OSError:
+                            mem = 0
+                except OSError:
+                    continue
+                if name and "basic" not in name.lower() and "remote" not in name.lower() and "virtual" not in name.lower():
+                    out.append((name, mem))
+        return out
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def _vram_by_name() -> dict[str, int]:
+    return {n: m for n, m in _registry_adapters()}
+
+
+def _adapter_names() -> list[str]:
+    """Names of the graphics adapters (Windows), the fastest first (DirectML numbers them "most powerful first", device_id 0 = the best card): discrete cards by video memory, then
+    integrated graphics. Source: the registry (fast, real memory sizes), PowerShell/WMI only when the registry has nothing. Shown in the settings and used to pick the card."""
+    rows = _registry_adapters() or [(n, 0) for n in _wmi_names()]
+    rows.sort(key=lambda r: (0 if (_DISCRETE.search(r[0]) or r[1] >= int(1.5 * 2**30)) else 1, -r[1]))
+    return [n for n, _ in rows]
+
+
+def _adapters() -> list[dict]:
+    """Adapters in selection order with discrete = a known discrete family name or at least 1.5 GB of dedicated video memory (integrated graphics reserve a few hundred MB)."""
+    vram = _vram_by_name()
+    return [{"name": n, "vram": vram.get(n, 0), "discrete": bool(_DISCRETE.search(n)) or vram.get(n, 0) >= int(1.5 * 2**30)} for n in _adapter_names()]
+
+
+def _wmi_names() -> list[str]:
+    if os.name != "nt":
+        return []
+    try:
+        out = subprocess.run(["powershell", "-NoProfile", "-Command", "(Get-CimInstance Win32_VideoController).Name"], capture_output=True, text=True, timeout=30,
+                             creationflags=0x08000000).stdout
+        return [l.strip() for l in out.splitlines() if l.strip() and "basic" not in l.lower()]
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def gpu_probe() -> dict:
+    """Which GPU backend can be used: PyTorch CUDA (NVIDIA) or ROCm (AMD) in development installs, otherwise DirectML through ONNX Runtime (any DirectX 12 card on
+    Windows: AMD Radeon, NVIDIA GeForce, Intel Arc), otherwise none. "names" lists every adapter found (used to offer a choice only when there are several)."""
+    none = {"available": False, "backend": None, "name": "", "names": [], "discrete": False}
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            name = torch.cuda.get_device_name(0)
+            return {"available": True, "backend": "ROCm" if getattr(torch.version, "hip", None) else "CUDA", "name": name, "names": [name], "discrete": True}
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from . import onnx_gpu
+
+        if onnx_gpu.available():
+            ads = _adapters()
+            names = [a["name"] for a in ads]
+            # Adapter list unavailable (registry and PowerShell blocked) while DirectML works: trust DirectML, it ranks the cards itself and puts the strongest first.
+            discrete = any(a["discrete"] for a in ads) if ads else True
+            return {"available": True, "backend": "DirectML", "name": ", ".join(names) or "DirectX 12 graphics card", "names": names, "discrete": discrete}
+    except Exception:  # noqa: BLE001
+        pass
+    return none
+
+
+def pick_device(pref: str = "auto") -> str:
+    """"cpu", "cuda" (PyTorch CUDA/ROCm) or "dml" (ONNX Runtime DirectML). A GPU choice that cannot be honoured falls back to the CPU instead of failing."""
+    if pref == "cpu":
+        return "cpu"
+    g = gpu_probe()
+    if not g["available"] or (pref == "auto" and not g["discrete"]):  # "auto" leaves a lone integrated GPU alone (it can be slower than the CPU); choosing GPU by hand still works
+        return "cpu"
+    return "dml" if g["backend"] == "DirectML" else "cuda"
+
+
+class Engine:
+    def __init__(self) -> None:
+        self.dets: dict | None = None
+        self.device = "cpu"
+        self.lock = threading.Lock()  # one analysis at a time: the voters share the processor / GPU
+        self._jobs: list[dict] = []  # идущие и ожидающие проверки (для отмены)
+        self._jobs_lock = threading.Lock()
+        self.state = {"phase": "idle", "error": ""}
+        self.gpu: dict | None = None  # filled by probe_gpu() in the background (importing torch takes a moment)
+        self.gpu_error = ""
+        self._backend: str | None = None  # None = nothing loaded yet (or manually injected dets in tests); 'classic' | 'routed'
+        self._routed_lang: str | None = None  # last routed language fully loaded (pool holds its voices)
+
+    _progress_cb = None  # callable(pct: float, phase: str) set for the duration of one run(); phase in load / scan / sent / done
+
+    def _emit(self, pct: float, phase: str) -> None:
+        cb = self._progress_cb
+        if cb is not None:
+            try:
+                cb(max(0.0, min(100.0, float(pct))), phase)
+            except Exception:  # noqa: BLE001 — a progress bar must never break an analysis
+                pass
+
+    def probe_gpu(self) -> None:
+        self.gpu = gpu_probe()
+
+    def calibration_file(self) -> Path | None:
+        # Classic 1.1 calibration only: routing.json is a language table, not a calibration.
+        files = sorted(p for p in (config.models_root() / "calibration").glob("*.json") if p.name != "routing.json")
+        return files[0] if files else None
+
+    def routing_file(self) -> Path | None:
+        """Linda-Pro 2.0: table 'language -> three voters + thresholds' (calibration/routing.json, or LINDA_ROUTING for development). Without it the 1.x single-ensemble path is used."""
+        env = os.environ.get("LINDA_ROUTING")
+        p = Path(env) if env else config.models_root() / "calibration" / "routing.json"
+        return p if p.exists() else None
+
+    def merged_table(self) -> bool:
+        """True, если routing.json — таблица merged-ансамбля 1.3 (kind=merged): тогда английский идёт тем же путём, что PL/RU, на общих голосах."""
+        p = self.routing_file()
+        if p is None:
+            return False
+        try:
+            return json.loads(p.read_text(encoding="utf-8")).get("kind") == "merged"
+        except Exception:  # noqa: BLE001
+            return False
+
+    def _close_dets(self, dets: dict | None) -> None:
+        """Release voters/sessions of a backend before another backend loads (no simultaneous GPU pools)."""
+        if not dets:
+            return
+        for det in dets.values():
+            try:
+                pool = getattr(det, "pool", None)
+                if pool is not None and hasattr(pool, "clear"):
+                    pool.clear()
+                    continue
+                close = getattr(det, "close", None)
+                if callable(close):
+                    try:
+                        close()
+                    except Exception:  # noqa: BLE001 — unloading must not fail the switch
+                        pass
+                    continue
+                # Classic residents: close only already-loaded voters, never instantiate unloaded ones.
+                cache = getattr(getattr(det, "_factory", None), "_cache", None)
+                if isinstance(cache, dict):
+                    for v in list(cache.values()):
+                        try:
+                            inner = getattr(v, "_v", v)
+                            fn = getattr(inner, "close", None) or getattr(v, "close", None)
+                            if callable(fn):
+                                fn()
+                        except Exception:  # noqa: BLE001
+                            pass
+                    try:
+                        cache.clear()
+                    except Exception:  # noqa: BLE001
+                        pass
+            except Exception:  # noqa: BLE001 — unloading must not fail the switch
+                pass
+
+    def unload(self) -> None:
+        with self.lock:
+            self._close_dets(self.dets)
+            self.dets = None
+            self._backend = None
+            self._routed_lang = None
+            # Factory caches form cycles; release GPU sessions on device changes.
+            import gc
+            gc.collect()
+            self.device = pick_device(load_settings().get('device','auto'))
+            self.gpu_error = ''
+            self.state = {"phase": "idle", "error": ""}
+
+    def _routed_detectors(self, table_path: Path, settings: dict) -> dict:
+        """Per-language voters; FP32 DirectML preserves the calibrated margins."""
+        from linda_pro.routed import ModelPool, RoutedLindaPro
+        from linda_pro.voters import FastSeqCls, SpeedOnnx, StyloTVoter, StyloVoter
+
+        table = json.loads(table_path.read_text(encoding="utf-8"))
+        models, dirs, cache_dir = config.models_root() / "models", table["voice_dirs"], config.models_root() / "onnx"
+        idx = int(settings.get("gpu_index", 0) or 0)
+        device = self.device
+
+        quality = {"full": "pro", "speed": "lite"}.get(settings.get("quality", "auto"), settings.get("quality", "auto"))
+        has_lite = "speed_s" in dirs and (models / dirs["speed_s"] / "model.onnx").is_file() and all("speed" in table["languages"][lg]["tiers"] for lg in table["languages"])
+        has_pro = all(k in dirs and (models / dirs[k]).is_dir() for k in ("essay_m", "multi_m"))
+        self.have_pro, self.have_lite = has_pro, has_lite
+        both = quality == "both" and has_pro and has_lite
+        self.both = both
+        self.tier = "speed" if has_lite and not both and (not has_pro or quality == "lite" or (quality == "auto" and device == "cpu")) else "full"
+
+        def make(key: str):
+            d = models / dirs[key]
+            if key.startswith("stylo_l_"):
+                return StyloVoter(d, key[-2:])
+            if key.startswith("stylo"):
+                return StyloVoter(d)
+            if key.startswith("speed_t_"):
+                return StyloTVoter(d, key[-2:])
+            if key.startswith("speed"):
+                return SpeedOnnx(d)
+            if device == "dml":
+                from . import onnx_gpu
+
+                return onnx_gpu.OnnxSeqCls(d, cache_dir, idx, fp16=False, stable=True)
+            if device == "cuda":
+                return FastSeqCls(d, batch=8, device="cuda", force_fp32=True)
+            return FastSeqCls(d, batch=8, device="cpu")
+
+        budget = int(settings.get("vram_budget_mb", 9000 if device == "cpu" else 5200))
+        sizes = {key: 2 * size for key, size in table.get("size_mb_fp16", {"essay": 870, "multi": 560}).items()}
+        pool = ModelPool(make, sizes, budget)
+        tier = "speed" if self.tier == "speed" else None
+        out = {"sensitive": RoutedLindaPro(table, make, "sensitive", budget, pool=pool, tier=tier), "precise": RoutedLindaPro(table, make, "precise", budget, pool=pool, tier=tier)}
+        if both:
+            out["alt_sensitive"] = RoutedLindaPro(table, make, "sensitive", budget, pool=pool, tier="speed")
+            out["alt_precise"] = RoutedLindaPro(table, make, "precise", budget, pool=pool, tier="speed")
+        return out
+
+    def _ensure_routed(self, table_path: Path, lang: str = "en") -> dict:
+        self.state = {"phase": "loading", "error": ""}
+        settings = load_settings()
+        self.device = pick_device(settings.get("device", "auto"))
+        self.gpu_error = ""
+        try:
+            table = json.loads(table_path.read_text(encoding="utf-8"))
+            if self.device == "dml" and any(not (config.models_root() / "onnx" / d / "model.onnx").exists() for k, d in table["voice_dirs"].items() if k in ("essay_m", "multi_m") and (config.models_root() / "models" / d).is_dir()):
+                self.state = {"phase": "loading", "error": "", "note": "prepare_models"}  # one-time ONNX export on this computer
+        except Exception:  # noqa: BLE001 — cosmetic
+            pass
+        dets = self._routed_detectors(table_path, settings)
+        try:  # warm up one transformer now so that a broken GPU path falls back to the CPU here, not in the middle of an analysis
+            want = lang if lang in ("en", "pl", "ru") else "en"
+            tier = dets["sensitive"].tier(want)
+            first = next(k for k in tier["voters"] if not k.startswith("stylo"))
+            dets["sensitive"].pool.get(first).margins(["Warm up."])
+        except Exception as e:  # noqa: BLE001
+            if self.device != "dml":
+                raise
+            self.gpu_error = f"{type(e).__name__}: {e}"
+            self.device = "cpu"
+            dets["sensitive"].pool.clear()
+            dets = self._routed_detectors(table_path, settings)
+        self.dets = dets
+        self._backend = "routed"
+        self.state = {"phase": "ready", "error": ""}
+        return dets
+
+    def _ensure_classic(self, cal: Path) -> dict:
+        """EN strictly classic 1.1: Essay-D + Multi-D + Stylo-D with the original windowed calibration."""
+        self.state = {"phase": "loading", "error": ""}
+        import linda_pro.core as core
+        from linda_pro.server import make_detectors
+
+        core.DEFAULT_MODELS = config.models_root() / "models"
+        core.DEFAULT_CALIBRATION = cal
+        settings = load_settings()
+        self.device = pick_device(settings.get("device", "auto"))
+        try:
+            import torch
+
+            torch.set_num_threads(max(1, min(4, (__import__("os").cpu_count() or 4) - 1)))
+        except Exception:  # noqa: BLE001
+            pass
+        self.gpu_error = ""
+        if self.device == "dml":
+            try:
+                dets = self._dml_detectors(core, settings)
+            except Exception as e:  # noqa: BLE001
+                self.gpu_error = f"{type(e).__name__}: {e}"
+                self.device = "cpu"
+                dets = make_detectors("cpu")
+        else:
+            dets = make_detectors(self.device)
+        try:
+            if self.device != 'cpu':
+                self._load_voters(dets)
+        except Exception as e:  # noqa: BLE001
+            if self.device != "dml":
+                raise
+            self.gpu_error = f"{type(e).__name__}: {e}"  # the GPU path failed (export, driver): use the CPU instead
+            self.device = "cpu"
+            self.state = {"phase": "loading", "error": "", "note": ""}
+            dets = make_detectors("cpu")
+            self._load_voters(dets)
+        self.dets = self._maybe_en_rescue(dets, settings)
+        self._backend = "classic"
+        self.state = {"phase": "ready", "error": ""}
+        return self.dets
+
+    def _maybe_en_rescue(self, dets: dict, settings: dict | None = None) -> dict:
+        """1.3 opt-in Essay-I rescue for the EN sensitive detector, OFF unless data_dir()/calibration/en_rescue.json
+        sets enabled=true. Missing/disabled file -> the classic detectors are returned untouched (identical behaviour).
+        Precise, PL/RU and the custom-ensemble path are not modified."""
+        try:
+            from linda_pro import rescue
+
+            cfg = rescue.read_config(config.models_root())
+            if not cfg.get("enabled"):
+                return dets
+            settings = settings if settings is not None else load_settings()
+            device = self.device
+            onnx_cls = None
+            if device == "dml":
+                try:
+                    from . import onnx_gpu
+
+                    onnx_cls = onnx_gpu.OnnxSeqCls
+                except Exception:  # noqa: BLE001 — no ONNX path: the rescue uses the CPU voter
+                    onnx_cls = None
+            factory = rescue.default_i_factory(config.models_root(), device,
+                                               int(settings.get("gpu_index", 0) or 0), onnx_cls=onnx_cls)
+            return rescue.wrap_rescue(dets, factory, thr=rescue.threshold_of(cfg),
+                                      batch=int(cfg.get("i_batch", rescue.CPU_BATCH) or rescue.CPU_BATCH))
+        except Exception as e:  # noqa: BLE001 — a broken opt-in must never break classic analysis
+            self.gpu_error = self.gpu_error or f"en_rescue: {type(e).__name__}: {e}"
+            return dets
+
+    def ensure_for_language(self, lang: str) -> dict:
+        """Load the backend for one language, unloading the previous pools/sessions first (no simultaneous GPU)."""
+        target = "classic" if (lang == CLASSIC_LANG and not self.merged_table()) else "routed"
+        if self.dets is not None and self._backend is not None and self._backend != target:
+            self._close_dets(self.dets)  # unload previous pools/sessions before loading next
+            self.dets = None
+            self._routed_lang = None
+        if target == "classic":
+            if self.dets is not None and self._backend == "classic":
+                return self.dets
+            cal = self.calibration_file()
+            if cal is None:
+                raise RuntimeError("model files are not installed yet")
+            return self._ensure_classic(cal)
+        # routed (pl/ru): same pool for both, but unload previous language voices before loading next
+        if self.dets is not None and self._backend == "routed" and self._routed_lang is not None and self._routed_lang != lang and not getattr(self.dets["sensitive"], "shared_voices", False):
+            try:
+                self.dets["sensitive"].pool.clear()
+            except Exception:  # noqa: BLE001
+                pass
+            self._routed_lang = None
+        if self.dets is not None and self._backend == "routed":
+            if self._routed_lang is None or getattr(self.dets["sensitive"], "shared_voices", False):
+                self._routed_lang = lang
+            return self.dets
+        rt = self.routing_file()
+        if rt is None:
+            # No routing table means the PL/RU pack is not installed: fail loudly, never fake it with EN classic.
+            raise RuntimeError(f"language pack '{lang}' is not installed yet")
+        dets = self._ensure_routed(rt, lang)
+        self._backend = "routed"
+        self._routed_lang = lang
+        return dets
+
+    def ensure_loaded(self, language: str | None = None, text: str | None = None) -> dict:
+        """Compatibility: zero-arg call keeps working (tests, preload). EN defaults to classic 1.1."""
+        if self.dets is not None and language is None and text is None:
+            return self.dets
+        if language is None and text is not None:
+            try:
+                from linda_pro.routed import detect_language as _dl
+                language = _dl(text)
+            except Exception:  # noqa: BLE001
+                language = CLASSIC_LANG
+        if language is None:
+            # Legacy default: classic EN when its calibration exists, else routed.
+            if self.dets is not None:
+                return self.dets
+            if self.calibration_file() is not None or self.merged_table():
+                return self.ensure_for_language(CLASSIC_LANG)
+            rt = self.routing_file()
+            if rt is not None:
+                return self._ensure_routed(rt, CLASSIC_LANG)
+            raise RuntimeError("model files are not installed yet")
+        return self.ensure_for_language(language)
+
+    def warm_all(self, lang: str = "en") -> None:
+        """Warm up every transformer voice of the language (routed backend): the first real check then does not wait for the ONNX export / DirectML compile."""
+        dets = self.ensure_for_language(lang)
+        warmed = set()
+        for name in ('sensitive', 'alt_sensitive'):
+            det = dets.get(name)
+            if not getattr(det, "routed", False):
+                continue
+            for key in det.tier(lang)["voters"]:
+                if key.startswith("stylo") or key in warmed:
+                    continue
+                det.pool.get(key).margins(["Warm up."])
+                warmed.add(key)
+
+    def _load_voters(self, dets: dict) -> None:
+        if getattr(dets["sensitive"], "routed", False):
+            return  # the pool loads voters lazily, per language
+        for key in dets["sensitive"].voters:  # load every voter now, not on the first request
+            v = dets["sensitive"]._factory(key)
+            inner = getattr(v, "_v", v)
+            if getattr(inner, "model", None) is not None or getattr(inner, "sess", None) is not None:
+                continue
+            load = getattr(inner, "_load", None)
+            if callable(load):
+                load()
+
+    def _dml_detectors(self, core, settings: dict) -> dict:
+        """Detectors whose transformer voters run through ONNX Runtime DirectML (the models are exported to ONNX once, in the data folder)."""
+        from linda_pro.core import MODEL_SUBDIRS, LindaPro
+        from linda_pro.server import _Resident
+        from linda_pro.voters import StyloVoter
+
+        from . import onnx_gpu
+
+        cache_dir = config.models_root() / "onnx"
+        idx = int(settings.get("gpu_index", 0) or 0)
+        if not (cache_dir / "linda_essay_d" / "model.onnx").exists():
+            self.state = {"phase": "loading", "error": "", "note": "Preparing the GPU version of the models (one time, about a minute)..."}
+        voters: dict = {}
+
+        def factory(key: str):
+            if key not in voters:
+                d = Path(core.DEFAULT_MODELS) / MODEL_SUBDIRS[key]
+                voters[key] = _Resident(StyloVoter(d) if key == "stylo7c" else onnx_gpu.OnnxSeqCls(d, cache_dir, idx))
+            return voters[key]
+
+        factory._cache = voters  # close only already-loaded residents, never instantiate unloaded ones
+        base = LindaPro(mode="sensitive", voter_factory=factory)
+        base._factory = factory
+        return {"sensitive": base, "precise": LindaPro(mode="precise", voter_factory=factory)}
+
+    def planned_device(self) -> str:
+        """Device the next check will use: the loaded one, or (before the first load) the choice automatic mode would make."""
+        if self.dets is not None:
+            return self.device
+        g = self.gpu
+        pref = load_settings().get("device", "auto")
+        if pref == "cpu" or not g or not g.get("available"):
+            return "cpu"
+        if pref == "auto" and not g.get("discrete"):
+            return "cpu"
+        return "dml" if g.get("backend") == "DirectML" else "cuda"
+
+    @staticmethod
+    def _installed_set(name: str) -> bool:
+        """Is this model set on the disk right now (not what the loaded engine saw when it started)?"""
+        root = Path(config.models_root()) / "models"
+        try:
+            if name == "pro":
+                return any(root.glob("essay_dhi*")) or any(root.glob("linda_essay*"))
+            return any((d / "model.onnx").is_file() for d in root.glob("linda_speed*"))
+        except OSError:
+            return False
+
+    def info(self) -> dict:
+        return {"tier": getattr(self, "tier", "full"), "have_pro": self._installed_set("pro"), "have_lite": self._installed_set("lite"), "device": self.planned_device(), "phase": self.state["phase"], "error": self.state["error"], "note": self.state.get("note", ""), "gpu": self.gpu, "gpu_error": self.gpu_error}
+
+    # Sentence labels. "ai" stays strict (about 1% of human sentences reach it); "uncertain" is the "possibly AI / mixed" band. A lone sentence is a much weaker
+    # input than the ~300-word windows the models were calibrated on, so in the per-sentence mode the band starts lower (about 10% of human sentences fall into
+    # it, measured on dev essays); the window-like modes keep the old 0.38.
+    AI_THR, UNCERTAIN_THR_SENTENCE, UNCERTAIN_THR_WINDOW = 0.58, 0.25, 0.38
+    # (ai, uncertain) thresholds per mode. Hybrid: about 1% and 5% of human sentences reach them (measured on dev essays, whole-human vs whole-AI documents).
+    THRESHOLDS = {"hybrid": (0.72, 0.45), "full": (0.58, 0.25)}
+
+    # Lite (tier "speed"): по умолчанию каждое предложение оценивается в окружении ~120 слов (режим context), «ИИ» с p 0,80, «возможно ИИ» с 0,35.
+    # Замер 10.10 (tools/seg_eval.py + seg_pick.py; 132 текста EN/RU/PL, из них 72 смешанных «человек + ИИ» с известной границей): у человеческих
+    # слов 2,9% «ИИ» + 4,5% «возможно», у ИИ-слов 77,8% «ИИ» + 10,6% «возможно», верная метка слова в смешанных текстах 88,4%. Прежние окна
+    # ~300 слов (2.0.4.2, smooth 0,80/0,50): 12,5% человеческих слов «ИИ», 55,5% ИИ-слов, 66,5% — и разметка огромными кусками.
+    THRESHOLDS_LITE = {"context": (0.80, 0.35), "smooth": (0.80, 0.50), "windows": (0.80, 0.50)}
+    # Замер 10.10, tools/tok_eval_engine.py, 132 текста EN/RU/PL: speed reuse + усреднение внутри абзаца —
+    # 2,95% человеческих слов «ИИ», recall ИИ-слов 70,93%, mixed word accuracy 84,94% (baseline: 2,93% / 69,22% / 84,40%).
+    # CPU, 4 потока: 0,92 с / 1000 слов против baseline 2,13 с; подбор оставил speed ai=0,815 / uncertain=0,35.
+    # full (слой Essay) — 2,9% / 83,4% / 90,4%. Вероятность Pro: сигмоида от токенного слоя (center/scale из tok_head.npz), отсюда другие числа порогов
+    THRESHOLDS_TOKENS = {"speed": (0.815, 0.35), "full": (0.20, 0.10)}
+    # Opt-in one-pass segmenter: the confidence bands of the research reference (dp.json).
+    THRESHOLDS_SEGMENTER = (0.80, 0.10)
+    CONTEXT_ANCHORS_LITE = 150  # как у Pro на GPU: напрямую не больше 150 предложений (~0,1 с на контекст на 4 потоках CPU), остальные интерполируются
+    # Lite: напрямую оценивается одно предложение примерно на каждые 40 слов. Замер 10.10 (seg_eval): верная метка слова 88,1% против 88,4%
+    # при оценке каждого предложения, а прогонов в 2,7 раза меньше (1 000 слов ~2–3 с, 12 000 слов ~15 с на 4 потоках)
+    LITE_ANCHOR_WORDS = 40
+    # Вердикт «человек», а размечено как ИИ не меньше этой доли слов -> вердикт «неясно» (разметка и вердикт не спорят друг с другом).
+    # Замер 10.10 (dev, Lite): людей в «неясно» добавляется 0–0,8%, ИИ-текстов, ушедших в «человек», ловится 1,7–2%.
+    CONSISTENCY_AI_SHARE = 0.25
+
+    def thresholds(self, gran: str) -> tuple[float, float]:
+        if gran == "tokens":
+            return self.THRESHOLDS_TOKENS[getattr(self, "tier", "full")]
+        if gran == "segmenter":
+            return self.THRESHOLDS_SEGMENTER
+        if getattr(self, "tier", "full") == "speed" and gran in self.THRESHOLDS_LITE:
+            return self.THRESHOLDS_LITE[gran]
+        return self.THRESHOLDS.get(gran, (self.AI_THR, self.UNCERTAIN_THR_WINDOW))
+
+    def _context_margins(self, det, spans, lang: str | None = None) -> tuple[list[float], list[float]]:
+        """Margins of Essay and Multi for every sentence scored in its context (~CONTEXT_WORDS words); between the directly scored anchor sentences the margin is interpolated."""
+        from linda_pro.voters import clean_text
+
+        lite = getattr(self, "tier", "full") == "speed"
+        cap = self.CONTEXT_ANCHORS_LITE if lite else self.CONTEXT_ANCHORS_CPU if self.device == "cpu" else self.CONTEXT_ANCHORS_GPU
+        anchors, ctx = self._sentence_contexts([x.text for x in spans], cap, self.LITE_ANCHOR_WORDS if lite else 0)
+        ctx = [clean_text(t, lang) for t in ctx]
+        fe = det._factory("linda_essay")
+        ae = fe.margins(ctx)
+        fm = det._factory("linda_multi_v2")
+        am = ae if fm is fe else fm.margins(ctx)  # у Lite оба имени — одна модель: не считать контексты дважды
+        idx = list(range(len(spans)))
+        return [float(v) for v in np.interp(idx, anchors, ae)], [float(v) for v in np.interp(idx, anchors, am)]
+
+    CONTEXT_WORDS = 120                   # size of the neighbourhood scored for each sentence
+    # Device changes compute placement, not the sampled evidence or markup.
+    CONTEXT_ANCHORS_GPU, CONTEXT_ANCHORS_CPU = 150, 150
+
+    def _sentence_contexts(self, sents: list[str], max_anchors: int, every_words: int = 0) -> tuple[list[int], list[str]]:
+        """Anchor sentence indices and, for each, the text of the sentence plus neighbours (alternately left and right) up to CONTEXT_WORDS words.
+        every_words > 0: an anchor about every that many words (then thinned evenly to max_anchors)."""
+        n = len(sents)
+        wc = [len(x.split()) for x in sents]
+        if every_words > 0:
+            anchors, acc = [0], 0
+            for i in range(1, n):
+                acc += wc[i - 1]
+                if acc >= every_words:
+                    anchors.append(i)
+                    acc = 0
+            if len(anchors) > max_anchors:
+                anchors = [anchors[int(round(k))] for k in np.linspace(0, len(anchors) - 1, max_anchors)]
+        else:
+            step = max(1, -(-n // max_anchors))
+            anchors = list(range(0, n, step))
+        if anchors[-1] != n - 1:
+            anchors.append(n - 1)
+        texts = []
+        for i in anchors:
+            lo = hi = i
+            total, left = wc[i], True
+            while total < self.CONTEXT_WORDS and (lo > 0 or hi < n - 1):
+                if (left and lo > 0) or hi >= n - 1:
+                    lo -= 1
+                    total += wc[lo]
+                else:
+                    hi += 1
+                    total += wc[hi]
+                left = not left
+            texts.append(" ".join(sents[lo: hi + 1]))
+        return anchors, texts
+
+    HYBRID_MAX_WORDS = 1500  # автоматический режим: длиннее этого — контекстная подсветка по опорным предложениям
+    CPU_SMOOTH_MAX_WORDS = 700  # automatic mode on a CPU: sliding windows up to this length (about 10 s), longer texts use the fast block colouring
+    SMOOTH_WINDOW, SMOOTH_MIN_STEP, SMOOTH_MAX_WINDOWS = 300, 75, 16
+
+    SEGMENTER_DIR = "seg_l14"  # qa_models/models/seg_l14: one-pass token segmenter (opt-in mode)
+    _seg = None
+
+    def segmenter_dir(self) -> Path:
+        return Path(config.models_root()) / "models" / self.SEGMENTER_DIR
+
+    def segmenter_available(self) -> bool:
+        """The opt-in segmenter is offered only when its files are installed."""
+        try:
+            d = self.segmenter_dir()
+            return (d / "onnx" / "model.onnx").is_file() and (d / "tokenizer.json").is_file()
+        except OSError:
+            return False
+
+    def segmenter(self, threads: int = 4):
+        """Cached Segmenter instance (ONNX CPU session loads on first use)."""
+        if self._seg is None:
+            from linda_pro.segmenter import Segmenter
+
+            self._seg = Segmenter(self.segmenter_dir(), threads=threads)
+        return self._seg
+
+    def sentence_mode(self, nwords: int = 0, det=None, allow_tokens: bool = True, skip=()) -> str:
+        """auto uses the Lite token output, but scores Pro sentences with the document
+        voters in context (falling back to the legacy modes below).
+        Measured reason (logs/relight_20261011/threshold_scan.json): the shipped Pro token
+        head does not separate human from AI sentences. On 280-380 word human paragraphs its
+        median sentence score is 0.93, against 0.83 for a single AI sentence inserted into
+        that same text, so no cut-off separates them: at the recorded 0.20 threshold it marks
+        every human sentence AI (FPR 1.00), and reaching FPR 0.00 needs 0.99, which also
+        drops AI recall to 0.00. Pro therefore keeps the context path in auto; the explicit
+        tokens mode stays available and is labelled as the unvalidated auxiliary head.
+        hybrid = every sentence is scored alone AND in its context and the higher score counts: a lone strongly-AI sentence still lights up, and a whole AI text is no longer shown as human
+        sentence by sentence (alone, a sentence is too short for models calibrated on ~300-word windows: on whole-AI essays it flagged about a quarter of the sentences, the context score about 95%);
+        context = every sentence is scored together with its neighbours (~CONTEXT_WORDS words around it), so the colour changes sentence by sentence and boundaries are found to the sentence;
+        smooth = sliding ~300-word windows (the scale the models are calibrated on; boundaries accurate to ~100 words); windows = fast, one score per ~300-word block;
+        full = every single sentence on its own (experimental: one sentence is much less reliable than a window).
+        segmenter = the opt-in one-pass span model (models/seg_l14) with its own DP; offered only
+        when the files are installed, and `skip=("segmenter",)` resolves the default instead."""
+        s = load_settings().get("sentences", "auto")
+        if s in skip:
+            s = "auto"
+        if s == "segmenter":
+            if self.segmenter_available():
+                return "segmenter"
+            s = "auto"  # not installed: the default path, exactly as before
+        if s in ("auto", "tokens") and allow_tokens and det is not None and (s == "tokens" or getattr(self, "tier", "full") == "speed"):
+            from linda_pro.voters import Cancelled
+            try:
+                voter = det._factory("linda_essay")
+                if callable(getattr(voter, "token_scores", None)) and getattr(voter, "has_token_scores", True):
+                    return "tokens"
+            except Cancelled:
+                raise
+            except Exception:
+                pass  # capability probing may fail too; preserve legacy fallback
+        if s == "tokens":
+            s = "auto"
+        if s == "auto" and getattr(self, "tier", "full") == "speed":
+            return "context"  # Lite: предложение в окружении ~120 слов (см. THRESHOLDS_LITE), а не окна ~300 слов
+        if s == "auto":
+            # hybrid оценивает КАЖДОЕ предложение отдельно (на GPU каждое добивается до полного окна), для сотен тысяч слов это минуты и часы;
+            # длинные тексты считаем по ~150 опорным предложениям в контексте с интерполяцией — вердикт тот же, подсветка чуть грубее
+            return "hybrid" if nwords <= self.HYBRID_MAX_WORDS else "context"
+        return s if s in ("hybrid", "full", "context", "smooth", "windows") else "hybrid"
+
+    def _smooth_windows(self, nwords: int) -> list[tuple[int, int]]:
+        W = self.SMOOTH_WINDOW
+        if nwords <= W * 1.3:
+            return [(0, nwords)]
+        step = max(self.SMOOTH_MIN_STEP, -(-(nwords - W) // (self.SMOOTH_MAX_WINDOWS - 1)))
+        starts = list(range(0, nwords - W, step)) + [nwords - W]
+        return [(s, s + W) for s in starts]
+
+    def cancel_cancellable(self) -> int:
+        """Прервать все проверки, помеченные как отменяемые (идущие и ожидающие очереди). Возвращает, сколько заданий затронуто."""
+        n = 0
+        with self._jobs_lock:
+            for j in self._jobs:
+                if j["cancellable"] and not j["cancel"].is_set():
+                    j["cancel"].set()
+                    n += 1
+        return n
+
+    def run(self, text: str, mode: str = "sensitive", models: list | None = None, cancellable: bool = False, cancel: threading.Event | None = None, progress=None) -> dict:
+        """Одна проверка за раз. cancellable=True: её можно прервать (новый текст в окне одной проверки); пакетные проверки не отменяются."""
+        from linda_pro import voters as _voters
+
+        job = {"cancel": cancel if cancel is not None else threading.Event(), "cancellable": cancellable}
+        with self._jobs_lock:
+            self._jobs.append(job)
+        try:
+            with self.lock:
+                if job["cancel"].is_set():
+                    raise _voters.Cancelled()
+                _voters.CANCEL = job["cancel"].is_set
+                self._progress_cb = progress
+                try:
+                    result = self._run_locked(text, mode, models)
+                    _voters.check_cancel()
+                    self._emit(100, "done")
+                    return result
+                finally:
+                    _voters.CANCEL = None
+                    self._progress_cb = None
+        finally:
+            with self._jobs_lock:
+                if job in self._jobs:
+                    self._jobs.remove(job)
+
+    def _run_locked(self, text: str, mode: str = "sensitive", models: list | None = None) -> dict:
+        res = self._run_locked_main(text, mode, models)
+        # Model identity belongs to the executed backend, not to a translated
+        # routing description or to whatever settings were selected afterwards.
+        if isinstance(res, dict):
+            res["detector_id"] = "loupe" if getattr(self, "tier", "full") == "speed" else "assay"
+            res["local_document_disagreement"] = bool(
+                res.get("verdict") in ("ai", "uncertain") and res.get("heatmap_available")
+                and not any(s.get("label") == "ai" for s in res.get("sentences", [])))
+        dets = self.dets or {}
+        alt = dets.get("alt_" + mode)
+        if alt is not None and getattr(self, "both", False) and isinstance(res, dict):
+            try:
+                self._emit(96, "sent")
+                a = alt.detect([text])[0]
+                lite_widen(a, alt.rules, mode, True)
+                res["alt"] = {"set": "lite", "verdict": a.get("verdict"), "p_ai": verdict_probability(a, alt.rules)}
+                res["alt"]["detector_id"] = "loupe"
+                res["model_disagreement"] = a.get("verdict") != res.get("verdict")
+            except Exception as exc:
+                res["alt"] = {"set": "lite", "error": str(exc)[:120]}
+        return res
+
+    def _run_locked_main(self, text: str, mode: str = "sensitive", models: list | None = None) -> dict:
+        if True:
+            self._emit(2, "load")
+            chosen_models = list(dict.fromkeys(models or ALL_MODELS))
+            if any(name not in ALL_MODELS for name in chosen_models):
+                raise ValueError('Unknown model selection')
+            if mode == 'precise' and len(chosen_models) < len(ALL_MODELS):
+                raise ValueError('Precise mode requires all models.')
+            if self.dets is not None and self._backend is None:
+                dets = self.ensure_loaded()  # manually injected detectors (tests): keep legacy behaviour
+                _orig_lang = _backend_lang = CLASSIC_LANG
+            else:
+                try:
+                    from linda_pro.routed import detect_language as _detect_lang
+                    _orig_lang = _detect_lang(text)
+                except Exception:  # noqa: BLE001
+                    _orig_lang = CLASSIC_LANG
+                if _orig_lang == "uk":
+                    _backend_lang = "ru"
+                elif _orig_lang not in ("en", "pl", "ru"):
+                    _backend_lang = CLASSIC_LANG
+                else:
+                    _backend_lang = _orig_lang
+                dets = self.ensure_for_language(_backend_lang)
+            # Cleaning language: uk scores as ru (same script), other as en fallback.
+            _clean_lang = "ru" if _backend_lang == "ru" else ("pl" if _backend_lang == "pl" else "en")
+            det = dets[mode]
+            self._emit(8, "scan")
+            if hasattr(det, "progress"):
+                det.progress = self._emit  # routed detector reports voter / batch progress (8..55)
+            if getattr(det,'routed',False) and len(chosen_models)<3:
+                raise ValueError('This routed calibration requires all models; select all models.')
+            if len(chosen_models)==1:
+                from .single_model import run as run_single
+                return run_single(self,det,text,mode,chosen_models[0])
+            res = det.detect([text])[0]
+            known_tokens = res.pop("_lite_token_scores", [])
+            # Routed backend may score uk/other via ru/en — report the original.
+            if "_orig_lang" in locals() and _orig_lang not in ("en", "pl", "ru"):
+                res["language"] = _orig_lang
+                res["language_warning"] = "ukrainian_unsupported_scored_as_ru" if _orig_lang == "uk" else "unsupported_language_scored_as_en"
+                try:
+                    routing = res.get("routing") or {}
+                    routing["backend"] = _backend_lang
+                    res["routing"] = routing
+                except Exception:  # noqa: BLE001
+                    pass
+            R = det.rules
+            lite_widen(res, R, mode, getattr(self, "tier", "full") == "speed")
+            self._emit(55, "sent")
+
+            def par(k, c, s):
+                # центр сигмоиды — порог 5% ложных, ширина — половина расстояния до порога 0,5%. Раньше ширина зажималась снизу 1,0: для Pro
+                # (логиты, ширина 0,7–2) почти без разницы, а у Lite (ширина 0,06–0,6) все вероятности сжимались к 0,4–0,5 и почти весь текст
+                # выходил «возможно ИИ» — и у людей, и у ИИ (2.0.4.1: ИИ-тексты EN 0% «ИИ» / 97% «возможно»)
+                r = R.get(k) or {}
+                return (r["thr_5"], max(1e-3, (r["thr_05"] - r["thr_5"]) / 2.0)) if "thr_5" in r and "thr_05" in r else (c, s)
+
+            pe_c, pe_s, pm_c, pm_s, ps_c, ps_s = (*par("essay", 6.5, 2.8), *par("multi", 2.5, 2.5), *par("stylo", 1.5, 1.5))
+            spans = split_sentences_with_offsets(text)
+            selected = set(models) if models else set(ALL_MODELS)
+            nwords = len(text.split())
+            gran = self.sentence_mode(nwords)
+            # Pro retains legacy consistency labels. Lite uses its token evidence
+            # for consistency, avoiding a second read through sentence contexts.
+            token_rows = None
+            multi_token_rows = None
+            lite_reuse = False
+            if gran in ("hybrid", "context") and Engine.sentence_mode(self, nwords, det) == "tokens" and spans:
+                from linda_pro.voters import Cancelled, SpeedOnnx, load_token_head
+                try:
+                    voter = det._factory("linda_essay")
+                    reuse = getattr(voter, "token_scores_reuse", None)
+                    tokens = reuse(text, known_tokens) if getattr(self, "tier", "full") == "speed" and callable(reuse) else voter.token_scores(text)
+                    lite_reuse = getattr(self, "tier", "full") == "speed" and isinstance(voter, SpeedOnnx) and callable(reuse)
+                    # Byte-level Unicode tokens can share character offsets.
+                    # Keep their tokenizer order rather than sorting by score;
+                    # Lite smoothing operates on the ordered token sequence.
+                    scores = sorted(((int(a), int(b), float(z)) for a, b, z in tokens if b > a),
+                                    key=(lambda token: (token[0], token[1])) if lite_reuse else None)
+                    if lite_reuse:
+                        scores = _smooth_lite_tokens(text, scores)
+                    if getattr(self, "tier", "full") == "speed":
+                        center, scale = pe_c, pe_s
+                    else:
+                        head = load_token_head(voter.model_dir)
+                        center, scale = float(head["center"]), float(head["scale"])
+                    token_rows = _sentence_token_evidence(text, spans, scores, center, scale)
+                    if getattr(self, "tier", "full") != "speed":
+                        # Multi must use its own tokenizer, token head and
+                        # calibration. Acquire it after finishing Essay: pools
+                        # may unload the first voter when admitting the second.
+                        multi_voter = det._factory("linda_multi_v2")
+                        multi_head = load_token_head(multi_voter.model_dir)
+                        multi_token_rows = _sentence_token_evidence(
+                            text, spans, multi_voter.token_scores(text),
+                            float(multi_head["center"]), float(multi_head["scale"]))
+                except Cancelled:
+                    raise
+                except Exception as exc:  # unavailable graph/head/output: use legacy colouring
+                    token_rows = None
+                    multi_token_rows = None
+                    lite_reuse = False
+                    res["token_path_error"] = type(exc).__name__
+                    try:
+                        import logging
+
+                        logging.getLogger("linda.token_path").warning("token_path_fallback: %s", type(exc).__name__)
+                    except Exception:  # noqa: BLE001 — diagnostics must never break analysis
+                        pass
+            if token_rows is not None and (lite_reuse or res.get("verdict") != "human"):
+                gran = "windows"  # Lite uses existing evidence for consistency too.
+            # Opt-in one-pass segmenter: one probability per sentence from models/seg_l14.
+            # Any failure (files, graph, tokenizer, output shape) falls back to the mode the
+            # default settings would have chosen, and says so in the result and the log.
+            seg_probs = None
+            if gran == "segmenter" and spans:
+                try:
+                    _segs = [(x.start, x.end, x.text) for x in spans]
+                    out = self.segmenter().run(text, _segs)
+                    if len(out.get("p_sent") or []) != len(spans):
+                        raise ValueError("segmenter sentence count mismatch")
+                    seg_probs = [float(v) for v in out["p_sent"]]
+                    res["segments"] = out.get("segments") or []
+                    res["segmenter_fraction_ai"] = out.get("fraction_ai")
+                    self._emit(85, "sent")
+                except Exception as exc:  # noqa: BLE001 — markup must never break a check
+                    seg_probs = None
+                    gran = self.sentence_mode(nwords, skip=("segmenter",))
+                    res["segmenter_fallback"] = type(exc).__name__
+                    try:
+                        import logging
+
+                        logging.getLogger("linda.segmenter").warning(
+                            "segmenter_fallback: %s: %s", type(exc).__name__, str(exc)[:200])
+                    except Exception:  # noqa: BLE001
+                        pass
+            seg_mode = seg_probs is not None
+            full = gran in ("hybrid", "full", "context")  # all of them give one margin per sentence
+            word_positions = [(m.start(), m.end()) for m in re.finditer(r"\S+", text)] if not full and not seg_mode else []
+            m_essay = m_multi = None
+            wspans = []  # (first word, after last word, essay margin, multi margin) of the windows used for colouring
+            if seg_mode:
+                pass  # probabilities are already per sentence
+            elif gran == "context" and spans:
+                m_essay, m_multi = self._context_margins(det, spans, _clean_lang)
+                self._emit(90, "sent")
+            elif gran == "hybrid" and spans:
+                from linda_pro.voters import clean_text as _clean
+
+                s_texts = [_clean(x.text, _clean_lang) for x in spans]
+                ie = det._factory("linda_essay").margins(s_texts)
+                self._emit(65, "sent")
+                im = det._factory("linda_multi_v2").margins(s_texts)
+                self._emit(75, "sent")
+                ce, cm = self._context_margins(det, spans, _clean_lang)
+                self._emit(92, "sent")
+                m_essay = [max(float(x), y) for x, y in zip(ie, ce)]  # sigmoid is monotone: the larger margin is the larger probability
+                m_multi = [max(float(x), y) for x, y in zip(im, cm)]
+            elif full and spans:
+                from linda_pro.voters import clean_text as _clean_full
+
+                s_texts = [_clean_full(s.text, _clean_lang) for s in spans]
+                m_essay = det._factory("linda_essay").margins(s_texts)
+                m_multi = det._factory("linda_multi_v2").margins(s_texts)
+            elif gran == "smooth" and spans:
+                wins = self._smooth_windows(nwords)
+                if len(wins) == 1:  # one window: detect() has already scored it
+                    w = res["windows"][0]
+                    wspans = [(0, nwords, w["essay"], w.get("multi", w["essay"]))]
+                else:
+                    from linda_pro.voters import clean_text
+
+                    pos = word_positions
+                    wt = [clean_text(text[pos[a][0]: pos[b - 1][1]], _clean_lang) for a, b in wins]
+                    ce = det._factory("linda_essay").margins(wt)
+                    cm = det._factory("linda_multi_v2").margins(wt)
+                    wspans = [(a, b, float(e), float(m)) for (a, b), e, m in zip(wins, ce, cm)]
+            else:  # fast: sentences inherit the score of their ~300-word block
+                wspans = [(w["first_word"], w["last_word"], w["essay"], w.get("multi", w["essay"])) for w in res["windows"]]
+            if seg_mode:
+                thr_ai, thr_unc = self.thresholds("segmenter")
+            else:
+                thr_ai, thr_unc = self.thresholds(gran)
+            sentences, cnt = [], {"ai": 0, "uncertain": 0, "human": 0}
+            word_starts = [a for a, _ in word_positions]
+            for i, s in enumerate(spans):
+                if seg_mode:
+                    p_ai = seg_probs[i]
+                    # log-odds so the margin display stays monotone with the probability
+                    pp = min(1 - 1e-6, max(1e-6, float(p_ai)))
+                    me = mm = math.log(pp / (1.0 - pp))
+                    pe = pm = float(p_ai)
+                elif full:
+                    me = float(m_essay[i]) if i < len(m_essay) else 0.0
+                    mm = float(m_multi[i]) if i < len(m_multi) else 0.0
+                    pe, pm = _sig(me, pe_c, pe_s), _sig(mm, pm_c, pm_s)
+                    probs = ([pe] if "linda_essay" in selected else []) + ([pm] if "linda_multi_v2" in selected else []) or [pe, pm]
+                    p_ai = sum(probs) / len(probs)
+                else:
+                    wi = bisect_left(word_starts, s.start)
+                    c = wi + max(1, len(s.text.split())) // 2  # the word in the middle of the sentence
+                    cover = [w for w in wspans if w[0] <= c < w[1]] or [min(wspans, key=lambda w: abs((w[0] + w[1]) / 2 - c))]
+                    me = sum(w[2] for w in cover) / len(cover)  # average over the windows that cover the sentence
+                    mm = sum(w[3] for w in cover) / len(cover)
+                    pe, pm = _sig(me, pe_c, pe_s), _sig(mm, pm_c, pm_s)
+                    probs = ([pe] if "linda_essay" in selected else []) + ([pm] if "linda_multi_v2" in selected else []) or [pe, pm]
+                    p_ai = sum(probs) / len(probs)
+                lbl = "ai" if p_ai >= thr_ai else "uncertain" if p_ai >= thr_unc else "human"
+                cnt[lbl] += 1
+                sentences.append({"start": s.start, "end": s.end, "text": s.text, "essay_margin": round(me, 2), "multi_margin": round(mm, 2),
+                                  "essay_label": "ai" if pe >= thr_ai else "uncertain" if pe >= thr_unc else "human",
+                                  "multi_label": "ai" if pm >= thr_ai else "uncertain" if pm >= thr_unc else "human",
+                                  "essay_prob": round(pe, 3), "multi_prob": round(pm, 3), "p_ai": round(p_ai, 3), "label": lbl})
+            res["sentences"] = sentences
+            if not lite_reuse and res.get("verdict") == "human" and authorship("human", sentences)["ai_share"] >= self.CONSISTENCY_AI_SHARE:
+                res["verdict"] = "uncertain"
+                res["verdict_raised_by"] = "sentences"
+            if token_rows is not None:
+                gran = "tokens"
+                thr_ai, thr_unc = self.thresholds(gran)
+                cnt = {"ai": 0, "uncertain": 0, "human": 0}
+                for i, (sentence, (mean, pe)) in enumerate(zip(sentences, token_rows)):
+                    mm, pm = multi_token_rows[i] if multi_token_rows is not None else (mean, pe)
+                    probs = ([pe] if "linda_essay" in selected else []) + ([pm] if "linda_multi_v2" in selected else [])
+                    p = sum(probs) / len(probs) if probs else (pe + pm) / 2
+                    label = "ai" if p >= thr_ai else "uncertain" if p >= thr_unc else "human"
+                    sentence.update(essay_margin=round(mean, 2), essay_prob=round(pe, 3),
+                                    multi_margin=round(mm, 2), multi_prob=round(pm, 3),
+                                    p_ai=round(p, 3), label=label,
+                                    essay_label="ai" if pe >= thr_ai else "uncertain" if pe >= thr_unc else "human",
+                                    multi_label="ai" if pm >= thr_ai else "uncertain" if pm >= thr_unc else "human")
+                    cnt[label] += 1
+                if lite_reuse and res.get("verdict") == "human" and authorship("human", sentences)["ai_share"] >= self.CONSISTENCY_AI_SHARE:
+                    res["verdict"] = "uncertain"
+                    res["verdict_raised_by"] = "sentences"
+            try:
+                res["p_ai"] = verdict_probability(res, R)
+            except Exception:  # noqa: BLE001 — отображение не должно ронять проверку
+                pass
+            res["authorship"] = authorship(res.get("verdict"), sentences)
+            res["sentence_stats"] = {"total": len(sentences), **cnt, "ai_pct": round(cnt["ai"] / len(sentences) * 100) if sentences else 0,
+                                     "granularity": {"tokens": "tokens", "hybrid": "hybrid", "full": "sentence", "context": "context", "smooth": "smooth", "windows": "window", "segmenter": "segment"}[gran],
+                                     "thresholds": {"ai": thr_ai, "uncertain": thr_unc}}
+            res["sentence_stats"]["sources"] = ["ensemble"] if getattr(self, "tier", "full") == "speed" else ["ensemble", "essay", "multi"]
+            if models and len(models) < 3:
+                # NOTE: len(models)==1 never reaches here — it returns early
+                # via single_model.run above. Only the 2-model subset is live.
+                chosen = [m for m in models if m in det.mean]
+                if len(chosen) > 1:
+                    zs = [(res["voters"][k] - det.mean[k]) / det.std[k] for k in chosen if k in res["voters"]]
+                    z_sub = sum(zs) / len(zs) if zs else 0.0
+                    v = "ai" if z_sub >= R["ensemble"]["thr_1"] else ("uncertain" if z_sub >= R["ensemble"]["thr_5"] else "human")
+                    p = 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, 1.7 * z_sub))))
+                    res["custom_verdict"] = {"models": chosen, "z": round(z_sub, 3), "p_ai": round(p, 3), "verdict": v}
+            if res.get('custom_verdict'):
+                res['ensemble_reference'] = {k:res.get(k) for k in ('verdict','p_ai','ens_z')}
+                custom = res['custom_verdict']
+                res['verdict'],res['p_ai'],res['ens_z'] = custom['verdict'],custom['p_ai'],custom.get('z')
+                res['authorship'] = authorship(res['verdict'],sentences)
+            res['analysis_scope'] = 'subset' if len(chosen_models)<3 else 'ensemble'
+            res['models_used'] = chosen_models
+            res['models_executed'] = list(ALL_MODELS)
+            res['heatmap_available'] = True
+            res['ai_share'] = res['authorship']['ai_share']
+            return res
+
+
+def lite_widen(res: dict, rules: dict, mode: str, is_lite: bool) -> None:
+    """Lite, чувствительный режим: вердикт — общий балл модели и стилометрии, и сильная стилометрия «человека» перекрывала модель
+    (ИИ-текст с ручной правкой выходил «человек», хотя модель Lite одна была выше своего порога 5%). Как у Pro (Essay ИЛИ ансамбль):
+    модель Lite выше порога 5% -> не меньше «неясно». Замер 10.10 на dev: людей в «неясно» +2,4% EN, +0,8% RU, 0% PL; в «ИИ» не добавляет."""
+    e = (rules or {}).get("essay") or {}
+    if is_lite and mode == "sensitive" and res.get("verdict") == "human" and "thr_5" in e and float(res.get("essay", -1e9)) >= e["thr_5"]:
+        res["verdict"] = "uncertain"
+        res["verdict_raised_by"] = "lite_model"
+
+
+def verdict_probability(res: dict, rules: dict) -> float:
+    """Вероятность ИИ для показа: 0,5 в начале зоны «неясно» (порог 5% ложных), 0,9 на пороге «ИИ» (0,5% ложных); берётся большая из оценок
+    ансамбля и Essay и подгоняется под вердикт (человек < 0,5 <= неясно < 0,9 <= ИИ). Раньше показывалась сигмоида от z без калибровки:
+    у человеческих текстов выходило 80-90% «ИИ»."""
+    def sig(x: float, c: float, hi: float) -> float:
+        k = math.log(9.0) / max(1e-6, hi - c)
+        return 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, k * (x - c)))))
+
+    n, e = rules.get("ensemble") or {}, rules.get("essay") or {}
+    ps = []
+    if "ens_z" in res and "thr_5" in n and "thr_05" in n:
+        ps.append(sig(float(res["ens_z"]), n["thr_5"], n["thr_05"]))
+    if "essay" in res and "thr_5" in e and "thr_05" in e:
+        ps.append(sig(float(res["essay"]), e["thr_5"], e["thr_05"]))
+    p = max(ps) if ps else 0.5
+    v = res.get("verdict")
+    if v == "human":
+        p = min(p, 0.49)
+    elif v == "ai":
+        p = max(p, 0.9)
+    elif v == "uncertain":
+        p = min(max(p, 0.5), 0.89)
+    return round(p, 4)
+
+
+def authorship(verdict: str | None, sentences: list[dict]) -> dict:
+    """Document-level authorship from the sentence labels (shares by words) and the calibrated ensemble verdict.
+
+    human = no AI signal worth reporting; ai = the ensemble says AI and most of the text carries an AI or "possibly AI" label;
+    mixed = AI shows up in part of the text (or the ensemble is unsure). Sentence-level recall is limited, so the shares are a floor, not an exact split."""
+    w = {"ai": 0, "uncertain": 0, "human": 0}
+    for x in sentences:
+        w[x["label"]] += max(1, len(x["text"].split()))
+    tot = sum(w.values()) or 1
+    ai, unc, hum = w["ai"] / tot, w["uncertain"] / tot, w["human"] / tot
+    n_ai = sum(1 for x in sentences if x["label"] == "ai")
+    if verdict == "ai":
+        label = "ai" if ai + unc >= 0.5 else "mixed"
+    elif verdict == "uncertain":
+        # документ целиком у порога, а ни один кусок ~120 слов не отмечен: «смешанное» утверждало бы то, чего разметка не видит
+        # «неясно» у документа, но разметка почти целиком ИИ (>=70% слов): вердикт не трогаем (цифры ложных обвинений), а авторство говорит как есть
+        if ai >= 0.7:
+            label = "ai"
+        elif n_ai or ai + unc >= 0.05:
+            label = "mixed"
+        else:
+            # Weak or absent local evidence cannot turn an uncertain document
+            # into confirmed human authorship (e.g. AI prose edited by a person).
+            label = "uncertain"
+    else:
+        # A confident local AI label is visible even in a mostly human document.
+        # Describe that local signal consistently; keep the document verdict intact.
+        label = "mixed" if n_ai else "human"
+    return {"label": label, "ai_share": round(ai, 4), "uncertain_share": round(unc, 4), "human_share": round(hum, 4)}
+
+
+# Значения интерфейса по умолчанию (задача D + язык из задачи E): хранятся только
+# локально в settings.json, применяются фронтом через CSS-переменные и data-атрибуты.
+UI_THEMES = ("dark", "light", "contrast")
+UI_ACCENTS = ("cobalt", "teal", "purple", "green", "orange")
+UI_DENSITIES = ("comfortable", "compact", "spacious")
+UI_FONT_SCALES = (90, 100, 110, 125, 150)
+UI_RADII = ("square", "soft", "round")
+UI_SIDEBARS = ("left", "right", "hidden")
+UI_LANGUAGES = ("ru", "pl", "en")
+
+DEFAULT_SETTINGS = {
+    "preload": True,
+    "theme": "dark", "accent": "cobalt", "density": "comfortable",
+    "font_scale": 100, "radius": "square", "sidebar": "left",
+    "language": "auto", "ui_mode": "simple", "tour_done": False, "auto_models": True,
+    "quality": "auto",
+    "model_sets": None,
+}
+
+
+def load_settings() -> dict:
+    """Настройки из settings.json поверх значений по умолчанию (интерфейс + язык)."""
+    p = config.data_dir() / "settings.json"
+    try:
+        stored = json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+    except Exception:  # noqa: BLE001
+        stored = {}
+    if not isinstance(stored, dict):
+        stored = {}
+    if not stored:
+        try:
+            choice = json.loads((config.data_dir() / 'installer_choice.json').read_text(encoding='utf-8'))
+            if choice.get('language') in UI_LANGUAGES:
+                from .i18n import system_language
+                stored['language'] = choice['language']
+                stored['language_source'] = 'system' if choice['language'] == system_language() else 'manual'
+        except (OSError, ValueError, AttributeError):
+            pass
+    merged = dict(DEFAULT_SETTINGS)
+    merged.update(stored)
+    from .i18n import system_language, SUPPORTED
+    # Older releases wrote their hard-coded Russian default to every profile.
+    # A preference explicitly chosen in 2.1+ is marked and always preserved.
+    if stored.get('language_source') == 'manual' and stored.get('language') in SUPPORTED:
+        pass
+    elif stored.get('language') in ('en', 'pl') and 'language_source' not in stored:
+        merged['language_source'] = 'manual'
+    else:
+        merged['language'] = system_language()
+        merged['language_source'] = 'system'
+    return merged
+
+
+def save_settings(d: dict) -> None:
+    import os
+    import tempfile
+    path = config.data_dir() / 'settings.json'
+    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=path.parent, suffix='.tmp', delete=False) as out:
+        tmp = Path(out.name)
+        json.dump(d, out, indent=1)
+    try:
+        os.replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
