@@ -1,5 +1,19 @@
 [
   {
+    "version": "2.5.0.0",
+    "date": "2026-11-21",
+    "title": {
+      "en": "Release 2.5 branch: humanizer merge and nightly model pack 1.5.0",
+      "ru": "Релизная ветка 2.5: мердж гуманайзера и ночной пакет моделей 1.5.0",
+      "pl": "Gałąź wydania 2.5: scalenie humanizera i nocny pakiet modeli 1.5.0"
+    },
+    "notes": {
+      "en": "Version bump to 2.5.0.0 on branch night/release-2.5 (rc/2.4 + night/humanizer + night/pack15). The humanizer work from the night branch is merged into the release line; the nightly model pack is 1.5.0-nightly and unsigned, intended for local installation only. Detector behaviour and scoring thresholds are unchanged. Known limitations: the nightly pack is not signed, no installer or store build exists for 2.5.0.0 yet.",
+      "ru": "Повышение версии до 2.5.0.0 в ветке night/release-2.5 (rc/2.4 + night/humanizer + night/pack15). Работа по гуманайзеру из ночной ветки включена в релизную линию; ночной пакет моделей — 1.5.0-nightly, без подписи, только для локальной установки. Поведение детектора и пороги не менялись. Известные ограничения: ночной пак не подписан, установщика и сборки для стора для 2.5.0.0 пока нет.",
+      "pl": "Podniesienie wersji do 2.5.0.0 w gałęzi night/release-2.5 (rc/2.4 + night/humanizer + night/pack15). Prace nad humanizerem z gałęzi nocnej zostały włączone do linii wydania; nocny pakiet modeli to 1.5.0-nightly, niepodpisany, tylko do instalacji lokalnej. Zachowanie detektora i progi bez zmian. Znane ograniczenia: pakiet nocny nie jest podpisany, nie ma jeszcze instalatora ani kompilacji sklepowej dla 2.5.0.0."
+    }
+  },
+  {
     "version": "2.4.0.0",
     "date": "2026-11-20",
     "title": {
