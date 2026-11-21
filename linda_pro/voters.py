@@ -427,6 +427,45 @@ class SpeedOnnx:
     def __init__(self, model_dir: str | Path, threads: int | None = None, batch: int = 12):
         self.model_dir = Path(model_dir)
         self.threads, self.batch, self.sess = threads, batch, None
+        self.conformal = self.load_conformal()
+
+    def load_conformal(self) -> dict | None:
+        """Length-binned split-conformal thresholds from `speed_conformal.json` next to the speed model.
+
+        Returns None when the file is absent — conformal_verdict then falls back to the flat threshold.
+        """
+        p = self.model_dir / "speed_conformal.json"
+        if not p.is_file():
+            return None
+        try:
+            table = json.loads(p.read_text(encoding="utf-8"))
+            bins = [[float(lo), float(hi)] for lo, hi in table["bins"]]
+            thr = [float(v) for v in table["thresholds"]]
+            margin = float(table.get("abstain_margin", 0.05))
+        except (OSError, ValueError, KeyError, TypeError):
+            return None
+        if len(bins) != len(thr) or not bins or any(not (math.isfinite(v) and v >= 0) for v in thr):
+            return None
+        return {"bins": bins, "thresholds": thr, "abstain_margin": margin}
+
+    def conformal_verdict(self, z: float, nwords: int, flat_thr: float = -1.0) -> str:
+        """Binned conformal verdict: bin by word count; z > thr+margin -> 'ai';
+        thr < z <= thr+margin -> 'uncertain' (abstain); else 'human'.
+        Without a conformal table (None) or flat_thr < 0 the flat threshold decides."""
+        c = self.conformal
+        if c is None:
+            return "ai" if z > flat_thr else "human"
+        b = len(c["bins"]) - 1
+        for i, (lo, hi) in enumerate(c["bins"]):
+            if lo <= nwords < hi:
+                b = i
+                break
+        thr = c["thresholds"][b]
+        if z > thr + c["abstain_margin"]:
+            return "ai"
+        if z > thr:
+            return "uncertain"
+        return "human"
 
     def _load(self) -> None:
         import os
