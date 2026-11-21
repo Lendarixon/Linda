@@ -24,7 +24,9 @@ from pathlib import Path
 from . import config
 
 UA = {"User-Agent": f"Linda-Pro/{config.APP_VERSION}"}
-CHUNK = 1 << 20
+CHUNK = 1 << 20  # 1 MiB read/write chunk
+OK_SUFFIX = ".ok"  # marker beside a verified file: "<sha256> <size>" - skips re-hashing on later passes
+MAX_PARALLEL = 4  # concurrent file downloads in Job._run
 
 
 class UpdateError(Exception):
@@ -259,10 +261,26 @@ def files_to_fetch(manifest: dict, root: Path | None = None) -> list[dict]:
         p = _safe_path(root, f["path"])
         ok = p.is_file() and p.stat().st_size == f["size"]
         if ok and not (f["path"] in old and old[f["path"]]["sha256"] == f["sha256"]):
-            ok = sha256_file(p) == f["sha256"]
+            ok = _ok_marker_matches(p, f) or sha256_file(p) == f["sha256"]
         if not ok:
             todo.append(f)
     return todo
+
+
+def _ok_marker_matches(path: Path, f: dict) -> bool:
+    """True when a .ok marker beside the file records this manifest's hash and size."""
+    try:
+        rec = path.with_name(path.name + OK_SUFFIX).read_text(encoding="ascii").split()
+        return len(rec) == 2 and rec[0] == f["sha256"] and rec[1] == str(f["size"])
+    except (OSError, ValueError):
+        return False
+
+
+def _write_ok_marker(path: Path, f: dict) -> None:
+    try:
+        path.with_name(path.name + OK_SUFFIX).write_text(f'{f["sha256"]} {f["size"]}\n', encoding="ascii")
+    except OSError:
+        pass
 
 
 def is_complete(manifest: dict | None = None, root: Path | None = None) -> bool:
@@ -331,13 +349,14 @@ def _verify_staged(manifest: dict, staging: Path, root: Path) -> None:
         src = _safe_path(staging if f["path"] in staged else root, f["path"])
         if not src.is_file() or src.stat().st_size != f["size"]:
             raise UpdateError(f"staged file missing: {f['path']}")
-        if sha256_file(src) != f["sha256"]:
+        if not _ok_marker_matches(src, f) and sha256_file(src) != f["sha256"]:
             raise UpdateError(f"checksum mismatch for {f['path']}")
 
 
 def _cleanup_files(manifest: dict, root: Path, backup: Path, done: list) -> None:
     """Удаление файлов старых версий внутри управляемых папок (models/, calibration/)."""
     keep = {Path(f["path"]).as_posix() for f in manifest["files"]}
+    keep |= {k + OK_SUFFIX for k in keep}  # keep the verification markers too
     for top in sorted({Path(f["path"]).parts[0] for f in manifest["files"]}):
         base = _safe_path(root, top)
         if not base.is_dir():
@@ -365,7 +384,7 @@ def _apply_staged(manifest: dict, staging: Path, root: Path, raw: bytes | None =
             src = _safe_path(staging, f["path"])
             if not src.is_file():
                 continue  # неизменённый файл уже лежит в data
-            if sha256_file(src) != f["sha256"]:
+            if not _ok_marker_matches(src, f) and sha256_file(src) != f["sha256"]:
                 raise UpdateError(f"checksum mismatch for {f['path']}")
             dst = _safe_path(root, f["path"])
             dst.parent.mkdir(parents=True, exist_ok=True)
@@ -391,6 +410,10 @@ def _apply_staged(manifest: dict, staging: Path, root: Path, raw: bytes | None =
         tmp.write_bytes(raw if raw is not None else json.dumps(manifest).encode('utf-8'))
         os.replace(tmp, marker)
         done.append((marker, old_marker))
+        for f in manifest["files"]:
+            dst = _safe_path(root, f["path"])
+            if dst.is_file():
+                _write_ok_marker(dst, f)
         return applied
     except Exception:
         # откат: восстанавливаем заменённые файлы из backup
@@ -533,14 +556,17 @@ class Job:
             staging = staging_dir(manifest["version"], root)
             staging.mkdir(parents=True, exist_ok=True)
             self._set(total=sum(f["size"] for f in todo), done=0, phase="downloading")
-            done_before = 0
             t0 = time.time()
-            for f in todo:
-                if self._cancel.is_set():
-                    raise _Cancelled()
-                self._set(file=f["path"])
-                self._download_to(f, staging, base, done_before, t0)
-                done_before += f["size"]
+            if len(todo) > 1 and MAX_PARALLEL > 1:
+                self._download_parallel(todo, staging, base, t0)
+            else:
+                done_before = 0
+                for f in todo:
+                    if self._cancel.is_set():
+                        raise _Cancelled()
+                    self._set(file=f["path"])
+                    self._download_to(f, staging, base, done_before, t0)
+                    done_before += f["size"]
             self._set(phase="verifying", file="")
             (staging / "manifest.json").write_bytes(raw)  # манифест тоже кладём в staging
             signature = manifest.get('_signature', '').encode('ascii')
@@ -569,6 +595,34 @@ class Job:
             self._set(phase="cancelled", file="")
         except Exception as e:  # noqa: BLE001
             self._set(phase="error", file="", error=str(e) if isinstance(e, UpdateError) else f"{type(e).__name__}: {e}")
+
+    def _download_parallel(self, todo: list, staging: Path, base: str, t0: float) -> None:
+        """Download several files concurrently (bounded by MAX_PARALLEL); progress is aggregated."""
+        import concurrent.futures
+        lock = threading.Lock()
+        done = {"bytes": 0}
+
+        def one(f: dict) -> None:
+            if self._cancel.is_set():
+                raise _Cancelled()
+            self._set(file=f["path"])
+            self._download_to(f, staging, base, 0, t0)
+            with lock:
+                done["bytes"] += f["size"]
+                el = max(time.time() - t0, 0.5)
+                self._set(done=done["bytes"], speed=done["bytes"] / el)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_PARALLEL) as ex:
+            futures = [ex.submit(one, f) for f in todo]
+            err = None
+            for fut in concurrent.futures.as_completed(futures):
+                try:
+                    fut.result()
+                except Exception as e:  # noqa: BLE001
+                    err = err or e
+                    self._cancel.set()
+            if err:
+                raise err
 
     def _download_to(self, f: dict, staging: Path, base: str, done_before: int, t0: float) -> None:
         """Скачивание одного файла в staging (докачка через .part, таймаут 30 с, проверка отмены между чанками)."""
@@ -615,6 +669,7 @@ class Job:
                     part.unlink(missing_ok=True)
                     raise UpdateError(f"checksum mismatch for {f['path']}")
                 os.replace(part, dest)
+                _write_ok_marker(dest, f)
                 return
             except (urllib.error.URLError, OSError, ConnectionError, http.client.HTTPException) as e:
                 if isinstance(e, urllib.error.HTTPError) and e.code in (401, 403, 404):
