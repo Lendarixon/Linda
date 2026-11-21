@@ -4,7 +4,8 @@
 The installer ships the CPU build of PyTorch, so the transformer voters are exported once, on the user's own computer, from the downloaded weights to ONNX
 (cached in the data folder) and then run through DirectML. Same windowing and scoring as `linda_pro.voters.FastSeqCls`.
 Lessons from the earlier project that are built in: DeBERTa tracing bakes the relative-position bias for the dummy length, so the graph is exported for a FIXED
-sequence length (every window is padded to it, the attention mask hides the padding); the inputs are passed in a fixed order; DirectML gets one window per run (see MAX_BATCH)."""
+sequence length (every window is padded to it, the attention mask hides the padding); the inputs are passed in a fixed order; DirectML gets one window per run (see MAX_BATCH),
+and in stable FP32 mode the batch axis is frozen at 1 as well (see export(static_batch=...)) — a symbolic batch keeps ~3000 shape-plumbing nodes alive on the GPU."""
 from __future__ import annotations
 
 import json
@@ -25,9 +26,13 @@ def available() -> bool:
         return False
 
 
-def export(model_dir: Path, out_dir: Path, max_len: int, fp16: bool = False, tokens: bool = False) -> Path:
-    """Export model_dir (HF sequence classifier) to out_dir/model.onnx for sequences of exactly max_len tokens (batch is dynamic).
-    fp16=True halves the weights (Essay ~0.87 GB instead of 1.7 GB): the 2.0 voters have to fit a 4 GB card; the inputs stay int64, the logits are cast to float32 on read."""
+def export(model_dir: Path, out_dir: Path, max_len: int, fp16: bool = False, tokens: bool = False,
+           static_batch: bool = False) -> Path:
+    """Export model_dir (HF sequence classifier) to out_dir/model.onnx for sequences of exactly max_len tokens.
+    fp16=True halves the weights (Essay ~0.87 GB instead of 1.7 GB): the 2.0 voters have to fit a 4 GB card; the inputs stay int64, the logits are cast to float32 on read.
+    static_batch=True freezes the batch axis at 1 instead of leaving it dynamic: DirectML re-dispatches DeBERTa's disentangled-attention shape plumbing
+    (Shape/Unsqueeze/Concat/Reshape, ~3000 of ~4600 nodes) on every run when the batch dimension is symbolic. The app feeds one window per run
+    (MAX_BATCH), so freezing it measured 1.7-3.2x on the RX 9070 XT with identical scores."""
     import torch
     from transformers import AutoModelForSequenceClassification
 
@@ -51,18 +56,22 @@ def export(model_dir: Path, out_dir: Path, max_len: int, fp16: bool = False, tok
     mask = torch.ones((1, max_len), dtype=torch.long)
     target = out_dir / ("model_tok.onnx" if tokens else "model.onnx")
     tmp = target.with_suffix(".onnx.part")
-    kw = dict(input_names=["input_ids", "attention_mask"], output_names=["logits"],
-              dynamic_axes={"input_ids": {0: "batch"}, "attention_mask": {0: "batch"}, "logits": {0: "batch"}}, opset_version=17)
+    kw = dict(input_names=["input_ids", "attention_mask"], output_names=["logits"], opset_version=17)
+    if not static_batch:
+        kw["dynamic_axes"] = {"input_ids": {0: "batch"}, "attention_mask": {0: "batch"}, "logits": {0: "batch"}}
     if tokens:
         kw["output_names"].append("last_hidden_state")
-        kw["dynamic_axes"]["last_hidden_state"] = {0: "batch"}
+        if not static_batch:
+            kw["dynamic_axes"]["last_hidden_state"] = {0: "batch"}
     with torch.no_grad():
         try:
             torch.onnx.export(model, (ids, mask), str(tmp), dynamo=False, **kw)  # the TorchScript exporter is the reliable one for DeBERTa
         except TypeError:  # older torch without the dynamo switch
             torch.onnx.export(model, (ids, mask), str(tmp), **kw)
     tmp.replace(target)
-    (out_dir / ("meta_tok.json" if tokens else "meta.json")).write_text(json.dumps({"max_len": max_len, "source": str(model_dir.name), "dtype": "fp16" if fp16 else "fp32"}), encoding="utf-8")
+    (out_dir / ("meta_tok.json" if tokens else "meta.json")).write_text(json.dumps(
+        {"max_len": max_len, "source": str(model_dir.name), "dtype": "fp16" if fp16 else "fp32",
+         "batch": "static1" if static_batch else "dynamic"}), encoding="utf-8")
     return target
 
 
@@ -75,12 +84,17 @@ class OnnxSeqCls:
             raise ValueError('stable FP32 mode rejects fp16=True (actual FP32 graph only)')
         self.fp16 = fp16
         self.stable = bool(stable)
+        # One window per run is all the app ever feeds (MAX_BATCH), so the graph is exported with the batch axis frozen.
+        self.static_batch = bool(stable) and (max_batch is None or int(max_batch) <= 1)
         self.max_batch = None if max_batch is None else max(1, int(max_batch))
         self.allow_export = bool(allow_export)
         self.model_dir = Path(model_dir)
         if self.stable:
             # Isolated FP32 namespace: never reuse legacy fp16/fp32 graphs.
             self.cache = Path(cache_dir) / "fp32_stable_v1" / self.model_dir.name
+            if self.static_batch:
+                # Separate subtree from the dynamic-batch graphs of the previous release: both are fp32/stable but only this one is batch-frozen.
+                self.cache = Path(cache_dir) / "fp32_stable_b1" / self.model_dir.name
         else:
             self.cache = Path(cache_dir) / self.model_dir.name
         self.device_id = device_id
@@ -96,11 +110,13 @@ class OnnxSeqCls:
         onnx_path = self.cache / "model.onnx"
         meta = self.cache / "meta.json"
         m = json.loads(meta.read_text(encoding="utf-8")) if meta.exists() else {}
-        ok = onnx_path.exists() and m.get("max_len") == self.max_len and m.get("dtype", "fp32") == ("fp16" if self.fp16 else "fp32")
+        ok = (onnx_path.exists() and m.get("max_len") == self.max_len
+              and m.get("dtype", "fp32") == ("fp16" if self.fp16 else "fp32")
+              and m.get("batch", "dynamic") == ("static1" if self.static_batch else "dynamic"))
         if not ok:
             if not self.allow_export:
                 raise RuntimeError('Prebuilt ONNX graph or matching metadata is missing; runtime export is disabled')
-            export(self.model_dir, self.cache, self.max_len, fp16=self.fp16)
+            export(self.model_dir, self.cache, self.max_len, fp16=self.fp16, static_batch=self.static_batch)
         self.tok = AutoTokenizer.from_pretrained(str(self.model_dir))
         so = ort.SessionOptions()
         so.intra_op_num_threads = 4
@@ -140,10 +156,12 @@ class OnnxSeqCls:
         meta = self.cache / "meta_tok.json"
         m = json.loads(meta.read_text(encoding="utf-8")) if meta.exists() else {}
         if not (path.exists() and m.get("max_len") == self.max_len
-                and m.get("dtype") == ("fp16" if self.fp16 else "fp32")):
+                and m.get("dtype") == ("fp16" if self.fp16 else "fp32")
+                and m.get("batch", "dynamic") == ("static1" if self.static_batch else "dynamic")):
             if not self.allow_export:
                 raise RuntimeError("Token ONNX graph missing; runtime export is disabled")
-            export(self.model_dir, self.cache, self.max_len, fp16=self.fp16, tokens=True)
+            export(self.model_dir, self.cache, self.max_len, fp16=self.fp16, tokens=True,
+                   static_batch=self.static_batch)
         if not hasattr(self, "tok"):
             self.tok = AutoTokenizer.from_pretrained(str(self.model_dir))
         so = ort.SessionOptions()
