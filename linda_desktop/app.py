@@ -468,6 +468,26 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         content = await file.read(MAX_UPLOAD + 1)
         return await _extract_payload(file.filename or "file.txt", content)
 
+    @api.post("/api/upload/batch")
+    async def upload_batch(files: list[UploadFile] = File(...)):
+        with core.checks_lock:
+            if core.installer_job['phase'] == 'launching':
+                return err('The application is restarting; wait for the new window.', 409)
+            core.active_requests += 1
+        try:
+            items = []
+            for f in files[:60]:
+                res = await _upload(f)
+                if isinstance(res, JSONResponse):
+                    detail = json.loads(res.body.decode("utf-8", "replace")).get("detail", "error")
+                    items.append({"status": "error", "filename": f.filename or "file", "error": detail})
+                else:
+                    items.append(res)
+            return {"status": "ok", "items": items}
+        finally:
+            with core.checks_lock:
+                core.active_requests -= 1
+
     async def _extract_payload(filename, content):
         if len(content) > MAX_UPLOAD:
             return terr("err_file_too_large", 413)
@@ -984,7 +1004,25 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
 
     @api.post("/api/compare/matrix")
     def compare_matrix(body: dict):
-        """Compare any number of saved checks at once: pairwise overlap matrix plus the most similar pairs."""
+        """Compare any number of saved checks or uploaded documents at once: pairwise overlap matrix plus the most similar pairs."""
+        raw_docs = body.get("documents")
+        if isinstance(raw_docs, list):
+            docs = []
+            for i, d in enumerate(raw_docs[:60]):
+                if not isinstance(d, dict):
+                    continue
+                text = str(d.get("text") or "").strip()
+                if not text:
+                    continue
+                title = str(d.get("title") or d.get("filename") or f"Document {i + 1}")[:200]
+                doc_id = d.get("id") if d.get("id") is not None else f"doc-{i + 1}"
+                docs.append({"id": doc_id, "title": title, "text": text, "words": len(text.split())})
+            if len(docs) < 2:
+                return terr("err_pick_two", 400)
+            m = analytics.similarity_matrix([d["text"] for d in docs])
+            pairs = sorted(({"a": docs[i]["id"], "b": docs[j]["id"], "overlap": m[i][j]} for i in range(len(docs)) for j in range(i + 1, len(docs))), key=lambda x: -x["overlap"])
+            items = [{"id": d["id"], "title": d["title"], "verdict": None, "authorship": None, "words": d["words"], "ai_share": None} for d in docs]
+            return {"items": items, "matrix": m, "pairs": pairs[:40]}
         try:
             ids = [int(x) for x in body["ids"]][:60]
         except Exception:  # noqa: BLE001

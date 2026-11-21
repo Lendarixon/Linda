@@ -216,10 +216,14 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
       </div>
       <div id="cmManyBox" style="display:none">
         <div class="cab-row">
-          <select class="cab-sel" id="mScope"><option value="all" data-i18n="cmp_scope_all">All saved checks</option><option value="folder" data-i18n="cmp_scope_folder">Current folder of History</option><option value="picked" data-i18n="cmp_scope_picked">Rows ticked in History</option></select>
+          <select class="cab-sel" id="mScope"><option value="all" data-i18n="cmp_scope_all">All saved checks</option><option value="folder" data-i18n="cmp_scope_folder">Current folder of History</option><option value="picked" data-i18n="cmp_scope_picked">Rows ticked in History</option><option value="added" data-i18n="cmp_scope_added">Added files</option></select>
+          <button class="cab-btn sec" id="mAddFilesBtn" data-i18n="cmp_add_files">＋ Add files…</button>
+          <input type="file" id="mFilesInput" multiple accept=".csv,.doc,.docx,.epub,.fb2,.htm,.html,.json,.log,.markdown,.md,.odt,.pdf,.rst,.rtf,.tex,.text,.tsv,.txt,.xhtml,.yaml,.yml" style="display:none">
           <button class="cab-btn" id="mGo" data-i18n="m_go">Build matrix</button>
           <span class="cab-note" data-i18n="m_cell_hint">Cell = share of the shorter text that also appears in the other (matching runs of 5 or more words).</span>
         </div>
+        <div class="cab-drop" id="mDrop" data-i18n="cmp_drop_many" style="margin:8px 0">Drop multiple files here or click “Add files…” — each file is added as a separate document</div>
+        <div id="mDocList" style="margin-bottom:8px"></div>
         <div id="mOut"><p class="cab-note" data-i18n="m_out_note">Compare any number of documents at once: overlap matrix and the most similar pairs. Click a cell to open that pair, a row name to open the document.</p></div>
       </div>
     </div>
@@ -937,15 +941,53 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
   $('cFileB').onclick = () => $('cFileBInput').click(); $('cFileBInput').onchange = e => cmpImportFile(e.target, 'cB');
 
   const heat = v => v >= .6 ? '#e51400' : v >= .3 ? '#b34d00' : v >= .1 ? '#0050ef' : v > 0 ? '#00716f' : '#2f3b2f';
-  async function runMatrix(ids) {
+  let mAddedDocs = [], mDocSeq = 0;
+  function renderManyDocs() {
+    const el = $('mDocList'); if (!el) return;
+    if (!mAddedDocs.length) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div class="cab-row" style="flex-wrap:wrap;gap:6px">' +
+      mAddedDocs.map((d, i) => `<span class="cab-note" style="display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border:1px solid var(--cab-bdr,#444);border-radius:3px">${esc(d.title)} (${d.words} w) <button type="button" class="cab-btn sec" data-rm-mdoc="${i}" style="padding:0 6px;min-height:0;line-height:1.3">×</button></span>`).join('') +
+      `<button type="button" class="cab-btn sec" id="mClearDocs" style="padding:2px 8px;min-height:0">${esc(T('cmp_clear_files') || 'Clear')}</button></div>`;
+    el.querySelectorAll('[data-rm-mdoc]').forEach(b => b.onclick = () => { mAddedDocs.splice(+b.dataset.rmMdoc, 1); renderManyDocs(); });
+    const clr = $('mClearDocs'); if (clr) clr.onclick = () => { mAddedDocs = []; renderManyDocs(); };
+  }
+  async function addCompareFiles(fileList) {
+    const files = [...(fileList || [])]; if (!files.length) return;
+    const fd = new FormData(); files.forEach(f => fd.append('files', f));
+    $('mOut').innerHTML = '<div class="cab-prog"><div style="width:100%" class="cab-busy"></div></div><p class="cab-note">' + esc(T('cmp_importing', {name: files.length === 1 ? files[0].name : String(files.length)})) + '</p>';
+    try {
+      const res = await api('/api/upload/batch', { method: 'POST', body: fd });
+      const errs = [];
+      (res.items || []).forEach(it => {
+        if (it.status === 'ok' && it.text) { mAddedDocs.push({ id: 'file-' + (++mDocSeq), title: it.filename || ('File ' + mDocSeq), text: it.text, words: it.words || it.text.split(/\s+/).length }); }
+        else if (it.error) { errs.push((it.filename || 'file') + ': ' + it.error); }
+      });
+      renderManyDocs();
+      if (mAddedDocs.length) $('mScope').value = 'added';
+      if (errs.length) $('mOut').innerHTML = `<p class="cab-note">${esc(errs.join('; '))}</p>`;
+      else if (mAddedDocs.length >= 2) runMatrix({ documents: mAddedDocs });
+      else $('mOut').innerHTML = '<p class="cab-note">' + esc(T('cmp_pick_second')) + '</p>';
+    } catch (e) { $('mOut').innerHTML = `<p class="cab-note">${esc(e.message)}</p>`; }
+  }
+  if ($('mAddFilesBtn')) $('mAddFilesBtn').onclick = () => $('mFilesInput').click();
+  if ($('mFilesInput')) $('mFilesInput').onchange = e => { addCompareFiles(e.target.files); e.target.value = ''; };
+  if ($('mDrop')) {
+    $('mDrop').onclick = () => $('mFilesInput').click();
+    $('mDrop').ondragover = e => { e.preventDefault(); $('mDrop').classList.add('over'); };
+    $('mDrop').ondragleave = () => $('mDrop').classList.remove('over');
+    $('mDrop').ondrop = e => { e.preventDefault(); $('mDrop').classList.remove('over'); addCompareFiles(e.dataTransfer.files); };
+  }
+  async function runMatrix(payload) {
     $('mOut').innerHTML = '<div class="cab-prog"><div style="width:100%" class="cab-busy"></div></div><p class="cab-note">' + T('ui_prog_compare') + '</p>';
     try {
-      const d = await jpost('/api/compare/matrix', { ids }); const short = t => esc(t.length > 22 ? t.slice(0, 21) + '…' : t);
+      const body = Array.isArray(payload) ? { ids: payload } : payload;
+      const d = await jpost('/api/compare/matrix', body); const short = t => esc(t.length > 22 ? t.slice(0, 21) + '…' : t);
+      const isHist = id => /^\d+$/.test(String(id));
       let h = `<p class="cab-note">${T('m_docs', {n: d.items.length})} ${T('m_legend')}</p><div style="overflow:auto"><table class="mx"><tr><th></th>${d.items.map(x => `<th title="${esc(x.title)}">${short(x.title)}</th>`).join('')}</tr>`;
-      d.items.forEach((x, i) => { h += `<tr><th class="rh" data-view="${x.id}" title="${T('cmp_open_title', {t: x.title})}">${short(x.title)} ${badge(x.verdict)}</th>` + d.items.map((y, j) => i === j ? '<td class="self">—</td>' : `<td style="background:${heat(d.matrix[i][j])};animation-delay:${(i + j) * 25}ms" data-a="${x.id}" data-b="${y.id}" title="${esc(x.title)} ↔ ${esc(y.title)}">${Math.round(d.matrix[i][j] * 100)}%</td>`).join('') + '</tr>'; });
+      d.items.forEach((x, i) => { h += `<tr><th class="rh" ${isHist(x.id) ? `data-view="${x.id}"` : ''} title="${T('cmp_open_title', {t: x.title})}">${short(x.title)} ${x.verdict ? badge(x.verdict) : ''}</th>` + d.items.map((y, j) => i === j ? '<td class="self">—</td>' : `<td style="background:${heat(d.matrix[i][j])};animation-delay:${(i + j) * 25}ms" ${isHist(x.id) && isHist(y.id) ? `data-a="${x.id}" data-b="${y.id}"` : ''} title="${esc(x.title)} ↔ ${esc(y.title)}">${Math.round(d.matrix[i][j] * 100)}%</td>`).join('') + '</tr>'; });
       h += '</table></div><h4 style="font-weight:300;letter-spacing:.1em;text-transform:uppercase;font-size:.8rem;margin:18px 0 8px">' + T('cmp_pairs_title') + '</h4>';
       const nm = id => (d.items.find(x => x.id === id) || {}).title || id;
-      h += d.pairs.filter(p => p.overlap > 0).slice(0, 15).map((p, i) => `<div class="pair" style="border-left-color:${heat(p.overlap)};animation-delay:${i * 30}ms" data-a="${p.a}" data-b="${p.b}"><b>${Math.round(p.overlap * 100)}%</b><span>${esc(nm(p.a))} ↔ ${esc(nm(p.b))}</span></div>`).join('') || '<p class="cab-note">' + T('m_no_shared') + '</p>';
+      h += d.pairs.filter(p => p.overlap > 0).slice(0, 15).map((p, i) => `<div class="pair" style="border-left-color:${heat(p.overlap)};animation-delay:${i * 30}ms" ${isHist(p.a) && isHist(p.b) ? `data-a="${p.a}" data-b="${p.b}"` : ''}><b>${Math.round(p.overlap * 100)}%</b><span>${esc(nm(p.a))} ↔ ${esc(nm(p.b))}</span></div>`).join('') || '<p class="cab-note">' + T('m_no_shared') + '</p>';
       $('mOut').innerHTML = h;
     } catch (e) { $('mOut').innerHTML = `<p class="cab-note">${esc(e.message)}</p>`; }
   }
@@ -954,7 +996,9 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
     const t = e.target.closest('[data-a]'); if (t && t.dataset.b) { await fillCompareSelects(); setMode('pair'); $('cA').value = t.dataset.a; $('cB').value = t.dataset.b; runCompare(); }
   });
   $('mGo').onclick = async () => {
-    const sc = $('mScope').value; let ids = [];
+    const sc = $('mScope').value;
+    if (sc === 'added') { runMatrix({ documents: mAddedDocs }); return; }
+    let ids = [];
     if (sc === 'picked') ids = [...S.picked]; else { const q = new URLSearchParams({ limit: 60 }); if (sc === 'folder' && S.folder !== '') q.set('folder', S.folder); ids = (await api('/api/history?' + q)).items.map(x => x.id); }
     runMatrix(ids);
   };
