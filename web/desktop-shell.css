@@ -13,9 +13,10 @@ html:not([data-theme="light"]):not([data-theme="contrast"]) {
   --id-blue:#1364b0; --id-teal:#00787a; --id-violet:#6a51a4; --id-orange:#a14206;
   --id-magenta:#954074; --id-green:#137738; --id-slate:#4d5969;
   --success-fill:#03a14a; --warning-fill:#e19b1b; --danger-fill:#d9544b;
-  /* verdict colours re-tuned to the site status fills */
-  --ai:#d9544b; --ai-bg:rgba(217,84,75,.15); --ai-border:rgba(217,84,75,.42);
-  --human:#03a14a; --human-deep:#03a14a; --human-bg:rgba(3,161,74,.14); --human-border:rgba(3,161,74,.42);
+  /* verdict colours: tuned for WCAG AA on both the app surface (#191c20) and the elevated tile (#202429);
+     -deep variants are the white-on-colour badge fills (>= 4.5:1 with #fff) */
+  --ai:#e8635a; --ai-deep:#b03a30; --ai-bg:rgba(232,99,90,.16); --ai-border:rgba(232,99,90,.45);
+  --human:#03a14a; --human-deep:#056c3a; --human-bg:rgba(3,161,74,.14); --human-border:rgba(3,161,74,.45);
   --uncertain:#e19b1b; --uncertain-deep:#a06c00; --uncertain-bg:rgba(225,155,27,.13); --uncertain-border:rgba(225,155,27,.42);
   --steel:#4d5969; --teal:#00787a; --teal-deep:#00787a; --purple:#6a51a4; --green:#137738;
 }
@@ -30,9 +31,11 @@ html[data-theme="light"] {
   --id-blue:#1364b0; --id-teal:#00787a; --id-violet:#6a51a4; --id-orange:#a14206;
   --id-magenta:#954074; --id-green:#137738; --id-slate:#4d5969;
   --success-fill:#03a14a; --warning-fill:#e19b1b; --danger-fill:#d9544b;
-  --ai:#963730; --ai-bg:rgba(217,84,75,.10); --ai-border:rgba(150,55,48,.42);
-  --human:#006e30; --human-deep:#006e30; --human-bg:rgba(3,161,74,.10); --human-border:rgba(0,110,48,.40);
-  --uncertain:#905d00; --uncertain-deep:#905d00; --uncertain-bg:rgba(225,155,27,.14); --uncertain-border:rgba(144,93,0,.40);
+  /* light theme verdict colours: the cabinet.html values the audit points at (#c4302b/#0d7a3e),
+     with --uncertain darkened from #9a6700 (4.87:1 on #fff but 4.18:1 on --bg-elevated) to #8f5f00 for AA on every light surface */
+  --ai:#c4302b; --ai-deep:#c4302b; --ai-bg:rgba(196,48,43,.09); --ai-border:rgba(196,48,43,.40);
+  --human:#0d7a3e; --human-deep:#0d7a3e; --human-bg:rgba(13,122,62,.10); --human-border:rgba(13,122,62,.40);
+  --uncertain:#8f5f00; --uncertain-deep:#8f5f00; --uncertain-bg:rgba(143,95,0,.14); --uncertain-border:rgba(143,95,0,.40);
   --steel:#4d5969; --teal:#00787a; --teal-deep:#00787a; --purple:#6a51a4; --green:#137738;
 }
 html[data-theme="contrast"] {
@@ -44,11 +47,25 @@ html[data-theme="contrast"] {
   --ink:#fff; --muted:#fff; --primary:#015ba6; --primary-hover:#015ba6; --on-primary:#fff;
   --id-blue:#015ba6; --id-teal:#00aba9; --id-violet:#a37dff; --id-orange:#b34d00;
   --id-magenta:#a37dff; --id-green:#008a00; --id-slate:#8b93a7;
-  --success-fill:#7bff9e; --warning-fill:#ffb020; --danger-fill:#ff6b6b;
+  --success-fill:#7bff9e; --warning-fill:#ffb020; --danger-fill:#ff8080;
+  /* verdict colours in the accessibility theme: >= 7:1 on #000 and on #161616 (--ai was #ff6b6b = 6.80:1 on the elevated tile) */
+  --ai:#ff8080; --ai-deep:#b03a30; --ai-bg:rgba(255,128,128,.18); --ai-border:#ff8080;
+  --human:#7bff9e; --human-deep:#00692f; --human-bg:rgba(123,255,158,.16); --human-border:#7bff9e;
+  --uncertain:#ffb020; --uncertain-deep:#8f5f00; --uncertain-bg:rgba(255,176,32,.16); --uncertain-border:#ffb020;
 }
 /* accent variants must never override the contrast accessibility theme */
 html:not([data-theme="contrast"])[data-accent="cobalt"] { --cobalt:#1364b0; --accent:#82bcfc; --accent-light:rgba(130,188,252,.14); }
 html[data-theme="light"][data-accent="cobalt"] { --accent:#015ba6; --accent-light:rgba(1,91,166,.09); }
+/* P0-1 (Neon audit 2026-11-20): light theme needs the dark identity hue per accent, the dark presets are 1.76:1-2.73:1 on white */
+html[data-theme="light"][data-accent="teal"] { --accent:#00787a; --accent-light:rgba(0,120,122,.12); --cobalt:#00787a; }
+html[data-theme="light"][data-accent="green"] { --accent:#137738; --accent-light:rgba(19,119,56,.12); --cobalt:#137738; }
+html[data-theme="light"][data-accent="orange"],
+html[data-theme="light"][data-accent="amber"] { --accent:#a14206; --accent-light:rgba(161,66,6,.12); --cobalt:#a14206; }
+html[data-theme="light"][data-accent="purple"] { --accent:#6a51a4; --accent-light:rgba(106,81,164,.12); --cobalt:#6a51a4; }
+html[data-theme="light"][data-accent="rose"],
+html[data-theme="light"][data-accent="magenta"] { --accent:#954074; --accent-light:rgba(149,64,116,.12); --cobalt:#954074; }
+html[data-theme="light"][data-accent="graphite"],
+html[data-theme="light"][data-accent="slate"] { --accent:#4d5969; --accent-light:rgba(77,89,105,.12); --cobalt:#4d5969; }
 body.ld-desktop {
   height:100dvh; min-height:0; overflow:hidden; display:flex; flex-direction:column;
   font-family:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif!important;
