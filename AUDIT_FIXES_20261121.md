@@ -43,3 +43,15 @@
 **DEFERRED**: P2 не-ASCII токен → 500 вместо 403 (`app.py:290`) — нетривиально (hmac на non-ASCII), оставлено; unsigned license.json — требует подписи манифеста, вне объёма; rate limiting — нет готового механизма, DEFERRED.
 
 **Тесты**: `tests/test_backend_review_fixes.py` + `test_humanizer_batch.py` — 20 passed. Полный suite: 665 passed / 17 failed — все 17 падают и на чистом f289cd6 (окружение: нет installer/signature артефактов), к фиксам не относятся.
+
+
+## Fixer C (frontend)
+
+- WCAG audit `work/audit_wcag_full_20261121.py`: **FAIL 188 -> 105** (WARN 123 unchanged; 311 -> 212 raw records).
+  `--verdict-ink` now defined per theme (dark/light #fff, contrast #000); dark accent presets carry
+  `:not([data-theme="light"])` (specificity 0,3,1) so all 8 accents resolve in dark (§2 fixed);
+  exp-main gradient end #0b7f8c (4.74:1); cab-btn.danger/tile.c1 on --ai-deep; contrast -deep fills brightened.
+- Pause button (`lpSetupCancel`) now visible during checking/downloading and wired to `/api/models/cancel`.
+- i18n: 0 missing keys (en=pl=ru=751); `test_ui_localization_contract` green.
+- Tests: `test_ui_wcag_contrast.py` + `test_ui_navigation_reachability.py` + `test_ui_localization_contract.py` = **29 passed**.
+- Mirrored into `web/served/index.html` (CRLF preserved).
