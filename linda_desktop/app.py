@@ -1477,48 +1477,55 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         return {"status": "ok", "result": res}
 
     @api.post("/api/humanize/batch")
-    def humanize_batch(body: dict):
-        """Swap out the detector, humanize many texts with the loop, swap back."""
-        denied = licensing.check_licensed("humanize_loop")
-        if denied:
-            return terr("err_need_license", 403)
+    async def humanize_batch(body: dict, request: Request):
+        """Swap out the detector, humanize many texts with the loop, swap back.
+
+        Runs under tool_work(..., exclusive=True): the batch serializes with
+        single humanize/loop calls so the humanizer backend is never driven
+        concurrently (see humanize_pack lock order)."""
         from . import humanize_pack  # noqa: PLC0415
 
-        if not updater.is_complete():
-            return terr("err_models_not_installed", 409)
-        texts = (body or {}).get("texts") or []
-        if not isinstance(texts, list) or not texts or len(texts) > 200:
-            return terr("err_bad_request", 400)
-        variant = str((body or {}).get("variant") or "auto")
-        target = float((body or {}).get("target", 0.5))
-        out = []
-        try:
-            for t in texts:
-                s = str(t or "").strip()
-                if len(s.split()) < 4:
-                    out.append({"text": s, "skipped": "too_short"})
-                    continue
-                r = humanize_pack.loop_until_calm(
-                    s, detector_run=_ai_share_of, detector_unload=core.engine.unload,
-                    detector_warm=None, target=target, max_iters=int((body or {}).get("max_iters", 2)),
-                    variant=variant)
-                out.append({"text": r.get("text"), "calm": r.get("calm"),
-                            "ai_share": (r.get("iters") or [{}])[-1].get("ai_share"),
-                            "variant": r.get("variant")})
-                if core.batch_cancel.is_set():
-                    break
-        except Exception as e:  # noqa: BLE001
-            return err("humanize batch failed: %s: %s" % (type(e).__name__, e), 500)
-        finally:
+        def _batch(b):
+            denied = licensing.check_licensed("humanize_loop")
+            if denied:
+                return terr("err_need_license", 403)
+            if not updater.is_complete():
+                return terr("err_models_not_installed", 409)
+            texts = (b or {}).get("texts") or []
+            if not isinstance(texts, list) or not texts or len(texts) > 200:
+                return terr("err_bad_request", 400)
+            variant = str((b or {}).get("variant") or "auto")
+            target = float((b or {}).get("target", 0.5))
+            out = []
             try:
-                humanize_pack.unload()
-            except Exception:  # noqa: BLE001
-                pass
-            try:
-                core.engine.warm_all("en")
-            except Exception:  # noqa: BLE001
-                pass
-        return {"status": "ok", "results": out}
+                for t in texts:
+                    s = str(t or "").strip()
+                    if len(s.split()) < 4:
+                        out.append({"text": s, "skipped": "too_short"})
+                        continue
+                    r = humanize_pack.loop_until_calm(
+                        s, detector_run=_ai_share_of, detector_unload=core.engine.unload,
+                        detector_warm=None, target=target, max_iters=int((b or {}).get("max_iters", 2)),
+                        variant=variant)
+                    out.append({"text": r.get("text"), "calm": r.get("calm"),
+                                "ai_share": (r.get("iters") or [{}])[-1].get("ai_share"),
+                                "variant": r.get("variant")})
+                    if core.batch_cancel.is_set():
+                        break
+            except Exception as e:  # noqa: BLE001
+                return err("humanize batch failed: %s: %s" % (type(e).__name__, e), 500)
+            finally:
+                try:
+                    humanize_pack.unload()
+                except Exception:  # noqa: BLE001
+                    pass
+                try:
+                    core.engine.warm_all("en")
+                except Exception:  # noqa: BLE001
+                    pass
+            return {"status": "ok", "results": out}
+
+        return await tool_work(body, request, _batch, True)
 
     @api.post("/api/settings")
     def settings(body: dict):

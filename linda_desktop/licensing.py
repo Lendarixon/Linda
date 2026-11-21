@@ -236,17 +236,23 @@ def public_state(st: dict | None = None) -> dict:
     if active and st.get("kind") != "gift" and st.get("machine") and st["machine"] != machine_id():
         active, status = False, "other_machine"  # the licence file was copied from another computer
     exp = st.get("expires_at")
-    if active and exp:
-        try:
-            from datetime import datetime, timezone
-
-            if datetime.fromisoformat(str(exp).replace("Z", "+00:00")) < datetime.now(timezone.utc):
-                active = False
-        except Exception:  # noqa: BLE001
-            # fail closed: an unparseable expires_at means we cannot prove the
-            # licence is still valid, so treat it as expired (dev mode exempt)
+    if active and st.get("kind") != "gift":
+        # fail closed: a missing/empty expires_at cannot prove the licence is
+        # still valid, so it counts as expired (dev mode exempt)
+        if not exp:
             if not getattr(config, "DEV_INSTALLER_ENABLED", False):
                 active = False
+        else:
+            try:
+                from datetime import datetime, timezone
+
+                if datetime.fromisoformat(str(exp).replace("Z", "+00:00")) < datetime.now(timezone.utc):
+                    active = False
+            except Exception:  # noqa: BLE001
+                # fail closed: an unparseable expires_at means we cannot prove the
+                # licence is still valid, so treat it as expired (dev mode exempt)
+                if not getattr(config, "DEV_INSTALLER_ENABLED", False):
+                    active = False
     return {"licensed": active, "kind": st.get("kind", "purchase"), "tier": st.get("tier") if active else None, "key_hint": _mask(st["key"]) if st.get("key") else "",
             "status": status, "configured": bool(config.POLAR_ORG_ID)}
 

@@ -174,8 +174,123 @@ def test_licensing_fail_closed_on_corrupt_expires_at(monkeypatch):
     assert licensing.public_state(st)["licensed"] is False
 
 
+def test_licensing_fail_closed_on_empty_expires_at(monkeypatch):
+    monkeypatch.setattr(config, "DEV_INSTALLER_ENABLED", False)
+    for empty in ("", None):
+        st = {"key": "k", "status": "granted", "kind": "purchase",
+              "machine": licensing.machine_id(), "expires_at": empty}
+        assert licensing.public_state(st)["licensed"] is False
+
+
 def test_licensing_dev_mode_keeps_fail_open(monkeypatch):
     monkeypatch.setattr(config, "DEV_INSTALLER_ENABLED", True)
     st = {"key": "k", "status": "granted", "kind": "purchase",
           "machine": licensing.machine_id(), "expires_at": "not-a-date"}
     assert licensing.public_state(st)["licensed"] is True
+
+
+# ---- P1: humanizer deadlock fix — concurrent ensure/unload/generate ----
+
+def test_humanize_concurrent_ensure_unload_no_deadlock(monkeypatch):
+    """ensure() and unload() racing must not deadlock (lock order _runtime_lock -> _lock)."""
+    from linda_desktop import humanize_pack
+
+    monkeypatch.setattr(humanize_pack, "_backend", None)
+    monkeypatch.setattr(humanize_pack, "_backend_busy", False)
+    monkeypatch.setattr(humanize_pack, "device_plan", lambda v="auto": {"tier": "lite"})
+    monkeypatch.setattr(humanize_pack, "installed", lambda t: True)
+
+    class FakeBackend:
+        variant = "lite"
+
+        def load(self, tier):
+            self.variant = tier
+
+        def unload(self):
+            pass
+
+    monkeypatch.setattr(humanize_pack, "HumanizerBackend", FakeBackend)
+    import concurrent.futures
+    with concurrent.futures.ThreadPoolExecutor(8) as ex:
+        futs = [ex.submit(humanize_pack.ensure, "auto") for _ in range(4)]
+        futs += [ex.submit(humanize_pack.unload) for _ in range(4)]
+        for f in futs:
+            f.result(timeout=10)  # would hang forever on an AB/BA deadlock
+    monkeypatch.setattr(humanize_pack, "_backend", None)
+
+
+def test_humanize_generate_sets_busy_under_runtime_lock(monkeypatch):
+    """gen() inside humanize() must flag _backend_busy so unload() refuses mid-run."""
+    from linda_desktop import humanize_pack
+
+    busy_seen = []
+
+    class FakeBackend:
+        variant = "lite"
+
+        def generate(self, cs, n):
+            busy_seen.append(humanize_pack._backend_busy)
+            return [["x"] * n for _ in cs]
+
+    monkeypatch.setattr(humanize_pack, "_backend", FakeBackend())
+    monkeypatch.setattr(humanize_pack, "_backend_busy", False)
+    monkeypatch.setattr(humanize_pack, "ensure", lambda v="auto": "lite")
+    import linda_desktop.stylize_core as sc
+    monkeypatch.setattr(sc, "stylize_text",
+                        lambda text, ranges, gen, n: (gen(["chunk"], n), {"text": text, "changes": []})[1] | {"text": text})
+    res = humanize_pack.humanize("one two three four five")
+    assert busy_seen and all(busy_seen)
+    assert humanize_pack._backend_busy is False  # cleared after generate
+    monkeypatch.setattr(humanize_pack, "_backend", None)
+
+
+# ---- P1: /api/humanize/batch goes through the exclusive tool_work lock ----
+
+def test_humanize_batch_uses_exclusive_tool_work(client, licensed, monkeypatch):
+    """The batch handler must hold the exclusive tool lock while it runs."""
+    app = client.app
+    # locate the Core captured by create_app via a route closure is fragile;
+    # instead assert behavior: a second exclusive job is refused while batch runs
+    from linda_desktop import humanize_pack
+
+    started = threading.Event()
+    release = threading.Event()
+
+    def fake_loop(text, **kw):
+        started.set()
+        release.wait(timeout=5)
+        return {"text": text, "calm": True, "iters": [{"ai_share": 0.1}], "variant": "lite"}
+
+    monkeypatch.setattr(humanize_pack, "loop_until_calm", fake_loop)
+    from linda_desktop import updater
+    monkeypatch.setattr(updater, "is_complete", lambda *a, **kw: True)
+    import concurrent.futures
+    with concurrent.futures.ThreadPoolExecutor(2) as ex:
+        f1 = ex.submit(client.post, "/api/humanize/batch",
+                       json={"texts": ["one two three four five"]})
+        assert started.wait(timeout=5)
+        r2 = client.post("/api/humanize", json={"text": "one two three four five"})
+        release.set()
+        r1 = f1.result(timeout=10)
+    assert r1.status_code == 200
+    assert r2.status_code == 409  # exclusive lock held by the batch
+
+
+# ---- P2: packs job cannot stay stuck in phase "running" after an error ----
+
+def test_packs_download_error_resets_phase(monkeypatch):
+    from unittest.mock import patch
+
+    from linda_desktop import humanize_pack
+
+    packs._pack_job.update(phase="idle", pack="", error="")
+    assert packs.try_start("humanizer-lite") is True
+    with patch.object(humanize_pack, "installed", return_value=False), \
+         patch.object(humanize_pack, "download_base", side_effect=RuntimeError("boom")):
+        with pytest.raises(RuntimeError):
+            packs.download("humanizer-lite")
+    snap = packs.job_snapshot()
+    assert snap["phase"] == "error"
+    assert "boom" in snap["error"]
+    assert packs.try_start("trace") is True  # job is free again after the error
+    packs._pack_job.update(phase="idle", pack="", error="")

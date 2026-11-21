@@ -529,33 +529,36 @@ class HumanizerBackend:
 def ensure(variant: str = "auto") -> str:
     """Load the fitting tier (auto resolves via device_plan). Returns the tier used."""
     global _backend
-    with _lock:
-        plan = device_plan(variant)
-        tier = plan["tier"]
-        if not installed(tier):
-            if tier == "full" and installed("lite"):
-                tier = "lite"  # honest fallback, reported to the caller
-            else:
-                raise RuntimeError(f"humanizer-{tier} is not downloaded")
-        if _backend is None:
-            _backend = HumanizerBackend()
-        if _backend.variant != tier:
-            try:
-                _backend.load(tier)
-            except RuntimeError as e:
-                msg = str(e)
-                if tier == "full" and installed("lite") and ("humanizer-" in msg):
-                    _backend.load("lite")
-                    tier = _backend.variant or "lite"
-                else:
-                    raise
-            except Exception as e:
+    # lock order is always _runtime_lock -> _lock (see unload/generate): taking
+    # _lock alone here let ensure() race unload() and deadlock AB/BA-style
+    with _runtime_lock:
+      with _lock:
+            plan = device_plan(variant)
+            tier = plan["tier"]
+            if not installed(tier):
                 if tier == "full" and installed("lite"):
-                    _backend.load("lite")
-                    tier = _backend.variant or "lite"
+                    tier = "lite"  # honest fallback, reported to the caller
                 else:
-                    raise RuntimeError(f"cannot load humanizer-{tier}: {e}") from e
-        return _backend.variant or tier
+                    raise RuntimeError(f"humanizer-{tier} is not downloaded")
+            if _backend is None:
+                _backend = HumanizerBackend()
+            if _backend.variant != tier:
+                try:
+                    _backend.load(tier)
+                except RuntimeError as e:
+                    msg = str(e)
+                    if tier == "full" and installed("lite") and ("humanizer-" in msg):
+                        _backend.load("lite")
+                        tier = _backend.variant or "lite"
+                    else:
+                        raise
+                except Exception as e:
+                    if tier == "full" and installed("lite"):
+                        _backend.load("lite")
+                        tier = _backend.variant or "lite"
+                    else:
+                        raise RuntimeError(f"cannot load humanizer-{tier}: {e}") from e
+            return _backend.variant or tier
 
 
 def resolve_info(variant: str = "auto") -> dict:
