@@ -4,6 +4,7 @@ All UI tests in this repo are static (playwright=False), so this parses the same
 browser gets: desktop-shell.js (the NAV array baked into nav.innerHTML, paneMap, activate) plus
 cabinet.html (.cab-tab[data-pane]).
 """
+import pathlib
 import re
 from pathlib import Path
 
@@ -51,16 +52,46 @@ def test_audit_is_a_sidebar_entry_in_the_app_group():
     assert "audit" in cabinet_panes()
 
 
-def test_about_is_a_sidebar_entry_in_the_app_group():
+def test_sidebar_has_nine_items_in_three_groups():
+    """C-08: a rail of twelve labels asked the eye to scan too much; nine in three groups."""
     groups = nav_groups()
-    assert "about" in groups["app"], groups
+    assert list(groups) == ["work", "tools", "app"], groups
+    assert groups["work"] == ["check", "batch", "history"], groups["work"]
+    assert groups["tools"] == ["compare", "trace", "humanize"], groups["tools"]
+    assert groups["app"] == ["models", "settings", "audit"], groups["app"]
+    assert sum(len(v) for v in groups.values()) == 9, groups
+
+
+def test_about_and_help_are_reachable_outside_the_rail():
+    """They left the rail, so the screens must still be opened by something."""
+    assert "desktopInfoLinks" in SHELL or "lpOpenAbout" in SHELL
+    assert re.search(r"lpOpenAbout'\)\)\$\('lpOpenAbout'\)\.onclick=\(\)=>navigate\('about'\)", SHELL)
+    handler = SHELL[SHELL.index("function activate(next"):SHELL.index("nav.addEventListener('click'")]
+    for route in ("help", "about"):
+        assert route in pane_map() or re.search(r"'%s'" % route, handler), route
+
+
+def test_licensed_tools_carry_a_pro_tag():
+    """C-08: Trace and Humanize are the paid packs, so the rail says so up front."""
+    assert "nav-tag" in SHELL
+    assert re.search(r"key === 'trace' \|\| key === 'humanize'", SHELL)
+    assert ".ld-nav-button .nav-tag" in (WEB / "desktop-shell.css").read_text(encoding="utf-8")
+
+
+def test_de_confused_compare_and_trace_labels():
+    """Two entries called "compare" is a naming defect, not a design choice."""
+    copy = SHELL[SHELL.index("const COPY = {"):SHELL.index("const LEGACY")]
+    # the two nav labels must not both read "compare"
+    assert re.search(r"compare:'Сравнить два текста'", copy)
+    assert re.search(r"trace:'Анализ стиля \(Trace\)'", copy)
+    assert not re.search(r"(compare|trace):'Сравнить (документы|стиль)'", copy)
 
 
 def test_every_sidebar_route_is_handled_by_the_shell():
     """A nav button without a branch in activate()/navigate() is a dead link."""
     groups = nav_groups()
     routes = [r for rs in groups.values() for r in rs]
-    assert len(routes) >= 11, routes
+    assert len(routes) >= 9, routes
     # activate() renders standalone screens; navigate() opens the legacy dialogs (settings/licence).
     handler = SHELL[SHELL.index("function activate(next"):SHELL.index("nav.addEventListener('click'")]
     panes = pane_map()

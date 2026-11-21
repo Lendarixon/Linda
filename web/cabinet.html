@@ -1270,7 +1270,10 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
         const poll = setInterval(async () => { try { const pr = await api('/api/progress/' + pid); if (pr && pr.pct != null) { q.pct = pr.pct; renderBatch(); } } catch (e) { } }, 600);
         let d; try { d = await jpost('/api/detect', { batch: true, progress_id: pid, text: up.text, mode: $('bMode').value, title: q.file.name, filename: q.file.name, folder_id: $('bFolder').value || null }); } finally { clearInterval(poll); q.pct = 0; }
         const r = d.result; q.id = d.history_id; q.verdict = r.verdict; q.auth = (r.authorship || {}).label || '';
-        const s = r.sentences || [], tot = s.reduce((a, x) => a + nowords(x.text), 0) || 1; q.share = Math.round(s.filter(x => x.label === 'ai').reduce((a, x) => a + nowords(x.text), 0) / tot * 100) + '%';
+        // Client bug 6: "AI 0%" beside a verdict of "AI" read as a defect. The share is a
+        // sentence-markup measure, so with no markup show a dash, not a misleading zero.
+        const s = r.sentences || [], tot = s.reduce((a, x) => a + nowords(x.text), 0) || 1;
+        q.share = s.length ? Math.round(s.filter(x => x.label === 'ai').reduce((a, x) => a + nowords(x.text), 0) / tot * 100) + '%' : '—';
         try { const an = await jpost('/api/analytics', { text: up.text, sentences: s }); q.burst = an.burstiness; q.div = an.lexical_diversity; } catch (e) { }
         q.state = 'done'; q.msg = q.id ? T('q_saved') : T('q_done_history_off');
       } catch (err) { q.state = stop ? 'queued' : 'error'; q.msg = stop ? '' : err.message; }

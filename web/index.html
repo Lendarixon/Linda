@@ -885,8 +885,11 @@ html[data-ui="simple"][data-detail="1"] #svMore{display:none}
 .sv-title{font-size:1.15rem;font-weight:600;margin-bottom:6px}.sv-adv{color:var(--text-muted);font-size:.92rem}
 .sv-warn{margin-top:8px;color:var(--uncertain);font-size:.85rem}.sv .lp-btn{margin-top:12px}
 .ui-sw{display:inline-flex;margin-right:12px;vertical-align:middle}
-.ui-sw button{background:#202429;color:#b2b8bf;border:0;padding:5px 12px;font:600 .72rem inherit;letter-spacing:.06em;cursor:pointer}
-.ui-sw button:hover{background:#31363c}.ui-sw button.active{background:var(--cobalt,#2457d6);color:#fff}
+/* Client bug 2: these fills were hardcoded dark, so the light theme showed dark chips
+   on grey text. Tokenised; the active chip uses the ACTION pair (>= 4.5:1). */
+.ui-sw button{background:transparent;color:var(--text-muted);border:0;padding:5px 12px;min-height:32px;font:600 .72rem inherit;letter-spacing:.06em;cursor:pointer}
+.ui-sw button:hover{background:var(--raised);color:var(--text)}
+.ui-sw button.active{background:var(--primary);color:var(--on-primary)}
 .ui-sw{display:inline-flex}
 /* ТУР ПЕРВОГО ЗАПУСКА */
 .tour{position:fixed;inset:0;z-index:500;pointer-events:none}
@@ -1807,9 +1810,28 @@ function postCheckCancel(job, keepalive = false) {
   return fetch('/api/detect/cancel', {method:'POST', keepalive, headers:{'Content-Type':'application/json'}, body:JSON.stringify({job_id:job})});
 }
 let draftAllowed = false, draftRestored = false, draftTimer, draftRevision = 0;
+/* C-05 (client bug 10): the protected draft lives on the server, so an F5 with no backend
+   silently dropped the text. Mirror every edit into localStorage and restore from it whenever
+   the server copy is unavailable. */
+const DRAFT_KEY = 'linda_draft_v1';
+function saveLocalDraft() {
+  try {
+    if (!textInput.value) localStorage.removeItem(DRAFT_KEY);
+    else localStorage.setItem(DRAFT_KEY, textInput.value);
+    return true;
+  } catch (e) { return false; }
+}
+function restoreLocalDraft() {
+  try {
+    const local = localStorage.getItem(DRAFT_KEY);
+    if (local && !textInput.value) { textInput.value = local; textInput.dispatchEvent(new Event('input')); }
+    return !!local;
+  } catch (e) { return false; }
+}
 async function saveDraft(keepalive = false) {
   try {
     sessionStorage.removeItem('linda-draft');
+    saveLocalDraft();
     if (!draftAllowed || textInput.value.length > 1000000) return;
     const body = JSON.stringify({text:textInput.value,client_id:checkClient,revision:++draftRevision});
     await fetch('/api/draft/save', {method:'POST',keepalive:keepalive && new Blob([body]).size < 60000,headers:{'Content-Type':'application/json'},body});
@@ -1818,14 +1840,14 @@ async function saveDraft(keepalive = false) {
 async function restoreRestartDraft() {
   try {
     const response = await fetch('/api/draft/resume', {signal:AbortSignal.timeout(3000)});
-    if (!response.ok) return;
+    if (!response.ok) { restoreLocalDraft(); return; }
     const {draft} = await response.json();
-    if (!draftAllowed || !draft || !draft.text || textInput.value) return;
+    if (!draftAllowed || !draft || !draft.text || textInput.value) { restoreLocalDraft(); return; }
     textInput.value = draft.text;
     textInput.dispatchEvent(new Event('input'));
     await fetch('/api/draft/ack', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:draft.id})});
     await saveDraft();
-  } catch (e) { /* keep the restart draft for a later attempt */ }
+  } catch (e) { restoreLocalDraft(); }
 }
 textInput.addEventListener('input', () => { clearTimeout(draftTimer); draftTimer = setTimeout(saveDraft, 250); });
 window.addEventListener('pagehide', () => {
@@ -1855,6 +1877,31 @@ function cancelCheck(sendCancel = true) {
   statusIndicator.textContent = '';
   progHide();
 }
+/* C-04: the failure used to be a bare textContent write — no space before the message, no
+   retry, and pink-on-grey that failed AA. Render a flat banner with a real Retry. */
+function showAnalysisError(err) {
+  const box = document.getElementById('statusIndicator');
+  if (!box) return;
+  const msg = (err && err.message) ? err.message : String(err || '');
+  const t = (k, fb) => { try { const v = window.LINDA_T(k); return (v && v !== k) ? v : fb; } catch (e) { return fb; } };
+  box.textContent = '';
+  box.dataset.error = 'true';
+  const label = document.createElement('span');
+  label.textContent = t('ui_analysis_err', 'Analysis failed') + (msg ? ': ' + msg : '');
+  const retry = document.createElement('button');
+  retry.type = 'button';
+  retry.className = 'ld-retry';
+  retry.textContent = t('err_retry', 'Retry');
+  retry.addEventListener('click', () => {
+    box.dataset.error = 'false';
+    box.textContent = '';
+    const btn = document.getElementById('btnAnalyze');
+    if (btn) btn.click();
+  });
+  box.append(label, retry);
+  box.hidden = false;
+}
+
 async function runAnalysis() {
   if (uploadCtl) return;
   if (currentUploadBlock()) { preflightRefresh(); return; }
@@ -1909,7 +1956,7 @@ async function runAnalysis() {
     } else if (tb) { tb.done = true; renderTabs(); statusIndicator.textContent = ''; }  // проверка закончилась в фоновой вкладке: зелёная точка
   } catch (err) {
     if (err.name === 'AbortError' || myId !== checkSeq || err.message === 'cancelled') return;  // отменено нами: тихо
-    statusIndicator.textContent = window.LINDA_T('ui_analysis_err') + err.message;
+    showAnalysisError(err);
     statusIndicator.setAttribute('data-error', 'true');
     statusIndicator.setAttribute('role', 'alert');
   } finally {
@@ -2785,6 +2832,8 @@ window.LINDA_I18N = {"en":{"a_action_all":"All actions","a_action_batch":"Folder
     const d = s.download, setup = $('lpSetup');
     const busy = ['checking', 'downloading', 'verifying', 'applying', 'finishing'].includes(d.phase);
     setup.classList.toggle('show', !s.models_ready);
+    // Client bug 3: the shell's "Download models" CTA keys off this flag.
+    try { document.documentElement.dataset.modelsReady = s.models_ready ? '1' : '0'; } catch (e) { }
     // экран загрузки моделей прячется здесь, мимо show(): без пересчёта блокировка прокрутки (lp-lock) оставалась после смены набора моделей
     try { document.body.classList.toggle('lp-lock', ['lpSetup', 'lpLic', 'lpSet'].some(x => $(x) && $(x).classList.contains('show'))); } catch (e) { }
     if (!s.models_ready) {
@@ -3086,10 +3135,17 @@ window.LINDA_I18N = {"en":{"a_action_all":"All actions","a_action_batch":"Folder
     }
     const g = s && s.engine && s.engine.gpu; const o = $('qDev') && $('qDev').querySelector('option[value=cuda]'); if (o) o.disabled = !!(g && !g.available);
   }
-  document.querySelectorAll('#langSw button').forEach(b => b.onclick = async () => {
-    const l = b.dataset.l; window._langManual = false;
-    try { await post('/api/settings', { language: l }); } catch (e) { return; }
-    window.LINDA_setLang(l); renderedPrefs = ''; if (S) { render(S); } syncQuick(S);
+  /* Client bug 4: the switch waited for POST /api/settings and bailed silently when it failed,
+     so the UI only changed on a second click. Apply the language first, persist in background. */
+  document.querySelectorAll('#langSw button').forEach(b => b.onclick = () => {
+    const l = b.dataset.l;
+    if (!l) return;
+    window._langManual = true;
+    window.LINDA_setLang(l, true);
+    renderedPrefs = '';
+    if (S) { render(S); }
+    syncQuick(S);
+    post('/api/settings', { language: l }).catch(() => { });
   });
   [['qDev', 'device', v => v], ['qTheme', 'theme', v => v], ['qFont', 'font_scale', v => parseInt(v, 10)]].forEach(([id, key, f]) => { const el = $(id); if (el) el.onchange = async () => { try { const r = await post('/api/settings', { [key]: f(el.value) }); if (S) { S.settings = r.settings; window.LINDA_applyUi(r.settings); } } catch (e) { } }; });
   document.addEventListener('linda-i18n', () => syncQuick(S));

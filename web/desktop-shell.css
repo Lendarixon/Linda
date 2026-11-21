@@ -1,6 +1,6 @@
 /* Linda desktop workspace. Layout, tokens and controls follow the Linda brand site (lindarixon.github.io/Linda).
    Two naming schemes coexist: the app's legacy names (--bg/--bg-card/--text/...) and the site's (--surface/--ink/...). */
-html { --ld-nav-width:218px; --ld-control:44px; --radius:2px; }
+html { --ld-nav-width:224px; --ld-control:44px; --ld-control-sm:36px; --radius:0; }
 html:not([data-theme="light"]):not([data-theme="contrast"]) {
   --bg:#111418; --bg-card:#191c20; --bg-elevated:#202429;
   --border:#31363c; --text:#eceff2; --text-muted:#b2b8bf;
@@ -78,6 +78,15 @@ html[data-density="spacious"] body.ld-desktop { font-size:1.0625rem!important; }
 .ld-desktop button,.ld-desktop input,.ld-desktop select,.ld-desktop textarea { font-family:inherit; }
 .ld-desktop button { text-transform:none!important; letter-spacing:normal!important; font-weight:500; }
 .ld-desktop button:not(.tab):not(.lp-x):not(.btn-del-file):not(.cab-act):not(.ld-icon-button) { min-height:var(--ld-control); }
+/* C-07: exactly two control heights — 44px primary/nav, 36px secondary + rail. */
+.ld-desktop .btn-upload,
+.ld-desktop .ld-back,
+.ld-desktop .lp-btn.sec,
+.ld-desktop .cab-btn.sec,
+.ld-desktop .exp-fmt,
+.ld-desktop .ld-language,
+.ld-desktop .tabs-mode button,
+.ld-desktop .heatmap-switcher button { min-height:var(--ld-control-sm); }
 .ld-desktop button:focus-visible,.ld-desktop summary:focus-visible,.ld-desktop a:focus-visible,
 .ld-desktop [tabindex]:focus-visible { outline:2px solid var(--accent)!important; outline-offset:3px; }
 .ld-desktop input:focus-visible,.ld-desktop textarea:focus-visible,.ld-desktop select:focus-visible {
@@ -123,6 +132,11 @@ html[data-density="spacious"] body.ld-desktop { font-size:1.0625rem!important; }
 .ld-nav-button:hover { color:var(--text); background:var(--ld-hover); }
 .ld-nav-button[aria-current="page"] { background:var(--accent-light); color:var(--text); font-weight:600; }
 .ld-nav-button[aria-current="page"]::before { content:""; position:absolute; left:0; top:10px; bottom:10px; width:3px; background:var(--accent); }
+/* C-08: Pro tag on the two licensed tools + the info-link row that replaced their
+   About/Help rail entries. */
+.ld-nav-button .nav-tag { margin-left:auto; font-size:.625rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase; padding:1px 5px; border:1px solid var(--border); color:var(--text-muted); background:transparent; }
+.ld-nav-button[aria-current="page"] .nav-tag { border-color:var(--accent); color:var(--accent); }
+.ld-info-links { display:inline-flex; gap:8px; margin-left:auto; }
 .ld-nav-bottom { margin-top:auto; padding-top:20px; }
 .ld-desktop #licBadge {
   display:block; max-width:100%; white-space:normal; background:transparent!important;
@@ -171,7 +185,9 @@ html[data-density="spacious"] body.ld-desktop { font-size:1.0625rem!important; }
 .ld-desktop #textInput { width:100%; min-height:250px; height:29vh; max-height:55vh; font-size:.9375rem; line-height:1.7; padding:14px 16px; resize:vertical; border:1px solid var(--ld-line-strong); background:var(--bg); color:var(--text); border-radius:0; }
 .ld-desktop #textInput::placeholder { color:var(--text-muted); opacity:1; }
 .ld-desktop .preflight-panel { margin:0 0 16px; padding:10px 13px; border:1px solid var(--border); border-left:3px solid var(--accent); background:var(--bg); font-size:.8125rem; }
-.ld-recommendation { color:var(--text); margin:0!important; font-weight:500; }
+/* C-07: the 300-word note is a calm 13px line with an 8px --warning dot, not a banner. */
+.ld-recommendation { display:flex; align-items:flex-start; gap:8px; color:var(--text-muted); margin:0!important; font-weight:400; font-size:.8125rem; line-height:1.5; }
+.ld-recommendation::before { content:""; flex:none; width:8px; height:8px; margin-top:5px; background:var(--warning,#e1a035); }
 .ld-preflight-limit { color:var(--text-muted); font-size:.8125rem; margin:5px 0!important; line-height:1.6; }
 .ld-preflight-details { margin-top:4px; }
 .ld-preflight-details summary { color:var(--accent); cursor:pointer; font-size:.75rem; }
@@ -188,6 +204,9 @@ html[data-density="spacious"] body.ld-desktop { font-size:1.0625rem!important; }
 .ld-desktop #statusIndicator { flex:1 0 100%; font-size:.8125rem; white-space:normal; overflow-wrap:anywhere; }
 .ld-desktop #statusIndicator:empty { display:none; }
 .ld-desktop #statusIndicator[data-error="true"] { color:var(--ai); padding:10px 12px; border:1px solid var(--ai-border); background:var(--ai-bg); }
+.ld-desktop #statusIndicator[data-error="true"] { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:10px 14px; color:var(--ink); border:1px solid var(--border); border-left:4px solid var(--danger,var(--ai)); background:var(--danger-soft,var(--ai-bg)); font-size:.8125rem; line-height:1.5; }
+.ld-desktop #statusIndicator[data-error="true"] .ld-retry { flex:none; min-height:36px; padding:0 14px; font-size:.8125rem; font-weight:600; color:var(--ink); background:var(--surface); border:1px solid var(--line-strong); }
+.ld-desktop #statusIndicator[data-error="true"] .ld-retry:hover { background:var(--raised); }
 .ld-desktop .empty-state { display:block; min-height:0; height:auto; padding:0; margin:0; text-align:left; font-size:.875rem; border:0; }
 .ld-guide { padding:19px 18px; background:var(--bg-card); border:1px solid var(--border); }
 .ld-guide h2 { font-size:.9375rem; font-weight:600; margin:0 0 18px; }
@@ -274,6 +293,10 @@ html[data-theme="light"] .ld-desktop .tile span { color:rgba(255,255,255,.88); }
 .ld-desktop #lpSet .lp-foot button,.ld-desktop #lpLic .lp-foot button { flex:0 1 auto; min-width:130px; }
 .ld-desktop input[type="checkbox"],.ld-desktop input[type="radio"] { accent-color:var(--cobalt); width:17px; height:17px; flex:none; }
 .ld-tool-page { flex:1; min-height:0; overflow:auto; padding:24px 28px 40px; }
+/* Client bug 3: the models screen needs a visible way to get the models. */
+.ld-models-cta { max-width:950px; margin:0 0 20px; padding:16px 18px; background:var(--bg-card); border:1px solid var(--border); border-left:4px solid var(--id-blue); display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.ld-models-cta p { margin:0; color:var(--text); font-size:.875rem; flex:1 1 260px; }
+.ld-models-cta .lp-btn { flex:none; }
 .ld-desktop .ld-tool-page.panel-left { display:block!important; width:auto; border:0; background:var(--bg); }
 .ld-desktop .ld-tool-page .adv { display:block!important; max-width:950px; }
 .ld-desktop .ld-tool-page>#packCard,.ld-desktop .ld-tool-page>div { max-width:950px; }
