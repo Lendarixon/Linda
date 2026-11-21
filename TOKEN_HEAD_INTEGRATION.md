@@ -1,6 +1,12 @@
 # TOKEN_HEAD_INTEGRATION — v2 token heads in Linda-Pro (rc/2.4)
 
 Date: 2026-11-20. Branch `rc/2.4`, local commits only (no push).
+
+Commits: `63adf6a` (engine, tests, i18n, this report). The `linda_pro/voters.py` half
+(head loading, sidecar calibration, `token_head_info`) was committed concurrently in
+`bc37148` — a security-fix commit by another session that swept the working tree; the code
+is byte-identical to what is described here and `tests/test_backend_review_fixes.py` plus
+`tests/test_token_heads_v2.py` pass together (37 tests).
 Trained heads: `C:/Users/ninja/Desktop/детектор/tmp/tokenhead_20261120/` (`TRAIN_TOKEN_HEAD.md`).
 Pack: `tmp/linda14/gpu_20261120/finalpack/pack_141h` (not a repo artifact).
 
@@ -147,12 +153,15 @@ essay-en/essay-pl/(essay,pl-with-multi-en), refusal for multi/en, ru, v1 heads, 
 mismatch, `allow_tokens=False`, explicit modes, Lite independence, and an end-to-end
 auto-markup run asserting verdict invariance.
 
-Full suite (`python -m pytest tests -q`, CPU, 180 s): **641 passed, 11 failed**.
+Full suite (`python -m pytest tests -q`, CPU, 175 s): **641 passed, 13 failed**.
 
-The 11 failures are exactly the known environment-dependent set (updater / installer /
-Store-package tests that need a real Windows installer pipeline); every one of them also
-failed on `rc/2.4` before this change, and no new test fails. `test_license_api.py::
-test_download_through_api_and_settings`, which failed in the previous full run, passes here.
+12 of the 13 are the known environment-dependent set (updater / installer / Store-package
+tests that need a real Windows installer pipeline; `work/_known.txt`), every one of which
+also fails on `rc/2.4` before this change. The 13th is
+`test_collection.py::test_runtime_temp_is_ignored_before_scanning[True]`, which spawns a
+subprocess pytest with `timeout=30`: it passes in isolation and in a two-file run, and
+fails only under the load of the full 3-minute suite. Nothing in this change touches
+collection.
 
 *(Note: bare `pytest` at the repo root also collects `evidence/ui_overhaul_20261024/test_dependencies/`,
 a vendored numpy/colorama tree, and aborts collection. `pytest tests` is the suite the
