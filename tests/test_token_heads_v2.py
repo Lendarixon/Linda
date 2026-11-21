@@ -8,8 +8,9 @@ merely sits in the same directory. These tests pin:
   * load_token_head picks a v2 npz over the v1 one next to it only when it IS tok_head.npz,
     and never reads the backup;
   * a calibration sidecar overrides center/scale, and a bad sidecar does not;
-  * Engine.sentence_mode promotes auto markup to tokens for (essay, en), (essay, pl) and
-    (multi, pl) only — never for (multi, en) or ru — and leaves explicit modes alone.
+  * Engine.sentence_mode promotes auto markup to tokens for (essay, en), (essay, pl),
+    (multi, pl) and — since night/pack15 — (essay|multi, ru); never for (multi, en) —
+    and leaves explicit modes alone.
 """
 from __future__ import annotations
 
@@ -161,12 +162,23 @@ def test_auto_promotes_tokens_for_validated_pairs(tmp_path, monkeypatch, voice, 
     assert (eng.sentence_mode(300, det) == "tokens") is promoted
 
 
-@pytest.mark.parametrize("voice,lang", [("multi", "en"), ("multi", "pl"), ("essay", "ru")])
+@pytest.mark.parametrize("voice,lang", [("multi", "en")])
 def test_auto_keeps_context_path_for_unvalidated_pairs(tmp_path, monkeypatch, voice, lang):
-    """multi/en is below its all-positive ceiling; ru has no head at all."""
+    """multi/en is below its all-positive ceiling.
+
+    night/pack15 added (essay|multi, ru) to TOKEN_HEADS_V2, so RU is no longer the
+    "no head at all" example here — see test_auto_promotes_ru_v2_heads below.
+    """
     det = heads(None, tmp_path, voice, lang)
     eng = make_engine(monkeypatch, det)
     assert eng.sentence_mode(300, det) == "hybrid"
+
+
+def test_auto_promotes_ru_v2_heads(tmp_path, monkeypatch):
+    """night/pack15: calibrated RU v2 heads opt in to the token path like en/pl do."""
+    det = heads(None, tmp_path, "essay", "ru")
+    eng = make_engine(monkeypatch, det)
+    assert eng.sentence_mode(300, det) == "tokens"
 
 
 def test_auto_keeps_context_path_without_v2_head(tmp_path, monkeypatch):
