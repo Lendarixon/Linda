@@ -1087,7 +1087,7 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         pack = str((body or {}).get("pack") or "")
         if pack not in ("trace", "humanizer-lite", "humanizer-full", "humanizer-all"):
             return terr("err_bad_request", 400)
-        if core.job.running() or core.folder_lock.locked():
+        if core.job.running() or core.folder_lock.locked() or packs.job_snapshot().get("phase") == "running":
             return terr("err_download_running", 409)
 
         def _bg():
