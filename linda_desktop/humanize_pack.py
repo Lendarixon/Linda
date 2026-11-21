@@ -30,7 +30,9 @@ FULL_MEM_GB = 9.0    # 4B bf16 weights + working memory
 LITE_MEM_GB = 3.0    # 0.6B fp32 weights + working memory
 
 _lock = threading.Lock()
+_runtime_lock = threading.RLock()  # serializes ensure_runtime / unload / generate entry
 _backend = None  # HumanizerBackend | None
+_backend_busy = False  # True while a generate() call is in flight
 
 _RUNTIME_PKGS = ("torch", "transformers", "peft", "accelerate", "safetensors",
                  "huggingface_hub", "tokenizers")
@@ -81,50 +83,51 @@ def ensure_runtime(progress=None) -> Path:
     on first humanize instead of shipping 2+ ГБ. progress(text) gets stage notes.
     """
     global _RUNTIME_OK
-    if getattr(sys, "frozen", False):
-        # one-file bundle: дисковый _internal рядом с exe не в sys.path —
-        # там лежат torch/transformers/peft из сборки
-        disk_internal = str(Path(sys.executable).parent / "_internal")
-        if disk_internal not in sys.path and Path(disk_internal).is_dir():
-            sys.path.insert(0, disk_internal)
-    lib = runtime_dir()
-    lib.mkdir(parents=True, exist_ok=True)
-    if str(lib) not in sys.path:
-        sys.path.insert(0, str(lib))
-    if _RUNTIME_OK:
-        return lib
-    missing = [m for m in _RUNTIME_PKGS if not _have(m)]
-    if not missing:
-        _RUNTIME_OK = True
-        return lib
-    _note(progress, "humanizer: ставлю зависимости (%s)…" % ", ".join(missing))
-    cmds = []
-    if "torch" in missing:
-        cmd = [sys.executable, "-m", "pip", "install", "--target", str(lib), "--upgrade"]
-        if sys.platform == "win32":
-            cmd += ["--index-url", _TORCH_CPU_INDEX]
-        cmds.append(("humanizer: ставлю torch (CPU)…", cmd + ["torch"]))
-    rest = [m for m in missing if m != "torch"]
-    if rest:
-        cmds.append(("humanizer: ставлю %s…" % ", ".join(rest),
-                     [sys.executable, "-m", "pip", "install", "--target", str(lib), "--upgrade", *rest]))
-    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) if sys.platform == "win32" else 0
-    for stage, cmd in cmds:
-        _note(progress, stage)
-        try:
-            subprocess.run(cmd, check=True, stdout=subprocess.PIPE,
-                           stderr=subprocess.STDOUT, text=True, creationflags=flags)
-        except subprocess.CalledProcessError as e:
-            tail = (e.stdout or "")[-1000:]
-            raise RuntimeError(f"humanizer: pip не смог поставить зависимости ({tail.strip()}): "
-                               "нет интернета или нет места на диске") from e
-    importlib.invalidate_caches()
-    _note(progress, "humanizer: проверяю установку…")
-    still = [m for m in _RUNTIME_PKGS if not _have(m)]
-    if still:
-        details = "; ".join("%s (%s)" % (m, _import_error(m) or "?") for m in still)
-        raise RuntimeError(f"humanizer: зависимости не импортируются после установки ({details}): "
-                           "нет интернета или нет места на диске")
+    with _runtime_lock:
+        if getattr(sys, "frozen", False):
+            # one-file bundle: дисковый _internal рядом с exe не в sys.path —
+            # там лежат torch/transformers/peft из сборки
+            disk_internal = str(Path(sys.executable).parent / "_internal")
+            if disk_internal not in sys.path and Path(disk_internal).is_dir():
+                sys.path.insert(0, disk_internal)
+        lib = runtime_dir()
+        lib.mkdir(parents=True, exist_ok=True)
+        if str(lib) not in sys.path:
+            sys.path.insert(0, str(lib))
+        if _RUNTIME_OK:
+            return lib
+        missing = [m for m in _RUNTIME_PKGS if not _have(m)]
+        if not missing:
+            _RUNTIME_OK = True
+            return lib
+        _note(progress, "humanizer: ставлю зависимости (%s)…" % ", ".join(missing))
+        cmds = []
+        if "torch" in missing:
+            cmd = [sys.executable, "-m", "pip", "install", "--target", str(lib), "--upgrade"]
+            if sys.platform == "win32":
+                cmd += ["--index-url", _TORCH_CPU_INDEX]
+            cmds.append(("humanizer: ставлю torch (CPU)…", cmd + ["torch"]))
+        rest = [m for m in missing if m != "torch"]
+        if rest:
+            cmds.append(("humanizer: ставлю %s…" % ", ".join(rest),
+                         [sys.executable, "-m", "pip", "install", "--target", str(lib), "--upgrade", *rest]))
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) if sys.platform == "win32" else 0
+        for stage, cmd in cmds:
+            _note(progress, stage)
+            try:
+                subprocess.run(cmd, check=True, stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT, text=True, creationflags=flags)
+            except subprocess.CalledProcessError as e:
+                tail = (e.stdout or "")[-1000:]
+                raise RuntimeError(f"humanizer: pip не смог поставить зависимости ({tail.strip()}): "
+                                   "нет интернета или нет места на диске") from e
+        importlib.invalidate_caches()
+        _note(progress, "humanizer: проверяю установку…")
+        still = [m for m in _RUNTIME_PKGS if not _have(m)]
+        if still:
+            details = "; ".join("%s (%s)" % (m, _import_error(m) or "?") for m in still)
+            raise RuntimeError(f"humanizer: зависимости не импортируются после установки ({details}): "
+                               "нет интернета или нет места на диске")
     _RUNTIME_OK = True
     return lib
 
@@ -540,9 +543,13 @@ def resolve_info(variant: str = "auto") -> dict:
 
 
 def unload() -> None:
-    with _lock:
-        if _backend is not None:
-            _backend.unload()
+    global _backend, _backend_busy
+    with _runtime_lock:
+        if _backend_busy:
+            return  # a generate() is in flight; refuse to yank the model mid-run
+        with _lock:
+            if _backend is not None:
+                _backend.unload()
 
 
 def loaded_variant() -> str | None:
@@ -569,8 +576,17 @@ def humanize(text: str, spans=None, mode: str = "all", variant: str = "auto",
         ranges = stylize_core.validate_spans(text, spans)
 
     def gen(cs, n):
-        assert _backend is not None
-        return _backend.generate(cs, n)
+        global _backend_busy
+        with _runtime_lock:
+            backend = _backend
+            if backend is None:
+                raise RuntimeError("humanizer backend is not loaded")
+            _backend_busy = True
+        try:
+            return backend.generate(cs, n)
+        finally:
+            with _runtime_lock:
+                _backend_busy = False
 
     if ranges is not None:
         res = stylize_core.stylize_text(text, ranges, gen, 4)

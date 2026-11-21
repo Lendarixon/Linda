@@ -42,16 +42,99 @@ def check_cancel() -> None:
         raise Cancelled()
 
 
+def token_head_calibration_file(model_dir):
+    """The optional sidecar that retunes an installed head without rewriting the npz.
+
+    Looked up next to the head (`tok_head_calibration.json`) and in the pack's own
+    `calibration/` directory (`token_heads_v2.json`, two levels up from models/<voice>),
+    so a pack can ship one table for every voice.
+    """
+    md = Path(model_dir)
+    for p in (md / "tok_head_calibration.json",
+              md.parent.parent / "calibration" / "token_heads_v2.json"):
+        if p.is_file():
+            return p
+    return None
+
+
+def _head_calibration(model_dir, voice=None, lang=None):
+    """(center, scale) from the sidecar for this voice/lang, or None.
+
+    Only calibrated values accepted: finite center, positive finite scale. A sidecar that
+    does not name the voice/lang leaves the head's own center/scale in force.
+    """
+    p = token_head_calibration_file(model_dir)
+    if p is None or not voice or not lang:
+        return None
+    try:
+        table = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    head = (table.get("heads") or {}).get(f"{voice}_{lang}")
+    if not isinstance(head, dict):
+        return None
+    try:
+        center, scale = float(head["center"]), float(head["scale"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if not (math.isfinite(center) and math.isfinite(scale)) or scale <= 0:
+        return None
+    return center, scale
+
+
 def load_token_head(model_dir):
-    """Load the small calibrated head without importing torch."""
+    """Load the small calibrated head without importing torch.
+
+    The npz may carry `schema`, `voice` and `lang` keys (heads built after
+    2026-11-20 do). When it names its voice/lang, a calibration sidecar
+    (`tok_head_calibration.json` next to the head, or the pack's
+    `calibration/token_heads_v2.json`) overrides center/scale, so thresholds can be
+    retuned without rewriting the weights. Heads without those keys load exactly as
+    before.
+    """
     with np.load(Path(model_dir) / "tok_head.npz", allow_pickle=False) as f:
         head = {k: f[k].astype(np.float32 if k in ("w", "b") else np.float64) for k in ("w", "b", "center", "scale")}
         head["conv"] = f["conv"].astype(np.float32) if "conv" in f else np.ones(1, np.float32)
+        head["schema"] = int(f["schema"]) if "schema" in f.files else 1
+        for key in ("voice", "lang"):
+            if key in f.files:
+                head[key] = str(f[key].item() if getattr(f[key], "shape", ()) == () else f[key].tolist()[0])
     if (head["w"].ndim != 1 or head["conv"].ndim != 1 or not len(head["conv"])
-            or len(head["conv"]) % 2 != 1 or any(not np.isfinite(v).all() for v in head.values())
+            or len(head["conv"]) % 2 != 1 or any(not np.isfinite(head[k]).all() for k in ("w", "b", "center", "scale", "conv"))
             or any(head[k].size != 1 for k in ("b", "center", "scale")) or float(head["scale"]) <= 0):
         raise ValueError("Invalid calibrated token head")
+    calibrated = _head_calibration(model_dir, head.get("voice"), head.get("lang"))
+    if calibrated is not None:
+        head["center"], head["scale"] = np.float64(calibrated[0]), np.float64(calibrated[1])
+        head["calibration_source"] = "sidecar"
+    else:
+        head["calibration_source"] = "npz"
+    # `calibrated` means a usable (center, scale) is in force — the validation above
+    # guarantees it on every successful load. It does not say which file won.
+    head["calibrated"] = True
     return head
+
+
+def token_head_info(model_dir):
+    """Identity of the installed head, or None when the directory has none.
+
+    Everything the app needs to decide whether auto markup may use tokens for this
+    voice/language: the schema (v2 = the validated heads), the voice/lang the head was
+    trained for, and the calibrated center/scale actually in force (sidecar applied).
+    A head that cannot be read reports `schema: 1` so callers keep the legacy path.
+    """
+    if not (Path(model_dir) / "tok_head.npz").is_file():
+        return None
+    try:
+        h = load_token_head(model_dir)
+    except (OSError, ValueError):
+        return {"schema": 1, "voice": None, "lang": None, "calibrated": False,
+                "calibration_source": None, "center": math.nan, "scale": math.nan,
+                "error": "unreadable"}
+    return {"schema": int(h.get("schema", 1)), "voice": h.get("voice"), "lang": h.get("lang"),
+            "calibrated": bool(h.get("calibrated")), "calibration_source": h.get("calibration_source"),
+            "center": float(h["center"]), "scale": float(h["scale"])}
+
 
 
 def apply_token_head(hidden, head):
@@ -511,6 +594,7 @@ class SpeedOnnx:
         cls_id = self.tok.token_to_id("<s>")
         sep_id = self.tok.token_to_id("</s>")
         pad_id = self.tok.token_to_id("<pad>")
+        cls_id, sep_id, pad_id = self._special(cls_id, sep_id, pad_id)
         total = np.zeros(len(enc.ids), dtype=np.float64)
         count = np.zeros(len(enc.ids), dtype=np.int64)
         for b in range(0, len(starts), self.batch):

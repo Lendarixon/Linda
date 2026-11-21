@@ -1124,7 +1124,7 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         pack = str((body or {}).get("pack") or "")
         if pack not in ("trace", "humanizer-lite", "humanizer-full", "humanizer-all"):
             return terr("err_bad_request", 400)
-        if core.job.running() or core.folder_lock.locked() or packs.job_snapshot().get("phase") == "running":
+        if core.job.running() or core.folder_lock.locked() or not packs.try_start(pack):
             return terr("err_download_running", 409)
 
         def _bg():
@@ -1222,12 +1222,18 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
 
     @api.get("/api/trace/corpora")
     def trace_corpora_list():
+        denied = licensing.check_licensed("trace")
+        if denied:
+            return terr("err_need_license", 403)
         from . import trace_corpora  # noqa: PLC0415
 
         return {"status": "ok", "corpora": trace_corpora.list_corpora()}
 
     @api.get("/api/trace/corpora/{corpus_id}")
     def trace_corpora_get(corpus_id: str):
+        denied = licensing.check_licensed("trace")
+        if denied:
+            return terr("err_need_license", 403)
         from . import trace_corpora  # noqa: PLC0415
 
         c = trace_corpora.get_corpus(corpus_id)
@@ -1237,6 +1243,9 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
 
     @api.post("/api/trace/corpora")
     def trace_corpora_save(body: dict):
+        denied = licensing.check_licensed("trace")
+        if denied:
+            return terr("err_need_license", 403)
         from . import trace_corpora  # noqa: PLC0415
 
         b = body or {}
@@ -1253,6 +1262,9 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
 
     @api.delete("/api/trace/corpora/{corpus_id}")
     def trace_corpora_delete(corpus_id: str):
+        denied = licensing.check_licensed("trace")
+        if denied:
+            return terr("err_need_license", 403)
         from . import trace_corpora  # noqa: PLC0415
 
         try:

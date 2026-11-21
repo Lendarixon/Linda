@@ -25,7 +25,8 @@ def probe() -> dict:
 
 
 def job_snapshot() -> dict:
-    return dict(_pack_job)
+    with _pack_lock:
+        return dict(_pack_job)
 
 
 def _set_job(**kw) -> None:
@@ -52,12 +53,25 @@ def _poll_sizes(stop, variants):
         stop.wait(1.0)
 
 
+def try_start(pack: str) -> bool:
+    """Atomically mark the job as running; False when another download is active.
+
+    Callers must run packs.download(pack) right after a True result so the
+    check-and-start in the API handler is race-free.
+    """
+    with _pack_lock:
+        if _pack_job["phase"] == "running":
+            return False
+        _pack_job.update(phase="running", pack=pack, done=0, total=100, error="")
+        return True
+
+
 def download(pack: str) -> dict:
     """Start (synchronously, caller threads it) downloading a pack. Returns final state."""
     from . import humanize_pack  # noqa: PLC0415
 
     with _pack_lock:
-        if _pack_job["phase"] == "running":
+        if _pack_job["phase"] == "running" and _pack_job["pack"] != pack:
             raise RuntimeError("another pack download is running")
         _pack_job.update(phase="running", pack=pack, done=0, total=100, error="")
     stop = None

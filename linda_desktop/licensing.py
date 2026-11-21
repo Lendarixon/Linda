@@ -243,7 +243,10 @@ def public_state(st: dict | None = None) -> dict:
             if datetime.fromisoformat(str(exp).replace("Z", "+00:00")) < datetime.now(timezone.utc):
                 active = False
         except Exception:  # noqa: BLE001
-            pass
+            # fail closed: an unparseable expires_at means we cannot prove the
+            # licence is still valid, so treat it as expired (dev mode exempt)
+            if not getattr(config, "DEV_INSTALLER_ENABLED", False):
+                active = False
     return {"licensed": active, "kind": st.get("kind", "purchase"), "tier": st.get("tier") if active else None, "key_hint": _mask(st["key"]) if st.get("key") else "",
             "status": status, "configured": bool(config.POLAR_ORG_ID)}
 
