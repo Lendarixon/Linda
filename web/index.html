@@ -2842,6 +2842,7 @@ window.LINDA_I18N = {"en":{"a_action_all":"All actions","a_action_batch":"Folder
     setup.classList.toggle('show', !s.models_ready);
     // Client bug 3: the shell's "Download models" CTA keys off this flag.
     try { document.documentElement.dataset.modelsReady = s.models_ready ? '1' : '0'; } catch (e) { }
+    try { if (window.LINDA_syncModelsCta) window.LINDA_syncModelsCta(busy); } catch (e) { }
     // экран загрузки моделей прячется здесь, мимо show(): без пересчёта блокировка прокрутки (lp-lock) оставалась после смены набора моделей
     try { document.body.classList.toggle('lp-lock', ['lpSetup', 'lpLic', 'lpSet'].some(x => $(x) && $(x).classList.contains('show'))); } catch (e) { }
     if (!s.models_ready) {
@@ -2859,7 +2860,8 @@ window.LINDA_I18N = {"en":{"a_action_all":"All actions","a_action_batch":"Folder
       $('lpSetupGo').setAttribute('data-i18n', goKey); $('lpSetupGo').textContent = T(goKey);
       $('lpSetupCancel').textContent = T('setup_pause');
       const storeRequired = up && up.distribution === 'store' && up.app_required;
-      $('lpSetupGo').disabled = !!storeRequired;
+      const dlBusy = ['checking', 'downloading', 'verifying', 'applying', 'finishing'].includes((s.download || {}).phase);
+      $('lpSetupGo').disabled = dlBusy || !!storeRequired;
       if (storeRequired) { $('lpSetupGo').style.display = 'none'; }
       if (s.update && s.update.app_required) { $('lpSetupErr').textContent = T(storeRequired ? 'banner_store_required' : 'banner_too_old'); }
     }
@@ -2883,7 +2885,9 @@ window.LINDA_I18N = {"en":{"a_action_all":"All actions","a_action_batch":"Folder
     else if (d.phase === 'done' && up && !up.weights_update) { text = ''; }
     ban.classList.toggle('show', !!text); ban.classList.toggle('warn', warn);
     $('lpBannerText').textContent = text; $('lpBannerBtn').style.display = btn ? '' : 'none'; $('lpBannerBtn').textContent = btn; $('lpBannerBtn').dataset.act = act || '';
-    $('lpBannerBtn').disabled = bannerActionPending || ij.phase === 'launching' || ij.phase === 'downloading';
+    $('lpBannerBtn').disabled = bannerActionPending || ij.phase === 'launching' || ij.phase === 'downloading' || busy;
+    // The sets/lists controls follow the same rule: nothing to press while a download owns the manifest.
+    try { if ($('lpSetsApply')) $('lpSetsApply').disabled = busy; } catch (e) { /* not in this page variant */ }
     // licence dialog state
     $('lpLicState').textContent = s.license.licensed ? T('lic_state_licensed', { tier: tierName(s.license.tier), hint: s.license.key_hint }) : (s.license.status === 'other_machine' ? T('lic_state_other') : s.license.status !== 'none' ? T('lic_state_invalid', { status: s.license.status }) : T('lic_state_none'));
     $('lpKeyRemove').style.display = s.license.key_hint ? '' : 'none';
@@ -2913,14 +2917,27 @@ window.LINDA_I18N = {"en":{"a_action_all":"All actions","a_action_batch":"Folder
     $('lpRecLite').textContent = ms.recommend === 'lite' ? T('sets_recommended') : ''; $('lpRecPro').textContent = ms.recommend === 'pro' ? T('sets_recommended') : '';
     if (!window.LINDA_setupChoice) { const sel = ms.selected || []; window.LINDA_setupChoice = sel.length === 2 ? 'both' : (sel[0] || ms.recommend || 'lite'); }
     document.querySelectorAll('input[name=lpSetupSet]').forEach(r => { r.checked = r.value === window.LINDA_setupChoice; });
+    // While a download runs the set cards must not change under the job that is already fetching the effective manifest.
+    const _busy = ['checking', 'downloading', 'verifying', 'applying', 'finishing'].includes(((s || {}).download || {}).phase);
+    document.querySelectorAll('input[name=lpSetupSet]').forEach(r => { r.disabled = _busy; });
   };
   document.querySelectorAll('input[name=lpSetupSet]').forEach(r => r.addEventListener('change', () => { window.LINDA_setupChoice = r.value; }));
+  // One download at a time: a second press while the job runs used to start (or 409-error) another one on every click.
+  window.LINDA_downloadBusy = function () {
+    const d = (S && S.download) || {};
+    return ['checking', 'downloading', 'verifying', 'applying', 'finishing'].includes(d.phase);
+  };
   $('lpSetupGo').onclick = async () => {
+    if (window.LINDA_downloadBusy()) { $('lpSetupErr').textContent = T('err_download_running'); return; }
+    $('lpSetupGo').disabled = true;
     try {
       const want = window.LINDA_setupChoice === 'both' ? ['pro', 'lite'] : [window.LINDA_setupChoice || 'pro'];
       const have = (S && S.model_sets && S.model_sets.selected) || [];
       if (want.join() !== have.join()) { await post('/api/models/sets', { sets: want }); } else { await post('/api/models/download'); }
+      const r = await fetch('/api/status', {signal:AbortSignal.timeout(8000)});
+      if (r.ok) render(await r.json());
     } catch (e) { $('lpSetupErr').textContent = e.message; }
+    finally { $('lpSetupGo').disabled = window.LINDA_downloadBusy(); }
   };
   window.LINDA_fillSets = function () {
     const ms = (S && S.model_sets) || {}, info = ms.info || {}, sel = ms.selected || [];
@@ -2934,10 +2951,16 @@ window.LINDA_I18N = {"en":{"a_action_all":"All actions","a_action_batch":"Folder
   $('lpSetsApply').onclick = async () => {
     const sets = [$('lpSetPro').checked && 'pro', $('lpSetLite').checked && 'lite'].filter(Boolean);
     if (!sets.length) { $('lpSetsMsg').textContent = T('sets_need_one'); return; }
+    if (window.LINDA_downloadBusy()) { $('lpSetsMsg').textContent = T('err_download_running'); return; }
     const sel = (S && S.model_sets && S.model_sets.selected) || [];
     if (sel.some(x => !sets.includes(x)) && !confirm(T('sets_remove_confirm'))) return;
     $('lpSetsApply').disabled = true;
-    try { await post('/api/models/sets', { sets }); $('lpSetsMsg').textContent = T('sets_applied'); } catch (e) { $('lpSetsMsg').textContent = e.message; } finally { $('lpSetsApply').disabled = false; }
+    try {
+      await post('/api/models/sets', { sets }); $('lpSetsMsg').textContent = T('sets_applied');
+      const r = await fetch('/api/status', {signal:AbortSignal.timeout(8000)});
+      if (r.ok) render(await r.json());
+    } catch (e) { $('lpSetsMsg').textContent = e.message; }
+    finally { $('lpSetsApply').disabled = window.LINDA_downloadBusy(); }
   };
   $('lpSetupCancel').onclick = () => post('/api/models/cancel');
   (function () {

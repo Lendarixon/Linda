@@ -90,7 +90,7 @@ class Core:
         self.job.apply_lock = self.engine.lock
         self.job.before_apply = self.engine.unload
         self._auto_tried: str | None = None
-        self.job.on_done = lambda m: (self.engine.unload(), self.preload())  # new weights: drop the old ones and, if enabled, load the new ones right away
+        self.job.on_done = self._on_download_done  # new weights: refresh the UI state, drop the old models, warm the new ones
         self.manifest: dict | None = None
         self.manifest_raw: bytes = b""
         self.update: dict | None = None
@@ -148,6 +148,33 @@ class Core:
                 self.update_pending = {"version": _st["version"], "staging": _st["staging"]}
         except Exception:  # noqa: BLE001
             pass
+
+    def _on_download_done(self, manifest: dict | None = None) -> None:
+        """A weights download finished: the cached status is stale until the next network check, so recompute it from the freshly installed
+        manifest. Without this the page kept offering the same download and every press started another full one."""
+        try:
+            if self.manifest is not None:
+                self.update = updater.update_status(self.manifest)
+        except Exception:  # noqa: BLE001 — status must not crash on a malformed state
+            pass
+        try:
+            self.engine.unload()
+            self.preload()
+        except Exception:  # noqa: BLE001
+            pass
+
+    def refresh_status(self) -> bool:
+        """Cheap self-heal for the cached status: if it still says weights are missing but every file of the effective manifest is on the disk,
+        recompute it from the installed manifest. The page polls /api/status and used to keep offering a download that had already finished."""
+        if self.manifest is None:
+            return False
+        try:
+            if (self.update or {}).get("weights_missing") and updater.is_complete(self.manifest):
+                self.update = updater.update_status(self.manifest)
+                return True
+        except Exception:  # noqa: BLE001
+            pass
+        return False
 
     def check_updates(self) -> None:
         try:
@@ -306,6 +333,7 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             except Exception:  # noqa: BLE001
                 pass
         pend = updater.pending_status()  # баннер «Перезапустите для обновления»
+        core.refresh_status()  # a finished download leaves the cached status saying "weights missing": heal it before answering
         rollback_msg = ""
         try:
             log = config.data_dir() / updater.ROLLBACK_LOG
@@ -360,9 +388,11 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         updater.remove_unselected()
         core.manifest = None
         core.check_updates()
-        if core.manifest is not None and (core.update or {}).get("weights_missing"):
+        core.refresh_status()
+        if core.manifest is not None and (core.update or {}).get("weights_missing") and not core.job.running() and updater.files_to_fetch(core.manifest):
             core.job.start(core.manifest, core.manifest_raw)
-        return {"status": "ok", "sets": sets}
+        core.refresh_status()
+        return {"status": "ok", "sets": sets, "download": core.job.snapshot()}
 
     @api.post("/api/models/download")
     def download():
@@ -372,6 +402,13 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             return err(core.update_error or ui18n.tr("err_cannot_reach", ui18n.resolve_lang(load_settings())), 502)
         if core.update and core.update.get("app_required"):
             return terr("err_app_too_old", 409)
+        if not updater.files_to_fetch(core.manifest):
+            # Nothing left to fetch: refresh the cached status and answer "up to date" instead of starting a job that re-verifies and
+            # re-applies the same files. This is what made the download button restart a "download" on every press.
+            core.refresh_status()
+            return {"status": "up_to_date"}
+        if core.job.running():
+            return terr("err_download_running", 409)
         need = float((core.update or {}).get("bytes_to_download") or 0)
         free = models_location.free_gb(Path(config.models_root()))
         if need and free * 2**30 < need * 1.15 + 1.5 * 2**30:  # models + a safety margin + the ONNX cache

@@ -188,6 +188,8 @@
       const setup=$('lpSetup');
       if(setup){setup.classList.add('show');document.body.classList.add('lp-lock');const go=$('lpSetupGo');if(go)go.focus();}
     });
+    // The CTA is a second entry point to the same download: it must read the job state, not start anything on its own.
+    window.LINDA_syncModelsCta=(busy)=>{const b=$('desktopModelsDl');if(b)b.disabled=!!busy;};
     const modelsMissing=()=>document.documentElement.dataset.modelsReady!=='1';
     for(const id of ['cabView','cabViewer','lpSet','lpLic'])workspace.append($(id));
     for(const id of ['cabView','lpSet','lpLic']){ $(id).setAttribute('role','region');$(id).removeAttribute('aria-modal'); }
