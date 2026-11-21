@@ -267,7 +267,7 @@ def main(argv: list[str] | None = None) -> int:
 
             webview.settings["ALLOW_DOWNLOADS"] = True  # без этого WebView2 молча отменяет скачивание отчётов (PDF/HTML/CSV/JSON/MD)
 
-            window = webview.create_window(f"{config.APP_NAME.replace('Linda-Pro', 'Linda')} {config.APP_VERSION}", url, width=1360, height=900, min_size=(980, 640), text_select=True, background_color='#0d0f14')
+            window = webview.create_window(config.APP_NAME.replace('Linda-Pro', 'Linda'), url, width=1360, height=900, min_size=(980, 640), text_select=True, background_color='#0d0f14')
             if os.name == 'nt':
                 from .window_recovery import install
                 install(window)
