@@ -367,6 +367,9 @@ class HumanizerBackend:
         self.variant: str | None = None
         self.tok = None
         self.model = None
+        # How many chunks share one padded generate() call (see generate()). Batching is
+        # where the GPU speed comes from; 4 keeps KV memory small on the 4B tier.
+        self.batch_chunks = 4
 
     def load(self, variant: str) -> str:
         ensure_runtime()
@@ -379,7 +382,11 @@ class HumanizerBackend:
         if variant == "full" and not torch.cuda.is_available():
             raise RuntimeError("humanizer-out-of-cpu: full (4B) работает только с GPU 8+ ГБ VRAM, выберите lite")
         free_ram = free_ram_gb()
-        need_free = 6.0 if variant == "full" else 1.5
+        # full lives in VRAM (bf16 weights, ~8.1 GB); host RAM only carries the fp32
+        # shards during load, so the old flat 6 GB gate refused to start full on a
+        # machine with 16 GB VRAM but <6 GB free RAM (measured: 13 GB free, ensure()
+        # silently fell back to lite and produced lite output under the "full" label).
+        need_free = 2.5 if variant == "full" else 1.5
         if free_ram and free_ram < need_free:
             raise RuntimeError(f"humanizer-low-memory: свободно RAM {free_ram:.1f} ГБ, нужно ~{need_free:.1f} ГБ для {variant}")
         if variant == "full" and torch.cuda.is_available():
@@ -443,19 +450,38 @@ class HumanizerBackend:
         assert self.model is not None and self.tok is not None, "humanizer not loaded"
         device = next(self.model.parameters()).device
         out = []
-        for chunk in chunks:
+        # Chunks are batched into ONE padded forward loop instead of one generate() per
+        # chunk: decoding n=4 sequences alone leaves the GPU ~90% idle on 0.6B/4B models,
+        # and a text of 900 words is 9-10 chunks. Measured on RX 9070 XT (ROCm): 2.6-4.6x
+        # faster for lite, 3.2-5.2x for full, with candidate acceptance equal or better.
+        # Very long texts are still split into groups so KV memory stays bounded.
+        batch_chunks = max(1, int(getattr(self, "batch_chunks", 4) or 4))
+        for start in range(0, len(chunks), batch_chunks):
             task_cancel.check()
-            msgs = [{"role": "system", "content": STYLE_SYSTEM},
-                    {"role": "user", "content": "<text>\n" + chunk + "\n</text>"}]
-            try:
-                ids = self.tok.apply_chat_template([msgs], tokenize=True, add_generation_prompt=True,
-                                                   return_tensors="pt", enable_thinking=False, return_dict=True)
-            except TypeError:
-                ids = self.tok.apply_chat_template([msgs], tokenize=True, add_generation_prompt=True,
-                                                   return_tensors="pt", return_dict=True)
-            inp, att = ids["input_ids"].to(device), ids["attention_mask"].to(device)
-            # Короткие входы: не даём раздувать генерацию до 1024 токенов на одно предложение.
-            max_new = min(512, int(inp.shape[1] * 1.3) + 32)
+            group = chunks[start:start + batch_chunks]
+            msgs = [[{"role": "system", "content": STYLE_SYSTEM},
+                     {"role": "user", "content": "<text>\n" + ck + "\n</text>"}] for ck in group]
+            row_ids, row_att = [], []
+            for m in msgs:
+                try:
+                    ids = self.tok.apply_chat_template([m], tokenize=True, add_generation_prompt=True,
+                                                       return_tensors="pt", enable_thinking=False,
+                                                       return_dict=True)
+                except TypeError:
+                    ids = self.tok.apply_chat_template([m], tokenize=True, add_generation_prompt=True,
+                                                       return_tensors="pt", return_dict=True)
+                row_ids.append(ids["input_ids"][0])
+                row_att.append(ids["attention_mask"][0])
+            width = max(int(x.shape[0]) for x in row_ids)
+            inp = torch.full((len(row_ids), width), self.tok.pad_token_id, dtype=torch.long)
+            att = torch.zeros((len(row_ids), width), dtype=torch.long)
+            for i, (x, a) in enumerate(zip(row_ids, row_att)):
+                inp[i, width - int(x.shape[0]):] = x
+                att[i, width - int(a.shape[0]):] = a
+            inp, att = inp.to(device), att.to(device)
+            # Короткие входы: не даём раздувать генерацию до 512 токенов на одно предложение.
+            max_new = min(512, int(width * 1.3) + 32)
+            del msgs
             try:
                 with torch.no_grad():
                     gen = self.model.generate(inp, attention_mask=att,
@@ -474,16 +500,18 @@ class HumanizerBackend:
                     raise RuntimeError("humanizer-out-of-memory: не хватило памяти при генерации, попробуйте lite или более короткий текст") from e
                 raise
             task_cancel.check()
-            variants, eos = [], self.tok.eos_token_id
+            eos = self.tok.eos_token_id
             try:
                 end = self.tok.convert_tokens_to_ids("<|im_end|>")
             except Exception:
                 end = None
-            for row in gen:
-                seq = row[inp.shape[1]:].tolist()
-                if eos in seq or (end is not None and end in seq):
-                    variants.append(self.tok.decode(seq, skip_special_tokens=True).strip())
-            out.append(variants)
+            for k in range(len(group)):
+                variants = []
+                for row in gen[k * n:(k + 1) * n]:
+                    seq = row[width:].tolist()
+                    if eos in seq or (end is not None and end in seq):
+                        variants.append(self.tok.decode(seq, skip_special_tokens=True).strip())
+                out.append(variants)
         return out
 
     def unload(self) -> None:
