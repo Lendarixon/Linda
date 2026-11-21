@@ -873,13 +873,21 @@ class Engine:
                         center, scale = float(head["center"]), float(head["scale"])
                     token_rows = _sentence_token_evidence(text, spans, scores, center, scale)
                     if getattr(self, "tier", "full") != "speed":
-                        # Multi must use its own tokenizer, token head and
-                        # calibration. Acquire it after finishing Essay: pools
-                        # may unload the first voter when admitting the second.
+                        # Multi keeps its own token head and calibration but no longer
+                        # runs its own token pass: the Essay token evidence is reused
+                        # and read through the Multi head's center/scale. A second
+                        # full pass through the other transformer cost as much as the
+                        # Essay pass, for a head this app already documents as
+                        # unvalidated (sentence_mode: the shipped Pro token head does
+                        # not separate human from AI sentences), and the two voices
+                        # token scores agree too weakly to justify it (0.29-0.49
+                        # correlation on shared tokens, work/bench_tokens_20261120.md).
+                        # Document verdicts never read these rows; sentence-level
+                        # Multi (hybrid/context/smooth/full) still runs its own pass.
                         multi_voter = det._factory("linda_multi_v2")
                         multi_head = load_token_head(multi_voter.model_dir)
                         multi_token_rows = _sentence_token_evidence(
-                            text, spans, multi_voter.token_scores(text),
+                            text, spans, scores,
                             float(multi_head["center"]), float(multi_head["scale"]))
                 except Cancelled:
                     raise
