@@ -661,7 +661,8 @@ class Engine:
     # 0.748/0.374 essay-pl, 0.708/0.320 multi-pl, negative-FPR 5.0% at p = 0.20.
     # multi-en (0.720/0.251) stays out: below its all-positive ceiling (0.529). RU has no
     # head at all (no RU training data), so RU keeps the context path by construction.
-    TOKEN_HEADS_V2 = {("essay", "en"), ("essay", "pl"), ("multi", "pl")}
+    TOKEN_HEADS_V2 = {("essay", "en"), ("essay", "pl"), ("multi", "pl"),
+                      ("essay", "ru"), ("multi", "ru")}  # night/pack15: RU v2 heads added
 
     def document_language(self, det, res: dict | None = None) -> str | None:
         """The language the head must match, or None when it cannot be established.
@@ -700,7 +701,7 @@ class Engine:
         voter = det._factory("linda_essay" if voice == "essay" else "linda_multi_v2")
         if not callable(getattr(voter, "token_scores", None)) or not getattr(voter, "has_token_scores", True):
             return None
-        info = token_head_info(voter.model_dir)
+        info = token_head_info(voter.model_dir, lang=lang)
         if not info or int(info.get("schema") or 1) < 2 or not info.get("calibrated"):
             return None
         if info.get("voice") != voice or info.get("lang") != lang:
@@ -943,7 +944,7 @@ class Engine:
                     if getattr(self, "tier", "full") == "speed":
                         center, scale = pe_c, pe_s
                     else:
-                        head = load_token_head(voter.model_dir)
+                        head = load_token_head(voter.model_dir, lang=self.document_language(det))
                         center, scale = float(head["center"]), float(head["scale"])
                     token_rows = _sentence_token_evidence(text, spans, scores, center, scale)
                     multi_col = None
@@ -966,7 +967,7 @@ class Engine:
                             text, spans, mscores, float(multi_info["center"]), float(multi_info["scale"]))
                     elif getattr(self, "tier", "full") != "speed":
                         multi_voter = det._factory("linda_multi_v2")
-                        multi_head = load_token_head(multi_voter.model_dir)
+                        multi_head = load_token_head(multi_voter.model_dir, lang=self.document_language(det))
                         multi_token_rows = _sentence_token_evidence(
                             text, spans, scores,
                             float(multi_head["center"]), float(multi_head["scale"]))
