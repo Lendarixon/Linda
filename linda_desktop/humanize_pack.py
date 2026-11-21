@@ -130,7 +130,21 @@ def ensure_runtime(progress=None) -> Path:
 
 
 def _trace_res() -> Path:
-    return Path(__file__).resolve().parent / "trace"
+    cands: list[Path] = []
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        cands.append(Path(meipass) / "linda_desktop" / "trace")
+    if getattr(sys, "frozen", False):
+        cands.append(Path(sys.executable).parent / "_internal" / "linda_desktop" / "trace")
+    cands.append(Path(__file__).resolve().parent / "trace")
+    for c in cands:
+        if (
+            (c / "humanizer_adapter_lite.safetensors").is_file()
+            or (c / "humanizer_adapter_full.safetensors").is_file()
+            or (c / "char_ngrams_model.json").is_file()
+        ):
+            return c
+    return cands[0] if cands else Path(__file__).resolve().parent / "trace"
 
 
 def variant_dirs(variant: str) -> dict:
@@ -218,7 +232,21 @@ def adapter_ready(variant: str) -> bool:
 
 
 def base_ready(variant: str) -> bool:
-    return (variant_dirs(variant)["base"] / "config.json").is_file()
+    base = variant_dirs(variant)["base"]
+    if not (base / "config.json").is_file():
+        return False
+    idx = base / "model.safetensors.index.json"
+    if idx.is_file():
+        try:
+            wmap = json.loads(idx.read_text(encoding="utf-8")).get("weight_map", {})
+            shards = set(wmap.values())
+            if not shards:
+                return False
+            return all((base / s).is_file() and (base / s).stat().st_size > 0 for s in shards)
+        except Exception:
+            return False
+    weights = [p for p in base.glob("*.safetensors") if p.is_file() and p.stat().st_size > 0]
+    return bool(weights)
 
 
 def installed(variant: str) -> bool:
@@ -242,16 +270,70 @@ def estimated_bytes(variant: str) -> int:
     return ESTIMATED_BYTES.get(variant, 1_400_000_000)
 
 
+def cleanup_duplicate_downloads(variant: str | None = None) -> list[str]:
+    """Remove stale .incomplete/.lock cache files for ready packs and duplicate pack dirs under packs/."""
+    import shutil  # noqa: PLC0415
+
+    packs_root = config.models_root() / "packs"
+    if not packs_root.is_dir():
+        return []
+    removed: list[str] = []
+    variants = (variant,) if variant in ("lite", "full") else ("lite", "full")
+    for v in variants:
+        d = variant_dirs(v)
+        if base_ready(v):
+            dl_cache = d["base"] / ".cache" / "huggingface" / "download"
+            if dl_cache.is_dir():
+                for f in list(dl_cache.glob("*.incomplete")) + list(dl_cache.glob("*.lock")):
+                    try:
+                        f.unlink()
+                        removed.append(str(f.relative_to(packs_root)))
+                    except OSError:
+                        pass
+        prefix = f"humanizer-{v}"
+        for entry in list(packs_root.iterdir()):
+            if entry.is_dir() and entry.name != prefix and (
+                entry.name.startswith(prefix + " ") or entry.name.startswith(prefix + "_")
+            ):
+                try:
+                    shutil.rmtree(entry)
+                    removed.append(entry.name)
+                except OSError:
+                    pass
+    return removed
+
+
 def download_base(variant: str, progress=None) -> Path:
-    """Fetch the base model from Hugging Face into the pack dir (resumable by hf_hub)."""
-    from huggingface_hub import snapshot_download  # noqa: PLC0415
+    """Fetch the base model from Hugging Face into the pack dir (idempotent, resumable by hf_hub)."""
+    import time  # noqa: PLC0415
 
     d = variant_dirs(variant)
+    if installed(variant):
+        _link_bundled_adapter(variant)
+        if not d["ready"].is_file():
+            try:
+                d["ready"].write_text(json.dumps({"variant": variant, "repo": base_repo(variant), "ts": time.time()}), encoding="utf-8")
+            except OSError:
+                pass
+        cleanup_duplicate_downloads(variant)
+        _note(progress, f"humanizer-{variant}: готово")
+        return d["base"]
+    from huggingface_hub import snapshot_download  # noqa: PLC0415
+
     d["base"].mkdir(parents=True, exist_ok=True)
     _note(progress, f"humanizer-{variant}: скачиваю базовую модель (~{estimated_bytes(variant) / 1e9:.1f} ГБ)…")
     snapshot_download(base_repo(variant), local_dir=str(d["base"]),
                       allow_patterns=["*.json", "*.safetensors", "*.txt", "*.model"])
+    if not base_ready(variant):
+        raise RuntimeError(f"humanizer-{variant}: download incomplete (missing model weights)")
     _link_bundled_adapter(variant)
+    if not adapter_ready(variant):
+        raise RuntimeError(f"humanizer-{variant}: bundled adapter missing")
+    try:
+        d["ready"].write_text(json.dumps({"variant": variant, "repo": base_repo(variant), "ts": time.time()}), encoding="utf-8")
+    except OSError:
+        pass
+    cleanup_duplicate_downloads(variant)
     if progress is not None:
         try:
             progress(f"humanizer-{variant}: готово")

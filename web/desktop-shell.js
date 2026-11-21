@@ -188,7 +188,9 @@
     const oldTools=header.lastElementChild;
     const headerTools=node('div','ld-header-tools','<span class="ld-local-badge"><i class="ld-local-dot"></i><span data-ld-text="local"></span></span><select class="ld-language" id="desktopLanguage"><option value="ru">Русский</option><option value="en">English</option><option value="pl">Polski</option></select>');
     header.append(headerTools);oldTools.hidden=true;
-    const statusbar=node('footer','ld-statusbar','<span data-ld-text="privacy"></span><span id="desktopServiceStatus"></span><span>Linda 2.3.0.1</span>');
+    const statusbar=node('footer','ld-statusbar','<span data-ld-text="privacy"></span><span id="desktopServiceStatus"></span><span id="desktopAppVersion"></span>');
+    const appVer=(window.LINDA_BOOT&&window.LINDA_BOOT.version)||'';
+    statusbar.querySelector('#desktopAppVersion').textContent=appVer?'Linda '+appVer:'Linda';
     statusbar.querySelector('#desktopServiceStatus').append($('devInfo'));document.body.append(statusbar);
     // Labelled editor and guidance before the action, without a wall of text.
     const editor=$('textInput'), inputHead=node('div','ld-input-head','<label for="textInput" data-ld-text="editor"></label><span data-ld-text="shortcut"></span>');
@@ -350,7 +352,7 @@
     $('btnAnalyze').after(stop);
     const task=node('button');task.id='desktopTask';task.type='button';task.hidden=true;statusbar.insertBefore(task,statusbar.querySelector('#desktopServiceStatus'));
     const globalStop=node('button');globalStop.id='desktopGlobalStop';globalStop.type='button';globalStop.hidden=true;task.after(globalStop);
-    task.onclick=()=>navigate(window.LINDA_tools.active[0]?.route||(!$('bCancel').disabled?'batch':'check'));
+    task.onclick=async()=>{const job=window.LINDA_tools.active[0];const target=job?.route||(!$('bCancel').disabled?'batch':'check');await navigate(target);const el=job?.key==='style'?($('styleProg')||$('stylePanel')):target==='humanize'?($('huProg')||$('huInfo')):target==='trace'?($('trProg')||$('trInfo')):target==='batch'?($('bProg')||$('bCancel')):($('statusIndicator')||$('btnAnalyze'));if(el&&el.scrollIntoView)el.scrollIntoView({behavior:'smooth',block:'center'});};
     function syncStop(){const checking=$('btnAnalyze').classList.contains('loading'),batch=!$('bCancel').disabled,jobs=window.LINDA_tools.active,busy=checking||batch||jobs.length;stop.hidden=!checking;task.hidden=!busy;globalStop.hidden=!busy;globalStop.disabled=!!jobs.length&&jobs.every(j=>j.stopping)&&!checking&&!batch;globalStop.textContent=window.LINDA_T(globalStop.disabled?'task_stopping':'task_stop');task.textContent=jobs.length||batch?window.LINDA_T('task_show'):(taskCopy[window.LINDA_LANG]||taskCopy.en);stop.textContent=stopCopy[window.LINDA_LANG]||stopCopy.en;}
     globalStop.onclick=()=>{if($('btnAnalyze').classList.contains('loading'))stop.click();if(!$('bCancel').disabled)$('bCancel').click();window.LINDA_tools.cancel().catch(()=>{globalStop.textContent=window.LINDA_T('task_retry_stop');});};
     stop.onclick=()=>{cancelCheck();$('statusIndicator').textContent=stoppedCopy[window.LINDA_LANG]||stoppedCopy.en;};

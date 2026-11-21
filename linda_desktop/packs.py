@@ -21,7 +21,7 @@ def probe() -> dict:
     from . import humanize_pack, licensing, trace_pack  # noqa: PLC0415
 
     return {"trace": trace_pack.status(), "humanizer": humanize_pack.status(),
-            "licensed": licensing.public_state()["licensed"]}
+            "licensed": licensing.public_state()["licensed"], "job": job_snapshot()}
 
 
 def job_snapshot() -> dict:
@@ -64,24 +64,23 @@ def download(pack: str) -> dict:
     poll = None
     try:
         if pack == "humanizer-lite":
-            import threading as _th
-
-            _set_job(total=humanize_pack.estimated_bytes("lite"))
-            stop, poll = _start_poll(["lite"])
-            humanize_pack.download_base("lite")
+            if not humanize_pack.installed("lite"):
+                _set_job(total=humanize_pack.estimated_bytes("lite"))
+                stop, poll = _start_poll(["lite"])
+                humanize_pack.download_base("lite")
+            else:
+                humanize_pack.download_base("lite")
         elif pack == "humanizer-full":
-            import threading as _th
-
-            _set_job(total=humanize_pack.estimated_bytes("full"))
-            stop, poll = _start_poll(["full"])
-            humanize_pack.download_base("full")
+            if not humanize_pack.installed("full"):
+                _set_job(total=humanize_pack.estimated_bytes("full"))
+                stop, poll = _start_poll(["full"])
+                humanize_pack.download_base("full")
+            else:
+                humanize_pack.download_base("full")
         elif pack == "humanizer-all":
-            import threading as _th
-
             _set_job(total=humanize_pack.estimated_bytes("lite") + humanize_pack.estimated_bytes("full"))
             stop, poll = _start_poll(["lite", "full"])
-            if not humanize_pack.installed("lite"):
-                humanize_pack.download_base("lite")
+            humanize_pack.download_base("lite")
             humanize_pack.download_base("full")
         elif pack == "trace":
             from . import trace_pack  # noqa: PLC0415
