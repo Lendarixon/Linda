@@ -3,6 +3,7 @@
 import json
 import sys
 import types
+from pathlib import Path
 
 import pytest
 import numpy as np
@@ -105,19 +106,22 @@ def _fake_ort(monkeypatch, captured):
     return seq
 
 
-def _disk(tmp_path, max_len=32, dtype="fp32", tokens=True):
+def _disk(tmp_path, max_len=32, dtype="fp32", tokens=True, batch="static1"):
     model = tmp_path / "m"
     model.mkdir(exist_ok=True)
     (model / "train_args.json").write_text(json.dumps({"max_len": max_len}), encoding="utf-8")
     cache_root = tmp_path / "cache"
-    for sub in ("m", "fp32_stable_v1/m"):
+    for sub in ("m", "fp32_stable_v1/m", "fp32_stable_b1/m"):
         c = cache_root / sub
         c.mkdir(parents=True, exist_ok=True)
         (c / "model.onnx").write_bytes(b"fake")
-        (c / "meta.json").write_text(json.dumps({"max_len": max_len, "dtype": dtype}), encoding="utf-8")
+        meta = {"max_len": max_len, "dtype": dtype}
+        if sub.startswith("fp32_stable_b1"):
+            meta["batch"] = batch
+        (c / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
         if tokens:
             (c / "model_tok.onnx").write_bytes(b"fake")
-            (c / "meta_tok.json").write_text(json.dumps({"max_len": max_len, "dtype": dtype}), encoding="utf-8")
+            (c / "meta_tok.json").write_text(json.dumps(meta), encoding="utf-8")
     return model, cache_root
 
 
@@ -145,9 +149,52 @@ def test_stable_cache_is_isolated(tmp_path):
     model, cache_root = _disk(tmp_path)
     s = onnx_gpu.OnnxSeqCls(model, cache_root, stable=True)
     legacy = onnx_gpu.OnnxSeqCls(model, cache_root)
-    assert s.cache == cache_root / "fp32_stable_v1" / "m"
+    assert s.cache == cache_root / "fp32_stable_b1" / "m"
     assert s.cache != legacy.cache
     assert s.fp16 is False
+
+
+def test_stable_freezes_the_batch_axis(tmp_path):
+    """One window per run: a symbolic batch axis keeps DeBERTa's shape plumbing on the GPU (measured 1.7-3.2x)."""
+    model, cache_root = _disk(tmp_path)
+    assert onnx_gpu.OnnxSeqCls(model, cache_root, stable=True).static_batch is True
+    assert onnx_gpu.OnnxSeqCls(model, cache_root, stable=True, max_batch=1).static_batch is True
+    # A caller that really batches keeps the dynamic graph and the old namespace.
+    b = onnx_gpu.OnnxSeqCls(model, cache_root, stable=True, max_batch=4)
+    assert b.static_batch is False and b.cache == cache_root / "fp32_stable_v1" / "m"
+    assert onnx_gpu.OnnxSeqCls(model, cache_root).static_batch is False
+
+
+def test_export_freezes_batch_only_when_asked(tmp_path, monkeypatch):
+    import types as _types
+    captured = {}
+
+    def fake_export(model, args, path, **kw):
+        captured.update(kw)
+        Path(path).write_bytes(b"graph")
+
+    torch = _types.ModuleType("torch")
+    torch.long = "int64"
+    torch.ones = lambda shape, dtype=None: np.ones(shape, dtype=np.int64)
+    torch.no_grad = __import__("contextlib").nullcontext
+    torch.onnx = _types.SimpleNamespace(export=fake_export)
+    class _M:
+        def eval(self): return self
+        def float(self): return self
+        def half(self): return self
+        def __call__(self, *a): return None
+    transformers = _types.ModuleType("transformers")
+    transformers.AutoModelForSequenceClassification = _types.SimpleNamespace(
+        from_pretrained=lambda _p: _M())
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "torch", torch)
+        m.setitem(sys.modules, "transformers", transformers)
+        onnx_gpu.export(tmp_path / "m", tmp_path / "o", 32, static_batch=True)
+        assert "dynamic_axes" not in captured
+        assert json.loads((tmp_path / "o" / "meta.json").read_text())["batch"] == "static1"
+        onnx_gpu.export(tmp_path / "m", tmp_path / "o2", 32)
+        assert captured["dynamic_axes"]["input_ids"] == {0: "batch"}
+        assert json.loads((tmp_path / "o2" / "meta.json").read_text())["batch"] == "dynamic"
 
 
 def test_stable_sets_deterministic_both_sessions(tmp_path, monkeypatch):
@@ -168,7 +215,7 @@ def test_stable_sets_deterministic_both_sessions(tmp_path, monkeypatch):
         assert providers[1] == "CPUExecutionProvider"
     assert str(captured["sessions"][0][0]).endswith("model.onnx")
     assert str(captured["sessions"][1][0]).endswith("model_tok.onnx")
-    assert "fp32_stable_v1" in captured["sessions"][0][0]
+    assert "fp32_stable_b1" in captured["sessions"][0][0]
 
 
 def test_legacy_keeps_old_providers(tmp_path, monkeypatch):
