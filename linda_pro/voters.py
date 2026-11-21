@@ -82,7 +82,7 @@ def _head_calibration(model_dir, voice=None, lang=None):
     return center, scale
 
 
-def load_token_head(model_dir):
+def load_token_head(model_dir, lang=None):
     """Load the small calibrated head without importing torch.
 
     The npz may carry `schema`, `voice` and `lang` keys (heads built after
@@ -91,8 +91,14 @@ def load_token_head(model_dir):
     `calibration/token_heads_v2.json`) overrides center/scale, so thresholds can be
     retuned without rewriting the weights. Heads without those keys load exactly as
     before.
-    """
-    with np.load(Path(model_dir) / "tok_head.npz", allow_pickle=False) as f:
+
+    night/pack15: voice dirs shared by several languages (essay_l14m50/multi_l14m50
+    serve pl AND ru) keep the per-language head in `tok_head_<lang>.npz`; `lang`
+    (the document's language) selects it, falling back to `tok_head.npz`."""
+    name = "tok_head.npz" if lang is None else f"tok_head_{lang}.npz"
+    if lang is not None and not (Path(model_dir) / name).is_file():
+        name = "tok_head.npz"
+    with np.load(Path(model_dir) / name, allow_pickle=False) as f:
         head = {k: f[k].astype(np.float32 if k in ("w", "b") else np.float64) for k in ("w", "b", "center", "scale")}
         head["conv"] = f["conv"].astype(np.float32) if "conv" in f else np.ones(1, np.float32)
         head["schema"] = int(f["schema"]) if "schema" in f.files else 1
@@ -115,18 +121,22 @@ def load_token_head(model_dir):
     return head
 
 
-def token_head_info(model_dir):
+def token_head_info(model_dir, lang=None):
     """Identity of the installed head, or None when the directory has none.
 
     Everything the app needs to decide whether auto markup may use tokens for this
     voice/language: the schema (v2 = the validated heads), the voice/lang the head was
     trained for, and the calibrated center/scale actually in force (sidecar applied).
     A head that cannot be read reports `schema: 1` so callers keep the legacy path.
+    night/pack15: `lang` selects `tok_head_<lang>.npz` in shared voice dirs.
     """
-    if not (Path(model_dir) / "tok_head.npz").is_file():
+    name = "tok_head.npz" if lang is None else f"tok_head_{lang}.npz"
+    if lang is not None and not (Path(model_dir) / name).is_file():
+        name = "tok_head.npz"
+    if not (Path(model_dir) / name).is_file():
         return None
     try:
-        h = load_token_head(model_dir)
+        h = load_token_head(model_dir, lang=lang)
     except (OSError, ValueError):
         return {"schema": 1, "voice": None, "lang": None, "calibrated": False,
                 "calibration_source": None, "center": math.nan, "scale": math.nan,
