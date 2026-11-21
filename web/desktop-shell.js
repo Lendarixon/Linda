@@ -39,6 +39,7 @@
   window.addEventListener('pagehide',()=>{for(const job of toolJobs.values())fetch('/api/detect/cancel',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify({job_id:job.id})}).catch(()=>{});});
   const COPY = {
     ru: {
+      pack_need_models:'Установите модели проверки, чтобы работать без интернета.', pack_dl_models:'Скачать модели', pro_tag:'Pro',
       work:'Проверка', tools:'Анализ и стиль', app:'Система',
       check:'Проверить текст', check_desc:'Вставьте текст или откройте документ. Linda оценит признаки ИИ и подсветит фрагменты.',
       history:'История проверок', history_desc:'Сохранённые тексты и результаты. Откройте проверку, чтобы вернуться к ней.',
@@ -73,6 +74,7 @@
       basic:'Начать проверку', open_models:'Открыть модели и пакеты',
     },
     en: {
+      pack_need_models:'Install the checking models to work offline.', pack_dl_models:'Download models', pro_tag:'Pro',
       work:'Check', tools:'Analysis and style', app:'System',
       check:'Check text', check_desc:'Paste text or open a document. Linda estimates AI signals and highlights passages.',
       history:'Check history', history_desc:'Saved texts and results. Open a check to continue where you left off.',
@@ -107,6 +109,7 @@
       basic:'Start a check', open_models:'Open models and packages',
     },
     pl: {
+      pack_need_models:'Zainstaluj modele sprawdzające, aby pracować offline.', pack_dl_models:'Pobierz modele', pro_tag:'Pro',
       work:'Sprawdzanie', tools:'Analiza i styl', app:'System',
       check:'Sprawdź tekst', check_desc:'Wklej tekst lub otwórz dokument. Linda oceni oznaki AI i zaznaczy fragmenty.',
       history:'Historia sprawdzeń', history_desc:'Zapisane teksty i wyniki. Otwórz sprawdzenie, aby do niego wrócić.',

@@ -75,8 +75,8 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
 /* Локальный прогресс инструментов (humanize/Trace): полоса + подпись; busy = неопределённая shimmer-анимация */
 .cab-lp { display:flex; align-items:center; gap:10px; margin:8px 0; }
 .cab-lp[hidden] { display:none; }
-.cab-lp .cab-lp-bar { flex:1 1 auto; min-width:120px; height:8px; background:#202429; border-radius:4px; overflow:hidden; }
-.cab-lp .cab-lp-bar > i { display:block; height:100%; width:0; background:var(--accent); border-radius:4px; transition:width .3s ease; }
+.cab-lp .cab-lp-bar { flex:1 1 auto; min-width:120px; height:8px; background:#202429; border-radius:0; overflow:hidden; }
+.cab-lp .cab-lp-bar > i { display:block; height:100%; width:0; background:var(--accent); border-radius:0; transition:width .3s ease; }
 .cab-lp .cab-lp-bar.busy > i { width:100%!important; background:linear-gradient(90deg,var(--accent) 25%,#8fb0ff 50%,var(--accent) 75%); background-size:200% 100%; animation:lp-shimmer 1.2s linear infinite; }
 .cab-lp > span { font-size:.8rem; color:var(--text-muted); white-space:nowrap; }
 .cab-lock { margin:8px 0; }
@@ -1344,7 +1344,7 @@ table.cab-tbl { width:100%; border-collapse:collapse; font-size:.84rem; }
     const el = $('mDocList'); if (!el) return;
     if (!mAddedDocs.length) { el.innerHTML = ''; return; }
     el.innerHTML = '<div class="cab-row" style="flex-wrap:wrap;gap:6px">' +
-      mAddedDocs.map((d, i) => `<span class="cab-note" style="display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border:1px solid var(--cab-bdr,#444);border-radius:3px">${esc(d.title)} (${d.words} w) <button type="button" class="cab-btn sec" data-rm-mdoc="${i}" style="padding:0 6px;min-height:0;line-height:1.3">×</button></span>`).join('') +
+      mAddedDocs.map((d, i) => `<span class="cab-note" style="display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border:1px solid var(--cab-bdr,#444);border-radius:0} (${d.words} w) <button type="button" class="cab-btn sec" data-rm-mdoc="${i}" style="padding:0 6px;min-height:0;line-height:1.3">×</button></span>`).join('') +
       `<button type="button" class="cab-btn sec" id="mClearDocs" style="padding:2px 8px;min-height:0">${esc(T('cmp_clear_files') || 'Clear')}</button></div>`;
     el.querySelectorAll('[data-rm-mdoc]').forEach(b => b.onclick = () => { mAddedDocs.splice(+b.dataset.rmMdoc, 1); renderManyDocs(); });
     const clr = $('mClearDocs'); if (clr) clr.onclick = () => { mAddedDocs = []; renderManyDocs(); };

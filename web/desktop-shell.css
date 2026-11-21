@@ -9,7 +9,7 @@ html:not([data-theme="light"]):not([data-theme="contrast"]) {
   /* site tokens (same values, site names) */
   --surface:#191c20; --raised:#202429; --sunken:#0b0d11; --line:#31363c;
   --header:#111418; --ink:#eceff2; --muted:#b2b8bf;
-  --primary:#1364b0; --primary-hover:#2975c2; --on-primary:#fff;
+  --primary:#1364b0; --primary-hover:var(--primary-hover); --on-primary:#fff;
   --id-blue:#1364b0; --id-teal:#00787a; --id-violet:#6a51a4; --id-orange:#a14206;
   --id-magenta:#954074; --id-green:#137738; --id-slate:#4d5969;
   --success-fill:#03a14a; --warning-fill:#e19b1b; --danger-fill:#d9544b;
@@ -102,7 +102,7 @@ html[data-density="spacious"] body.ld-desktop { font-size:1.0625rem!important; }
 .ld-desktop .model-card,.ld-desktop .tile,.ld-desktop .lp-card,.ld-desktop .ld-language,
 .ld-desktop .btn-analyze,.ld-desktop .cab-btn,.ld-desktop .lp-btn,.ld-desktop .ld-back,
 .ld-desktop #textInput,.ld-desktop .lp-input,.ld-desktop .cab-in,.ld-desktop .cab-sel {
-  border-radius:var(--radius)!important;
+  border-radius:0;
 }
 .ld-desktop .header {
   flex:none; position:relative; display:flex; justify-content:space-between; gap:20px;
