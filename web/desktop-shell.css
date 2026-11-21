@@ -19,6 +19,8 @@ html:not([data-theme="light"]):not([data-theme="contrast"]) {
   --human:#03a14a; --human-deep:#056c3a; --human-bg:rgba(3,161,74,.14); --human-border:rgba(3,161,74,.45);
   --uncertain:#e19b1b; --uncertain-deep:#a06c00; --uncertain-bg:rgba(225,155,27,.13); --uncertain-border:rgba(225,155,27,.42);
   --steel:#4d5969; --teal:#00787a; --teal-deep:#00787a; --purple:#6a51a4; --green:#137738;
+  /* Fixer C: ink for the white-on-colour fills that fail AA with #fff (dark --ai 3.30:1) */
+  --verdict-ink:#fff;
 }
 html[data-theme="light"] {
   --bg:#f3f5f7; --bg-card:#fff; --bg-elevated:#ebeef2;
@@ -37,6 +39,7 @@ html[data-theme="light"] {
   --human:#0d7a3e; --human-deep:#0d7a3e; --human-bg:rgba(13,122,62,.10); --human-border:rgba(13,122,62,.40);
   --uncertain:#8f5f00; --uncertain-deep:#8f5f00; --uncertain-bg:rgba(143,95,0,.14); --uncertain-border:rgba(143,95,0,.40);
   --steel:#4d5969; --teal:#00787a; --teal-deep:#00787a; --purple:#6a51a4; --green:#137738;
+  --verdict-ink:#fff;
 }
 html[data-theme="contrast"] {
   --bg:#000; --bg-card:#000; --bg-elevated:#111; --border:#fff;
@@ -50,15 +53,29 @@ html[data-theme="contrast"] {
   --success-fill:#7bff9e; --warning-fill:#ffb020; --danger-fill:#ff8080;
   /* verdict colours in the accessibility theme: >= 7:1 on #000 and on #161616 (--ai was #ff6b6b = 6.80:1 on the elevated tile) */
   --ai:#ff8080; --ai-deep:#b03a30; --ai-bg:rgba(255,128,128,.18); --ai-border:#ff8080;
-  --human:#7bff9e; --human-deep:#00692f; --human-bg:rgba(123,255,158,.16); --human-border:#7bff9e;
-  --uncertain:#ffb020; --uncertain-deep:#8f5f00; --uncertain-bg:rgba(255,176,32,.16); --uncertain-border:#ffb020;
+  --human:#7bff9e; --human-deep:#7bff9e; --human-bg:rgba(123,255,158,.16); --human-border:#7bff9e;
+  --uncertain:#ffb020; --uncertain-deep:#ffb020; --uncertain-bg:rgba(255,176,32,.16); --uncertain-border:#ffb020;
+  /* black ink on the bright fills: the contrast accessibility theme keeps #000 */
+  --verdict-ink:#000;
 }
 /* accent variants must never override the contrast accessibility theme */
 html:not([data-theme="contrast"])[data-accent="cobalt"] { --cobalt:#1364b0; --accent:#82bcfc; --accent-light:rgba(130,188,252,.14); }
+/* Fixer C (2026-11-21): dark-theme accent presets carry :not([data-theme="light"]) too —
+   specificity (0,3,1), one above the dark base block — so all 8 accents resolve in dark. */
+html:not([data-theme="contrast"])[data-accent="teal"]:not([data-theme="light"]) { --cobalt:#00787a; --accent:#5ecbcb; --accent-light:rgba(0,120,122,.18); }
+html:not([data-theme="contrast"])[data-accent="green"]:not([data-theme="light"]) { --cobalt:#137738; --accent:#88ca95; --accent-light:rgba(19,119,56,.18); }
+html:not([data-theme="contrast"])[data-accent="orange"]:not([data-theme="light"]),
+html:not([data-theme="contrast"])[data-accent="amber"]:not([data-theme="light"]) { --cobalt:#a14206; --accent:#eca47f; --accent-light:rgba(161,66,6,.18); }
+html:not([data-theme="contrast"])[data-accent="purple"]:not([data-theme="light"]) { --cobalt:#6a51a4; --accent:#bcabf1; --accent-light:rgba(106,81,164,.18); }
+html:not([data-theme="contrast"])[data-accent="rose"]:not([data-theme="light"]),
+html:not([data-theme="contrast"])[data-accent="magenta"]:not([data-theme="light"]) { --cobalt:#954074; --accent:#eca8c9; --accent-light:rgba(149,64,116,.18); }
+html:not([data-theme="contrast"])[data-accent="graphite"]:not([data-theme="light"]),
+html:not([data-theme="contrast"])[data-accent="slate"]:not([data-theme="light"]) { --cobalt:#4d5969; --accent:#9aa5b1; --accent-light:rgba(77,89,105,.18); }
+
 html[data-theme="light"][data-accent="cobalt"] { --accent:#015ba6; --accent-light:rgba(1,91,166,.09); }
 /* P0-1 (Neon audit 2026-11-20): light theme needs the dark identity hue per accent, the dark presets are 1.76:1-2.73:1 on white */
-html[data-theme="light"][data-accent="teal"] { --accent:#00787a; --accent-light:rgba(0,120,122,.12); --cobalt:#00787a; }
-html[data-theme="light"][data-accent="green"] { --accent:#137738; --accent-light:rgba(19,119,56,.12); --cobalt:#137738; }
+html[data-theme="light"][data-accent="teal"] { --accent:#005f61; --accent-light:rgba(0,120,122,.12); --cobalt:#005f61; }
+html[data-theme="light"][data-accent="green"] { --accent:#0e5c2c; --accent-light:rgba(19,119,56,.12); --cobalt:#0e5c2c; }
 html[data-theme="light"][data-accent="orange"],
 html[data-theme="light"][data-accent="amber"] { --accent:#a14206; --accent-light:rgba(161,66,6,.12); --cobalt:#a14206; }
 html[data-theme="light"][data-accent="purple"] { --accent:#6a51a4; --accent-light:rgba(106,81,164,.12); --cobalt:#6a51a4; }

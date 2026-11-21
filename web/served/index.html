@@ -778,7 +778,7 @@ html[data-sidebar="hidden"] .hist-grid .side{display:none}
 <style>
 #verdictHeader{text-wrap:balance;letter-spacing:.08em}
 .exp-note{font-size:.82rem;color:var(--text-muted);margin:0 0 12px;line-height:1.45}
-.exp-main{width:100%;min-height:46px;border:0;border-radius:0;color:#fff;font:600 .9rem/1 inherit;font-family:inherit;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;background:linear-gradient(135deg,#1e6bff,#12b6c9);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 10px 22px rgba(18,120,220,.35);transition:transform .15s,box-shadow .15s}
+.exp-main{width:100%;min-height:46px;border:0;border-radius:0;color:var(--verdict-ink,#fff);font:600 .9rem/1 inherit;font-family:inherit;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;background:linear-gradient(135deg,#0d47c2,#0b7f8c);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 10px 22px rgba(18,120,220,.35);transition:transform .15s,box-shadow .15s}
 .exp-main:hover{transform:translateY(-2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 14px 28px rgba(18,120,220,.5)}
 .exp-main:active{transform:none}
 .exp-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
@@ -1492,7 +1492,7 @@ html[data-theme=contrast] #lindaStartup,html[data-theme=contrast] .startup-tagli
   <p id="lpSetupProg" style="font-size:.85rem"></p>
   <div class="lp-msg bad" id="lpSetupErr"></div>
   </div>
-  <div class="lp-foot"><button class="lp-btn" id="lpSetupGo" data-i18n="setup_download">Download models</button><button class="lp-btn sec" id="lpSetupCancel" style="display:none" data-i18n="setup_pause">Pause</button></div>
+  <div class="lp-foot"><button class="lp-btn" id="lpSetupGo" data-i18n="setup_download">Download models</button><button class="lp-btn sec" id="lpSetupCancel" data-i18n="setup_pause">Pause</button></div>
 </div></div>
 
 <div class="lp-overlay" id="lpLic"><div class="lp-card" role="dialog" aria-modal="true">
@@ -3376,6 +3376,8 @@ window.LINDA_I18N = {"en":{"a_action_all":"All actions","a_action_batch":"Folder
       const goKey = d.phase === 'error' || d.phase === 'cancelled' ? 'setup_retry' : 'setup_download';
       $('lpSetupGo').setAttribute('data-i18n', goKey); $('lpSetupGo').textContent = T(goKey);
       $('lpSetupCancel').textContent = T('setup_pause');
+      $('lpSetupCancel').style.display = busy ? '' : 'none';
+      $('lpSetupCancel').disabled = !busy;
       const storeRequired = up && up.distribution === 'store' && up.app_required;
       $('lpSetupGo').disabled = !!storeRequired;
       if (storeRequired) { $('lpSetupGo').style.display = 'none'; }
@@ -3457,7 +3459,10 @@ window.LINDA_I18N = {"en":{"a_action_all":"All actions","a_action_batch":"Folder
     $('lpSetsApply').disabled = true;
     try { await post('/api/models/sets', { sets }); $('lpSetsMsg').textContent = T('sets_applied'); } catch (e) { $('lpSetsMsg').textContent = e.message; } finally { $('lpSetsApply').disabled = false; }
   };
-  $('lpSetupCancel').onclick = () => post('/api/models/cancel');
+  $('lpSetupCancel').onclick = async () => {
+    try { await post('/api/models/cancel'); const r = await fetch('/api/status', {signal:AbortSignal.timeout(8000)}); if (r.ok) render(await r.json()); }
+    catch (e) { $('lpSetupErr').textContent = e.message; }
+  };
   (function () {
     const rsz = $('rsz'), root = document.documentElement;
     const clamp = v => Math.max(280, Math.min(Math.round(window.innerWidth * 0.7), v));

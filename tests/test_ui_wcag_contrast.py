@@ -342,3 +342,22 @@ def test_heatmap_card_follows_the_theme_surface_not_a_hardcoded_dark_tile():
     pinned = re.findall(r"\.heatmap-card\{background:#191c20", idx)
     assert not pinned, "the heatmap card is hard-coded to the dark tile again"
     assert ".heatmap-card{background:var(--bg-card" in idx
+
+def test_dark_theme_accent_picker_resolves_every_accent():
+    """Fixer C (2026-11-21): dark-theme [data-accent] presets must beat the base block, so
+    --cobalt differs per accent in the dark theme."""
+    shell = (WEB / "desktop-shell.css").read_text(encoding="utf-8")
+    for accent in ACCENTS[1:]:   # cobalt is the default base value
+        pat = f'html:not([data-theme="contrast"])[data-accent="{accent}"]:not([data-theme="light"])'
+        assert pat in shell, f"dark preset missing for {accent}"
+    # and the base block must not out-specify them: it carries two :not() guards only
+    assert 'html:not([data-theme="light"]):not([data-theme="contrast"]) {' in shell
+
+
+def test_pause_button_is_wired_during_model_download():
+    """Fixer C (2026-11-21): lpSetupCancel visible while busy, calls /api/models/cancel."""
+    idx = (WEB / "index.html").read_text(encoding="utf-8")
+    assert 'id="lpSetupCancel" style="display:none"' not in idx, "Pause is hard-hidden again"
+    assert "lpSetupCancel').style.display = busy ? '' : 'none'" in idx
+    assert "post('/api/models/cancel')" in idx
+

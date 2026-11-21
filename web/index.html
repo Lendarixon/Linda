@@ -740,13 +740,14 @@ html[data-theme="light"]{--bg:#f3f5f7;--bg-card:#ffffff;--bg-elevated:#ebeef2;--
 html[data-theme="light"] body{background-image:radial-gradient(1200px 600px at 80% -10%,rgba(19,100,176,.06),transparent 60%),repeating-linear-gradient(0deg,rgba(19,100,176,.015) 0 1px,transparent 1px 3px)}
 html[data-theme="light"] .btn-upload{color:#161a1f!important;border-color:#161a1f!important}
 html[data-theme="light"] .btn-upload:hover{background:#161a1f!important;color:#fff!important}
-html[data-theme="contrast"]{--bg:#000;--bg-card:#0a0a0a;--bg-elevated:#161616;--border:#f5d020;--border-focus:#f5d020;--text:#fff;--text-muted:#e8e8e8;--accent:#f5d020;--accent-light:rgba(245,208,32,.16);--cobalt:#f5d020;--ai:#ff8080;--human:#7bff9e;--human-deep:#7bff9e;--uncertain:#ffb020;--uncertain-deep:#b36a00;--teal-deep:#00aba9;--surface:#000;--raised:#161616;--sunken:#000;--line:#f5d020;--line-strong:#f5d020;--ink:#fff;--muted:#e8e8e8;--header:#000;--primary:#f5d020;--primary-hover:#f5d020;--on-primary:#000;--id-blue:#f5d020;--id-teal:#00aba9;--id-violet:#a37dff;--id-orange:#b36a00;--id-magenta:#a37dff;--id-green:#7bff9e;--id-slate:#8b93a7;--success-fill:#7bff9e;--warning-fill:#ffb020;--danger-fill:#ff6b6b;--shadow:0 0 0 1px #f5d020;--shadow-sm:0 0 0 1px #f5d020;--hi:inset 0 1px 0 rgba(255,255,255,.12)}
+html[data-theme="contrast"]{--bg:#000;--bg-card:#0a0a0a;--bg-elevated:#161616;--border:#f5d020;--border-focus:#f5d020;--text:#fff;--text-muted:#e8e8e8;--accent:#f5d020;--accent-light:rgba(245,208,32,.16);--cobalt:#f5d020;--ai:#ff8080;--human:#7bff9e;--human-deep:#7bff9e;--uncertain:#ffb020;--uncertain-deep:#ffb020;--teal-deep:#00aba9;--purple:#c9b3ff;--steel:#c3ccd8;--surface:#000;--raised:#161616;--sunken:#000;--line:#f5d020;--line-strong:#f5d020;--ink:#fff;--muted:#e8e8e8;--header:#000;--primary:#f5d020;--primary-hover:#f5d020;--on-primary:#000;--id-blue:#f5d020;--id-teal:#00aba9;--id-violet:#a37dff;--id-orange:#b36a00;--id-magenta:#a37dff;--id-green:#7bff9e;--id-slate:#8b93a7;--success-fill:#7bff9e;--warning-fill:#ffb020;--danger-fill:#ff6b6b;--shadow:0 0 0 1px #f5d020;--shadow-sm:0 0 0 1px #f5d020;--hi:inset 0 1px 0 rgba(255,255,255,.12)}
 html:not([data-theme="contrast"])[data-accent="teal"]{--accent:#5ecbcb;--accent-light:rgba(0,120,122,.18);--cobalt:#00787a;--border-focus:#5ecbcb}
 /* C-02 (client bug 7): this blanket color:#000!important used to paint the #005fb8 CTA and the
    deep verdict inks black, giving 3.33 / 3.06 / 3.80:1. Bright status fills keep black ink
    (>= 8.6:1); anything on the dark action blue takes --on-primary. */
 html[data-theme="contrast"] .tile,html[data-theme="contrast"] .metric-card,html[data-theme="contrast"] .verdict-badge,html[data-theme="contrast"] .cab-badge,html[data-theme="contrast"] .v-pill,html[data-theme="contrast"] .mx td,html[data-theme="contrast"] .an-t,html[data-theme="contrast"] .file-pill,html[data-theme="contrast"] .fold.active{color:var(--verdict-ink,#000)!important}
-html[data-theme="contrast"] .btn-analyze,html[data-theme="contrast"] .cab-btn,html[data-theme="contrast"] #cabBtns button:hover,html[data-theme="contrast"] .lp-btn:not(.sec){color:var(--on-primary,#fff)!important}
+html[data-theme="contrast"] .btn-analyze,html[data-theme="contrast"] #cabBtns button:hover,html[data-theme="contrast"] .lp-btn:not(.sec){color:var(--on-primary,#fff)!important}
+html[data-theme="contrast"] .cab-btn{color:var(--verdict-ink,#000)!important}
 html[data-theme="contrast"] .metric-label,html[data-theme="contrast"] .metric-val,html[data-theme="contrast"] .tile b,html[data-theme="contrast"] .tile span,html[data-theme="contrast"] .an-t b,html[data-theme="contrast"] .an-t span,html[data-theme="contrast"] .model-card.active .model-name,html[data-theme="contrast"] .model-card.active .model-desc{color:#000!important}
 html[data-theme="contrast"] .tag{color:#000!important;background:rgba(0,0,0,.12)!important}
 html[data-theme="contrast"] .tile.c4,html[data-theme="contrast"] .metric-card:nth-child(3),html[data-theme="contrast"] .an-t:nth-child(3n){background:#a37dff!important}
@@ -783,7 +784,7 @@ html[data-sidebar="hidden"] .hist-grid .side{display:none}
 <style>
 #verdictHeader{text-wrap:balance;letter-spacing:.08em}
 .exp-note{font-size:.82rem;color:var(--text-muted);margin:0 0 12px;line-height:1.45}
-.exp-main{width:100%;min-height:46px;border:0;border-radius:0;color:#fff;font:600 .9rem/1 inherit;font-family:inherit;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;background:linear-gradient(135deg,#1e6bff,#12b6c9);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 10px 22px rgba(18,120,220,.35);transition:transform .15s,box-shadow .15s}
+.exp-main{width:100%;min-height:46px;border:0;border-radius:0;color:var(--verdict-ink,#fff);font:600 .9rem/1 inherit;font-family:inherit;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;background:linear-gradient(135deg,#0d47c2,#0b7f8c);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 10px 22px rgba(18,120,220,.35);transition:transform .15s,box-shadow .15s}
 .exp-main:hover{transform:translateY(-2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 14px 28px rgba(18,120,220,.5)}
 .exp-main:active{transform:none}
 .exp-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
@@ -979,7 +980,7 @@ html[data-theme="contrast"] .tabs-bar .tab.active{color:#000}
   <p id="lpSetupProg" style="font-size:.85rem"></p>
   <div class="lp-msg bad" id="lpSetupErr"></div>
   </div>
-  <div class="lp-foot"><button class="lp-btn" id="lpSetupGo" data-i18n="setup_download">Download models</button><button class="lp-btn sec" id="lpSetupCancel" style="display:none" data-i18n="setup_pause">Pause</button></div>
+  <div class="lp-foot"><button class="lp-btn" id="lpSetupGo" data-i18n="setup_download">Download models</button><button class="lp-btn sec" id="lpSetupCancel" data-i18n="setup_pause">Pause</button></div>
 </div></div>
 
 <div class="lp-overlay" id="lpLic"><div class="lp-card" role="dialog" aria-modal="true">
@@ -2864,6 +2865,8 @@ window.LINDA_I18N = {"en":{"a_action_all":"All actions","a_action_batch":"Folder
       const goKey = d.phase === 'error' || d.phase === 'cancelled' ? 'setup_retry' : 'setup_download';
       $('lpSetupGo').setAttribute('data-i18n', goKey); $('lpSetupGo').textContent = T(goKey);
       $('lpSetupCancel').textContent = T('setup_pause');
+      $('lpSetupCancel').style.display = busy ? '' : 'none';
+      $('lpSetupCancel').disabled = !busy;
       const storeRequired = up && up.distribution === 'store' && up.app_required;
       const dlBusy = ['checking', 'downloading', 'verifying', 'applying', 'finishing'].includes((s.download || {}).phase);
       $('lpSetupGo').disabled = dlBusy || !!storeRequired;
@@ -2967,7 +2970,10 @@ window.LINDA_I18N = {"en":{"a_action_all":"All actions","a_action_batch":"Folder
     } catch (e) { $('lpSetsMsg').textContent = e.message; }
     finally { $('lpSetsApply').disabled = window.LINDA_downloadBusy(); }
   };
-  $('lpSetupCancel').onclick = () => post('/api/models/cancel');
+  $('lpSetupCancel').onclick = async () => {
+    try { await post('/api/models/cancel'); const r = await fetch('/api/status', {signal:AbortSignal.timeout(8000)}); if (r.ok) render(await r.json()); }
+    catch (e) { $('lpSetupErr').textContent = e.message; }
+  };
   (function () {
     const rsz = $('rsz'), root = document.documentElement;
     const clamp = v => Math.max(280, Math.min(Math.round(window.innerWidth * 0.7), v));
