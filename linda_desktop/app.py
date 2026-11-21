@@ -1145,6 +1145,113 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             return err("trace report failed: %s" % e, 500)
         return {"status": "ok", "html": html}
 
+    @api.get("/api/trace/corpora")
+    def trace_corpora_list():
+        from . import trace_corpora  # noqa: PLC0415
+
+        return {"status": "ok", "corpora": trace_corpora.list_corpora()}
+
+    @api.get("/api/trace/corpora/{corpus_id}")
+    def trace_corpora_get(corpus_id: str):
+        from . import trace_corpora  # noqa: PLC0415
+
+        c = trace_corpora.get_corpus(corpus_id)
+        if not c:
+            return err("corpus not found", 404)
+        return {"status": "ok", "corpus": c}
+
+    @api.post("/api/trace/corpora")
+    def trace_corpora_save(body: dict):
+        from . import trace_corpora  # noqa: PLC0415
+
+        b = body or {}
+        try:
+            meta = trace_corpora.save_corpus(
+                name=b.get("name") or "",
+                documents=b.get("documents") or [],
+                language=b.get("language") or "en",
+                corpus_id=b.get("id"),
+            )
+        except ValueError as e:
+            return err(str(e), 400)
+        return {"status": "ok", "corpus": meta}
+
+    @api.delete("/api/trace/corpora/{corpus_id}")
+    def trace_corpora_delete(corpus_id: str):
+        from . import trace_corpora  # noqa: PLC0415
+
+        try:
+            deleted = trace_corpora.delete_corpus(corpus_id)
+        except ValueError as e:
+            return err(str(e), 400)
+        if not deleted:
+            return err("corpus not found", 404)
+        return {"status": "ok", "deleted": True}
+
+    @api.post("/api/trace/compare_corpus")
+    async def trace_compare_corpus(body: dict, request: Request):
+        return await tool_work(body, request, _trace_compare_corpus)
+
+    def _trace_compare_corpus(body: dict):
+        denied = licensing.check_licensed("trace")
+        if denied:
+            return terr("err_need_license", 403)
+        from . import trace_corpora, trace_pack  # noqa: PLC0415
+
+        if not trace_pack.installed():
+            return terr("err_trace_no_pack", 409)
+        b = body or {}
+        target_raw = b.get("target")
+        if isinstance(target_raw, str):
+            target_text = target_raw
+            target_title = str(b.get("target_title") or "Target text")
+        elif isinstance(target_raw, dict):
+            target_text = str(target_raw.get("text") or "")
+            target_title = str(target_raw.get("title") or "Target text")
+        else:
+            target_text = str(b.get("text") or "")
+            target_title = str(b.get("target_title") or "Target text")
+        if not target_text.strip():
+            return err("target text is required", 400)
+        corpus_id = b.get("corpus_id")
+        corpus_meta = None
+        if corpus_id:
+            c = trace_corpora.get_corpus(str(corpus_id))
+            if not c:
+                return err("corpus not found", 404)
+            ref_docs = c.get("documents") or []
+            lang = str(b.get("language") or c.get("language") or "en")
+            corpus_meta = {k: c.get(k) for k in ("id", "name", "language", "builtin")}
+        else:
+            ref_docs = b.get("documents") or []
+            lang = str(b.get("language") or "ru")
+        target_id = "__target__"
+        combined = [{"id": target_id, "title": target_title[:200], "text": target_text}]
+        used_ids = {target_id}
+        for i, d in enumerate(ref_docs):
+            did = str((d or {}).get("id") or f"ref_{i + 1}")
+            while did in used_ids:
+                did = f"{did}_{i + 1}"
+            used_ids.add(did)
+            combined.append({
+                "id": did,
+                "title": str((d or {}).get("title") or did),
+                "text": str((d or {}).get("text") or ""),
+            })
+        try:
+            docs = _trace_docs(combined, limit=200)
+            res = trace_pack.analyze_corpus(docs, language=lang, target_id=target_id)
+            res["corpus_comparison"] = trace_corpora.compute_corpus_comparison(res, target_id)
+        except ValueError as e:
+            return err(str(e), 400)
+        except Exception as e:  # noqa: BLE001
+            return err("trace failed: %s: %s" % (type(e).__name__, e), 500)
+        try:
+            history.audit("trace_compare_corpus", "документов: %d, язык: %s" % (len(docs), lang))
+        except Exception:  # noqa: BLE001
+            pass
+        return {"status": "ok", "result": res, "corpus": corpus_meta}
+
     def _ai_share_of(text: str) -> float:
         from . import task_cancel
         task_cancel.check()
