@@ -1,25 +1,57 @@
-/* Linda desktop workspace. Layout, tokens and controls follow LocalDocs Metro. */
-html { --ld-nav-width:218px; --ld-control:40px; }
+/* Linda desktop workspace. Layout, tokens and controls follow the Linda brand site (lindarixon.github.io/Linda).
+   Two naming schemes coexist: the app's legacy names (--bg/--bg-card/--text/...) and the site's (--surface/--ink/...). */
+html { --ld-nav-width:218px; --ld-control:44px; --radius:2px; }
 html:not([data-theme="light"]):not([data-theme="contrast"]) {
-  --bg:#16181d; --bg-card:#1d2027; --bg-elevated:#252a33;
-  --border:#343b46; --text:#eceef3; --text-muted:#b0b8c5;
-  --ld-chrome:#111318; --ld-hover:#292e38; --ld-line-strong:#586270;
+  --bg:#111418; --bg-card:#191c20; --bg-elevated:#202429;
+  --border:#31363c; --text:#eceff2; --text-muted:#b2b8bf;
+  --ld-chrome:#111418; --ld-hover:#0b0d11; --ld-line-strong:#727880;
+  --accent:#82bcfc; --accent-light:rgba(130,188,252,.15); --cobalt:#1364b0;
+  /* site tokens (same values, site names) */
+  --surface:#191c20; --raised:#202429; --sunken:#0b0d11; --line:#31363c;
+  --header:#111418; --ink:#eceff2; --muted:#b2b8bf;
+  --primary:#1364b0; --primary-hover:#2975c2; --on-primary:#fff;
+  --id-blue:#1364b0; --id-teal:#00787a; --id-violet:#6a51a4; --id-orange:#a14206;
+  --id-magenta:#954074; --id-green:#137738; --id-slate:#4d5969;
+  --success-fill:#03a14a; --warning-fill:#e19b1b; --danger-fill:#d9544b;
+  /* verdict colours re-tuned to the site status fills */
+  --ai:#d9544b; --ai-bg:rgba(217,84,75,.15); --ai-border:rgba(217,84,75,.42);
+  --human:#03a14a; --human-deep:#03a14a; --human-bg:rgba(3,161,74,.14); --human-border:rgba(3,161,74,.42);
+  --uncertain:#e19b1b; --uncertain-deep:#a06c00; --uncertain-bg:rgba(225,155,27,.13); --uncertain-border:rgba(225,155,27,.42);
+  --steel:#4d5969; --teal:#00787a; --teal-deep:#00787a; --purple:#6a51a4; --green:#137738;
 }
 html[data-theme="light"] {
-  --bg:#f3f4f6; --bg-card:#fff; --bg-elevated:#edf0f4;
-  --border:#d3d8e1; --text:#1a1c21; --text-muted:#535e6e;
-  --ld-chrome:#e8ebf0; --ld-hover:#e4e9f0; --ld-line-strong:#8894a4;
+  --bg:#f3f5f7; --bg-card:#fff; --bg-elevated:#ebeef2;
+  --border:#d7dbe1; --text:#161a1f; --text-muted:#58616d;
+  --ld-chrome:#ebeef2; --ld-hover:#e4e6ea; --ld-line-strong:#7f858d;
+  --accent:#015ba6; --accent-light:rgba(1,91,166,.09); --cobalt:#1364b0;
+  --surface:#fff; --raised:#ebeef2; --sunken:#e4e6ea; --line:#d7dbe1;
+  --header:#f3f5f7; --ink:#161a1f; --muted:#58616d;
+  --primary:#1364b0; --primary-hover:#08569a; --on-primary:#fff;
+  --id-blue:#1364b0; --id-teal:#00787a; --id-violet:#6a51a4; --id-orange:#a14206;
+  --id-magenta:#954074; --id-green:#137738; --id-slate:#4d5969;
+  --success-fill:#03a14a; --warning-fill:#e19b1b; --danger-fill:#d9544b;
+  --ai:#963730; --ai-bg:rgba(217,84,75,.10); --ai-border:rgba(150,55,48,.42);
+  --human:#006e30; --human-deep:#006e30; --human-bg:rgba(3,161,74,.10); --human-border:rgba(0,110,48,.40);
+  --uncertain:#905d00; --uncertain-deep:#905d00; --uncertain-bg:rgba(225,155,27,.14); --uncertain-border:rgba(144,93,0,.40);
+  --steel:#4d5969; --teal:#00787a; --teal-deep:#00787a; --purple:#6a51a4; --green:#137738;
 }
 html[data-theme="contrast"] {
   --bg:#000; --bg-card:#000; --bg-elevated:#111; --border:#fff;
   --text:#fff; --text-muted:#fff; --ld-chrome:#000; --ld-hover:#222;
-  --ld-line-strong:#fff; --accent:#79d7ff; --cobalt:#005fb8;
+  --ld-line-strong:#fff; --accent:#f5d020; --cobalt:#005fb8;
+  /* site names mirror the accessibility override so both schemes stay legible */
+  --surface:#000; --raised:#111; --sunken:#000; --line:#fff; --header:#000;
+  --ink:#fff; --muted:#fff; --primary:#015ba6; --primary-hover:#015ba6; --on-primary:#fff;
+  --id-blue:#015ba6; --id-teal:#00aba9; --id-violet:#a37dff; --id-orange:#b34d00;
+  --id-magenta:#a37dff; --id-green:#008a00; --id-slate:#8b93a7;
+  --success-fill:#7bff9e; --warning-fill:#ffb020; --danger-fill:#ff6b6b;
 }
-html[data-accent="cobalt"] { --cobalt:#0067c0; --accent:#63baff; --accent-light:rgba(68,157,230,.14); }
-html[data-theme="light"][data-accent="cobalt"] { --accent:#005fb8; --accent-light:rgba(0,95,184,.09); }
+/* accent variants must never override the contrast accessibility theme */
+html:not([data-theme="contrast"])[data-accent="cobalt"] { --cobalt:#1364b0; --accent:#82bcfc; --accent-light:rgba(130,188,252,.14); }
+html[data-theme="light"][data-accent="cobalt"] { --accent:#015ba6; --accent-light:rgba(1,91,166,.09); }
 body.ld-desktop {
   height:100dvh; min-height:0; overflow:hidden; display:flex; flex-direction:column;
-  font-family:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif!important;
+  font-family:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif!important;
   font-size:1rem!important; line-height:1.5; background:var(--bg); color:var(--text);
 }
 html[data-density="compact"] body.ld-desktop { font-size:.875rem!important; }
@@ -35,6 +67,17 @@ html[data-density="spacious"] body.ld-desktop { font-size:1.0625rem!important; }
   outline:2px solid var(--accent)!important; outline-offset:-2px;
 }
 .ld-desktop button:disabled { opacity:.5; cursor:default; }
+/* Square-ish surfaces like the brand site: one radius token, applied only to the main
+   containers (nav, cards, controls). The Metro skin's global 0 is overridden here by design;
+   2px is visually square but keeps anti-aliased corners on hi-dpi. */
+.ld-desktop .ld-nav,.ld-desktop .ld-nav-button,.ld-desktop .ld-nav-button[aria-current="page"]::before,
+.ld-desktop .input-box,.ld-desktop .verdict-box,.ld-desktop .sv,.ld-desktop .metric-card,
+.ld-desktop .voters-card,.ld-desktop .heatmap-card,.ld-desktop .ld-guide,.ld-desktop .ld-help-card,
+.ld-desktop .model-card,.ld-desktop .tile,.ld-desktop .lp-card,.ld-desktop .ld-language,
+.ld-desktop .btn-analyze,.ld-desktop .cab-btn,.ld-desktop .lp-btn,.ld-desktop .ld-back,
+.ld-desktop #textInput,.ld-desktop .lp-input,.ld-desktop .cab-in,.ld-desktop .cab-sel {
+  border-radius:var(--radius)!important;
+}
 .ld-desktop .header {
   flex:none; position:relative; display:flex; justify-content:space-between; gap:20px;
   padding:12px 22px; min-height:66px; background:var(--ld-chrome); z-index:20;
@@ -169,6 +212,14 @@ html[data-ui="simple"] .ld-desktop #simpleVerdict { border-top:0; padding-top:14
 .ld-desktop .tile { background:var(--bg-card)!important; color:var(--text)!important; border:1px solid var(--border); padding:14px 16px; min-height:88px; animation:none; }
 .ld-desktop .tile b { font-size:1.625rem; font-weight:400; }
 .ld-desktop .tile span { color:var(--text-muted); font-size:.75rem; text-transform:none; letter-spacing:0; }
+/* Light theme: index.html forces white tile text (site live-tile style), so the tile itself must be a
+   solid identity fill — otherwise the text is white on the white --bg-card. Mirrors the brand site. */
+html[data-theme="light"] .ld-desktop .tile { background:var(--id-blue)!important; border-color:var(--id-blue); }
+html[data-theme="light"] .ld-desktop .tile:nth-child(2) { background:var(--id-teal)!important; border-color:var(--id-teal); }
+html[data-theme="light"] .ld-desktop .tile:nth-child(3) { background:var(--id-orange)!important; border-color:var(--id-orange); }
+html[data-theme="light"] .ld-desktop .tile:nth-child(4) { background:var(--id-green)!important; border-color:var(--id-green); }
+html[data-theme="light"] .ld-desktop .tile:nth-child(5) { background:var(--id-violet)!important; border-color:var(--id-violet); }
+html[data-theme="light"] .ld-desktop .tile span { color:rgba(255,255,255,.88); }
 .ld-desktop .hist-grid { grid-template-columns:180px minmax(0,1fr); gap:20px; }
 .ld-desktop .hist-grid>div { min-width:0; }
 .ld-desktop .cab-tbl { font-size:.8125rem; display:block; max-width:100%; overflow:auto; border:1px solid var(--border); }

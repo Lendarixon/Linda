@@ -9,7 +9,7 @@ body { background-image:none !important; font-family:"Segoe UI","Segoe UI Variab
   transform:none !important; box-shadow:none !important; filter:none !important;
 }
 .btn-analyze,.exp-main { background:var(--cobalt) !important; box-shadow:none !important; }
-.btn-analyze:hover:not(:disabled),.exp-main:hover { background:#0042c7 !important; }
+.btn-analyze:hover:not(:disabled),.exp-main:hover { background:#1364b0 !important; }
 .btn-upload { border:1px solid var(--border) !important; color:var(--text) !important; }
 .btn-upload:hover { border-color:var(--accent) !important; background:var(--accent-light) !important; }
 .section-title { letter-spacing:.1em !important; color:var(--text-muted) !important; }
