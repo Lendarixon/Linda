@@ -51,6 +51,7 @@
       help:'Как пользоваться', help_desc:'Коротко о проверке текста, результатах и ограничениях Linda.',
       license:'Лицензия', license_desc:'Состояние лицензии и активация дополнительных возможностей.',
       audit:'Журнал действий', audit_desc:'Локальная история действий программы.',
+      about:'О программе', about_desc:'Версия приложения, наборы моделей, лицензия и ссылка на обновления.',
       back:'К проверке текста', local:'На вашем компьютере', privacy:'Тексты обрабатываются локально',
       language:'Язык интерфейса', editor:'Ваш текст', shortcut:'Ctrl + Enter — проверить',
       recommendation:'Для более надёжной оценки: от 300 слов связного текста.',
@@ -84,6 +85,7 @@
       help:'How to use Linda', help_desc:'A short guide to checking text, reading results and understanding the limits.',
       license:'Licence', license_desc:'Licence status and activation of additional features.',
       audit:'Activity log', audit_desc:'A local record of application activity.',
+      about:'About Linda', about_desc:'App version, model sets, licence and a link to release notes.',
       back:'Back to checking', local:'On your computer', privacy:'Texts are processed locally',
       language:'Interface language', editor:'Your text', shortcut:'Ctrl + Enter to check',
       recommendation:'For a more reliable estimate, use at least 300 words of connected prose.',
@@ -117,6 +119,7 @@
       help:'Jak korzystać', help_desc:'Krótko o sprawdzaniu tekstu, wynikach i ograniczeniach Lindy.',
       license:'Licencja', license_desc:'Stan licencji i aktywacja dodatkowych funkcji.',
       audit:'Dziennik działań', audit_desc:'Lokalny zapis działań aplikacji.',
+      about:'O programie', about_desc:'Wersja aplikacji, zestawy modeli, licencja i odnośnik do informacji o wydaniach.',
       back:'Wróć do sprawdzania', local:'Na Twoim komputerze', privacy:'Teksty są przetwarzane lokalnie',
       language:'Język interfejsu', editor:'Twój tekst', shortcut:'Ctrl + Enter — sprawdź',
       recommendation:'Aby uzyskać bardziej wiarygodną ocenę, użyj co najmniej 300 słów ciągłego tekstu.',
@@ -157,6 +160,7 @@
     help:'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5 M12 17v1',
     license:'M5 3h14v18l-7-3-7 3z M9 9l2 2 4-4',
     audit:'M5 3h14v18H5z M8 8h8 M8 12h8 M8 16h5',
+    about:'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 11v6 M12 8v.5',
   };
   const icon = key => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${iconPaths[key]||iconPaths.check}"/></svg>`;
   const node = (tag,cls,html) => { const el=document.createElement(tag);if(cls)el.className=cls;if(html)el.innerHTML=html;return el; };
@@ -178,11 +182,18 @@
     const help=node('section','ld-tool-page');help.id='desktopHelp';help.hidden=true;
     help.innerHTML='<div class="ld-help-grid">'+['start','formats','result','local','reuse','settings'].map(key=>`<article class="ld-help-card"><h2 data-ld-text="help_${key}"></h2><p data-ld-text="help_${key}_text"></p></article>`).join('')+'</div><button class="lp-btn" id="desktopHelpStart" data-ld-text="basic" style="margin-top:20px"></button>';
     workspace.append(help);
+    // P0-4: an explicit About screen so the entry the audit found orphaned is reachable again.
+    const about=node('section','ld-tool-page');about.id='desktopAbout';about.hidden=true;
+    about.innerHTML='<div class="ld-help-grid">'
+      +'<article class="ld-help-card"><h2 data-ld-text="about"></h2><p id="desktopAboutVersion"></p><p data-ld-text="about_desc"></p></article>'
+      +'<article class="ld-help-card"><h2 data-ld-text="license"></h2><p id="desktopAboutLicence"></p></article>'
+      +'</div><button class="lp-btn" id="desktopAboutUpdates" data-ld-text="updates" style="margin-top:20px"></button>';
+    workspace.append(about);
     // Keep the full legal/limitations text in Help; the editor keeps a concise warning.
     let legal=$('footLic');
     if(legal){while(legal.parentElement&&legal.parentElement!==document.body)legal=legal.parentElement;legal.classList.add('ld-help-card','ld-legal');legal.style.cssText='';help.append(legal);}
     const navButton = key => `<button class="ld-nav-button" data-route="${key}" type="button">${icon(key)}<span data-ld-text="${key}"></span></button>`;
-    nav.innerHTML='<div class="ld-nav-group" data-ld-text="work"></div>'+['check','history','batch','compare'].map(navButton).join('')+'<div class="ld-nav-group" data-ld-text="tools"></div>'+['trace','humanize'].map(navButton).join('')+'<div class="ld-nav-bottom"><div class="ld-nav-group" data-ld-text="app"></div>'+['models','settings','help','license'].map(navButton).join('')+'</div>';
+    nav.innerHTML='<div class="ld-nav-group" data-ld-text="work"></div>'+['check','history','batch','compare'].map(navButton).join('')+'<div class="ld-nav-group" data-ld-text="tools"></div>'+['trace','humanize'].map(navButton).join('')+'<div class="ld-nav-bottom"><div class="ld-nav-group" data-ld-text="app"></div>'+['models','settings','audit','about','help','license'].map(navButton).join('')+'</div>';
     nav.querySelector('.ld-nav-bottom').append($('licBadge'));
     $('licBadge').tabIndex=0;$('licBadge').setAttribute('role','button');$('licBadge').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('licBadge').click();}});
     const oldTools=header.lastElementChild;
@@ -232,9 +243,15 @@
     let route='check',generation=0,transition=false;
     const paneMap={history:'hist',batch:'batch',compare:'cmp',trace:'trace',humanize:'humanize',audit:'audit'};
     const routeForPane=pane=>Object.keys(paneMap).find(k=>paneMap[k]===pane)||'history';
+    // About screen content: version string comes from the boot payload, licence from the licence badge state.
+    function fillAbout(){
+      const ver=$('desktopAboutVersion'),lic=$('desktopAboutLicence');
+      if(ver)ver.textContent=$('desktopAppVersion')?$('desktopAppVersion').textContent:('Linda '+(((window.LINDA_BOOT||{}).version)||''));
+      if(lic)lic.textContent=$('licBadge')?$('licBadge').textContent.trim():'';
+    }
     function activate(next,focus=false){
       route=next;document.body.dataset.route=next;
-      grid.hidden=next!=='check';models.hidden=next!=='models';help.hidden=next!=='help';
+      grid.hidden=next!=='check';models.hidden=next!=='models';help.hidden=next!=='help';about.hidden=next!=='about';
       // Existing legacy CSS uses !important; native hidden state wins explicitly.
       grid.style.setProperty('display',next==='check'?'grid':'none','important');
       models.style.setProperty('display',next==='models'?'block':'none','important');
@@ -242,6 +259,7 @@
       $('desktopBack').hidden=next==='check';
       nav.querySelectorAll('[data-route]').forEach(b=>{if(b.dataset.route===(next==='audit'?'history':next))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
       auditSwitch.hidden=!['history','audit'].includes(next);auditSwitch.textContent=T(next==='audit'?'history':'audit');
+      if(next==='about')fillAbout();
       if(focus)$('desktopPageTitle').focus({preventScroll:true});
       window.dispatchEvent(new CustomEvent('linda-route',{detail:{route:next}}));
     }
@@ -271,6 +289,10 @@
     }
     nav.addEventListener('click',e=>{const b=e.target.closest('.ld-nav-button[data-route]');if(b)navigate(b.dataset.route);});
     $('desktopBack').onclick=() => navigate('check');$('desktopHelpStart').onclick=()=>navigate('check');
+    // About → Settings › Updates and about (keeps one implementation of the update/about block).
+    $('desktopAboutUpdates').onclick=async()=>{await navigate('settings');setting('updates',true);};
+    // Settings › Updates and about links back to the About screen.
+    if($('lpOpenAbout'))$('lpOpenAbout').onclick=()=>navigate('about');
     // Rewrite entry next to the verdict; the command row carries the humanize button.
     async function openRewrite(){await navigate('humanize');if(route==='humanize')$('huTake').click();}
     const stylePanel=$('stylePanel');$('simpleVerdict').after(stylePanel);
