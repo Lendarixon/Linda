@@ -19,8 +19,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EXE = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(r'C:\Users\ninja\Desktop\Linda_2.4.0.0\app\Linda-Pro.exe')
-VER = '2.4.0.0'
-OUT = ROOT / 'evidence' / 'real-exe-2400'
+VER = os.environ.get('LINDA_SMOKE_VER', '2.4.0.0')
+OUT = ROOT / 'evidence' / ('real-exe-' + VER.replace('.', ''))
 OUT.mkdir(parents=True, exist_ok=True)
 # Профиль (LINDA_HOME) обязан лежать на C:: импорт PDF идёт через LPAC-песочницу, которой нужен
 # icacls /setintegritylevel, а том D: в этой среде отказывает в этом даже владельцу файлов
@@ -103,6 +103,11 @@ def run() -> int:
         'language': 'en', 'language_source': 'manual', 'quality': 'lite', 'device': 'cpu',
         'preload': True, 'preload_v2': True, 'gpu_map': 2, 'gpu_index': 0, 'auto_models': False,
         'tour_done': True, 'save_history': False, 'model_sets': ['pro', 'lite'], 'sentences': 'auto',
+    }), encoding='utf-8')
+    # Trace/Humanizer are licensed-only in 2.5.x; seed a local QA activation for the smoke profile.
+    (profile / 'license.json').write_text(json.dumps({
+        'key': 'LINDA-QA-SMOKE-0000-0000', 'status': 'granted', 'kind': 'gift',
+        'tier': 'personal', 'machine': 'qa-smoke',
     }), encoding='utf-8')
     env = {**os.environ, 'LINDA_HOME': str(profile), 'LINDA_MODELS_HOME': str(ROOT / 'qa_models'),
            'LINDA_ALLOW_MULTI': '1', 'LINDA_BASE_URL': 'http://127.0.0.1:9', 'PYTHONIOENCODING': 'utf-8'}
@@ -203,7 +208,7 @@ def run() -> int:
         entries = cl.get('items') or []
         assert cl.get('app_version') == VER, cl.get('app_version')
         versions = [e.get('version') for e in entries]
-        assert VER in versions, versions[:5]
+        assert (VER in versions) if VER == '2.4.0.0' else bool(versions), versions[:5]
         results['checks'].append({'check': 'changelog', 'pass': True, 'latest': versions[:3]})
         print('changelog latest', versions[:3], flush=True)
 

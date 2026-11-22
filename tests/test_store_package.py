@@ -37,7 +37,7 @@ def test_store_models_still_independent_but_exe_not_advertised(monkeypatch):
     monkeypatch.setattr(config, 'is_store_package', lambda: True)
     monkeypatch.setattr(updater, 'installed_version', lambda: '1.0')
     monkeypatch.setattr(updater, 'is_complete', lambda: True)
-    monkeypatch.setattr(updater, 'files_to_fetch', lambda m: [{'size':20}])
+    monkeypatch.setattr(updater, 'files_to_fetch', lambda m, **kw: [{'size':20}])
     manifest = {'version':'2.0', 'min_app':'99.0', 'installer':{'version':'99.0','size':50}}
     result = updater.update_status(manifest)
     assert result['weights_update'] is True

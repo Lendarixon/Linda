@@ -402,7 +402,16 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             return err(core.update_error or ui18n.tr("err_cannot_reach", ui18n.resolve_lang(load_settings())), 502)
         if core.update and core.update.get("app_required"):
             return terr("err_app_too_old", 409)
-        if not updater.files_to_fetch(core.manifest):
+        todo = updater.files_to_fetch(core.manifest)
+        if not todo and (core.update or {}).get("weights_update"):
+            # The version moved but the cheap check found nothing to fetch: this is the reused-install case where the old manifest
+            # still claims the new hashes. Re-hash before refusing, otherwise the button answers "up to date" and nothing happens.
+            todo = updater.files_to_fetch(core.manifest, verify=True)
+            if not todo:
+                # Files really are all present: adopt the new manifest version without re-downloading them.
+                core.job.start(core.manifest, core.manifest_raw)
+                return {"status": "started"}
+        if not todo:
             # Nothing left to fetch: refresh the cached status and answer "up to date" instead of starting a job that re-verifies and
             # re-applies the same files. This is what made the download button restart a "download" on every press.
             core.refresh_status()

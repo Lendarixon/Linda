@@ -67,6 +67,8 @@
  "banner_failed": "Aktualizacja aplikacji nie powiodła się: {err}",
  "banner_models_restart": "Modele {ver} zostały pobrane. Uruchom program ponownie, aby ich użyć.",
  "banner_models_updating": "Aktualizuję modele… {pct}",
+ "banner_models_failed": "Aktualizacja modeli nie powiodła się: {err}",
+ "banner_models_stopped": "Aktualizacja modeli zatrzymana. Naciśnij „Ponów”, aby kontynuować.",
  "banner_new_models": "Dostępna aktualizacja modeli {ver}{size}{notes}.",
  "banner_new_required": "Nowe modele wymagają nowej wersji aplikacji ({ver}).",
  "banner_offline": "Nie udało się sprawdzić aktualizacji: {err}",

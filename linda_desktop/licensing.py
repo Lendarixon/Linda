@@ -167,6 +167,10 @@ def activate(key: str) -> dict:
     st = {"key": key, "activation_id": j.get("id"), "label": label, "machine": mid, "activated_at": int(time.time()), "last_validated": int(time.time()),
           "status": "granted", "limit_activations": lk.get("limit_activations"), "expires_at": lk.get("expires_at"),
           "tier": tier_of(lk.get("limit_activations"))}
+    if "expires_at" in lk and lk.get("expires_at") is None:
+        # Polar answered the activation with an explicit null: the key does not expire.
+        # Only an explicitly returned null is perpetual; a missing or unparseable value stays unknown and fails closed.
+        st["perpetual"] = True
     _save(st)
     return public_state(st)
 
@@ -220,7 +224,9 @@ def revalidate(force: bool = False) -> dict:
         return public_state(st)
     if code == 200:
         st["status"] = j.get("status", "granted")
-        st["expires_at"] = j.get("expires_at")
+        if "expires_at" in j:
+            st["expires_at"] = j.get("expires_at")
+            st["perpetual"] = j.get("expires_at") is None  # null from the server = no expiry
         st["last_validated"] = int(time.time())
     elif code in (403, 404):  # revoked, deleted or the activation was removed
         st["status"] = "revoked"
@@ -238,11 +244,12 @@ def public_state(st: dict | None = None) -> dict:
     exp = st.get("expires_at")
     if active and st.get("kind") != "gift":
         # fail closed: a missing/empty expires_at cannot prove the licence is
-        # still valid, so it counts as expired (dev mode exempt)
-        if not exp:
+        # still valid, so it counts as expired (dev mode exempt). An explicit
+        # perpetual flag set from an answered activation is proof enough.
+        if not exp and not st.get("perpetual"):
             if not getattr(config, "DEV_INSTALLER_ENABLED", False):
                 active = False
-        else:
+        elif exp:
             try:
                 from datetime import datetime, timezone
 

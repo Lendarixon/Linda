@@ -67,6 +67,8 @@
  "banner_failed": "App update failed: {err}",
  "banner_models_restart": "Models {ver} are downloaded. Restart the app to switch to them.",
  "banner_models_updating": "Updating models… {pct}",
+ "banner_models_failed": "Model update failed: {err}",
+ "banner_models_stopped": "Model update stopped. Press Retry to continue.",
  "banner_new_models": "Model update {ver} is available{size}{notes}.",
  "banner_new_required": "A new version of the app ({ver}) is required to use the latest models.",
  "banner_offline": "Could not check for updates: {err}",

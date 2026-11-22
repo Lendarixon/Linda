@@ -4,15 +4,21 @@
 Зачем: исходник релизного дерева 2.0.4.x утерян (Desktop\\Linda_release_1_3 удалён 09.10), восстановленные модули совпадают с
 байткодом 2.0.4.1 (`_recover/bccheck.py`), а полная пересборка PyInstaller без прежнего .spec рискует потерять файлы.
 
+КРИТИЧНО: запускать ТОЛЬКО под Python 3.12 (совпадает с python312.dll внутри BASE exe). repack_exe компилирует
+исходники в code objects через compile()+marshal — байткод 3.13 не выполнится загрузчиком 3.12, exe молча умрёт
+на import. Путь к 3.12: C:/Users/<user>/AppData/Local/Programs/Python/Python312/python.exe (или LINDA_PY312).
+
     python tools/repack_exe.py BASE.exe OUT.exe [--entry run_app|run_store]
 """
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import marshal
 import os
 import shutil
 import struct
+import subprocess
 import sys
 import zlib
 from pathlib import Path
@@ -57,6 +63,10 @@ def our_modules() -> dict[str, tuple[int, object]]:
 def rebuild_pyz(old: bytes) -> tuple[bytes, list[str], list[str]]:
     assert old[:4] == b"PYZ\0", "not a PYZ archive"
     header_magic = old[4:8]  # магия байткода Python (4 байта)
+    expected_magic = importlib.util.MAGIC_NUMBER[:4]
+    assert header_magic == expected_magic, (
+        f"PYZ header_magic {header_magic.hex()} != running Python {expected_magic.hex()} ({sys.version.split()[0]})"
+    )
     (toc_off,) = struct.unpack("!i", old[8:12])
     toc = marshal.loads(old[toc_off:])
     toc = list(toc.items()) if isinstance(toc, dict) else list(toc)
@@ -108,6 +118,18 @@ def copy_resources(internal: Path) -> None:
 
 
 def main() -> int:
+    if sys.version_info[:2] != (3, 12):
+        # Синхронный перезапуск под Python 3.12: на Windows os.execv рвёт ожидание родителя и кавычки аргументов,
+        # а top-level guard ломает import repack_exe из других скриптов (verify_release_2100.py).
+        if os.environ.get("_LINDA_REPACK_REEXEC") != "1":
+            _py312 = os.environ.get("LINDA_PY312") or str(
+                Path.home() / "AppData/Local/Programs/Python/Python312/python.exe")
+            if os.path.isfile(_py312):
+                env = {**os.environ, "_LINDA_REPACK_REEXEC": "1"}
+                return subprocess.call([_py312, str(Path(__file__).resolve()), *sys.argv[1:]], env=env)
+        raise SystemExit(
+            f"repack_exe must run under Python 3.12 (exe embeds python312.dll), got {sys.version.split()[0]}; "
+            f"set LINDA_PY312 or install Python 3.12")
     ap = argparse.ArgumentParser()
     ap.add_argument("base")
     ap.add_argument("out")
@@ -119,6 +141,10 @@ def main() -> int:
     raw = Path(a.base).read_bytes()
     ck = raw.rfind(COOKIE)
     magic, arch_len, toc_off, toc_len, pyvers, pylib = struct.unpack(COOKIE_FMT, raw[ck: ck + struct.calcsize(COOKIE_FMT)])
+    expected_pyvers = sys.version_info[0] * 100 + sys.version_info[1]
+    assert pyvers == expected_pyvers == 312, (
+        f"BASE exe pyvers={pyvers} != expected {expected_pyvers} ({sys.version.split()[0]})"
+    )
     start = ck + struct.calcsize(COOKIE_FMT) - arch_len
     tail = raw[ck + struct.calcsize(COOKIE_FMT):]  # что-то после cookie (подпись и т.п.) — переносим как есть
     toc_raw = raw[start + toc_off: start + toc_off + toc_len]

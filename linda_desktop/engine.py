@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from bisect import bisect_left
 import numpy as np
 import math
@@ -26,6 +27,18 @@ ROUTED_LANGS = ("pl", "ru")
 
 def _sig(m: float, c: float, s: float) -> float:
     return 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, (m - c) / s))))
+
+
+def pro_token_thr_eff(thr: float, p_doc: float) -> float:
+    """Document-steered AI threshold for Pro token markup.
+
+    Leaves human and low/mid uncertain documents untouched (p_doc <= 0.80);
+    for confident AI documents (p_doc > 0.80), smoothly lowers the Pro token
+    threshold toward 0.05 so short AI texts do not render 0% AI sentences.
+    """
+    if p_doc <= 0.80:
+        return thr
+    return max(0.05, min(thr, thr - 1.2 * (p_doc - 0.80)))
 
 
 def _smooth_lite_tokens(text, scores, radius=64):
@@ -212,8 +225,9 @@ class Engine:
         self.gpu = gpu_probe()
 
     def calibration_file(self) -> Path | None:
-        # Classic 1.1 calibration only: routing.json is a language table, not a calibration.
-        files = sorted(p for p in (config.models_root() / "calibration").glob("*.json") if p.name != "routing.json")
+        # Classic 1.1 calibration only: routing tables and token-head metadata are not classic calibrations.
+        skip = {"routing.json", "routing.with_lite.json", "token_heads_v2.json"}
+        files = sorted(p for p in (config.models_root() / "calibration").glob("*.json") if p.name not in skip)
         return files[0] if files else None
 
     def routing_file(self) -> Path | None:
@@ -221,6 +235,22 @@ class Engine:
         env = os.environ.get("LINDA_ROUTING")
         p = Path(env) if env else config.models_root() / "calibration" / "routing.json"
         return p if p.exists() else None
+
+    def routing_with_lite_file(self) -> Path | None:
+        """Optional routing table carrying Lite ('speed') tiers; falls back to calibration/routing.json with a warning when missing."""
+        env = os.environ.get("LINDA_ROUTING")
+        if env:
+            p = Path(env)
+            return p if p.exists() else None
+        with_lite = config.models_root() / "calibration" / "routing.with_lite.json"
+        if with_lite.exists():
+            return with_lite
+        primary = self.routing_file()
+        if primary is not None:
+            logging.getLogger("linda.engine").warning(
+                "calibration/routing.with_lite.json is missing; falling back to %s", primary.name
+            )
+        return primary
 
     def merged_table(self) -> bool:
         """True, если routing.json — таблица merged-ансамбля 1.3 (kind=merged): тогда английский идёт тем же путём, что PL/RU, на общих голосах."""
@@ -292,6 +322,23 @@ class Engine:
         device = self.device
 
         quality = {"full": "pro", "speed": "lite"}.get(settings.get("quality", "auto"), settings.get("quality", "auto"))
+        if (
+            table_path.name == "routing.json"
+            and not os.environ.get("LINDA_ROUTING")
+            and ("speed_s" not in dirs or not all("speed" in table["languages"][lg]["tiers"] for lg in table.get("languages", {})))
+            and (self._installed_set("lite") or quality in ("lite", "both"))
+        ):
+            lite_path = self.routing_with_lite_file()
+            if lite_path is not None and lite_path != table_path:
+                try:
+                    lite_table = json.loads(lite_path.read_text(encoding="utf-8"))
+                    if isinstance(lite_table, dict) and "voice_dirs" in lite_table and "languages" in lite_table:
+                        table = lite_table
+                        dirs = table["voice_dirs"]
+                except Exception:  # noqa: BLE001 — fall back to primary routing.json on malformed overlay
+                    logging.getLogger("linda.engine").warning(
+                        "Failed to read %s; falling back to %s", lite_path.name, table_path.name
+                    )
         has_lite = "speed_s" in dirs and (models / dirs["speed_s"] / "model.onnx").is_file() and all("speed" in table["languages"][lg]["tiers"] for lg in table["languages"])
         has_pro = all(k in dirs and (models / dirs[k]).is_dir() for k in ("essay_m", "multi_m"))
         self.have_pro, self.have_lite = has_pro, has_lite
@@ -1095,18 +1142,64 @@ class Engine:
             if token_rows is not None:
                 gran = "tokens"
                 thr_ai, thr_unc = self.thresholds(gran)
+                try:
+                    p_doc = verdict_probability(res, R)
+                except Exception:  # noqa: BLE001 — markup must never break a check
+                    p_doc = 0.5
+                eff_ai = pro_token_thr_eff(thr_ai, p_doc) if getattr(self, "tier", "full") != "speed" else thr_ai
                 cnt = {"ai": 0, "uncertain": 0, "human": 0}
                 for i, (sentence, (mean, pe)) in enumerate(zip(sentences, token_rows)):
                     mm, pm = multi_token_rows[i] if multi_token_rows is not None else (mean, pe)
                     probs = ([pe] if "linda_essay" in selected else []) + ([pm] if "linda_multi_v2" in selected else [])
                     p = sum(probs) / len(probs) if probs else (pe + pm) / 2
-                    label = "ai" if p >= thr_ai else "uncertain" if p >= thr_unc else "human"
+                    label = "ai" if p >= eff_ai else "uncertain" if p >= thr_unc else "human"
                     sentence.update(essay_margin=round(mean, 2), essay_prob=round(pe, 3),
                                     multi_margin=round(mm, 2), multi_prob=round(pm, 3),
                                     p_ai=round(p, 3), label=label,
-                                    essay_label="ai" if pe >= thr_ai else "uncertain" if pe >= thr_unc else "human",
-                                    multi_label="ai" if pm >= thr_ai else "uncertain" if pm >= thr_unc else "human")
+                                    essay_label="ai" if pe >= eff_ai else "uncertain" if pe >= thr_unc else "human",
+                                    multi_label="ai" if pm >= eff_ai else "uncertain" if pm >= thr_unc else "human")
                     cnt[label] += 1
+                if (
+                    getattr(self, "tier", "full") != "speed"
+                    and p_doc > 0.80
+                    and cnt["ai"] == 0
+                    and sentences
+                    and load_settings().get("sentences", "auto") == "auto"
+                ):
+                    from linda_pro.voters import Cancelled, clean_text as _clean
+                    try:
+                        if nwords <= 400:
+                            s_texts = [_clean(x.text, _clean_lang) for x in spans]
+                            ie = det._factory("linda_essay").margins(s_texts)
+                            im = det._factory("linda_multi_v2").margins(s_texts)
+                            ce, cm = self._context_margins(det, spans, _clean_lang)
+                            fb_e = [max(float(x), y) for x, y in zip(ie, ce)]
+                            fb_m = [max(float(x), y) for x, y in zip(im, cm)]
+                            gran = "hybrid"
+                        else:
+                            fb_e, fb_m = self._context_margins(det, spans, _clean_lang)
+                            gran = "context"
+                        thr_ai, thr_unc = self.thresholds(gran)
+                        cnt = {"ai": 0, "uncertain": 0, "human": 0}
+                        for i, sentence in enumerate(sentences):
+                            me = float(fb_e[i]) if i < len(fb_e) else 0.0
+                            mm = float(fb_m[i]) if i < len(fb_m) else 0.0
+                            pe, pm = _sig(me, pe_c, pe_s), _sig(mm, pm_c, pm_s)
+                            probs = ([pe] if "linda_essay" in selected else []) + ([pm] if "linda_multi_v2" in selected else []) or [pe, pm]
+                            p = sum(probs) / len(probs)
+                            label = "ai" if p >= thr_ai else "uncertain" if p >= thr_unc else "human"
+                            sentence.update(
+                                essay_margin=round(me, 2), essay_prob=round(pe, 3),
+                                multi_margin=round(mm, 2), multi_prob=round(pm, 3),
+                                p_ai=round(p, 3), label=label,
+                                essay_label="ai" if pe >= thr_ai else "uncertain" if pe >= thr_unc else "human",
+                                multi_label="ai" if pm >= thr_ai else "uncertain" if pm >= thr_unc else "human",
+                            )
+                            cnt[label] += 1
+                    except Cancelled:
+                        raise
+                    except Exception:  # noqa: BLE001 — fallback must never break a check
+                        pass
                 if lite_reuse and res.get("verdict") == "human" and authorship("human", sentences)["ai_share"] >= self.CONSISTENCY_AI_SHARE:
                     res["verdict"] = "uncertain"
                     res["verdict_raised_by"] = "sentences"
