@@ -107,3 +107,32 @@ def test_full_ram_gate_allows_vram_resident_full(monkeypatch, tmp_path):
     src = humanize_pack.Path(humanize_pack.__file__).read_text(encoding="utf-8")
     # the gate constant, not a live load: full must need < 6 GB free RAM
     assert "need_free = 2.5 if variant == \"full\"" in src
+
+
+def test_cpu_generate_passes_eos_im_end_max_time_and_chunk_cap():
+    """CPU generation passes <|im_end|> eos_token_id, 45s max_time, chunk-sized max_new_tokens, and 2 default candidates."""
+    seen = {}
+
+    class _ImEndTok(_FakeTok):
+        eos_token_id = 2
+
+        def convert_tokens_to_ids(self, t):
+            return 99 if t == "<|im_end|>" else 2
+
+    class _RecModel(_FakeModel):
+        def generate(self, inp, **kw):
+            seen.update(kw)
+            return super().generate(inp, **kw)
+
+    b = humanize_pack.HumanizerBackend()
+    b.tok = _ImEndTok()
+    b.model = _RecModel()
+    b.variant = "lite"
+    assert humanize_pack._default_candidates(b) == 2
+
+    out = b.generate(["short chunk with six words total"], n=2)
+    assert len(out) == 1 and len(out[0]) == 2
+    assert seen["eos_token_id"] == [2, 99]
+    assert seen["max_time"] == 45.0
+    assert seen["max_new_tokens"] <= 220
+    assert seen["num_return_sequences"] == 2

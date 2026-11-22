@@ -253,7 +253,17 @@ class Core:
 
         def loop():
             try:
+                licensing.maybe_activate_installer_key()
+            except Exception:  # noqa: BLE001
+                pass
+            try:
                 licensing.revalidate()
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                from . import packs as _packs  # noqa: PLC0415
+
+                _packs.maybe_install_installer_packs()
             except Exception:  # noqa: BLE001
                 pass
             while True:

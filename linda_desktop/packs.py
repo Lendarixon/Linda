@@ -53,6 +53,72 @@ def _poll_sizes(stop, variants):
         stop.wait(1.0)
 
 
+_VALID_INSTALLER_PACKS = ("trace", "humanizer-lite", "humanizer-full")
+
+
+def maybe_install_installer_packs() -> dict:
+    """Download licensed packs selected in the installer (`installer_choice.json['packs']`).
+
+    Runs once in the background after startup licence activation/revalidation.
+    Leaves the choice intact when unlicensed so a later activation can trigger it.
+    """
+    from . import humanize_pack, licensing, trace_pack  # noqa: PLC0415
+
+    choice_path = config.data_dir() / "installer_choice.json"
+    try:
+        choice = json.loads(choice_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"status": "none"}
+    if not isinstance(choice, dict):
+        return {"status": "none"}
+    raw_packs = choice.get("packs")
+    if not isinstance(raw_packs, list) or not raw_packs:
+        return {"status": "none"}
+    wanted = [p for p in dict.fromkeys(str(x).strip().lower() for x in raw_packs) if p in _VALID_INSTALLER_PACKS]
+    if not wanted:
+        return {"status": "none"}
+    if not licensing.public_state().get("licensed"):
+        return {"status": "unlicensed", "packs": wanted}
+
+    missing = []
+    for p in wanted:
+        if p == "trace" and not trace_pack.installed():
+            missing.append(p)
+        elif p == "humanizer-lite" and not humanize_pack.installed("lite"):
+            missing.append(p)
+        elif p == "humanizer-full" and not humanize_pack.installed("full"):
+            missing.append(p)
+
+    queue = []
+    if "trace" in missing:
+        queue.append("trace")
+    if "humanizer-lite" in missing and "humanizer-full" in missing:
+        queue.append("humanizer-all")
+    else:
+        for p in ("humanizer-lite", "humanizer-full"):
+            if p in missing:
+                queue.append(p)
+
+    installed_now, failed = [], []
+    for item in queue:
+        if not try_start(item):
+            failed.append(item)
+            continue
+        try:
+            download(item)
+            installed_now.append(item)
+        except Exception:  # noqa: BLE001
+            failed.append(item)
+
+    if not failed:
+        try:
+            choice["packs"] = []
+            choice_path.write_text(json.dumps(choice, indent=1), encoding="utf-8")
+        except OSError:
+            pass
+    return {"status": "ok" if not failed else "partial", "ran": installed_now, "failed": failed}
+
+
 def try_start(pack: str) -> bool:
     """Atomically mark the job as running; False when another download is active.
 

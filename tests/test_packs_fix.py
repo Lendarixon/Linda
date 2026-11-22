@@ -89,3 +89,33 @@ def test_conftest_isolates_linda_env(tmp_path):
     assert config.data_dir() == tmp_path / "_linda_home"
     assert config.models_root() == tmp_path / "_linda_home"
 
+
+def test_maybe_install_installer_packs_respects_license_and_clears(monkeypatch, tmp_path):
+    from linda_desktop import config, licensing, trace_pack
+
+    _setup_env(monkeypatch, tmp_path)
+    choice_path = config.data_dir() / "installer_choice.json"
+    choice_path.parent.mkdir(parents=True, exist_ok=True)
+    choice_path.write_text(json.dumps({"packs": ["trace", "humanizer-lite"]}), encoding="utf-8")
+
+    # Unlicensed: skips without clearing choice
+    monkeypatch.setattr(licensing, "public_state", lambda: {"licensed": False})
+    r1 = packs.maybe_install_installer_packs()
+    assert r1["status"] == "unlicensed"
+    assert json.loads(choice_path.read_text(encoding="utf-8"))["packs"] == ["trace", "humanizer-lite"]
+
+    # Licensed: downloads missing packs and clears choice["packs"]
+    downloaded = []
+    monkeypatch.setattr(licensing, "public_state", lambda: {"licensed": True})
+    monkeypatch.setattr(trace_pack, "installed", lambda: False)
+    monkeypatch.setattr(humanize_pack, "installed", lambda v: False)
+    monkeypatch.setattr(packs, "try_start", lambda p: True)
+    monkeypatch.setattr(packs, "download", lambda p: downloaded.append(p) or {"phase": "ready"})
+    r2 = packs.maybe_install_installer_packs()
+    assert r2["status"] == "ok"
+    assert downloaded == ["trace", "humanizer-lite"]
+    assert json.loads(choice_path.read_text(encoding="utf-8"))["packs"] == []
+
+    # Second run is a clean no-op
+    assert packs.maybe_install_installer_packs()["status"] == "none"
+

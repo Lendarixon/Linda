@@ -437,6 +437,7 @@ class HumanizerBackend:
                     raise RuntimeError("humanizer-out-of-memory: не хватило VRAM, выберите lite") from e
                 raise
         self.tok, self.model, self.variant = tok, model, variant
+        self.batch_chunks = 4 if use_cuda else 1
         return variant
 
     def generate(self, chunks: list, n: int = 4) -> list:
@@ -449,6 +450,13 @@ class HumanizerBackend:
 
         assert self.model is not None and self.tok is not None, "humanizer not loaded"
         device = next(self.model.parameters()).device
+        is_cpu = device.type == "cpu"
+        eos = self.tok.eos_token_id
+        try:
+            end = self.tok.convert_tokens_to_ids("<|im_end|>")
+        except Exception:
+            end = None
+        eos_ids = [x for x in dict.fromkeys((eos, end)) if isinstance(x, int) and x >= 0]
         out = []
         # Chunks are batched into ONE padded forward loop instead of one generate() per
         # chunk: decoding n=4 sequences alone leaves the GPU ~90% idle on 0.6B/4B models,
@@ -479,17 +487,30 @@ class HumanizerBackend:
                 inp[i, width - int(x.shape[0]):] = x
                 att[i, width - int(a.shape[0]):] = a
             inp, att = inp.to(device), att.to(device)
-            # Короткие входы: не даём раздувать генерацию до 512 токенов на одно предложение.
-            max_new = min(512, int(width * 1.3) + 32)
+            if is_cpu:
+                chunk_toks = max(24, int(max(len(ck.split()) for ck in group) * 1.6))
+                max_new = min(220, int(chunk_toks * 1.35) + 24)
+            else:
+                max_new = min(512, int(width * 1.3) + 32)
             del msgs
+            gen_kwargs = {
+                "attention_mask": att,
+                "max_new_tokens": max_new,
+                "do_sample": True,
+                "temperature": 0.8,
+                "top_p": 0.95,
+                "num_return_sequences": n,
+                "pad_token_id": self.tok.pad_token_id,
+                "stopping_criteria": StoppingCriteriaList([StopRequested()]),
+                "use_cache": True,
+            }
+            if eos_ids:
+                gen_kwargs["eos_token_id"] = eos_ids if len(eos_ids) > 1 else eos_ids[0]
+            if is_cpu:
+                gen_kwargs["max_time"] = 45.0
             try:
                 with torch.no_grad():
-                    gen = self.model.generate(inp, attention_mask=att,
-                                              max_new_tokens=max_new,
-                                              do_sample=True, temperature=0.8, top_p=0.95,
-                                              num_return_sequences=n, pad_token_id=self.tok.pad_token_id,
-                                              stopping_criteria=StoppingCriteriaList([StopRequested()]),
-                                              use_cache=True)
+                    gen = self.model.generate(inp, **gen_kwargs)
             except RuntimeError as e:
                 if "out of memory" in str(e).lower():
                     try:
@@ -500,18 +521,17 @@ class HumanizerBackend:
                     raise RuntimeError("humanizer-out-of-memory: не хватило памяти при генерации, попробуйте lite или более короткий текст") from e
                 raise
             task_cancel.check()
-            eos = self.tok.eos_token_id
-            try:
-                end = self.tok.convert_tokens_to_ids("<|im_end|>")
-            except Exception:
-                end = None
             for k in range(len(group)):
-                variants = []
+                eos_variants = []
+                any_variants = []
                 for row in gen[k * n:(k + 1) * n]:
                     seq = row[width:].tolist()
+                    decoded = self.tok.decode(seq, skip_special_tokens=True).strip()
                     if eos in seq or (end is not None and end in seq):
-                        variants.append(self.tok.decode(seq, skip_special_tokens=True).strip())
-                out.append(variants)
+                        eos_variants.append(decoded)
+                    elif decoded:
+                        any_variants.append(decoded)
+                out.append(eos_variants or any_variants)
         return out
 
     def unload(self) -> None:
@@ -587,6 +607,16 @@ def loaded_variant() -> str | None:
     return _backend.variant if _backend is not None else None
 
 
+def _default_candidates(backend) -> int:
+    """Use 2 candidates on CPU (avoids 4x slow FP32 decoding), 4 on GPU."""
+    try:
+        if backend is not None and backend.model is not None and next(backend.model.parameters()).device.type == "cpu":
+            return 2
+    except Exception:
+        pass
+    return 4
+
+
 def humanize(text: str, spans=None, mode: str = "all", variant: str = "auto",
              progress=None) -> dict:
     """One pass. mode: ai|sel|all. spans: explicit [(start,end)] for sel."""
@@ -619,10 +649,11 @@ def humanize(text: str, spans=None, mode: str = "all", variant: str = "auto",
             with _runtime_lock:
                 _backend_busy = False
 
+    n_cands = _default_candidates(_backend)
     if ranges is not None:
-        res = stylize_core.stylize_text(text, ranges, gen, 4)
+        res = stylize_core.stylize_text(text, ranges, gen, n_cands)
     else:
-        res = stylize_core.stylize_text(text, None, gen, 4)
+        res = stylize_core.stylize_text(text, None, gen, n_cands)
     res["variant"] = tier
     try:
         res["resolve"] = resolve_info(variant)
@@ -668,7 +699,7 @@ def loop_until_calm(text: str, detector_run, detector_unload=None, detector_warm
                 assert _b is not None
                 return _b.generate(cs, n)
 
-            res = stylize_core.stylize_text(current, None, gen, 4)
+            res = stylize_core.stylize_text(current, None, gen, _default_candidates(_backend))
         finally:
             unload()
             if detector_warm is not None:
