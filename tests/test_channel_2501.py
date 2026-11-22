@@ -181,7 +181,7 @@ def test_thr_eff_helper_bounds_and_tier_isolation(tmp_path, monkeypatch):
 
 
 def test_owner_report_89pct_auto_falls_back_from_blind_tok_head(tmp_path, monkeypatch):
-    """If Pro auto tok_head marks 0 AI on a p_doc > 0.80 text, fall back to document voters (hybrid/context)."""
+    """If Pro auto tok_head marks 0 AI on a p_doc > 0.80 text, reuse scan windows with 0 extra forwards."""
     report_text = (
         "This report describes model pack 1.5.0 of the Linda desktop application (version 2.5.0.0), a local, "
         "privacy-preserving detector of AI-generated text in English, Polish and Russian that runs on the "
@@ -190,7 +190,15 @@ def test_owner_report_89pct_auto_falls_back_from_blind_tok_head(tmp_path, monkey
         "all three languages, raising Polish AI recall from 79.43% to 88.86% on MIGIEL/PolEval 2025."
     )
     _write_schema2_head(tmp_path, "essay", "en", center=3.03, scale=1.61)
-    voter = _const_voter(tmp_path, token_z=-1.5, legacy=7.0)  # tok_head ~0.05 (blind), margins +7.0
+    voter = _const_voter(tmp_path, token_z=-1.5, legacy=7.0)  # tok_head ~0.05 (blind)
+    margin_calls = {"n": 0}
+    orig_margins = voter.margins
+
+    def counted_margins(texts):
+        margin_calls["n"] += 1
+        return orig_margins(texts)
+
+    voter.margins = counted_margins
 
     class Uncertain89Detector(Detector):
         def detect(self, texts):
@@ -198,6 +206,9 @@ def test_owner_report_89pct_auto_falls_back_from_blind_tok_head(tmp_path, monkey
             out[0]["ens_z"] = -0.30
             out[0]["essay"] = 7.13
             out[0]["language"] = "en"
+            out[0]["windows"] = [
+                dict(first_word=0, last_word=len(texts[0].split()), essay=7.13, multi=7.84)
+            ]
             return out
 
     monkeypatch.setattr(E, "gpu_probe", lambda: {})
@@ -209,7 +220,8 @@ def test_owner_report_89pct_auto_falls_back_from_blind_tok_head(tmp_path, monkey
 
     res = eng.run(report_text)
 
+    assert margin_calls["n"] == 0, "Fallback must reuse scan windows with 0 extra model forwards"
     assert res["p_ai"] > 0.80
-    assert res["sentence_stats"]["granularity"] == "hybrid"
+    assert res["sentence_stats"]["granularity"] == "window"
     assert res["sentence_stats"]["ai"] >= 1
 

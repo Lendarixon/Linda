@@ -1165,27 +1165,31 @@ class Engine:
                     and cnt["ai"] == 0
                     and sentences
                     and load_settings().get("sentences", "auto") == "auto"
+                    and res.get("windows")
                 ):
-                    from linda_pro.voters import Cancelled, clean_text as _clean
                     try:
-                        if nwords <= 400:
-                            s_texts = [_clean(x.text, _clean_lang) for x in spans]
-                            ie = det._factory("linda_essay").margins(s_texts)
-                            im = det._factory("linda_multi_v2").margins(s_texts)
-                            ce, cm = self._context_margins(det, spans, _clean_lang)
-                            fb_e = [max(float(x), y) for x, y in zip(ie, ce)]
-                            fb_m = [max(float(x), y) for x, y in zip(im, cm)]
-                            gran = "hybrid"
-                        else:
-                            fb_e, fb_m = self._context_margins(det, spans, _clean_lang)
-                            gran = "context"
+                        # Reuse the document scan windows (0 extra model forwards) so GPU/DirectML
+                        # never stalls on per-sentence sequential batches when tok_head misses.
+                        wspans = [
+                            (w["first_word"], w["last_word"], w["essay"], w.get("multi", w["essay"]))
+                            for w in res["windows"]
+                        ]
+                        wstarts = [m.start() for m in re.finditer(r"\S+", text)]
+                        gran = "windows"
                         thr_ai, thr_unc = self.thresholds(gran)
                         cnt = {"ai": 0, "uncertain": 0, "human": 0}
-                        for i, sentence in enumerate(sentences):
-                            me = float(fb_e[i]) if i < len(fb_e) else 0.0
-                            mm = float(fb_m[i]) if i < len(fb_m) else 0.0
+                        for s, sentence in zip(spans, sentences):
+                            wi = bisect_left(wstarts, s.start)
+                            c = wi + max(1, len(s.text.split())) // 2
+                            cover = [w for w in wspans if w[0] <= c < w[1]] or [
+                                min(wspans, key=lambda w: abs((w[0] + w[1]) / 2 - c))
+                            ]
+                            me = sum(w[2] for w in cover) / len(cover)
+                            mm = sum(w[3] for w in cover) / len(cover)
                             pe, pm = _sig(me, pe_c, pe_s), _sig(mm, pm_c, pm_s)
-                            probs = ([pe] if "linda_essay" in selected else []) + ([pm] if "linda_multi_v2" in selected else []) or [pe, pm]
+                            probs = ([pe] if "linda_essay" in selected else []) + (
+                                [pm] if "linda_multi_v2" in selected else []
+                            ) or [pe, pm]
                             p = sum(probs) / len(probs)
                             label = "ai" if p >= thr_ai else "uncertain" if p >= thr_unc else "human"
                             sentence.update(
@@ -1196,8 +1200,6 @@ class Engine:
                                 multi_label="ai" if pm >= thr_ai else "uncertain" if pm >= thr_unc else "human",
                             )
                             cnt[label] += 1
-                    except Cancelled:
-                        raise
                     except Exception:  # noqa: BLE001 — fallback must never break a check
                         pass
                 if lite_reuse and res.get("verdict") == "human" and authorship("human", sentences)["ai_share"] >= self.CONSISTENCY_AI_SHARE:
