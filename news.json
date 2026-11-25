@@ -1,5 +1,80 @@
 [
  {
+  "date": "2026-11-24",
+  "title": "Linda 2.5.0.5 — Humanizer-Full on 8 GB NVIDIA cards",
+  "text": "• Humanizer-Full 4B no longer falls back to Lite on 8 GB NVIDIA cards such as the RTX 5060: the detector is unloaded and GPU memory released before the humanizer starts.\n• Cards with 4–8.9 GB of free memory split the 4B humanizer between the graphics card and system memory automatically; with 9 GB or more it stays fully on the card.\n• Includes all 2.5.0.1–2.5.0.4 fixes. Model pack 1.5.0 is unchanged.",
+  "title_i18n": {
+   "ru": "Linda 2.5.0.5 — Humanizer-Full на видеокартах NVIDIA 8 ГБ",
+   "en": "Linda 2.5.0.5 — Humanizer-Full on 8 GB NVIDIA cards",
+   "pl": "Linda 2.5.0.5 — Humanizer-Full na kartach NVIDIA 8 GB"
+  },
+  "text_i18n": {
+   "ru": "• Humanizer-Full 4B больше не переключается на Lite на картах NVIDIA 8 ГБ вроде RTX 5060: перед запуском гуманайзера детектор выгружается, а видеопамять освобождается.\n• На картах с 4–8,9 ГБ свободной памяти модель 4B автоматически делится между видеокартой и оперативной памятью; при 9 ГБ и больше она целиком остаётся на карте.\n• Включает все исправления 2.5.0.1–2.5.0.4. Пакет моделей 1.5.0 не изменился.",
+   "en": "• Humanizer-Full 4B no longer falls back to Lite on 8 GB NVIDIA cards such as the RTX 5060: the detector is unloaded and GPU memory released before the humanizer starts.\n• Cards with 4–8.9 GB of free memory split the 4B humanizer between the graphics card and system memory automatically; with 9 GB or more it stays fully on the card.\n• Includes all 2.5.0.1–2.5.0.4 fixes. Model pack 1.5.0 is unchanged.",
+   "pl": "• Humanizer-Full 4B nie przełącza się już na Lite na kartach NVIDIA 8 GB, takich jak RTX 5060: przed startem humanizera detektor jest zwalniany, a pamięć GPU czyszczona.\n• Karty z 4–8,9 GB wolnej pamięci automatycznie dzielą model 4B między kartę graficzną a pamięć RAM; przy 9 GB lub więcej działa w całości na karcie.\n• Zawiera wszystkie poprawki 2.5.0.1–2.5.0.4. Pakiet modeli 1.5.0 bez zmian."
+  }
+ },
+ {
+  "date": "2026-11-23",
+  "title": "Linda 2.5.0.4 — stable DirectML on 4 GB and 8 GB cards, Russian Humanizer fixes",
+  "text": "• The detector sizes its model memory to the graphics card (about 2 GB on 4 GB cards, 3.2 GB on 6–8 GB, 5.2 GB on 12 GB and more) and unloads models before loading markup, fixing out-of-memory and GPU reset errors on 4 GB and 8 GB cards. GPU errors are now shown as readable text.\n• Humanizer-Full 4B on NVIDIA cards with 8 GB or more: the app installs the CUDA runtime on demand and asks for a restart instead of silently using Lite.\n• Russian Humanizer: paragraphs are no longer cut off; new checks for completeness, number agreement and glued words.\n• The graphics-card hint is hidden on computers with one card.",
+  "title_i18n": {
+   "ru": "Linda 2.5.0.4 — стабильный DirectML на картах 4 и 8 ГБ, исправления русского Humanizer",
+   "en": "Linda 2.5.0.4 — stable DirectML on 4 GB and 8 GB cards, Russian Humanizer fixes",
+   "pl": "Linda 2.5.0.4 — stabilny DirectML na kartach 4 i 8 GB, poprawki rosyjskiego Humanizera"
+  },
+  "text_i18n": {
+   "ru": "• Детектор подстраивает объём моделей под видеокарту (около 2 ГБ на картах 4 ГБ, 3,2 ГБ на 6–8 ГБ, 5,2 ГБ на 12 ГБ и больше) и выгружает модели перед загрузкой разметки — исправлены ошибки нехватки памяти и сброса GPU на картах 4 и 8 ГБ. Ошибки GPU теперь показываются читаемым текстом.\n• Humanizer-Full 4B на картах NVIDIA от 8 ГБ: приложение по запросу ставит среду CUDA и просит перезапуск вместо тихого перехода на Lite.\n• Русский Humanizer: абзацы больше не обрываются; добавлены проверки полноты, согласования числительных и склеенных слов.\n• Подсказка о выборе видеокарты скрыта на компьютерах с одной картой.",
+   "en": "• The detector sizes its model memory to the graphics card (about 2 GB on 4 GB cards, 3.2 GB on 6–8 GB, 5.2 GB on 12 GB and more) and unloads models before loading markup, fixing out-of-memory and GPU reset errors on 4 GB and 8 GB cards. GPU errors are now shown as readable text.\n• Humanizer-Full 4B on NVIDIA cards with 8 GB or more: the app installs the CUDA runtime on demand and asks for a restart instead of silently using Lite.\n• Russian Humanizer: paragraphs are no longer cut off; new checks for completeness, number agreement and glued words.\n• The graphics-card hint is hidden on computers with one card.",
+   "pl": "• Detektor dopasowuje pamięć modeli do karty graficznej (około 2 GB na kartach 4 GB, 3,2 GB na 6–8 GB, 5,2 GB na 12 GB i więcej) i zwalnia modele przed wczytaniem oznaczania — naprawiono błędy braku pamięci i resetu GPU na kartach 4 i 8 GB. Błędy GPU są teraz pokazywane czytelnym tekstem.\n• Humanizer-Full 4B na kartach NVIDIA od 8 GB: aplikacja na żądanie instaluje środowisko CUDA i prosi o restart zamiast po cichu używać Lite.\n• Rosyjski Humanizer: akapity nie są już ucinane; nowe kontrole kompletności, odmiany liczebników i sklejonych słów.\n• Podpowiedź o wyborze karty jest ukryta na komputerach z jedną kartą."
+  }
+ },
+ {
+  "date": "2026-11-22",
+  "title": "Linda 2.5.0.3 — packs chosen in the installer download automatically",
+  "text": "• Licensed Trace and Humanizer packs selected during setup now download automatically at the first licensed start.\n• Humanizer-Lite on the CPU is faster and can no longer hang on short texts (fixed stop token, at most 45 s per chunk).",
+  "title_i18n": {
+   "ru": "Linda 2.5.0.3 — пакеты, выбранные в установщике, скачиваются сами",
+   "en": "Linda 2.5.0.3 — packs chosen in the installer download automatically",
+   "pl": "Linda 2.5.0.3 — pakiety wybrane w instalatorze pobierają się same"
+  },
+  "text_i18n": {
+   "ru": "• Лицензионные пакеты Trace и Humanizer, отмеченные при установке, теперь скачиваются автоматически при первом запуске с лицензией.\n• Humanizer-Lite на процессоре работает быстрее и больше не зависает на коротких текстах (исправлен стоп-токен, не больше 45 с на фрагмент).",
+   "en": "• Licensed Trace and Humanizer packs selected during setup now download automatically at the first licensed start.\n• Humanizer-Lite on the CPU is faster and can no longer hang on short texts (fixed stop token, at most 45 s per chunk).",
+   "pl": "• Licencjonowane pakiety Trace i Humanizer zaznaczone podczas instalacji pobierają się teraz automatycznie przy pierwszym uruchomieniu z licencją.\n• Humanizer-Lite na procesorze działa szybciej i nie zawiesza się już na krótkich tekstach (poprawiony token końca, najwyżej 45 s na fragment)."
+  }
+ },
+ {
+  "date": "2026-11-22",
+  "title": "Linda 2.5.0.2 — faster sentence markup",
+  "text": "• When the document is clearly AI but the token markup finds no AI sentence, the app reuses the windows it already scanned instead of running extra model passes: 7.5× faster on the CPU on a short text and no DirectML slowdown.",
+  "title_i18n": {
+   "ru": "Linda 2.5.0.2 — ускоренная разметка предложений",
+   "en": "Linda 2.5.0.2 — faster sentence markup",
+   "pl": "Linda 2.5.0.2 — szybsze oznaczanie zdań"
+  },
+  "text_i18n": {
+   "ru": "• Если документ явно написан ИИ, а разметка по токенам не нашла ни одного ИИ-предложения, приложение использует уже просканированные окна вместо дополнительных проходов модели: в 7,5 раза быстрее на процессоре на коротком тексте и без замедления DirectML.",
+   "en": "• When the document is clearly AI but the token markup finds no AI sentence, the app reuses the windows it already scanned instead of running extra model passes: 7.5× faster on the CPU on a short text and no DirectML slowdown.",
+   "pl": "• Gdy dokument jest wyraźnie napisany przez AI, a oznaczanie tokenów nie znajduje zdania AI, aplikacja wykorzystuje już przeskanowane okna zamiast dodatkowych przebiegów modelu: 7,5× szybciej na procesorze przy krótkim tekście i bez spowolnienia DirectML."
+  }
+ },
+ {
+  "date": "2026-11-22",
+  "title": "Linda 2.5.0.1 — installer, updater and markup fixes",
+  "text": "• Sentence markup follows the document verdict: a strong AI verdict lowers the markup threshold, so AI sentences are highlighted.\n• Installer in English, Russian and Polish with separate Trace and Humanizer checkboxes, size estimates, reuse of saved models and licence keys on reinstall, and a keep-data choice on uninstall.\n• Fixed: model download stuck at 0% / 32 MB, the app closing at start because of a packaging error, licences from other profiles not being found.\n• Model pack 1.5.0: 61 files, about 5.8 GB for Assay (English plus Polish/Russian networks) and 0.3 GB for Loupe; signature and checksums verified.",
+  "title_i18n": {
+   "ru": "Linda 2.5.0.1 — исправления установщика, обновления и разметки",
+   "en": "Linda 2.5.0.1 — installer, updater and markup fixes",
+   "pl": "Linda 2.5.0.1 — poprawki instalatora, aktualizacji i oznaczania"
+  },
+  "text_i18n": {
+   "ru": "• Разметка предложений следует вердикту документа: при сильном вердикте «ИИ» порог разметки снижается, и ИИ-предложения подсвечиваются.\n• Установщик на английском, русском и польском: отдельные флажки Trace и Humanizer, оценка размера, повторное использование сохранённых моделей и ключей при переустановке, выбор «сохранить данные» при удалении.\n• Исправлено: загрузка моделей, застревавшая на 0% / 32 МБ; закрытие приложения при запуске из-за ошибки сборки; лицензии из других профилей не находились.\n• Пакет моделей 1.5.0: 61 файл, около 5,8 ГБ для Assay (английские плюс польско-русские сети) и 0,3 ГБ для Loupe; подпись и контрольные суммы проверены.",
+   "en": "• Sentence markup follows the document verdict: a strong AI verdict lowers the markup threshold, so AI sentences are highlighted.\n• Installer in English, Russian and Polish with separate Trace and Humanizer checkboxes, size estimates, reuse of saved models and licence keys on reinstall, and a keep-data choice on uninstall.\n• Fixed: model download stuck at 0% / 32 MB, the app closing at start because of a packaging error, licences from other profiles not being found.\n• Model pack 1.5.0: 61 files, about 5.8 GB for Assay (English plus Polish/Russian networks) and 0.3 GB for Loupe; signature and checksums verified.",
+   "pl": "• Oznaczanie zdań podąża za werdyktem dokumentu: przy silnym werdykcie AI próg oznaczania spada, więc zdania AI są podświetlane.\n• Instalator po angielsku, rosyjsku i polsku: osobne pola Trace i Humanizer, szacowany rozmiar, ponowne użycie zapisanych modeli i kluczy przy reinstalacji, wybór zachowania danych przy odinstalowaniu.\n• Naprawiono: pobieranie modeli zatrzymane na 0% / 32 MB, zamykanie aplikacji przy starcie przez błąd pakowania, nieodnajdywanie licencji z innych profili.\n• Pakiet modeli 1.5.0: 61 plików, około 5,8 GB dla Assay (sieci angielskie oraz polsko-rosyjskie) i 0,3 GB dla Loupe; podpis i sumy kontrolne sprawdzone."
+  }
+ },
+ {
   "date": "2026-11-21",
   "title": "Linda 2.5.0.0 + models 1.5.0 — Russian token markup, lite false alarms 3.14%→0.00%, 2.55x faster GPU, Trace corpus tools",
   "text": "• Stable release. Token markup now covers Russian: new v2 heads rank clearly better (essay AUC 0.523 → 0.636, multi 0.479 → 0.654) with human words wrongly marked held at 5.0%. Together with English and Polish that is five voices with automatic markup; multi English stays opt-in.\n• Benchmarks, model pack 1.5.0: Polish catches 88.86% of AI texts at a 1% false-alarm budget (was 79.4% with 1.3.1 / 88.9% with 1.4.1h at its shipped threshold); Russian false accusations on human texts: 0.00% (0 of 648); English HumanizerBench 81.01% (1357/1675), zero disagreement with the 1.3.1 routing. Lou (lite) with the new length-binned conformal thresholds: Polish false alarms 3.14% → 0.00% (all 5 known FPs resolved), detection unchanged at 69.71% at 1% false alarms.\n• Speed: Pro inference on GPU is 2.55x faster (static batch in the ONNX graph, verdicts bit-identical, 0/20 flips); humanizer chunks share one batched pass — Lite 98.5 → 485.8 tokens/s, Full 74.8 → 338.0 (n=4), 2.26x and 3.36x with unchanged meaning preservation; pack downloads are faster. Markup needs 39 → 2 transformer forwards on a 3000-word text (1.26x wall time on CPU), bit-identical token scores.\n• Linda Trace: corpus upload, compare-with-corpus and corpus builder with charts in the style analyzer.\n• Security: Trace corpora routes now return 403 without a licence; pack download and humanizer races closed; a corrupt licence expiry fails closed.\n• Honest limits: external held-out Polish (ŚMIGIEL, PolEval 2025, 6,934 human texts) still flags 2.86% of human texts as AI for the Pro path — short news/parliament prose is the weak spot; lite finds fewer Polish AI texts than the full tier (69.71% vs 88.86% at 1% false alarms). Russian highlighting ranks well but its 0.20 threshold is not calibrated for RU.",
