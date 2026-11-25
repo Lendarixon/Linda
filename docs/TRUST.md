@@ -1,6 +1,6 @@
 # Linda — privacy, limitations and release integrity
 
-Updated 25 November 2026. Windows app 2.5.0.5; model pack 1.5.0. This is a technical vendor statement, not independent security certification.
+Updated 25 November 2026. Windows app 2.5.0.6; model pack 1.5.0. This is a technical vendor statement, not independent security certification.
 
 ## Your texts and local storage
 
@@ -22,9 +22,9 @@ Published historical benchmark numbers are developer measurements; the historica
 
 ## Verify your release
 
-Current release: [Linda 2.5.0.5](https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.5) (24 November 2026). Installer `Linda-Setup.exe`: **509,296,537 bytes**, SHA-256 **`075725bf2fcf90e7de29037db4baddfe35775775ca05e5a35958b248807ce5fb`** (GitHub asset metadata). This hash is not an Authenticode publisher signature; the installer is not code-signed, so Windows SmartScreen may warn.
+Current release: [Linda 2.5.0.6](https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.6) (25 November 2026). Installer `Linda-Setup.exe`: **509,299,108 bytes**, SHA-256 **`5cf7807cef544ddde806414d437ee53ce81017721230d26432aad0a5839d687d`** (GitHub asset metadata). This hash is not an Authenticode publisher signature; the installer is not code-signed, so Windows SmartScreen may warn.
 
-Previous release noted here: [Linda 2.3.0.1](https://github.com/Lendarixon/Linda/releases/tag/v2.3.0.1). Installer `Linda-Setup.exe`: **510,094,343 bytes**, SHA-256 **`2e1a98d846a4d09d808cc326dbfb4c77d33a3adf655f6e8a6c213968a84fbe1d`**.
+Previous release noted here: [Linda 2.5.0.5](https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.5). Installer `Linda-Setup.exe`: **509,296,537 bytes**, SHA-256 **`075725bf2fcf90e7de29037db4baddfe35775775ca05e5a35958b248807ce5fb`**.
 
 Historical release (2.0.6.0, 11 October 2026 report): [Linda 2.0.6.0](https://github.com/Lendarixon/Linda/releases/tag/v2.0.6.0). Installer `Linda-Setup.exe`: **286,398,840 bytes**, SHA-256 **`23a3d3afdcebb59e0bb48271392ba470d75b1a2b6a66cf41016d8fa1b73510ad`**. Windows PowerShell: `Get-FileHash -Algorithm SHA256 .\Linda-Setup.exe`; compare the entire hash. The hash is useful when obtained from a trusted independent source; it is not an Authenticode publisher signature. The 11 October 2026 installer was not Authenticode signed; this note does not claim signature or Store verification for later releases.
 
