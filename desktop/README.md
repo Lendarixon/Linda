@@ -2,7 +2,7 @@
 
 Linda Detector 2.3.0.1 is a local Windows workspace with Assay and Loupe AI-text detection, plus optional Humanizer and Linda Trace writing-style tools. Model package: 1.3.4.1. Download the [latest installer](https://github.com/Lendarixon/Linda/releases/latest).
 
-Model files are downloaded when needed (about 2.9 GB for Assay or 0.3 GB for Loupe). Text processing runs on your computer. Downloads, update checks and licence activation/periodic validation use internet connections without uploading checked texts. Any paid Detector key also unlocks Humanizer and Trace for personal use; they are not separate app purchases. Linda Probe is a separate app and key. See [licensing](https://github.com/Lendarixon/Linda/blob/main/LICENSING.md).
+Model files are downloaded when needed (about 5.8 GB for Assay or 0.3 GB for Loupe). Text processing runs on your computer. Downloads, update checks and licence activation/periodic validation use internet connections without uploading checked texts. Any paid Detector key also unlocks Humanizer and Trace for personal use; they are not separate app purchases. Linda Probe is a separate app and key. See [licensing](https://github.com/Lendarixon/Linda/blob/main/LICENSING.md).
 GPU acceleration on any DirectX 12 card (AMD Radeon, NVIDIA GeForce, Intel Arc) through ONNX Runtime DirectML (`onnx_gpu.py`: the models are exported to ONNX once on the user's PC), colour map of the text, sensitive / precise modes, CPU or GPU, licence key dialog, update check (signed manifest) for models and for the app itself.
 
 * `linda_desktop/` - local web backend (FastAPI on 127.0.0.1), update logic (`updater.py`), licence (`licensing.py`), engine (`engine.py`), window launcher (`__main__.py`);

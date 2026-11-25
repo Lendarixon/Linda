@@ -8,7 +8,7 @@ Linda — это один продукт, который можно получи
 |---|---|---|
 | **Приложение Windows** | установщик с окном, цветовой картой, автоматическими обновлениями моделей | `Linda-Setup.exe` в [GitHub Releases](https://github.com/Lendarixon/Linda/releases/latest) |
 | **Командная строка / Python** | пакет `linda_pro` и инструменты (`python -m linda_pro`, `evaluate.py`) | [GitHub](https://github.com/Lendarixon/Linda) |
-| **Модели и калибровка** | нейросети и пороги (около 2,9 ГБ) | [Hugging Face](https://huggingface.co/Lindarixon/Linda-Pro); приложение скачает их за вас |
+| **Модели и калибровка** | нейросети и пороги (около 5,8 ГБ для Assay, 0,3 ГБ для Loupe) | [Hugging Face](https://huggingface.co/Lindarixon/Linda-Pro); приложение скачает их за вас |
 
 ## 1. Бесплатно: личное некоммерческое использование
 
