@@ -1,6 +1,21 @@
 [
  {
   "date": "2026-11-25",
+  "title": "Linda Probe 2.0.0 — Modern Fluent 2.0 UI, Command Palette and Export",
+  "text": "• Redesigned Modern Fluent 2.0 interface in dark and light themes.\n• Added Command Palette (Ctrl+K), live filename suggestions as you type, result export (CSV, Markdown, JSON), and 1-click Copy Citation.\n• Redesigned Pro storefront with 7-day offline Pro trial, system diagnostics, and updated third-party license notices.",
+  "title_i18n": {
+   "ru": "Linda Probe 2.0.0 — интерфейс Fluent 2.0, палитра команд и экспорт",
+   "en": "Linda Probe 2.0.0 — Modern Fluent 2.0 UI, Command Palette and Export",
+   "pl": "Linda Probe 2.0.0 — interfejs Fluent 2.0, paleta poleceń i eksport"
+  },
+  "text_i18n": {
+   "ru": "• Обновлённый интерфейс Modern Fluent 2.0 в тёмной и светлой темах.\n• Палитра команд (Ctrl+K), мгновенные подсказки по именам при наборе, экспорт результатов (CSV, Markdown, JSON) и копирование цитат.\n• Обновлённая витрина Pro с 7-дневным офлайн-триалом, диагностикой системы и актуальными уведомлениями о лицензиях.",
+   "en": "• Redesigned Modern Fluent 2.0 interface in dark and light themes.\n• Added Command Palette (Ctrl+K), live filename suggestions as you type, result export (CSV, Markdown, JSON), and 1-click Copy Citation.\n• Redesigned Pro storefront with 7-day offline Pro trial, system diagnostics, and updated third-party license notices.",
+   "pl": "• Odświeżony interfejs Modern Fluent 2.0 w jasnym i ciemnym motywie.\n• Paleta poleceń (Ctrl+K), natychmiastowe podpowiedzi nazw plików podczas pisania, eksport wyników (CSV, Markdown, JSON) i kopiowanie cytatów.\n• Nowy ekran Pro z 7-dniowym okresem próbnym offline, diagnostyką systemu i zaktualizowanymi informacjami o licencjach."
+  }
+ },
+ {
+  "date": "2026-11-25",
   "title": "Linda 2.5.0.6 — models folder space from the real pack size",
   "text": "• The models folder check now uses the real size of the model pack instead of a fixed 6 GB: the app needs the size of your selected models plus a 1.5 GB margin (about 7 GB for Assay, about 2 GB for Loupe) and shows the exact figure if the folder is too small.\n• On a DirectX 12 card the app saves a GPU copy of each Assay network the first time it is used (up to about 10 GB); the models page warns when the folder may not hold it (about 17 GB in total) but does not refuse the folder.\n• The models page of the installer shows about 16 GB for Assay with cache instead of 8.7 GB.\n• Includes all 2.5.0.1–2.5.0.5 fixes. Model pack 1.5.0 is unchanged.",
   "title_i18n": {

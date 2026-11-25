@@ -1,6 +1,6 @@
 # Linda Probe — Terms and refund / Условия и возврат / Warunki i zwroty
 
-Date / Дата / Data: 30 October 2026
+Date / Дата / Data: 25 November 2026 (Linda Probe 2.0.0)
 
 ## EN — Terms and refund
 

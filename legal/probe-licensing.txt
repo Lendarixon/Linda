@@ -1,4 +1,4 @@
-Linda Probe Free / Pro — 30 October 2026
+Linda Probe Free / Pro — 25 November 2026 (Linda Probe 2.0.0)
 
 Free: filename and exact-word content search, browsing, previews, manual tags.
 Pro: semantic search, OCR for scans and searchable PDFs, photo search by description/example, automatic tags.
