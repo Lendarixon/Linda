@@ -2,7 +2,7 @@
 """Linda-Pro local HTTP service (standard library only): for embedding into your product INSIDE your infrastructure.
 Models are loaded once and stay in memory. Texts are not logged and not sent outside.
 
-    python -m linda_pro.server --port 8080 [--host 127.0.0.1] [--mode sensitive|precise] [--token SECRET] [--device cuda|cpu]
+    python -m linda_pro.server --port 8080 [--host 127.0.0.1] [--mode sensitive|precise] [--tier auto|full|lite] [--token SECRET] [--device cuda|cpu]
 
 Requests (JSON):
     GET  /health                       -> {"status": "ok", "mode": ...}
@@ -22,6 +22,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .core import LindaPro
+from .loader import TIERS, installed_tiers, load_detectors
 
 MAX_BODY = 20 * 1024 * 1024  # 20 MB per request
 MAX_TEXTS = 64
@@ -60,6 +61,14 @@ def make_detectors(device: str | None = None) -> dict[str, LindaPro]:
     base._factory = factory
     precise = LindaPro(mode="precise", device=device, voter_factory=factory)
     return {"sensitive": base, "precise": precise}
+
+
+def load_service_detectors(device: str | None = None, tier: str = "auto") -> dict:
+    """Routed weights (1.3.x and later) through loader.load_detectors, the same path as the CLI; the legacy 1.1 layout keeps make_detectors (resident voters)."""
+    if tier != "auto" or any(installed_tiers().values()):
+        return load_detectors(device=device, tier=tier)
+    load_detectors(device=device)  # raises FileNotFoundError with download instructions when no weights are installed at all
+    return make_detectors(device)
 
 
 def make_handler(detectors: dict, token: str | None, default_mode: str):
@@ -109,6 +118,7 @@ def make_handler(detectors: dict, token: str | None, default_mode: str):
                     res = det.detect(texts)
             except Exception as e:  # noqa: BLE001
                 return self._send(500, {"error": "detector failed: " + type(e).__name__})
+            res = [{k: v for k, v in r.items() if not k.startswith("_")} for r in res]  # internal fields (e.g. Lite token scores)
             if not req.get("windows", True):
                 for r in res:
                     r.pop("windows", None)
@@ -124,9 +134,13 @@ def main(argv=None) -> None:
     ap.add_argument("--mode", choices=["sensitive", "precise"], default="sensitive")
     ap.add_argument("--token", default=None)
     ap.add_argument("--device", default=None, help="cuda or cpu (default: auto)")
+    ap.add_argument("--tier", choices=TIERS, default="auto", help="installed weights to use: auto (full if installed, otherwise lite), full or lite")
     a = ap.parse_args(argv)
     check_bind(a.host, a.token)
-    dets = make_detectors(a.device)
+    try:
+        dets = load_service_detectors(a.device, a.tier)
+    except FileNotFoundError as e:
+        raise SystemExit(f"error: {e}") from None
     srv = ThreadingHTTPServer((a.host, a.port), make_handler(dets, a.token, a.mode))
     print(f"Linda-Pro service on http://{a.host}:{a.port} (mode {a.mode}); request texts are never logged", flush=True)
     try:

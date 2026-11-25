@@ -67,7 +67,7 @@ Recommended computer:
 | Free disk space | 2 GB | 6 GB (an SSD is better) |
 
 Our own measurements on public test sets (English, Polish, Russian), not an independent audit; one calibration rule for both versions. The full Linda Assay needed 226 s for a 3,800-word text on an office Ryzen 5 PRO 2400GE; Lite is expected to take a few seconds there (not measured on that processor yet).
-Lite weights have their own repository: [Lindarixon/Linda-Pro-Lite](https://huggingface.co/Lindarixon/Linda-Pro-Lite). From Python: `python download_models.py --set lite`, then `python -m linda_pro file.txt --lite`.
+Lite weights have their own repository: [Lindarixon/Linda-Pro-Lite](https://huggingface.co/Lindarixon/Linda-Pro-Lite). From Python: `python download_models.py --set lite` (or `--set both`), then `python -m linda_pro file.txt --lite` (`--tier full|lite|auto` picks explicitly; `auto` uses the full set when it is installed).
 
 The online demo also has a **Stylize** button (rewrite a whole text, the AI-looking sentences, or your selection; it does not hide authorship). Its adapters are public: [Lindarixon/Linda-Stylizer](https://huggingface.co/Lindarixon/Linda-Stylizer) (CC BY-NC-4.0, same terms as the detectors; meaning is not verified automatically).
 <!-- lite:end -->
@@ -89,13 +89,13 @@ Earlier timings and the 1.6 GB GPU estimate describe the previous precision rout
 The weights are public on Hugging Face: [Lindarixon/Linda-Pro](https://huggingface.co/Lindarixon/Linda-Pro) (no login needed).
 ```bash
 pip install -r requirements.txt
-python download_models.py                              # downloads the 1.3.1 weights (~2.9 GB) from Hugging Face into ./models
+python download_models.py                              # full set (~5.8 GB: English + Polish/Russian voices) into ./models; --set lite for Lite (~0.3 GB)
 python -m linda_pro my_text.txt --windows               # verdict + per-window scores (mixed authorship); language is detected automatically
 python evaluate.py --human my_human_texts/ --ai my_ai_texts/ --mode precise   # accuracy on your own labelled samples
 ```
 `evaluate.py` takes two folders of `.txt` files (or a JSONL with `text` and `label` fields), prints AUROC, true/false positive rates for the `ai` verdict
 and for `ai or uncertain`, and writes `evaluation_report.csv`. Use **at least 100 texts per class, preferably 300+ words each**; texts by non-native writers are a good stress test.
-From Python: `from linda_pro import load_detector; load_detector("sensitive").detect([text])`.
+From Python: `from linda_pro import load_detector; load_detector("sensitive").detect([text])` (add `tier="lite"` or `tier="full"` to choose; a tier that is not installed raises `FileNotFoundError`).
 
 ## No GPU? Google Colab
 Open `colab/Linda_Pro_demo.ipynb` in Colab (free T4 is enough), run all cells, paste or upload your texts.

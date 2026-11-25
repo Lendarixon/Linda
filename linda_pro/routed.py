@@ -137,21 +137,31 @@ class RoutedLindaPro:
     @property
     def mean(self) -> dict:
         t = self.tier(self.cur_lang)
-        return {COMPAT[k]: t["z"][t["heat"][k]["voter"]][0] for k in ("essay", "multi")} | {COMPAT["stylo"]: t["z"][self._stylo_key(t)][0]}
+        return self._compat_z(t, 0)
 
     @property
     def std(self) -> dict:
         t = self.tier(self.cur_lang)
-        return {COMPAT[k]: t["z"][t["heat"][k]["voter"]][1] for k in ("essay", "multi")} | {COMPAT["stylo"]: t["z"][self._stylo_key(t)][1]}
+        return self._compat_z(t, 1)
 
     @staticmethod
-    def _stylo_key(t: dict) -> str:
-        return next(v for v in t["voters"] if v.startswith("stylo"))
+    def _stylo_key(t: dict) -> str | None:
+        """Stylometry voice of the tier, or None: since routing 1.4.1 the PL/RU full tiers carry no stylo voter."""
+        return next((v for v in t["voters"] if v.startswith("stylo")), None)
+
+    def _compat_z(self, t: dict, i: int) -> dict:
+        out = {COMPAT[k]: t["z"][t["heat"][k]["voter"]][i] for k in ("essay", "multi")}
+        ks = self._stylo_key(t)
+        if ks is not None:
+            out[COMPAT["stylo"]] = t["z"][ks][i]
+        return out
 
     def _factory(self, key: str):
         """linda_essay / linda_multi_v2 (имена 1.x) -> главный голос текущего языка для тепловой карты; настоящие имена голосов работают как есть."""
         t = self.tier(self.cur_lang)
         real = {"linda_essay": t["heat"]["essay"]["voter"], "linda_multi_v2": t["heat"]["multi"]["voter"], "stylo7c": self._stylo_key(t)}.get(key, key)
+        if real is None:
+            raise KeyError(f"tier for language {self.cur_lang!r} has no stylometry voter")
         return self.pool.get(real)
 
     # --- анализ ---------------------------------------------------------------------------------------
@@ -240,7 +250,7 @@ class RoutedLindaPro:
             tot = sum(w["last_word"] - w["first_word"] for w in wl) or 1
             share = sum(w["last_word"] - w["first_word"] for w in wl if w["flag"]) / tot
             res.append({"verdict": verdict, "mode": self.mode, "essay": float(agg[ke]), "ens_z": float(score), "score": float(score), "ai_share": float(share), "windows": wl,
-                        "voters": {COMPAT["essay"]: agg[ke], COMPAT["multi"]: agg[km], COMPAT["stylo"]: agg[ks]}, "n_windows": len(wl),
+                        "voters": {COMPAT["essay"]: agg[ke], COMPAT["multi"]: agg[km]} | ({COMPAT["stylo"]: agg[ks]} if ks else {}), "n_windows": len(wl),
                         "language": lang, "routing": {"voters": list(t["voters"]), "config": t.get("config", "")}})
             if self.tier_pref == "speed":
                 res[-1]["_lite_token_scores"] = known[i]
