@@ -1,5 +1,89 @@
 [
   {
+    "version": "2.5.0.6",
+    "date": "2026-11-25",
+    "title": {
+      "en": "Models folder space check from the real model pack size",
+      "ru": "Проверка места для папки моделей по реальному размеру пакета",
+      "pl": "Sprawdzanie miejsca na folder modeli według rzeczywistego rozmiaru pakietu"
+    },
+    "notes": {
+      "en": "Models folder space check uses the real model pack size (about 5.8 GB for Assay plus the GPU model cache, up to about 16 GB) instead of a fixed 6 GB; the installer shows the same estimate. Model pack 1.5.0 unchanged.",
+      "ru": "Проверка места для папки моделей использует реальный размер пакета моделей (около 5,8 ГБ для Assay плюс кэш моделей на GPU, до примерно 16 ГБ) вместо фиксированных 6 ГБ; установщик показывает ту же оценку. Пакет моделей 1.5.0 без изменений.",
+      "pl": "Sprawdzanie miejsca na folder modeli korzysta z rzeczywistego rozmiaru pakietu modeli (około 5,8 GB dla Assay plus pamięć podręczna modeli na GPU, do około 16 GB) zamiast stałych 6 GB; instalator pokazuje ten sam szacunek. Pakiet modeli 1.5.0 bez zmian."
+    }
+  },
+  {
+    "version": "2.5.0.0",
+    "date": "2026-11-21",
+    "title": {
+      "en": "Release 2.5 branch: humanizer merge and nightly model pack 1.5.0",
+      "ru": "Релизная ветка 2.5: мердж гуманайзера и ночной пакет моделей 1.5.0",
+      "pl": "Gałąź wydania 2.5: scalenie humanizera i nocny pakiet modeli 1.5.0"
+    },
+    "notes": {
+      "en": "Version bump to 2.5.0.0 on branch night/release-2.5 (rc/2.4 + night/humanizer + night/pack15). The humanizer work from the night branch is merged into the release line; the nightly model pack is 1.5.0-nightly and unsigned, intended for local installation only. Detector behaviour and scoring thresholds are unchanged. Known limitations: the nightly pack is not signed, no installer or store build exists for 2.5.0.0 yet.",
+      "ru": "Повышение версии до 2.5.0.0 в ветке night/release-2.5 (rc/2.4 + night/humanizer + night/pack15). Работа по гуманайзеру из ночной ветки включена в релизную линию; ночной пакет моделей — 1.5.0-nightly, без подписи, только для локальной установки. Поведение детектора и пороги не менялись. Известные ограничения: ночной пак не подписан, установщика и сборки для стора для 2.5.0.0 пока нет.",
+      "pl": "Podniesienie wersji do 2.5.0.0 w gałęzi night/release-2.5 (rc/2.4 + night/humanizer + night/pack15). Prace nad humanizerem z gałęzi nocnej zostały włączone do linii wydania; nocny pakiet modeli to 1.5.0-nightly, niepodpisany, tylko do instalacji lokalnej. Zachowanie detektora i progi bez zmian. Znane ograniczenia: pakiet nocny nie jest podpisany, nie ma jeszcze instalatora ani kompilacji sklepowej dla 2.5.0.0."
+    }
+  },
+  {
+    "version": "2.4.0.0",
+    "date": "2026-11-20",
+    "title": {
+      "en": "Redesigned UI, faster token markup, detector pack 1.4.1",
+      "ru": "Обновлённый интерфейс, ускоренная token-разметка, пакет детектора 1.4.1",
+      "pl": "Odświeżony interfejs, szybsze oznaczanie tokenów, pakiet detektora 1.4.1"
+    },
+    "notes": {
+      "en": "The interface was redesigned to match the brand site: flat surfaces, square corners, two control heights, navigation in three groups, and a single solid fill for the primary action, verified against WCAG AA in three themes and eight accents. Token-level markup is faster: windows are batched into one pass per batch (45 to 9 forwards on a 3000-word text on CPU) with identical verdicts. The detector model pack is 1.4.1: Polish TPR@1% on test_pl 79.0 to 88.0, Russian false positives on human texts 1.0% to 0.15%, English unchanged, and train_args.json now ships so the essay window size (384) matches the calibration. The pack is unsigned and intended for local installation only. The humanizer audit found no code changes needed; licensed endpoints stay gated. All interface text is synchronised across English, Polish and Russian (752 keys per language). Known limitations: the token head is weak on English and Polish, 11 known environment test failures remain, and nothing was published (no signed builds, no store).",
+      "ru": "Интерфейс переработан по брендовому сайту: плоские поверхности, квадратные углы, два размера контролов, навигация в трёх группах, единая заливка кнопки действия; контраст проверен по WCAG AA на трёх темах и восьми акцентах. Token-разметка ускорена: окна батчируются в один проход на батч (45 → 9 forward'ов на тексте 3000 слов на CPU), вердикты идентичны. Пакет моделей детектора — 1.4.1: польский TPR@1% на test_pl 79.0 → 88.0, ложные срабатывания на людях в русском 1.0% → 0.15%, английский без изменений; в пакете теперь лежат train_args.json, чтобы размер окна essay (384) совпадал с калибровкой. Пак не подписан и предназначен только для локальной установки. Аудит гуманайзера не потребовал изменений кода; лицензионные точки входа остаются под замком. Весь текст интерфейса синхронизирован для английского, польского и русского (752 ключа на язык). Известные ограничения: token-head слаб на английском и польском, осталось 11 известных падений тестов из-за окружения, публикация не выполнялась (нет подписи, нет стора).",
+      "pl": "Interfejs przebudowano zgodnie ze stroną marki: płaskie powierzchnie, proste narożniki, dwa wysokości kontrolek, nawigacja w trzech grupach, jednolite wypełnienie przycisku akcji; kontrast sprawdzono według WCAG AA w trzech motywach i ośmiu akcentach. Oznaczanie tokenów jest szybsze: okna są przetwarzane wsadowo (45 → 9 przejść dla tekstu 3000 słów na CPU), werdykty bez zmian. Pakiet modeli detektora to 1.4.1: polski TPR@1% na test_pl 79.0 → 88.0, fałszywe alarmy na tekstach ludzkich w rosyjskim 1.0% → 0.15%, angielski bez zmian; w pakiecie znajdują się teraz pliki train_args.json, tak by rozmiar okna essay (384) odpowiadał kalibracji. Pakiet jest niepodpisany i przeznaczony wyłącznie do instalacji lokalnej. Audyt humanizera nie wymagał zmian w kodzie; punkty wymagające licencji pozostają zablokowane. Cały tekst interfejsu jest zsynchronizowany dla angielskiego, polskiego i rosyjskiego (752 klucze na język). Znane ograniczenia: token-head jest słaby w angielskim i polskim, pozostało 11 znanych błędów testów środowiskowych, publikacja nie została wykonana (brak podpisu, brak sklepu)."
+    }
+  },
+  {
+    "version": "2.3.0.2",
+    "date": "2026-10-30",
+    "title": {
+      "en": "Corrected licence agreement text, no feature changes",
+      "ru": "Исправлен текст лицензионного соглашения, без изменений функций",
+      "pl": "Poprawiony tekst umowy licencyjnej, bez zmian funkcji"
+    },
+    "notes": {
+      "en": "Only the licence agreement text was corrected (the same text already published in the repository). No features, detector models, thresholds or prices changed; model pack 1.3.4.1 unchanged.",
+      "ru": "Исправлен только текст лицензионного соглашения (тот же текст, что уже опубликован в репозитории). Функции, модели детектора, пороги и цены не менялись; пакет моделей 1.3.4.1 без изменений.",
+      "pl": "Poprawiono wyłącznie tekst umowy licencyjnej (ten sam tekst, który opublikowano już w repozytorium). Funkcje, modele wykrywacza, progi i ceny bez zmian; pakiet modeli 1.3.4.1 bez zmian."
+    }
+  },
+  {
+    "version": "2.3.0.1",
+    "date": "2026-10-26",
+    "title": {
+      "en": "Humanizer reliability: honest downloads, no crashes, word counter and log export",
+      "ru": "Надёжность гуманайзера: честная загрузка, без падений, счётчик слов и экспорт лога",
+      "pl": "Niezawodność humanizera: uczciwe pobieranie, brak awarii, licznik słów i eksport dziennika"
+    },
+    "notes": {
+      "en": "Licensed packs now download with a live byte bar (downloaded of total) instead of a frozen \"Downloading...\" label, plus a one-click \"whole humanizer (Lite + Full)\" button; previously the \"download everything\" choice covered only the detector. Applied detector updates no longer leave a ~3 GB staging duplicate behind, so used space stops growing after each update. Auto mode now reports which tier it picked and why. Out-of-memory or missing-GPU situations end with a clear message (pick Lite) instead of a crash. A one-sentence rewrite no longer hangs the PC: the full 4B model is blocked on GPU-less machines, short inputs are capped, and refinement shows live progress. The humanizer panes gained what the detector already had: a word counter, a below-300-words warning, and a log export (Markdown) with device memory, chosen tier and result. Detector models and scoring thresholds are unchanged.",
+      "ru": "Лицензионные пакеты теперь качаются с живым прогрессом в байтах (загружено из всего), а не с зависшим «Скачивание…», плюс появилась кнопка «весь гуманайзер (Lite + Full)»; раньше выбор «скачать всё» ставил только детектор. Применённые обновления детектора больше не оставляют дубль staging (~3 ГБ), занятое место перестаёт расти после каждого обновления. Режим «Авто» теперь показывает, какой вариант выбран и почему. Нехватка памяти или отсутствие видеокарты заканчиваются понятным сообщением (возьмите Lite), а не падением. Переписывание одного предложения больше не вешает компьютер: полная модель 4B запрещена без GPU, короткие входы ограничены, доводка показывает живой прогресс. В гуманайзере появилось то, что уже было в детекторе: счётчик слов, предупреждение о тексте короче 300 слов и экспорт лога (Markdown) с памятью устройства, выбранным вариантом и результатом. Модели детектора и пороги не менялись.",
+      "pl": "Pakiety licencyjne pobierają się teraz z żywym paskiem bajtów (pobrano z całości), a nie z zawieszonym napisem o pobieraniu; dodano też przycisk „cały humanizer (Lite + Full)”; wcześniej opcja pobrania wszystkiego obejmowała tylko wykrywacz. Zastosowane aktualizacje wykrywacza nie zostawiają już duplikatu staging (~3 GB), więc zajęte miejsce przestaje rosnąć po każdej aktualizacji. Tryb Auto pokazuje teraz, który wariant wybrano i dlaczego. Brak pamięci lub karty graficznej kończy się zrozumiałym komunikatem (wybierz Lite), a nie awarią. Przepisanie jednego zdania nie zawiesza już komputera: pełny model 4B jest zablokowany bez GPU, krótkie teksty są ograniczone, a dopracowanie pokazuje żywy postęp. Humanizer zyskał to, co wykrywacz miał już wcześniej: licznik słów, ostrzeżenie o tekście krótszym niż 300 słów oraz eksport dziennika (Markdown) z pamięcią urządzenia, wybranym wariantem i wynikiem. Modele wykrywacza i progi bez zmian."
+    }
+  },
+  {
+    "version": "2.3.0.0",
+    "date": "2026-10-24",
+    "title": {
+      "en": "A clearer Windows workspace and licensed tools",
+      "ru": "Понятный интерфейс Windows и дополнительные инструменты",
+      "pl": "Czytelniejszy interfejs Windows i dodatkowe narzędzia"
+    },
+    "notes": {
+      "en": "New Windows-style workspace: permanent navigation, separate history and tool pages, grouped settings, clear labels and guidance before a check. Pasting no longer starts analysis automatically. Added an explicit Stop action, visible background activity and inline errors. Light, dark and contrast themes, RU/EN/PL. Two downloadable licensed packs (any key, incl. subscription): Trace forensic authorship (corpus ranking + author candidates, relative distances only) and Humanizer in two tiers (0.6B CPU / 4B GPU, auto-picked). New: humanize-until-calm loop — the text is re-humanized until the detector AI share drops below 50% (max 5 passes), with detector/humanizer swap so only one heavy backend lives in memory. Detector itself is unchanged. Follow-up: a Humanize button appears in the check row after each completed check (blinks for 5 seconds as a recommendation, no badge) and carries the text to the Humanizer. Humanizer, refinement loop and Trace corpus show a live progress bar (refinement shows the pass number and current AI share). Trace/Humanizer panes show a lock without a licence (tabs too) leading to licence entry. The installer asks for a licence key: without it only the detector is selected and no licensed packs are fetched; with it the key is activated on first start.  Detector models and scoring thresholds are unchanged. Licence and pack states are now explained everywhere in your language: locked tabs and panes lead to the key entry, missing packs lead to “Models and packs”, and the installer asks for the key when packs are chosen. Cleanup: the first-run tour and its Skip button are removed (replaced by persistent instructions long ago); the duplicate rewrite button above the editor is removed — rewriting is offered next to the verdict, in the command row and in the tools menu. Licence, pack and missing-pack errors now speak your language and say where to go and what to press; unlicensed Trace/Humanizer show locks in the side menu, and missing packs show download hints instead of errors.",
+      "ru": "Новый интерфейс в стиле Windows: постоянное меню, отдельные страницы истории и инструментов, настройки по категориям, понятные подписи и подсказки до анализа. Вставка из буфера больше не запускает проверку автоматически. Добавлены остановка проверки, видимый индикатор фоновой задачи и ошибки рядом с действием. Светлая, тёмная и контрастная темы, RU/EN/PL. Два докачиваемых пакета по ключу (любой, включая подписку): Trace (ранжирование корпуса + кандидаты в авторы, только относительные дистанции) и гуманайзер в двух версиях (0.6B CPU / 4B GPU, автовыбор). Новое: луп «гуманизировать, пока детектор не успокоится» — текст переписывается, пока доля ИИ не упадёт ниже 50% (до 5 проходов), детектор и гуманайзер по очереди выгружаются, в памяти живёт что-то одно. Сам детектор не менялся. Доработка: после каждой проверки в ряду кнопок появляется кнопка «Гуманизировать текст» (мигает 5 секунд как рекомендация, без бейджа) и переносит текст в гуманайзер. У гуманайзера, доводки и корпуса Trace появился живой прогресс-бар (доводка показывает номер прохода и текущую долю ИИ). Панели Trace/гуманайзера без лицензии показывают замок (и вкладки тоже) с переходом к вводу ключа. Установщик спрашивает ключ лицензии: без него выбирается только детектор и лицензионные пакеты не тянутся; с ключом он активируется при первом запуске. Сам детектор не менялся. Состояния лицензии и паков теперь объяснены везде на вашем языке: замки ведут к вводу ключа, недостающие паки — в «Модели и пакеты». Уборка: тур первого запуска и его кнопка «Пропустить» удалены (давно заменены постоянными подсказками); дубль кнопки переписывания над редактором убран — переписывание предлагается рядом с вердиктом, в ряду кнопок и в меню инструментов. Ошибки лицензии, паков и недостающих паков теперь на вашем языке, говорят куда идти и что нажать; Trace/Humanizer без лицензии показывают замки в боковом меню, а недостающие паки — подсказки про скачивание вместо ошибок.",
+      "pl": "Nowy interfejs w stylu Windows: stała nawigacja, osobne strony historii i narzędzi, pogrupowane ustawienia, czytelne etykiety i wskazówki przed sprawdzeniem. Wklejanie nie uruchamia już analizy automatycznie. Dodano zatrzymywanie, widoczne działanie w tle i błędy obok czynności. Motywy jasny, ciemny i kontrastowy, RU/EN/PL. Dwa dociagane pakiety na klucz (dowolny, w tym subskrypcja): Trace (ranking korpusu + kandydaci, tylko odleglosci wzgledne) i humanizer w dwoch wersjach (0.6B CPU / 4B GPU, autowybor). Nowosc: petla humanizacji az detektor spadnie ponizej 50% (do 5 przebiegow), detektor i humanizer laduje sie na zmiane. Sam detektor bez zmian. Uzupełnienie: po każdym sprawdzeniu w rzędzie przycisków pojawia się przycisk „Humanizuj tekst” (miga przez 5 sekund jako rekomendacja, bez plakietki), przenosi tekst do humanizera. Humanizer, dopracowanie i korpus Trace pokazują pasek postępu na żywo (dopracowanie: numer przebiegu i bieżący udział AI). Panele Trace/humanizera bez licencji pokazują kłódkę (także zakładki) z przejściem do wpisania klucza. Instalator pyta o klucz licencji: bez niego wybierany jest tylko detektor, a pakiety licencyjne nie są pobierane; z kluczem aktywuje się on przy pierwszym uruchomieniu.  Sam detektor bez zmian. Stany licencji i pakietÃ³w sÄ teraz wyjaÅnione wszÄdzie w Twoim jÄzyku: kÅÃ³dki prowadzÄ do wpisania klucza, brakujÄce pakiety — do „Modele i pakiety”. PorzÄdki: usuniÄto przewodnik pierwszego uruchomienia i jego przycisk PomiÅ (dawno zastÄpione staÅymi wskazÃ³wkami); usuniÄto zdublowany przycisk przeredagowania nad edytorem — przeredagowanie jest proponowane obok werdyktu, w rzÄdzie przyciskÃ³w i w menu narzÄdzi. Błędy licencji, pakietów i brakujących pakietów są teraz w Twoim języku, mówią dokąd iść i co nacisnąć; Trace/Humanizer bez licencji pokazują kłódki w bocznym menu, a brakujące pakiety — podpowiedzi o pobieraniu zamiast błędów."
+    }
+  },
+  {
     "version": "2.1.0.0",
     "date": "2026-10-23",
     "title": {

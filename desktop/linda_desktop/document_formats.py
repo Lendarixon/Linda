@@ -181,3 +181,186 @@ def extract_extended(ext,data):
         root=xml(data)
         return '\n\n'.join(''.join(n.itertext()) for body in root.iter() if body.tag.endswith('}body') for n in body.iter() if n.tag.endswith('}p'))
     raise ValueError('Unsupported document format')
+
+
+_HYPHEN_END=re.compile(r'[A-Za-z\u00c0-\u024f\u0400-\u04ff][-\u00ad\u2010]$')
+_LOWER_START=re.compile(r'^[a-z\u00df-\u024f\u0430-\u044f\u0451]')
+_NO_SPACE_BEFORE=re.compile(r'^(?:[,;:!?\)\]\}%\u00bb\u201d\u2019]|\.(?!\.))')
+_SENT_END=re.compile(r'[.!?\u2026\u00bb\u201d\)]$')
+
+
+def _join_line_frags(frags):
+    frags.sort(key=lambda f: f[0])
+    out=[]
+    for x, y, fs, txt in frags:
+        s=txt.strip()
+        if not s:
+            continue
+        if not out:
+            out.append(s)
+        elif out[-1].endswith(('-', '\u00ad', '\u2010', '(', '[', '\u00ab', '\u201c')) or _NO_SPACE_BEFORE.match(s):
+            out.append(s)
+        else:
+            out.append(' ' + s)
+    return re.sub(r'[ \t]{2,}', ' ', ''.join(out)).strip()
+
+
+def _cluster_lines(frags):
+    if not frags:
+        return []
+    ordered=sorted(frags, key=lambda f: (-f[1], f[0]))
+    lines=[]
+    cur=[ordered[0]]
+    cur_y=ordered[0][1]
+    cur_fs=ordered[0][2]
+    for f in ordered[1:]:
+        tol=max(2.0, 0.35 * max(cur_fs, f[2]))
+        if abs(f[1] - cur_y) <= tol:
+            cur.append(f)
+            cur_fs=max(cur_fs, f[2])
+        else:
+            txt=_join_line_frags(cur)
+            if txt:
+                lines.append((cur_y, min(p[0] for p in cur), cur_fs, txt))
+            cur=[f]
+            cur_y=f[1]
+            cur_fs=f[2]
+    txt=_join_line_frags(cur)
+    if txt:
+        lines.append((cur_y, min(p[0] for p in cur), cur_fs, txt))
+    return lines
+
+
+def _split_two_columns(frags, page_width):
+    if len(frags) < 8 or page_width < 300:
+        return [frags]
+    xs=sorted(f[0] for f in frags)
+    lo, hi=page_width * 0.30, page_width * 0.70
+    best_gap, mid_x=0.0, 0.0
+    for a, b in zip(xs, xs[1:]):
+        if lo <= (a + b) / 2.0 <= hi and (b - a) > best_gap:
+            best_gap=b - a
+            mid_x=(a + b) / 2.0
+    if best_gap < 24.0:
+        return [frags]
+    left=[f for f in frags if f[0] < mid_x]
+    right=[f for f in frags if f[0] >= mid_x]
+    if len(left) < 4 or len(right) < 4:
+        return [frags]
+    left_ys={round(f[1] / 6.0) for f in left}
+    right_ys={round(f[1] / 6.0) for f in right}
+    if len(left_ys) < 4 or len(right_ys) < 4:
+        return [frags]
+    ly_min, ly_max=min(f[1] for f in left), max(f[1] for f in left)
+    ry_min, ry_max=min(f[1] for f in right), max(f[1] for f in right)
+    if min(ly_max, ry_max) <= max(ly_min, ry_min):
+        return [frags]
+    crossing=sum(1 for f in left if f[0] + len(f[3].strip()) * f[2] * 0.42 > mid_x + 12.0)
+    if crossing > max(1, len(left) // 5):
+        return [frags]
+    return [left, right]
+
+
+def _lines_to_paragraphs(lines):
+    if not lines:
+        return ''
+    dys=[lines[i - 1][0] - lines[i][0] for i in range(1, len(lines)) if 0 < lines[i - 1][0] - lines[i][0] < max(lines[i - 1][2], 10.0) * 4.0]
+    med_dy=sorted(dys)[len(dys) // 2] if dys else max(lines[0][2] * 1.2, 12.0)
+    xs=sorted(l[1] for l in lines)
+    x_base=xs[max(0, len(xs) // 10)]
+    paras=[]
+    cur=lines[0][3]
+    prev_y, _, prev_fs, _=lines[0]
+    for y, x, fs, txt in lines[1:]:
+        dy=prev_y - y
+        para_break=(dy < 0) or (dy > max(med_dy * 1.42, prev_fs * 1.55)) or (bool(_SENT_END.search(cur)) and (x - x_base) > max(8.0, prev_fs * 0.7))
+        if para_break:
+            paras.append(cur)
+            cur=txt
+        elif _HYPHEN_END.search(cur) and _LOWER_START.match(txt):
+            cur=cur[:-1] + txt
+        else:
+            cur=cur + ' ' + txt
+        prev_y, prev_fs=y, fs
+    paras.append(cur)
+    return '\n\n'.join(paras)
+
+
+def _norm_hf(s):
+    return re.sub(r'\d+', '#', s.strip()).lower()
+
+
+def extract_pdf_pages(reader):
+    page_groups=[]
+    for page in reader.pages:
+        frags=[]
+        seen_words=set()
+        seen_pos=set()
+        def _visitor(text, cm, tm, font_dict, font_size):
+            if not text or not text.strip():
+                return
+            s=text.strip()
+            if '\n' in s and frags:
+                words=s.split()
+                if words and sum(1 for w in words if w in seen_words) >= 0.8 * len(words):
+                    return
+            x=float(cm[0]) * float(tm[4]) + float(cm[2]) * float(tm[5]) + float(cm[4])
+            y=float(cm[1]) * float(tm[4]) + float(cm[3]) * float(tm[5]) + float(cm[5])
+            fs=abs(float(font_size or 0.0)) or 10.0
+            if frags and frags[-1][3].strip() == s and (abs(frags[-1][2] - fs) > 0.5 or (abs(frags[-1][0] - x) <= 2.0 and abs(frags[-1][1] - y) <= 2.0)):
+                return
+            pos_key=(round(x / 2.0), round(y / 2.0), s)
+            if pos_key in seen_pos:
+                return
+            seen_pos.add(pos_key)
+            seen_words.update(s.split())
+            frags.append((x, y, fs, text))
+        try:
+            page.extract_text(visitor_text=_visitor)
+        except Exception:
+            frags=[]
+        if frags:
+            try:
+                pw=float(page.mediabox.width)
+            except Exception:
+                pw=max(f[0] for f in frags) - min(f[0] for f in frags)
+            cols=_split_two_columns(frags, pw)
+            col_lines=[_cluster_lines(c) for c in cols]
+            col_lines=[cl for cl in col_lines if cl]
+            page_groups.append(col_lines)
+        else:
+            raw=(page.extract_text() or '').strip()
+            if raw:
+                fallback_lines=[(float(1000 - i * 14), 0.0, 12.0, ln.strip()) for i, ln in enumerate(raw.splitlines()) if ln.strip()]
+                page_groups.append([fallback_lines] if fallback_lines else [])
+            else:
+                page_groups.append([])
+    if len(page_groups) >= 3:
+        top_counts, bot_counts={}, {}
+        for cols in page_groups:
+            if not cols:
+                continue
+            first=cols[0][0][3]
+            last=cols[-1][-1][3]
+            if len(first) <= 100:
+                k=_norm_hf(first)
+                top_counts[k]=top_counts.get(k, 0) + 1
+            if len(last) <= 100:
+                k=_norm_hf(last)
+                bot_counts[k]=bot_counts.get(k, 0) + 1
+        thresh=max(3, int(len(page_groups) * 0.6))
+        drop_top={k for k, c in top_counts.items() if c >= thresh}
+        drop_bot={k for k, c in bot_counts.items() if c >= thresh}
+        for cols in page_groups:
+            if not cols:
+                continue
+            if cols[0] and len(cols[0][0][3]) <= 100 and _norm_hf(cols[0][0][3]) in drop_top:
+                cols[0]=cols[0][1:]
+            if cols[-1] and len(cols[-1][-1][3]) <= 100 and _norm_hf(cols[-1][-1][3]) in drop_bot:
+                cols[-1]=cols[-1][:-1]
+    out=[]
+    for cols in page_groups:
+        parts=[_lines_to_paragraphs(cl) for cl in cols if cl]
+        if parts:
+            out.append('\n\n'.join(parts))
+    return out

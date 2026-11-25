@@ -96,9 +96,9 @@ class LindaPro:
         for key in self.voters:  # strictly one by one: one voter in memory
             voter = self._factory(key)
             if key == "stylo7c":
-                vals = [float(voter.margins([clean_text(t)])[0]) for t in texts]
+                vals = [float(voter.margins([clean_text(t, "en")])[0]) for t in texts]
             else:
-                flat = [clean_text(w[0]) for ws in wins for w in ws]
+                flat = [clean_text(w[0], "en") for ws in wins for w in ws]
                 out: list[float] = []
                 for b in range(0, len(flat), 32):
                     out.extend(float(v) for v in voter.margins(flat[b: b + 32]))

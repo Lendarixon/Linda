@@ -1,23 +1,27 @@
 # Linda desktop app (Windows)
 
-Linda Detector 2.3.0.1 is a local Windows workspace with Assay and Loupe AI-text detection, plus optional Humanizer and Linda Trace writing-style tools. Model package: 1.3.4.1. Download the [latest installer](https://github.com/Lendarixon/Linda/releases/latest).
+Linda Detector 2.5.0.6 is a local Windows workspace with Assay and Loupe AI-text detection, plus optional Humanizer and Linda Trace writing-style tools. Model package: 1.5.0. Download the [latest installer](https://github.com/Lendarixon/Linda/releases/latest).
 
 Model files are downloaded when needed (about 5.8 GB for Assay or 0.3 GB for Loupe). Text processing runs on your computer. Downloads, update checks and licence activation/periodic validation use internet connections without uploading checked texts. Any paid Detector key also unlocks Humanizer and Trace for personal use; they are not separate app purchases. Linda Probe is a separate app and key. See [licensing](https://github.com/Lendarixon/Linda/blob/main/LICENSING.md).
 GPU acceleration on any DirectX 12 card (AMD Radeon, NVIDIA GeForce, Intel Arc) through ONNX Runtime DirectML (`onnx_gpu.py`: the models are exported to ONNX once on the user's PC), colour map of the text, sensitive / precise modes, CPU or GPU, licence key dialog, update check (signed manifest) for models and for the app itself.
 
 * `linda_desktop/` - local web backend (FastAPI on 127.0.0.1), update logic (`updater.py`), licence (`licensing.py`), engine (`engine.py`), window launcher (`__main__.py`);
   1.2: local history with folders (`history.py`, SQLite in the app data folder), text analytics (`analytics.py`), text structure view (`structure.py`, reference in `data/structure_ref.npz`)
-* `web/index.html` - the main UI (built by `tools/make_web.py`); `web/cabinet.html` - history, batch check, document comparison, reader (added to the page by the backend)
+* `web/index.html` - the main UI; `web/cabinet.html` - history, batch check, document comparison, reader (added to the page by the backend)
 * `installer/linda.iss` - Inno Setup script (per-user install, silent update switches)
-* `tools/` - build, signing of the update manifest (`make_manifest.py`), test helpers
+* `tools/` - release and packaging scripts (`release_2506.py`, `repack_exe.py`, `build_document_parser.py`, `make_manifest_2042.py`, `build_store_2505.py`), QA and test helpers
 
 Build (Python 3.12): `pip install torch --index-url https://download.pytorch.org/whl/cpu`, `pip install -r requirements.txt` (see the imports), copy the `linda_pro/` package next to `run_app.py`,
-`python tools/build_document_parser.py`, then `python tools/build_app.py`, then compile `installer/linda.iss` with Inno Setup. Tests: `python -m pytest tests`.
+`python tools/build_document_parser.py`, then package `run_app.py` with PyInstaller, then compile `installer/linda.iss` with Inno Setup. Tests: `python -m pytest tests`.
 
 Updates: the app reads `latest.json` and `latest.json.sig` from the Hugging Face repository; the Ed25519 signature must verify with the public key in `linda_desktop/config.py`
 and every file hash is checked. The signing key is not part of this repository.
 
 Licence of the code: see the repository `LICENSE` (free for non-commercial use; commercial use needs a key).
+
+## 2.5.0.6 (2026-11-25)
+
+See [full release notes](RELEASE_NOTES_2.5.0.6.md). The models folder space check uses the real size of the model pack instead of a fixed 6 GB, and the app and the installer say how much room the GPU model cache can take. Earlier notes: [2.5.0.5](RELEASE_NOTES_2.5.0.5.md), [2.5.0.4](RELEASE_NOTES_2.5.0.4.md), [2.5.0.3](RELEASE_NOTES_2.5.0.3.md), [2.5.0.2](RELEASE_NOTES_2.5.0.2.md), [2.5.0.1](RELEASE_NOTES_2.5.0.1.md).
 
 ## 1.2.1 (2026-10-03)
 

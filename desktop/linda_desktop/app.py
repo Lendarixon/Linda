@@ -90,7 +90,7 @@ class Core:
         self.job.apply_lock = self.engine.lock
         self.job.before_apply = self.engine.unload
         self._auto_tried: str | None = None
-        self.job.on_done = lambda m: (self.engine.unload(), self.preload())  # new weights: drop the old ones and, if enabled, load the new ones right away
+        self.job.on_done = self._on_download_done  # new weights: refresh the UI state, drop the old models, warm the new ones
         self.manifest: dict | None = None
         self.manifest_raw: bytes = b""
         self.update: dict | None = None
@@ -148,6 +148,33 @@ class Core:
                 self.update_pending = {"version": _st["version"], "staging": _st["staging"]}
         except Exception:  # noqa: BLE001
             pass
+
+    def _on_download_done(self, manifest: dict | None = None) -> None:
+        """A weights download finished: the cached status is stale until the next network check, so recompute it from the freshly installed
+        manifest. Without this the page kept offering the same download and every press started another full one."""
+        try:
+            if self.manifest is not None:
+                self.update = updater.update_status(self.manifest)
+        except Exception:  # noqa: BLE001 — status must not crash on a malformed state
+            pass
+        try:
+            self.engine.unload()
+            self.preload()
+        except Exception:  # noqa: BLE001
+            pass
+
+    def refresh_status(self) -> bool:
+        """Cheap self-heal for the cached status: if it still says weights are missing but every file of the effective manifest is on the disk,
+        recompute it from the installed manifest. The page polls /api/status and used to keep offering a download that had already finished."""
+        if self.manifest is None:
+            return False
+        try:
+            if (self.update or {}).get("weights_missing") and updater.is_complete(self.manifest):
+                self.update = updater.update_status(self.manifest)
+                return True
+        except Exception:  # noqa: BLE001
+            pass
+        return False
 
     def check_updates(self) -> None:
         try:
@@ -226,7 +253,17 @@ class Core:
 
         def loop():
             try:
+                licensing.maybe_activate_installer_key()
+            except Exception:  # noqa: BLE001
+                pass
+            try:
                 licensing.revalidate()
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                from . import packs as _packs  # noqa: PLC0415
+
+                _packs.maybe_install_installer_packs()
             except Exception:  # noqa: BLE001
                 pass
             while True:
@@ -306,6 +343,7 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             except Exception:  # noqa: BLE001
                 pass
         pend = updater.pending_status()  # баннер «Перезапустите для обновления»
+        core.refresh_status()  # a finished download leaves the cached status saying "weights missing": heal it before answering
         rollback_msg = ""
         try:
             log = config.data_dir() / updater.ROLLBACK_LOG
@@ -360,9 +398,11 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         updater.remove_unselected()
         core.manifest = None
         core.check_updates()
-        if core.manifest is not None and (core.update or {}).get("weights_missing"):
+        core.refresh_status()
+        if core.manifest is not None and (core.update or {}).get("weights_missing") and not core.job.running() and updater.files_to_fetch(core.manifest):
             core.job.start(core.manifest, core.manifest_raw)
-        return {"status": "ok", "sets": sets}
+        core.refresh_status()
+        return {"status": "ok", "sets": sets, "download": core.job.snapshot()}
 
     @api.post("/api/models/download")
     def download():
@@ -372,6 +412,22 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             return err(core.update_error or ui18n.tr("err_cannot_reach", ui18n.resolve_lang(load_settings())), 502)
         if core.update and core.update.get("app_required"):
             return terr("err_app_too_old", 409)
+        todo = updater.files_to_fetch(core.manifest)
+        if not todo and (core.update or {}).get("weights_update"):
+            # The version moved but the cheap check found nothing to fetch: this is the reused-install case where the old manifest
+            # still claims the new hashes. Re-hash before refusing, otherwise the button answers "up to date" and nothing happens.
+            todo = updater.files_to_fetch(core.manifest, verify=True)
+            if not todo:
+                # Files really are all present: adopt the new manifest version without re-downloading them.
+                core.job.start(core.manifest, core.manifest_raw)
+                return {"status": "started"}
+        if not todo:
+            # Nothing left to fetch: refresh the cached status and answer "up to date" instead of starting a job that re-verifies and
+            # re-applies the same files. This is what made the download button restart a "download" on every press.
+            core.refresh_status()
+            return {"status": "up_to_date"}
+        if core.job.running():
+            return terr("err_download_running", 409)
         need = float((core.update or {}).get("bytes_to_download") or 0)
         free = models_location.free_gb(Path(config.models_root()))
         if need and free * 2**30 < need * 1.15 + 1.5 * 2**30:  # models + a safety margin + the ONNX cache
@@ -433,7 +489,7 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             return models_location.info()
         ok, key = models_location.validate(str(new))
         if not ok:
-            return err(ui18n.tr(key, lang), 400)
+            return err(ui18n.tr(key, lang, models_location.need_gb(include_cache=False)), 400)
         if body.get("move") and models_location.info()["has_models"]:
             core.move.start(old, new, before=core.engine.unload)
             return {"status": "moving"}
@@ -467,6 +523,26 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
     async def _upload(file):
         content = await file.read(MAX_UPLOAD + 1)
         return await _extract_payload(file.filename or "file.txt", content)
+
+    @api.post("/api/upload/batch")
+    async def upload_batch(files: list[UploadFile] = File(...)):
+        with core.checks_lock:
+            if core.installer_job['phase'] == 'launching':
+                return err('The application is restarting; wait for the new window.', 409)
+            core.active_requests += 1
+        try:
+            items = []
+            for f in files[:60]:
+                res = await _upload(f)
+                if isinstance(res, JSONResponse):
+                    detail = json.loads(res.body.decode("utf-8", "replace")).get("detail", "error")
+                    items.append({"status": "error", "filename": f.filename or "file", "error": detail})
+                else:
+                    items.append(res)
+            return {"status": "ok", "items": items}
+        finally:
+            with core.checks_lock:
+                core.active_requests -= 1
 
     async def _extract_payload(filename, content):
         if len(content) > MAX_UPLOAD:
@@ -984,7 +1060,25 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
 
     @api.post("/api/compare/matrix")
     def compare_matrix(body: dict):
-        """Compare any number of saved checks at once: pairwise overlap matrix plus the most similar pairs."""
+        """Compare any number of saved checks or uploaded documents at once: pairwise overlap matrix plus the most similar pairs."""
+        raw_docs = body.get("documents")
+        if isinstance(raw_docs, list):
+            docs = []
+            for i, d in enumerate(raw_docs[:60]):
+                if not isinstance(d, dict):
+                    continue
+                text = str(d.get("text") or "").strip()
+                if not text:
+                    continue
+                title = str(d.get("title") or d.get("filename") or f"Document {i + 1}")[:200]
+                doc_id = d.get("id") if d.get("id") is not None else f"doc-{i + 1}"
+                docs.append({"id": doc_id, "title": title, "text": text, "words": len(text.split())})
+            if len(docs) < 2:
+                return terr("err_pick_two", 400)
+            m = analytics.similarity_matrix([d["text"] for d in docs])
+            pairs = sorted(({"a": docs[i]["id"], "b": docs[j]["id"], "overlap": m[i][j]} for i in range(len(docs)) for j in range(i + 1, len(docs))), key=lambda x: -x["overlap"])
+            items = [{"id": d["id"], "title": d["title"], "verdict": None, "authorship": None, "words": d["words"], "ai_share": None} for d in docs]
+            return {"items": items, "matrix": m, "pairs": pairs[:40]}
         try:
             ids = [int(x) for x in body["ids"]][:60]
         except Exception:  # noqa: BLE001
@@ -1047,9 +1141,9 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         from . import packs  # noqa: PLC0415
 
         pack = str((body or {}).get("pack") or "")
-        if pack not in ("trace", "humanizer-lite", "humanizer-full"):
+        if pack not in ("trace", "humanizer-lite", "humanizer-full", "humanizer-all"):
             return terr("err_bad_request", 400)
-        if core.job.running() or core.folder_lock.locked():
+        if core.job.running() or core.folder_lock.locked() or not packs.try_start(pack):
             return terr("err_download_running", 409)
 
         def _bg():
@@ -1145,6 +1239,125 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             return err("trace report failed: %s" % e, 500)
         return {"status": "ok", "html": html}
 
+    @api.get("/api/trace/corpora")
+    def trace_corpora_list():
+        denied = licensing.check_licensed("trace")
+        if denied:
+            return terr("err_need_license", 403)
+        from . import trace_corpora  # noqa: PLC0415
+
+        return {"status": "ok", "corpora": trace_corpora.list_corpora()}
+
+    @api.get("/api/trace/corpora/{corpus_id}")
+    def trace_corpora_get(corpus_id: str):
+        denied = licensing.check_licensed("trace")
+        if denied:
+            return terr("err_need_license", 403)
+        from . import trace_corpora  # noqa: PLC0415
+
+        c = trace_corpora.get_corpus(corpus_id)
+        if not c:
+            return err("corpus not found", 404)
+        return {"status": "ok", "corpus": c}
+
+    @api.post("/api/trace/corpora")
+    def trace_corpora_save(body: dict):
+        denied = licensing.check_licensed("trace")
+        if denied:
+            return terr("err_need_license", 403)
+        from . import trace_corpora  # noqa: PLC0415
+
+        b = body or {}
+        try:
+            meta = trace_corpora.save_corpus(
+                name=b.get("name") or "",
+                documents=b.get("documents") or [],
+                language=b.get("language") or "en",
+                corpus_id=b.get("id"),
+            )
+        except ValueError as e:
+            return err(str(e), 400)
+        return {"status": "ok", "corpus": meta}
+
+    @api.delete("/api/trace/corpora/{corpus_id}")
+    def trace_corpora_delete(corpus_id: str):
+        denied = licensing.check_licensed("trace")
+        if denied:
+            return terr("err_need_license", 403)
+        from . import trace_corpora  # noqa: PLC0415
+
+        try:
+            deleted = trace_corpora.delete_corpus(corpus_id)
+        except ValueError as e:
+            return err(str(e), 400)
+        if not deleted:
+            return err("corpus not found", 404)
+        return {"status": "ok", "deleted": True}
+
+    @api.post("/api/trace/compare_corpus")
+    async def trace_compare_corpus(body: dict, request: Request):
+        return await tool_work(body, request, _trace_compare_corpus)
+
+    def _trace_compare_corpus(body: dict):
+        denied = licensing.check_licensed("trace")
+        if denied:
+            return terr("err_need_license", 403)
+        from . import trace_corpora, trace_pack  # noqa: PLC0415
+
+        if not trace_pack.installed():
+            return terr("err_trace_no_pack", 409)
+        b = body or {}
+        target_raw = b.get("target")
+        if isinstance(target_raw, str):
+            target_text = target_raw
+            target_title = str(b.get("target_title") or "Target text")
+        elif isinstance(target_raw, dict):
+            target_text = str(target_raw.get("text") or "")
+            target_title = str(target_raw.get("title") or "Target text")
+        else:
+            target_text = str(b.get("text") or "")
+            target_title = str(b.get("target_title") or "Target text")
+        if not target_text.strip():
+            return err("target text is required", 400)
+        corpus_id = b.get("corpus_id")
+        corpus_meta = None
+        if corpus_id:
+            c = trace_corpora.get_corpus(str(corpus_id))
+            if not c:
+                return err("corpus not found", 404)
+            ref_docs = c.get("documents") or []
+            lang = str(b.get("language") or c.get("language") or "en")
+            corpus_meta = {k: c.get(k) for k in ("id", "name", "language", "builtin")}
+        else:
+            ref_docs = b.get("documents") or []
+            lang = str(b.get("language") or "ru")
+        target_id = "__target__"
+        combined = [{"id": target_id, "title": target_title[:200], "text": target_text}]
+        used_ids = {target_id}
+        for i, d in enumerate(ref_docs):
+            did = str((d or {}).get("id") or f"ref_{i + 1}")
+            while did in used_ids:
+                did = f"{did}_{i + 1}"
+            used_ids.add(did)
+            combined.append({
+                "id": did,
+                "title": str((d or {}).get("title") or did),
+                "text": str((d or {}).get("text") or ""),
+            })
+        try:
+            docs = _trace_docs(combined, limit=200)
+            res = trace_pack.analyze_corpus(docs, language=lang, target_id=target_id)
+            res["corpus_comparison"] = trace_corpora.compute_corpus_comparison(res, target_id)
+        except ValueError as e:
+            return err(str(e), 400)
+        except Exception as e:  # noqa: BLE001
+            return err("trace failed: %s: %s" % (type(e).__name__, e), 500)
+        try:
+            history.audit("trace_compare_corpus", "документов: %d, язык: %s" % (len(docs), lang))
+        except Exception:  # noqa: BLE001
+            pass
+        return {"status": "ok", "result": res, "corpus": corpus_meta}
+
     def _ai_share_of(text: str) -> float:
         from . import task_cancel
         task_cancel.check()
@@ -1166,9 +1379,10 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             return terr("err_need_license", 403)
         from . import humanize_pack  # noqa: PLC0415
 
+        HUM_MIN_WORDS = 4
         text = str((body or {}).get("text") or "").replace("\r\n", "\n").strip()
-        if len(text.split()) < 4:
-            return terr("err_text_min", 400, config.MIN_WORDS, len(text.split()))
+        if len(text.split()) < HUM_MIN_WORDS:
+            return terr("err_text_min", 400, HUM_MIN_WORDS, len(text.split()))
         mode = str((body or {}).get("mode") or "all")
         if mode not in ("ai", "sel", "all"):
             return terr("err_bad_request", 400)
@@ -1178,12 +1392,22 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         if core.job.running() or core.folder_lock.locked():
             return terr("err_download_running", 409)
         try:
+            core.engine.unload()
             spans = (body or {}).get("spans")
             res = humanize_pack.humanize(text, spans=spans, mode=mode, variant=variant)
         except RuntimeError as e:
-            if "is not downloaded" in str(e):
+            msg = str(e)
+            if "is not downloaded" in msg:
                 return terr("err_hum_no_pack", 409)
-            return err(str(e), 409)
+            if "humanizer-out-of-memory" in msg:
+                return terr("err_hum_oom", 409)
+            if "humanizer-low-memory" in msg:
+                return terr("err_hum_lowmem", 409)
+            if "humanizer-out-of-cpu" in msg:
+                return terr("err_hum_cpu_full", 409)
+            if "humanizer-cuda-restart" in msg:
+                return err(msg, 409)
+            return err(msg, 409)
         except ValueError as e:
             return err(str(e), 400)
         except Exception as e:  # noqa: BLE001
@@ -1194,7 +1418,11 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
             except Exception:  # noqa: BLE001
                 pass
         try:
-            history.audit("humanize", "вариант: %s, переписано: %s" % (res.get("variant"), res.get("changed")))
+            resolve = res.get("resolve") or {}
+            history.audit("humanize", "режим: %s, просили: %s, использовано: %s, переписано: %s, слов: %s->%s%s" % (
+                mode, resolve.get("requested", variant), res.get("variant"), res.get("changed"),
+                res.get("input_words"), res.get("output_words"),
+                (" (%s)" % resolve.get("plan", {}).get("note") if resolve.get("plan", {}).get("note") else "")))
         except Exception:  # noqa: BLE001
             pass
         return {"status": "ok", "result": res}
@@ -1212,9 +1440,10 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
 
         if not updater.is_complete():
             return terr("err_models_not_installed", 409)
+        HUM_MIN_WORDS = 4
         text = str((body or {}).get("text") or "").replace("\r\n", "\n").strip()
-        if len(text.split()) < 4:
-            return terr("err_text_min", 400, config.MIN_WORDS, len(text.split()))
+        if len(text.split()) < HUM_MIN_WORDS:
+            return terr("err_text_min", 400, HUM_MIN_WORDS, len(text.split()))
         try:
             target = float((body or {}).get("target", 0.5))
         except (TypeError, ValueError):
@@ -1245,9 +1474,18 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
                 detector_warm=None, target=target, max_iters=max_iters, variant=variant,
                 progress=report if jid else None)
         except RuntimeError as e:
-            if "is not downloaded" in str(e):
+            msg = str(e)
+            if "is not downloaded" in msg:
                 return terr("err_hum_no_pack", 409)
-            return err(str(e), 409)
+            if "humanizer-out-of-memory" in msg:
+                return terr("err_hum_oom", 409)
+            if "humanizer-low-memory" in msg:
+                return terr("err_hum_lowmem", 409)
+            if "humanizer-out-of-cpu" in msg:
+                return terr("err_hum_cpu_full", 409)
+            if "humanizer-cuda-restart" in msg:
+                return err(msg, 409)
+            return err(msg, 409)
         except Exception as e:  # noqa: BLE001
             return err("humanize loop failed: %s: %s" % (type(e).__name__, e), 500)
         finally:
@@ -1263,48 +1501,55 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
         return {"status": "ok", "result": res}
 
     @api.post("/api/humanize/batch")
-    def humanize_batch(body: dict):
-        """Swap out the detector, humanize many texts with the loop, swap back."""
-        denied = licensing.check_licensed("humanize_loop")
-        if denied:
-            return terr("err_need_license", 403)
+    async def humanize_batch(body: dict, request: Request):
+        """Swap out the detector, humanize many texts with the loop, swap back.
+
+        Runs under tool_work(..., exclusive=True): the batch serializes with
+        single humanize/loop calls so the humanizer backend is never driven
+        concurrently (see humanize_pack lock order)."""
         from . import humanize_pack  # noqa: PLC0415
 
-        if not updater.is_complete():
-            return terr("err_models_not_installed", 409)
-        texts = (body or {}).get("texts") or []
-        if not isinstance(texts, list) or not texts or len(texts) > 200:
-            return terr("err_bad_request", 400)
-        variant = str((body or {}).get("variant") or "auto")
-        target = float((body or {}).get("target", 0.5))
-        out = []
-        try:
-            for t in texts:
-                s = str(t or "").strip()
-                if len(s.split()) < 4:
-                    out.append({"text": s, "skipped": "too_short"})
-                    continue
-                r = humanize_pack.loop_until_calm(
-                    s, detector_run=_ai_share_of, detector_unload=core.engine.unload,
-                    detector_warm=None, target=target, max_iters=int((body or {}).get("max_iters", 2)),
-                    variant=variant)
-                out.append({"text": r.get("text"), "calm": r.get("calm"),
-                            "ai_share": (r.get("iters") or [{}])[-1].get("ai_share"),
-                            "variant": r.get("variant")})
-                if core.batch_cancel.is_set():
-                    break
-        except Exception as e:  # noqa: BLE001
-            return err("humanize batch failed: %s: %s" % (type(e).__name__, e), 500)
-        finally:
+        def _batch(b):
+            denied = licensing.check_licensed("humanize_loop")
+            if denied:
+                return terr("err_need_license", 403)
+            if not updater.is_complete():
+                return terr("err_models_not_installed", 409)
+            texts = (b or {}).get("texts") or []
+            if not isinstance(texts, list) or not texts or len(texts) > 200:
+                return terr("err_bad_request", 400)
+            variant = str((b or {}).get("variant") or "auto")
+            target = float((b or {}).get("target", 0.5))
+            out = []
             try:
-                humanize_pack.unload()
-            except Exception:  # noqa: BLE001
-                pass
-            try:
-                core.engine.warm_all("en")
-            except Exception:  # noqa: BLE001
-                pass
-        return {"status": "ok", "results": out}
+                for t in texts:
+                    s = str(t or "").strip()
+                    if len(s.split()) < 4:
+                        out.append({"text": s, "skipped": "too_short"})
+                        continue
+                    r = humanize_pack.loop_until_calm(
+                        s, detector_run=_ai_share_of, detector_unload=core.engine.unload,
+                        detector_warm=None, target=target, max_iters=int((b or {}).get("max_iters", 2)),
+                        variant=variant)
+                    out.append({"text": r.get("text"), "calm": r.get("calm"),
+                                "ai_share": (r.get("iters") or [{}])[-1].get("ai_share"),
+                                "variant": r.get("variant")})
+                    if core.batch_cancel.is_set():
+                        break
+            except Exception as e:  # noqa: BLE001
+                return err("humanize batch failed: %s: %s" % (type(e).__name__, e), 500)
+            finally:
+                try:
+                    humanize_pack.unload()
+                except Exception:  # noqa: BLE001
+                    pass
+                try:
+                    core.engine.warm_all("en")
+                except Exception:  # noqa: BLE001
+                    pass
+            return {"status": "ok", "results": out}
+
+        return await tool_work(body, request, _batch, True)
 
     @api.post("/api/settings")
     def settings(body: dict):
@@ -1314,7 +1559,7 @@ def create_app(core: Core | None = None, token: str | None = None, port: int = 0
     def _settings(body: dict):
         cur = load_settings()
         need_reload = False  # смена устройства/карты требует выгрузки движка — тяжёлая операция, уходит в фон
-        if body.get("sentences") in ("auto", "hybrid", "context", "smooth", "full", "windows"):
+        if body.get("sentences") in ("auto", "hybrid", "context", "smooth", "full", "windows", "segmenter"):
             cur["sentences"] = body["sentences"]
         if isinstance(body.get("history_retention_days"), int) and not isinstance(body.get("history_retention_days"), bool) and 0 <= body["history_retention_days"] <= 3650:
             cur["history_retention_days"] = body["history_retention_days"]

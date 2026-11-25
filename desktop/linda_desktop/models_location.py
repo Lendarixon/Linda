@@ -15,7 +15,44 @@ from pathlib import Path
 from . import config
 
 ITEMS = ("models", "onnx", "calibration", "staging", "manifest.json", "manifest.json.sig")
-NEED_GB = 6.0  # модели 2,9 ГБ + кэш ONNX 1,5 ГБ + запас на докачку обновления
+# Fallback set sizes (GB) when no signed manifest is on disk yet: model pack 1.5.0 (pro = EN dhi + PL/RU l14m50).
+SET_GB = {"pro": 5.8, "lite": 0.3, "shared": 0.01}
+# On DirectML the app saves an FP32 ONNX copy of each Assay network on first use (verdict graph + token-markup graph):
+# measured 10.3 GB of cache for 5.8 GB of pack 1.5.0 models. CPU and CUDA keep no such cache.
+GPU_CACHE_FACTOR = 1.8
+MARGIN_GB = 1.5  # room to stage one update file at a time and for the ONNX export temp files
+
+
+def need_gb(sets: list[str] | None = None, include_cache: bool = True) -> float:
+    """Disk space the chosen model sets need in the models folder (GB), from the signed manifest when it is installed.
+
+    include_cache=False: the hard minimum (models + margin). The GPU ONNX cache only appears on a DirectML machine and grows per
+    language as it is used, so a folder is refused only below the minimum; the full estimate is shown as a warning."""
+    from . import updater  # noqa: PLC0415 — updater imports config only; local import avoids a cycle at startup
+
+    if sets is None:
+        sets = updater.selected_sets()
+    sizes = {k: v * 2**30 for k, v in SET_GB.items()}
+    try:
+        info = updater.set_info(updater.installed_manifest())
+        for k in sizes:
+            if info.get(k, {}).get("size"):
+                sizes[k] = float(info[k]["size"])
+    except Exception:  # noqa: BLE001 — sizing must never break the settings page
+        pass
+    total = sizes["shared"] + sum(sizes[s] for s in sets if s in sizes)
+    if include_cache and "pro" in sets and _device_pref() != "cpu":
+        total += sizes["pro"] * GPU_CACHE_FACTOR
+    return round(total / 2**30 + MARGIN_GB, 1)
+
+
+def _device_pref() -> str:
+    try:
+        import json  # noqa: PLC0415
+
+        return str(json.loads((config.data_dir() / "settings.json").read_text(encoding="utf-8")).get("device", "auto"))
+    except Exception:  # noqa: BLE001
+        return "auto"
 
 
 def _roots_overlap(old: Path, new: Path) -> bool:
@@ -47,7 +84,7 @@ def info() -> dict:
     st = config.models_location_state()
     root = Path(st["path"])
     has = (root / "models").is_dir() and any((root / "models").iterdir()) if (root / "models").exists() else False
-    return {**st, "free_gb": round(free_gb(root), 1), "need_gb": NEED_GB, "has_models": has}
+    return {**st, "free_gb": round(free_gb(root), 1), "need_gb": need_gb(), "has_models": has}
 
 
 def validate(path: str) -> tuple[bool, str]:
@@ -57,7 +94,7 @@ def validate(path: str) -> tuple[bool, str]:
     except Exception:  # noqa: BLE001
         return False, "loc_bad"
     if not p.is_absolute() or str(p).startswith("\\\\"):
-        return False, "loc_bad"  # only a local absolute path (no network shares: slow and unreliable for 3 GB of weights)
+        return False, "loc_bad"  # only a local absolute path (no network shares: slow and unreliable for several GB of weights)
     # Check against the active root before mkdir or the write probe. Overlapping
     # roots make the later source cleanup capable of deleting the new copy.
     if _roots_overlap(config.models_root(), p):
@@ -71,7 +108,7 @@ def validate(path: str) -> tuple[bool, str]:
         probe.unlink()
     except OSError:
         return False, "loc_noaccess"
-    if free_gb(p) < NEED_GB:
+    if free_gb(p) < need_gb(include_cache=False):
         return False, "loc_space"
     return True, ""
 

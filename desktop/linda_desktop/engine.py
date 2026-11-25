@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from bisect import bisect_left
 import numpy as np
 import math
@@ -26,6 +27,18 @@ ROUTED_LANGS = ("pl", "ru")
 
 def _sig(m: float, c: float, s: float) -> float:
     return 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, (m - c) / s))))
+
+
+def pro_token_thr_eff(thr: float, p_doc: float) -> float:
+    """Document-steered AI threshold for Pro token markup.
+
+    Leaves human and low/mid uncertain documents untouched (p_doc <= 0.80);
+    for confident AI documents (p_doc > 0.80), smoothly lowers the Pro token
+    threshold toward 0.05 so short AI texts do not render 0% AI sentences.
+    """
+    if p_doc <= 0.80:
+        return thr
+    return max(0.05, min(thr, thr - 1.2 * (p_doc - 0.80)))
 
 
 def _smooth_lite_tokens(text, scores, radius=64):
@@ -138,6 +151,38 @@ def _adapters() -> list[dict]:
     return [{"name": n, "vram": vram.get(n, 0), "discrete": bool(_DISCRETE.search(n)) or vram.get(n, 0) >= int(1.5 * 2**30)} for n in _adapter_names()]
 
 
+def _gpu_vram_mb(idx: int = 0) -> int:
+    """Dedicated VRAM in MB for adapter `idx` from Windows registry (0 if unknown)."""
+    try:
+        ads = _adapters()
+        if 0 <= idx < len(ads):
+            return int(ads[idx].get("vram", 0)) // (1024 * 1024)
+        if ads:
+            return int(ads[0].get("vram", 0)) // (1024 * 1024)
+    except Exception:  # noqa: BLE001
+        pass
+    return 0
+
+
+def _default_vram_budget_mb(device: str, idx: int = 0) -> int:
+    """Safe ModelPool VRAM budget (MB) based on actual GPU memory.
+
+    4 GB cards (e.g. GTX 1650 SUPER) get 2000 MB (1 FP32 voter at a time);
+    6-8 GB cards (e.g. RTX 5060) get 3200 MB (evicts before loading tok_sess);
+    12+ GB cards get 5200 MB. Unknown VRAM defaults to 3200 MB.
+    """
+    if device == "cpu":
+        return 9000
+    vram_mb = _gpu_vram_mb(idx)
+    if vram_mb <= 0:
+        return 3200
+    if vram_mb <= 4600:
+        return 2000
+    if vram_mb <= 9000:
+        return 3200
+    return 5200
+
+
 def _wmi_names() -> list[str]:
     if os.name != "nt":
         return []
@@ -212,8 +257,9 @@ class Engine:
         self.gpu = gpu_probe()
 
     def calibration_file(self) -> Path | None:
-        # Classic 1.1 calibration only: routing.json is a language table, not a calibration.
-        files = sorted(p for p in (config.models_root() / "calibration").glob("*.json") if p.name != "routing.json")
+        # Classic 1.1 calibration only: routing tables and token-head metadata are not classic calibrations.
+        skip = {"routing.json", "routing.with_lite.json", "token_heads_v2.json"}
+        files = sorted(p for p in (config.models_root() / "calibration").glob("*.json") if p.name not in skip)
         return files[0] if files else None
 
     def routing_file(self) -> Path | None:
@@ -221,6 +267,22 @@ class Engine:
         env = os.environ.get("LINDA_ROUTING")
         p = Path(env) if env else config.models_root() / "calibration" / "routing.json"
         return p if p.exists() else None
+
+    def routing_with_lite_file(self) -> Path | None:
+        """Optional routing table carrying Lite ('speed') tiers; falls back to calibration/routing.json with a warning when missing."""
+        env = os.environ.get("LINDA_ROUTING")
+        if env:
+            p = Path(env)
+            return p if p.exists() else None
+        with_lite = config.models_root() / "calibration" / "routing.with_lite.json"
+        if with_lite.exists():
+            return with_lite
+        primary = self.routing_file()
+        if primary is not None:
+            logging.getLogger("linda.engine").warning(
+                "calibration/routing.with_lite.json is missing; falling back to %s", primary.name
+            )
+        return primary
 
     def merged_table(self) -> bool:
         """True, если routing.json — таблица merged-ансамбля 1.3 (kind=merged): тогда английский идёт тем же путём, что PL/RU, на общих голосах."""
@@ -273,9 +335,17 @@ class Engine:
             self.dets = None
             self._backend = None
             self._routed_lang = None
+            self.doc_lang = None
             # Factory caches form cycles; release GPU sessions on device changes.
             import gc
             gc.collect()
+            try:
+                import torch  # noqa: PLC0415
+
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except Exception:  # noqa: BLE001
+                pass
             self.device = pick_device(load_settings().get('device','auto'))
             self.gpu_error = ''
             self.state = {"phase": "idle", "error": ""}
@@ -291,6 +361,23 @@ class Engine:
         device = self.device
 
         quality = {"full": "pro", "speed": "lite"}.get(settings.get("quality", "auto"), settings.get("quality", "auto"))
+        if (
+            table_path.name == "routing.json"
+            and not os.environ.get("LINDA_ROUTING")
+            and ("speed_s" not in dirs or not all("speed" in table["languages"][lg]["tiers"] for lg in table.get("languages", {})))
+            and (self._installed_set("lite") or quality in ("lite", "both"))
+        ):
+            lite_path = self.routing_with_lite_file()
+            if lite_path is not None and lite_path != table_path:
+                try:
+                    lite_table = json.loads(lite_path.read_text(encoding="utf-8"))
+                    if isinstance(lite_table, dict) and "voice_dirs" in lite_table and "languages" in lite_table:
+                        table = lite_table
+                        dirs = table["voice_dirs"]
+                except Exception:  # noqa: BLE001 — fall back to primary routing.json on malformed overlay
+                    logging.getLogger("linda.engine").warning(
+                        "Failed to read %s; falling back to %s", lite_path.name, table_path.name
+                    )
         has_lite = "speed_s" in dirs and (models / dirs["speed_s"] / "model.onnx").is_file() and all("speed" in table["languages"][lg]["tiers"] for lg in table["languages"])
         has_pro = all(k in dirs and (models / dirs[k]).is_dir() for k in ("essay_m", "multi_m"))
         self.have_pro, self.have_lite = has_pro, has_lite
@@ -311,12 +398,15 @@ class Engine:
             if device == "dml":
                 from . import onnx_gpu
 
-                return onnx_gpu.OnnxSeqCls(d, cache_dir, idx, fp16=False, stable=True)
+                voter = onnx_gpu.OnnxSeqCls(d, cache_dir, idx, fp16=False, stable=True)
+                vram_mb = _gpu_vram_mb(idx)
+                voter.release_main_for_tokens = (vram_mb == 0 or vram_mb <= 8600)
+                return voter
             if device == "cuda":
                 return FastSeqCls(d, batch=8, device="cuda", force_fp32=True)
             return FastSeqCls(d, batch=8, device="cpu")
 
-        budget = int(settings.get("vram_budget_mb", 9000 if device == "cpu" else 5200))
+        budget = int(settings.get("vram_budget_mb") or _default_vram_budget_mb(device, idx))
         sizes = {key: 2 * size for key, size in table.get("size_mb_fp16", {"essay": 870, "multi": 560}).items()}
         pool = ModelPool(make, sizes, budget)
         tier = "speed" if self.tier == "speed" else None
@@ -346,7 +436,9 @@ class Engine:
         except Exception as e:  # noqa: BLE001
             if self.device != "dml":
                 raise
-            self.gpu_error = f"{type(e).__name__}: {e}"
+            from . import onnx_gpu
+
+            self.gpu_error = onnx_gpu.decode_ort_error(e)
             self.device = "cpu"
             dets["sensitive"].pool.clear()
             dets = self._routed_detectors(table_path, settings)
@@ -376,7 +468,9 @@ class Engine:
             try:
                 dets = self._dml_detectors(core, settings)
             except Exception as e:  # noqa: BLE001
-                self.gpu_error = f"{type(e).__name__}: {e}"
+                from . import onnx_gpu
+
+                self.gpu_error = onnx_gpu.decode_ort_error(e)
                 self.device = "cpu"
                 dets = make_detectors("cpu")
         else:
@@ -387,7 +481,9 @@ class Engine:
         except Exception as e:  # noqa: BLE001
             if self.device != "dml":
                 raise
-            self.gpu_error = f"{type(e).__name__}: {e}"  # the GPU path failed (export, driver): use the CPU instead
+            from . import onnx_gpu
+
+            self.gpu_error = onnx_gpu.decode_ort_error(e)  # the GPU path failed (export, driver): use the CPU instead
             self.device = "cpu"
             self.state = {"phase": "loading", "error": "", "note": ""}
             dets = make_detectors("cpu")
@@ -575,6 +671,8 @@ class Engine:
     # CPU, 4 потока: 0,92 с / 1000 слов против baseline 2,13 с; подбор оставил speed ai=0,815 / uncertain=0,35.
     # full (слой Essay) — 2,9% / 83,4% / 90,4%. Вероятность Pro: сигмоида от токенного слоя (center/scale из tok_head.npz), отсюда другие числа порогов
     THRESHOLDS_TOKENS = {"speed": (0.815, 0.35), "full": (0.20, 0.10)}
+    # Opt-in one-pass segmenter: the confidence bands of the research reference (dp.json).
+    THRESHOLDS_SEGMENTER = (0.80, 0.10)
     CONTEXT_ANCHORS_LITE = 150  # как у Pro на GPU: напрямую не больше 150 предложений (~0,1 с на контекст на 4 потоках CPU), остальные интерполируются
     # Lite: напрямую оценивается одно предложение примерно на каждые 40 слов. Замер 10.10 (seg_eval): верная метка слова 88,1% против 88,4%
     # при оценке каждого предложения, а прогонов в 2,7 раза меньше (1 000 слов ~2–3 с, 12 000 слов ~15 с на 4 потоках)
@@ -586,6 +684,8 @@ class Engine:
     def thresholds(self, gran: str) -> tuple[float, float]:
         if gran == "tokens":
             return self.THRESHOLDS_TOKENS[getattr(self, "tier", "full")]
+        if gran == "segmenter":
+            return self.THRESHOLDS_SEGMENTER
         if getattr(self, "tier", "full") == "speed" and gran in self.THRESHOLDS_LITE:
             return self.THRESHOLDS_LITE[gran]
         return self.THRESHOLDS.get(gran, (self.AI_THR, self.UNCERTAIN_THR_WINDOW))
@@ -647,22 +747,114 @@ class Engine:
     CPU_SMOOTH_MAX_WORDS = 700  # automatic mode on a CPU: sliding windows up to this length (about 10 s), longer texts use the fast block colouring
     SMOOTH_WINDOW, SMOOTH_MIN_STEP, SMOOTH_MAX_WINDOWS = 300, 75, 16
 
-    def sentence_mode(self, nwords: int = 0, det=None, allow_tokens: bool = True) -> str:
-        """auto uses the Lite token output, but scores Pro sentences with the document
-        voters in context (falling back to the legacy modes below).
-        Measured reason (logs/relight_20261011/threshold_scan.json): the shipped Pro token
-        head does not separate human from AI sentences. On 280-380 word human paragraphs its
-        median sentence score is 0.93, against 0.83 for a single AI sentence inserted into
-        that same text, so no cut-off separates them: at the recorded 0.20 threshold it marks
-        every human sentence AI (FPR 1.00), and reaching FPR 0.00 needs 0.99, which also
-        drops AI recall to 0.00. Pro therefore keeps the context path in auto; the explicit
-        tokens mode stays available and is labelled as the unvalidated auxiliary head.
+    SEGMENTER_DIR = "seg_l14"  # qa_models/models/seg_l14: one-pass token segmenter (opt-in mode)
+    _seg = None
+    doc_lang = None  # language reported for the document being analysed (never the backend)
+
+    # (voice, language) pairs whose installed v2 token head beat the context path on the
+    # held-out test set (TRAIN_TOKEN_HEAD.md): AUC / F1@0.20 = 0.762/0.539 essay-en,
+    # 0.748/0.374 essay-pl, 0.708/0.320 multi-pl, negative-FPR 5.0% at p = 0.20.
+    # multi-en (0.720/0.251) stays out: below its all-positive ceiling (0.529). RU has no
+    # head at all (no RU training data), so RU keeps the context path by construction.
+    TOKEN_HEADS_V2 = {("essay", "en"), ("essay", "pl"), ("multi", "pl"),
+                      ("essay", "ru"), ("multi", "ru")}  # night/pack15: RU v2 heads added
+
+    def document_language(self, det, res: dict | None = None) -> str | None:
+        """The language the head must match, or None when it cannot be established.
+
+        `det.cur_lang` is the *backend* the routed pool scored with: routed.py maps any
+        language it has no routing entry for onto "en" or "ru" (uk -> ru backend, and
+        `cur_lang` falls back to "en" when the detected language is not in the table). A
+        Ukrainian document therefore looks English to a gate that reads cur_lang, which is
+        exactly the wrong-pairing case measured at 17.7% human-token FPR. Read the reported
+        language first (`res`, or `self.doc_lang` set by `run`) and refuse rather than guess.
+        """
+        lang = ((res or {}).get("language")
+                or getattr(self, "doc_lang", None)
+                or getattr(det, "cur_lang", None))
+        if not isinstance(lang, str):
+            return None
+        lang = lang.strip().lower()
+        return lang if lang in ("en", "pl", "ru") else None
+
+    def token_head_voice(self, det, voice: str, res: dict | None = None):
+        """(voter, info) when this voice's installed head is a validated v2 head for the
+        document's language, else None.
+
+        A head opts in only if it is schema 2, its own `voice`/`lang` keys match the pair
+        asked for, and that pair is in TOKEN_HEADS_V2. Any probe failure returns None:
+        absence of evidence must never promote markup to the token path. `res` is the
+        detection result whose reported `language` decides the pair (see document_language).
+        """
+        from linda_pro.voters import token_head_info
+
+        lang = self.document_language(det, res)
+        if lang is None:
+            return None
+        if (voice, lang) not in self.TOKEN_HEADS_V2:
+            return None
+        voter = det._factory("linda_essay" if voice == "essay" else "linda_multi_v2")
+        if not callable(getattr(voter, "token_scores", None)) or not getattr(voter, "has_token_scores", True):
+            return None
+        info = token_head_info(voter.model_dir, lang=lang)
+        if not info or int(info.get("schema") or 1) < 2 or not info.get("calibrated"):
+            return None
+        if info.get("voice") != voice or info.get("lang") != lang:
+            return None
+        return voter, info
+
+    def segmenter_dir(self) -> Path:
+        return Path(config.models_root()) / "models" / self.SEGMENTER_DIR
+
+    def segmenter_available(self) -> bool:
+        """The opt-in segmenter is offered only when its files are installed."""
+        try:
+            d = self.segmenter_dir()
+            return (d / "onnx" / "model.onnx").is_file() and (d / "tokenizer.json").is_file()
+        except OSError:
+            return False
+
+    def segmenter(self, threads: int = 4):
+        """Cached Segmenter instance (ONNX CPU session loads on first use)."""
+        if self._seg is None:
+            from linda_pro.segmenter import Segmenter
+
+            self._seg = Segmenter(self.segmenter_dir(), threads=threads)
+        return self._seg
+
+    def sentence_mode(self, nwords: int = 0, det=None, allow_tokens: bool = True, skip=()) -> str:
+        """auto takes the token path when the installed heads are the validated v2 ones;
+        otherwise it scores Pro sentences with the document voters in context.
+
+        v2 heads (tmp/tokenhead_20261120/TRAIN_TOKEN_HEAD.md, held-out test, product
+        aggregation path): essay/en AUC 0.762 F1@0.20 0.539, essay/pl 0.748/0.374,
+        multi/pl 0.708/0.320, with the negative-token false-positive rate held at 5.0%
+        at p = 0.20 — against 0.601/0.276, 0.587/0.162, 0.536/0.164 for the shipped
+        head. That is why auto may use them for exactly those voice/language pairs
+        (`TOKEN_HEADS_V2`). multi/en measures 0.720/0.251, below its all-positive
+        ceiling (0.529), so its column keeps the derived view and the context path.
+        The pair is also checked against the head's own `voice`/`lang` keys, so a PL
+        head sitting in a directory that also serves RU is never used for RU.
+        The reason the v1 head was refused (logs/relight_20261011/threshold_scan.json):
+        on 280-380 word human paragraphs its median sentence score was 0.93 against
+        0.83 for a single AI sentence inserted into the same text — no cut-off
+        separated them (FPR 1.00 at 0.20, recall 0.00 at the 0.99 needed for FPR 0.00).
+        Explicit settings are untouched: `tokens` still forces the token path where a
+        head is installed, and every other choice still forces its own mode.
         hybrid = every sentence is scored alone AND in its context and the higher score counts: a lone strongly-AI sentence still lights up, and a whole AI text is no longer shown as human
         sentence by sentence (alone, a sentence is too short for models calibrated on ~300-word windows: on whole-AI essays it flagged about a quarter of the sentences, the context score about 95%);
         context = every sentence is scored together with its neighbours (~CONTEXT_WORDS words around it), so the colour changes sentence by sentence and boundaries are found to the sentence;
         smooth = sliding ~300-word windows (the scale the models are calibrated on; boundaries accurate to ~100 words); windows = fast, one score per ~300-word block;
-        full = every single sentence on its own (experimental: one sentence is much less reliable than a window)."""
+        full = every single sentence on its own (experimental: one sentence is much less reliable than a window).
+        segmenter = the opt-in one-pass span model (models/seg_l14) with its own DP; offered only
+        when the files are installed, and `skip=("segmenter",)` resolves the default instead."""
         s = load_settings().get("sentences", "auto")
+        if s in skip:
+            s = "auto"
+        if s == "segmenter":
+            if self.segmenter_available():
+                return "segmenter"
+            s = "auto"  # not installed: the default path, exactly as before
         if s in ("auto", "tokens") and allow_tokens and det is not None and (s == "tokens" or getattr(self, "tier", "full") == "speed"):
             from linda_pro.voters import Cancelled
             try:
@@ -675,6 +867,15 @@ class Engine:
                 pass  # capability probing may fail too; preserve legacy fallback
         if s == "tokens":
             s = "auto"
+        # Pro, auto, a validated v2 head installed for this voice/language: the token
+        # path is the more accurate markup source (see the docstring numbers). The head
+        # must match the *reported* document language (res), never the routed backend.
+        if s == "auto" and allow_tokens and det is not None and getattr(self, "tier", "full") != "speed":
+            try:
+                if self.token_head_voice(det, "essay") is not None:
+                    return "tokens"
+            except Exception:  # noqa: BLE001 — probing must never pick a mode by accident
+                pass
         if s == "auto" and getattr(self, "tier", "full") == "speed":
             return "context"  # Lite: предложение в окружении ~120 слов (см. THRESHOLDS_LITE), а не окна ~300 слов
         if s == "auto":
@@ -786,6 +987,9 @@ class Engine:
                 from .single_model import run as run_single
                 return run_single(self,det,text,mode,chosen_models[0])
             res = det.detect([text])[0]
+            # The token-head gate must match the *reported* document language, not the
+            # routed backend (routed.py maps uk onto en/ru). Set before any markup branch.
+            self.doc_lang = res.get("language")
             known_tokens = res.pop("_lite_token_scores", [])
             # Routed backend may score uk/other via ru/en — report the original.
             if "_orig_lang" in locals() and _orig_lang not in ("en", "pl", "ru"):
@@ -821,6 +1025,17 @@ class Engine:
             if gran in ("hybrid", "context") and Engine.sentence_mode(self, nwords, det) == "tokens" and spans:
                 from linda_pro.voters import Cancelled, SpeedOnnx, load_token_head
                 try:
+                    pool = getattr(det, "pool", None)
+                    if pool is not None and hasattr(pool, "evict_for_tokens"):
+                        essay_key = None
+                        try:
+                            tier_fn = getattr(det, "tier", None)
+                            if callable(tier_fn):
+                                tinfo = tier_fn(self.document_language(det))
+                                essay_key = next((k for k in tinfo.get("voters", ()) if k.startswith("essay")), None)
+                        except Exception:  # noqa: BLE001
+                            pass
+                        pool.evict_for_tokens(essay_key or "essay_m")
                     voter = det._factory("linda_essay")
                     reuse = getattr(voter, "token_scores_reuse", None)
                     tokens = reuse(text, known_tokens) if getattr(self, "tier", "full") == "speed" and callable(reuse) else voter.token_scores(text)
@@ -835,17 +1050,32 @@ class Engine:
                     if getattr(self, "tier", "full") == "speed":
                         center, scale = pe_c, pe_s
                     else:
-                        head = load_token_head(voter.model_dir)
+                        head = load_token_head(voter.model_dir, lang=self.document_language(det))
                         center, scale = float(head["center"]), float(head["scale"])
                     token_rows = _sentence_token_evidence(text, spans, scores, center, scale)
+                    multi_col = None
                     if getattr(self, "tier", "full") != "speed":
-                        # Multi must use its own tokenizer, token head and
-                        # calibration. Acquire it after finishing Essay: pools
-                        # may unload the first voter when admitting the second.
-                        multi_voter = det._factory("linda_multi_v2")
-                        multi_head = load_token_head(multi_voter.model_dir)
+                        # A v2 Multi head for this language is a validated second measurement
+                        # (multi/pl: AUC 0.708, F1@0.20 0.320 — TRAIN_TOKEN_HEAD.md), so it
+                        # gets its own pass. Without one the Multi column is read through its
+                        # own calibration from the Essay evidence: the two voices' token
+                        # scores agree too weakly (0.29-0.49 correlation on shared tokens,
+                        # work/bench_tokens_20261120.md) for a real second measurement to be
+                        # faked, but a whole extra transformer pass for an unvalidated head
+                        # (multi/en) is not worth it either.
+                        multi_col = self.token_head_voice(det, "multi")
+                    if multi_col is not None:
+                        multi_voter, multi_info = multi_col
+                        mtokens = multi_voter.token_scores(text)
+                        mscores = sorted(((int(a), int(b), float(z)) for a, b, z in mtokens if b > a),
+                                         key=lambda token: (token[0], token[1]))
                         multi_token_rows = _sentence_token_evidence(
-                            text, spans, multi_voter.token_scores(text),
+                            text, spans, mscores, float(multi_info["center"]), float(multi_info["scale"]))
+                    elif getattr(self, "tier", "full") != "speed":
+                        multi_voter = det._factory("linda_multi_v2")
+                        multi_head = load_token_head(multi_voter.model_dir, lang=self.document_language(det))
+                        multi_token_rows = _sentence_token_evidence(
+                            text, spans, scores,
                             float(multi_head["center"]), float(multi_head["scale"]))
                 except Cancelled:
                     raise
@@ -862,11 +1092,39 @@ class Engine:
                         pass
             if token_rows is not None and (lite_reuse or res.get("verdict") != "human"):
                 gran = "windows"  # Lite uses existing evidence for consistency too.
+            # Opt-in one-pass segmenter: one probability per sentence from models/seg_l14.
+            # Any failure (files, graph, tokenizer, output shape) falls back to the mode the
+            # default settings would have chosen, and says so in the result and the log.
+            seg_probs = None
+            if gran == "segmenter" and spans:
+                try:
+                    _segs = [(x.start, x.end, x.text) for x in spans]
+                    out = self.segmenter().run(text, _segs)
+                    if len(out.get("p_sent") or []) != len(spans):
+                        raise ValueError("segmenter sentence count mismatch")
+                    seg_probs = [float(v) for v in out["p_sent"]]
+                    res["segments"] = out.get("segments") or []
+                    res["segmenter_fraction_ai"] = out.get("fraction_ai")
+                    self._emit(85, "sent")
+                except Exception as exc:  # noqa: BLE001 — markup must never break a check
+                    seg_probs = None
+                    gran = self.sentence_mode(nwords, skip=("segmenter",))
+                    res["segmenter_fallback"] = type(exc).__name__
+                    try:
+                        import logging
+
+                        logging.getLogger("linda.segmenter").warning(
+                            "segmenter_fallback: %s: %s", type(exc).__name__, str(exc)[:200])
+                    except Exception:  # noqa: BLE001
+                        pass
+            seg_mode = seg_probs is not None
             full = gran in ("hybrid", "full", "context")  # all of them give one margin per sentence
-            word_positions = [(m.start(), m.end()) for m in re.finditer(r"\S+", text)] if not full else []
+            word_positions = [(m.start(), m.end()) for m in re.finditer(r"\S+", text)] if not full and not seg_mode else []
             m_essay = m_multi = None
             wspans = []  # (first word, after last word, essay margin, multi margin) of the windows used for colouring
-            if gran == "context" and spans:
+            if seg_mode:
+                pass  # probabilities are already per sentence
+            elif gran == "context" and spans:
                 m_essay, m_multi = self._context_margins(det, spans, _clean_lang)
                 self._emit(90, "sent")
             elif gran == "hybrid" and spans:
@@ -902,11 +1160,20 @@ class Engine:
                     wspans = [(a, b, float(e), float(m)) for (a, b), e, m in zip(wins, ce, cm)]
             else:  # fast: sentences inherit the score of their ~300-word block
                 wspans = [(w["first_word"], w["last_word"], w["essay"], w.get("multi", w["essay"])) for w in res["windows"]]
-            thr_ai, thr_unc = self.thresholds(gran)
+            if seg_mode:
+                thr_ai, thr_unc = self.thresholds("segmenter")
+            else:
+                thr_ai, thr_unc = self.thresholds(gran)
             sentences, cnt = [], {"ai": 0, "uncertain": 0, "human": 0}
             word_starts = [a for a, _ in word_positions]
             for i, s in enumerate(spans):
-                if full:
+                if seg_mode:
+                    p_ai = seg_probs[i]
+                    # log-odds so the margin display stays monotone with the probability
+                    pp = min(1 - 1e-6, max(1e-6, float(p_ai)))
+                    me = mm = math.log(pp / (1.0 - pp))
+                    pe = pm = float(p_ai)
+                elif full:
                     me = float(m_essay[i]) if i < len(m_essay) else 0.0
                     mm = float(m_multi[i]) if i < len(m_multi) else 0.0
                     pe, pm = _sig(me, pe_c, pe_s), _sig(mm, pm_c, pm_s)
@@ -934,18 +1201,66 @@ class Engine:
             if token_rows is not None:
                 gran = "tokens"
                 thr_ai, thr_unc = self.thresholds(gran)
+                try:
+                    p_doc = verdict_probability(res, R)
+                except Exception:  # noqa: BLE001 — markup must never break a check
+                    p_doc = 0.5
+                eff_ai = pro_token_thr_eff(thr_ai, p_doc) if getattr(self, "tier", "full") != "speed" else thr_ai
                 cnt = {"ai": 0, "uncertain": 0, "human": 0}
                 for i, (sentence, (mean, pe)) in enumerate(zip(sentences, token_rows)):
                     mm, pm = multi_token_rows[i] if multi_token_rows is not None else (mean, pe)
                     probs = ([pe] if "linda_essay" in selected else []) + ([pm] if "linda_multi_v2" in selected else [])
                     p = sum(probs) / len(probs) if probs else (pe + pm) / 2
-                    label = "ai" if p >= thr_ai else "uncertain" if p >= thr_unc else "human"
+                    label = "ai" if p >= eff_ai else "uncertain" if p >= thr_unc else "human"
                     sentence.update(essay_margin=round(mean, 2), essay_prob=round(pe, 3),
                                     multi_margin=round(mm, 2), multi_prob=round(pm, 3),
                                     p_ai=round(p, 3), label=label,
-                                    essay_label="ai" if pe >= thr_ai else "uncertain" if pe >= thr_unc else "human",
-                                    multi_label="ai" if pm >= thr_ai else "uncertain" if pm >= thr_unc else "human")
+                                    essay_label="ai" if pe >= eff_ai else "uncertain" if pe >= thr_unc else "human",
+                                    multi_label="ai" if pm >= eff_ai else "uncertain" if pm >= thr_unc else "human")
                     cnt[label] += 1
+                if (
+                    getattr(self, "tier", "full") != "speed"
+                    and p_doc > 0.80
+                    and cnt["ai"] == 0
+                    and sentences
+                    and load_settings().get("sentences", "auto") == "auto"
+                    and res.get("windows")
+                ):
+                    try:
+                        # Reuse the document scan windows (0 extra model forwards) so GPU/DirectML
+                        # never stalls on per-sentence sequential batches when tok_head misses.
+                        wspans = [
+                            (w["first_word"], w["last_word"], w["essay"], w.get("multi", w["essay"]))
+                            for w in res["windows"]
+                        ]
+                        wstarts = [m.start() for m in re.finditer(r"\S+", text)]
+                        gran = "windows"
+                        thr_ai, thr_unc = self.thresholds(gran)
+                        cnt = {"ai": 0, "uncertain": 0, "human": 0}
+                        for s, sentence in zip(spans, sentences):
+                            wi = bisect_left(wstarts, s.start)
+                            c = wi + max(1, len(s.text.split())) // 2
+                            cover = [w for w in wspans if w[0] <= c < w[1]] or [
+                                min(wspans, key=lambda w: abs((w[0] + w[1]) / 2 - c))
+                            ]
+                            me = sum(w[2] for w in cover) / len(cover)
+                            mm = sum(w[3] for w in cover) / len(cover)
+                            pe, pm = _sig(me, pe_c, pe_s), _sig(mm, pm_c, pm_s)
+                            probs = ([pe] if "linda_essay" in selected else []) + (
+                                [pm] if "linda_multi_v2" in selected else []
+                            ) or [pe, pm]
+                            p = sum(probs) / len(probs)
+                            label = "ai" if p >= thr_ai else "uncertain" if p >= thr_unc else "human"
+                            sentence.update(
+                                essay_margin=round(me, 2), essay_prob=round(pe, 3),
+                                multi_margin=round(mm, 2), multi_prob=round(pm, 3),
+                                p_ai=round(p, 3), label=label,
+                                essay_label="ai" if pe >= thr_ai else "uncertain" if pe >= thr_unc else "human",
+                                multi_label="ai" if pm >= thr_ai else "uncertain" if pm >= thr_unc else "human",
+                            )
+                            cnt[label] += 1
+                    except Exception:  # noqa: BLE001 — fallback must never break a check
+                        pass
                 if lite_reuse and res.get("verdict") == "human" and authorship("human", sentences)["ai_share"] >= self.CONSISTENCY_AI_SHARE:
                     res["verdict"] = "uncertain"
                     res["verdict_raised_by"] = "sentences"
@@ -955,7 +1270,7 @@ class Engine:
                 pass
             res["authorship"] = authorship(res.get("verdict"), sentences)
             res["sentence_stats"] = {"total": len(sentences), **cnt, "ai_pct": round(cnt["ai"] / len(sentences) * 100) if sentences else 0,
-                                     "granularity": {"tokens": "tokens", "hybrid": "hybrid", "full": "sentence", "context": "context", "smooth": "smooth", "windows": "window"}[gran],
+                                     "granularity": {"tokens": "tokens", "hybrid": "hybrid", "full": "sentence", "context": "context", "smooth": "smooth", "windows": "window", "segmenter": "segment"}[gran],
                                      "thresholds": {"ai": thr_ai, "uncertain": thr_unc}}
             res["sentence_stats"]["sources"] = ["ensemble"] if getattr(self, "tier", "full") == "speed" else ["ensemble", "essay", "multi"]
             if models and len(models) < 3:

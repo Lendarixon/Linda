@@ -1,25 +1,91 @@
-/* Linda desktop workspace. Layout, tokens and controls follow LocalDocs Metro. */
-html { --ld-nav-width:218px; --ld-control:40px; }
+/* Linda desktop workspace. Layout, tokens and controls follow the Linda brand site (lindarixon.github.io/Linda).
+   Two naming schemes coexist: the app's legacy names (--bg/--bg-card/--text/...) and the site's (--surface/--ink/...). */
+html { --ld-nav-width:224px; --ld-control:44px; --ld-control-sm:36px; --radius:0; }
 html:not([data-theme="light"]):not([data-theme="contrast"]) {
-  --bg:#16181d; --bg-card:#1d2027; --bg-elevated:#252a33;
-  --border:#343b46; --text:#eceef3; --text-muted:#b0b8c5;
-  --ld-chrome:#111318; --ld-hover:#292e38; --ld-line-strong:#586270;
+  --bg:#111418; --bg-card:#191c20; --bg-elevated:#202429;
+  --border:#31363c; --text:#eceff2; --text-muted:#b2b8bf;
+  --ld-chrome:#111418; --ld-hover:#0b0d11; --ld-line-strong:#727880;
+  --accent:#82bcfc; --accent-light:rgba(130,188,252,.15); --cobalt:#1364b0;
+  /* site tokens (same values, site names) */
+  --surface:#191c20; --raised:#202429; --sunken:#0b0d11; --line:#31363c;
+  --header:#111418; --ink:#eceff2; --muted:#b2b8bf;
+  --primary:#1364b0; --primary-hover:#0f5596; --on-primary:#fff;
+  --id-blue:#1364b0; --id-teal:#00787a; --id-violet:#6a51a4; --id-orange:#a14206;
+  --id-magenta:#954074; --id-green:#137738; --id-slate:#4d5969;
+  --success-fill:#03a14a; --warning-fill:#e19b1b; --danger-fill:#d9544b;
+  /* verdict colours: tuned for WCAG AA on both the app surface (#191c20) and the elevated tile (#202429);
+     -deep variants are the white-on-colour badge fills (>= 4.5:1 with #fff) */
+  --ai:#e8635a; --ai-deep:#b03a30; --ai-bg:rgba(232,99,90,.16); --ai-border:rgba(232,99,90,.45);
+  --human:#03a14a; --human-deep:#056c3a; --human-bg:rgba(3,161,74,.14); --human-border:rgba(3,161,74,.45);
+  --uncertain:#e19b1b; --uncertain-deep:#a06c00; --uncertain-bg:rgba(225,155,27,.13); --uncertain-border:rgba(225,155,27,.42);
+  --steel:#4d5969; --teal:#00787a; --teal-deep:#00787a; --purple:#6a51a4; --green:#137738;
+  /* Fixer C: ink for the white-on-colour fills that fail AA with #fff (dark --ai 3.30:1) */
+  --verdict-ink:#fff;
 }
 html[data-theme="light"] {
-  --bg:#f3f4f6; --bg-card:#fff; --bg-elevated:#edf0f4;
-  --border:#d3d8e1; --text:#1a1c21; --text-muted:#535e6e;
-  --ld-chrome:#e8ebf0; --ld-hover:#e4e9f0; --ld-line-strong:#8894a4;
+  --bg:#f3f5f7; --bg-card:#fff; --bg-elevated:#ebeef2;
+  --border:#d7dbe1; --text:#161a1f; --text-muted:#58616d;
+  --ld-chrome:#ebeef2; --ld-hover:#e4e6ea; --ld-line-strong:#7f858d;
+  --accent:#015ba6; --accent-light:rgba(1,91,166,.09); --cobalt:#1364b0;
+  --surface:#fff; --raised:#ebeef2; --sunken:#e4e6ea; --line:#d7dbe1;
+  --header:#f3f5f7; --ink:#161a1f; --muted:#58616d;
+  --primary:#1364b0; --primary-hover:#08569a; --on-primary:#fff;
+  --id-blue:#1364b0; --id-teal:#00787a; --id-violet:#6a51a4; --id-orange:#a14206;
+  --id-magenta:#954074; --id-green:#137738; --id-slate:#4d5969;
+  --success-fill:#03a14a; --warning-fill:#e19b1b; --danger-fill:#d9544b;
+  /* light theme verdict colours: the cabinet.html values the audit points at (#c4302b/#0d7a3e),
+     with --uncertain darkened from #9a6700 (4.87:1 on #fff but 4.18:1 on --bg-elevated) to #8f5f00 for AA on every light surface */
+  --ai:#c4302b; --ai-deep:#c4302b; --ai-bg:rgba(196,48,43,.09); --ai-border:rgba(196,48,43,.40);
+  --human:#0d7a3e; --human-deep:#0d7a3e; --human-bg:rgba(13,122,62,.10); --human-border:rgba(13,122,62,.40);
+  --uncertain:#8f5f00; --uncertain-deep:#8f5f00; --uncertain-bg:rgba(143,95,0,.14); --uncertain-border:rgba(143,95,0,.40);
+  --steel:#4d5969; --teal:#00787a; --teal-deep:#00787a; --purple:#6a51a4; --green:#137738;
+  --verdict-ink:#fff;
 }
 html[data-theme="contrast"] {
   --bg:#000; --bg-card:#000; --bg-elevated:#111; --border:#fff;
   --text:#fff; --text-muted:#fff; --ld-chrome:#000; --ld-hover:#222;
-  --ld-line-strong:#fff; --accent:#79d7ff; --cobalt:#005fb8;
+  --ld-line-strong:#fff; --accent:#f5d020; --cobalt:#005fb8;
+  /* site names mirror the accessibility override so both schemes stay legible */
+  --surface:#000; --raised:#111; --sunken:#000; --line:#fff; --header:#000;
+  --ink:#fff; --muted:#fff; --primary:#015ba6; --primary-hover:#015ba6; --on-primary:#fff;
+  --id-blue:#015ba6; --id-teal:#00aba9; --id-violet:#a37dff; --id-orange:#b34d00;
+  --id-magenta:#a37dff; --id-green:#008a00; --id-slate:#8b93a7;
+  --success-fill:#7bff9e; --warning-fill:#ffb020; --danger-fill:#ff8080;
+  /* verdict colours in the accessibility theme: >= 7:1 on #000 and on #161616 (--ai was #ff6b6b = 6.80:1 on the elevated tile) */
+  --ai:#ff8080; --ai-deep:#b03a30; --ai-bg:rgba(255,128,128,.18); --ai-border:#ff8080;
+  --human:#7bff9e; --human-deep:#7bff9e; --human-bg:rgba(123,255,158,.16); --human-border:#7bff9e;
+  --uncertain:#ffb020; --uncertain-deep:#ffb020; --uncertain-bg:rgba(255,176,32,.16); --uncertain-border:#ffb020;
+  /* black ink on the bright fills: the contrast accessibility theme keeps #000 */
+  --verdict-ink:#000;
 }
-html[data-accent="cobalt"] { --cobalt:#0067c0; --accent:#63baff; --accent-light:rgba(68,157,230,.14); }
-html[data-theme="light"][data-accent="cobalt"] { --accent:#005fb8; --accent-light:rgba(0,95,184,.09); }
+/* accent variants must never override the contrast accessibility theme */
+html:not([data-theme="contrast"])[data-accent="cobalt"] { --cobalt:#1364b0; --accent:#82bcfc; --accent-light:rgba(130,188,252,.14); }
+/* Fixer C (2026-11-21): dark-theme accent presets carry :not([data-theme="light"]) too —
+   specificity (0,3,1), one above the dark base block — so all 8 accents resolve in dark. */
+html:not([data-theme="contrast"])[data-accent="teal"]:not([data-theme="light"]) { --cobalt:#00787a; --accent:#5ecbcb; --accent-light:rgba(0,120,122,.18); }
+html:not([data-theme="contrast"])[data-accent="green"]:not([data-theme="light"]) { --cobalt:#137738; --accent:#88ca95; --accent-light:rgba(19,119,56,.18); }
+html:not([data-theme="contrast"])[data-accent="orange"]:not([data-theme="light"]),
+html:not([data-theme="contrast"])[data-accent="amber"]:not([data-theme="light"]) { --cobalt:#a14206; --accent:#eca47f; --accent-light:rgba(161,66,6,.18); }
+html:not([data-theme="contrast"])[data-accent="purple"]:not([data-theme="light"]) { --cobalt:#6a51a4; --accent:#bcabf1; --accent-light:rgba(106,81,164,.18); }
+html:not([data-theme="contrast"])[data-accent="rose"]:not([data-theme="light"]),
+html:not([data-theme="contrast"])[data-accent="magenta"]:not([data-theme="light"]) { --cobalt:#954074; --accent:#eca8c9; --accent-light:rgba(149,64,116,.18); }
+html:not([data-theme="contrast"])[data-accent="graphite"]:not([data-theme="light"]),
+html:not([data-theme="contrast"])[data-accent="slate"]:not([data-theme="light"]) { --cobalt:#4d5969; --accent:#9aa5b1; --accent-light:rgba(77,89,105,.18); }
+
+html[data-theme="light"][data-accent="cobalt"] { --accent:#015ba6; --accent-light:rgba(1,91,166,.09); }
+/* P0-1 (Neon audit 2026-11-20): light theme needs the dark identity hue per accent, the dark presets are 1.76:1-2.73:1 on white */
+html[data-theme="light"][data-accent="teal"] { --accent:#005f61; --accent-light:rgba(0,120,122,.12); --cobalt:#005f61; }
+html[data-theme="light"][data-accent="green"] { --accent:#0e5c2c; --accent-light:rgba(19,119,56,.12); --cobalt:#0e5c2c; }
+html[data-theme="light"][data-accent="orange"],
+html[data-theme="light"][data-accent="amber"] { --accent:#a14206; --accent-light:rgba(161,66,6,.12); --cobalt:#a14206; }
+html[data-theme="light"][data-accent="purple"] { --accent:#6a51a4; --accent-light:rgba(106,81,164,.12); --cobalt:#6a51a4; }
+html[data-theme="light"][data-accent="rose"],
+html[data-theme="light"][data-accent="magenta"] { --accent:#954074; --accent-light:rgba(149,64,116,.12); --cobalt:#954074; }
+html[data-theme="light"][data-accent="graphite"],
+html[data-theme="light"][data-accent="slate"] { --accent:#4d5969; --accent-light:rgba(77,89,105,.12); --cobalt:#4d5969; }
 body.ld-desktop {
   height:100dvh; min-height:0; overflow:hidden; display:flex; flex-direction:column;
-  font-family:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif!important;
+  font-family:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif!important;
   font-size:1rem!important; line-height:1.5; background:var(--bg); color:var(--text);
 }
 html[data-density="compact"] body.ld-desktop { font-size:.875rem!important; }
@@ -29,12 +95,32 @@ html[data-density="spacious"] body.ld-desktop { font-size:1.0625rem!important; }
 .ld-desktop button,.ld-desktop input,.ld-desktop select,.ld-desktop textarea { font-family:inherit; }
 .ld-desktop button { text-transform:none!important; letter-spacing:normal!important; font-weight:500; }
 .ld-desktop button:not(.tab):not(.lp-x):not(.btn-del-file):not(.cab-act):not(.ld-icon-button) { min-height:var(--ld-control); }
+/* C-07: exactly two control heights — 44px primary/nav, 36px secondary + rail. */
+.ld-desktop .btn-upload,
+.ld-desktop .ld-back,
+.ld-desktop .lp-btn.sec,
+.ld-desktop .cab-btn.sec,
+.ld-desktop .exp-fmt,
+.ld-desktop .ld-language,
+.ld-desktop .tabs-mode button,
+.ld-desktop .heatmap-switcher button { min-height:var(--ld-control-sm); }
 .ld-desktop button:focus-visible,.ld-desktop summary:focus-visible,.ld-desktop a:focus-visible,
 .ld-desktop [tabindex]:focus-visible { outline:2px solid var(--accent)!important; outline-offset:3px; }
 .ld-desktop input:focus-visible,.ld-desktop textarea:focus-visible,.ld-desktop select:focus-visible {
   outline:2px solid var(--accent)!important; outline-offset:-2px;
 }
 .ld-desktop button:disabled { opacity:.5; cursor:default; }
+/* Square-ish surfaces like the brand site: one radius token, applied only to the main
+   containers (nav, cards, controls). The Metro skin's global 0 is overridden here by design;
+   2px is visually square but keeps anti-aliased corners on hi-dpi. */
+.ld-desktop .ld-nav,.ld-desktop .ld-nav-button,.ld-desktop .ld-nav-button[aria-current="page"]::before,
+.ld-desktop .input-box,.ld-desktop .verdict-box,.ld-desktop .sv,.ld-desktop .metric-card,
+.ld-desktop .voters-card,.ld-desktop .heatmap-card,.ld-desktop .ld-guide,.ld-desktop .ld-help-card,
+.ld-desktop .model-card,.ld-desktop .tile,.ld-desktop .lp-card,.ld-desktop .ld-language,
+.ld-desktop .btn-analyze,.ld-desktop .cab-btn,.ld-desktop .lp-btn,.ld-desktop .ld-back,
+.ld-desktop #textInput,.ld-desktop .lp-input,.ld-desktop .cab-in,.ld-desktop .cab-sel {
+  border-radius:0;
+}
 .ld-desktop .header {
   flex:none; position:relative; display:flex; justify-content:space-between; gap:20px;
   padding:12px 22px; min-height:66px; background:var(--ld-chrome); z-index:20;
@@ -63,6 +149,11 @@ html[data-density="spacious"] body.ld-desktop { font-size:1.0625rem!important; }
 .ld-nav-button:hover { color:var(--text); background:var(--ld-hover); }
 .ld-nav-button[aria-current="page"] { background:var(--accent-light); color:var(--text); font-weight:600; }
 .ld-nav-button[aria-current="page"]::before { content:""; position:absolute; left:0; top:10px; bottom:10px; width:3px; background:var(--accent); }
+/* C-08: Pro tag on the two licensed tools + the info-link row that replaced their
+   About/Help rail entries. */
+.ld-nav-button .nav-tag { margin-left:auto; font-size:.625rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase; padding:1px 5px; border:1px solid var(--border); color:var(--text-muted); background:transparent; }
+.ld-nav-button[aria-current="page"] .nav-tag { border-color:var(--accent); color:var(--accent); }
+.ld-info-links { display:inline-flex; gap:8px; margin-left:auto; }
 .ld-nav-bottom { margin-top:auto; padding-top:20px; }
 .ld-desktop #licBadge {
   display:block; max-width:100%; white-space:normal; background:transparent!important;
@@ -111,7 +202,9 @@ html[data-density="spacious"] body.ld-desktop { font-size:1.0625rem!important; }
 .ld-desktop #textInput { width:100%; min-height:250px; height:29vh; max-height:55vh; font-size:.9375rem; line-height:1.7; padding:14px 16px; resize:vertical; border:1px solid var(--ld-line-strong); background:var(--bg); color:var(--text); border-radius:0; }
 .ld-desktop #textInput::placeholder { color:var(--text-muted); opacity:1; }
 .ld-desktop .preflight-panel { margin:0 0 16px; padding:10px 13px; border:1px solid var(--border); border-left:3px solid var(--accent); background:var(--bg); font-size:.8125rem; }
-.ld-recommendation { color:var(--text); margin:0!important; font-weight:500; }
+/* C-07: the 300-word note is a calm 13px line with an 8px --warning dot, not a banner. */
+.ld-recommendation { display:flex; align-items:flex-start; gap:8px; color:var(--text-muted); margin:0!important; font-weight:400; font-size:.8125rem; line-height:1.5; }
+.ld-recommendation::before { content:""; flex:none; width:8px; height:8px; margin-top:5px; background:var(--warning,#e1a035); }
 .ld-preflight-limit { color:var(--text-muted); font-size:.8125rem; margin:5px 0!important; line-height:1.6; }
 .ld-preflight-details { margin-top:4px; }
 .ld-preflight-details summary { color:var(--accent); cursor:pointer; font-size:.75rem; }
@@ -128,6 +221,9 @@ html[data-density="spacious"] body.ld-desktop { font-size:1.0625rem!important; }
 .ld-desktop #statusIndicator { flex:1 0 100%; font-size:.8125rem; white-space:normal; overflow-wrap:anywhere; }
 .ld-desktop #statusIndicator:empty { display:none; }
 .ld-desktop #statusIndicator[data-error="true"] { color:var(--ai); padding:10px 12px; border:1px solid var(--ai-border); background:var(--ai-bg); }
+.ld-desktop #statusIndicator[data-error="true"] { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:10px 14px; color:var(--ink); border:1px solid var(--border); border-left:4px solid var(--danger,var(--ai)); background:var(--danger-soft,var(--ai-bg)); font-size:.8125rem; line-height:1.5; }
+.ld-desktop #statusIndicator[data-error="true"] .ld-retry { flex:none; min-height:36px; padding:0 14px; font-size:.8125rem; font-weight:600; color:var(--ink); background:var(--surface); border:1px solid var(--line-strong); }
+.ld-desktop #statusIndicator[data-error="true"] .ld-retry:hover { background:var(--raised); }
 .ld-desktop .empty-state { display:block; min-height:0; height:auto; padding:0; margin:0; text-align:left; font-size:.875rem; border:0; }
 .ld-guide { padding:19px 18px; background:var(--bg-card); border:1px solid var(--border); }
 .ld-guide h2 { font-size:.9375rem; font-weight:600; margin:0 0 18px; }
@@ -169,6 +265,14 @@ html[data-ui="simple"] .ld-desktop #simpleVerdict { border-top:0; padding-top:14
 .ld-desktop .tile { background:var(--bg-card)!important; color:var(--text)!important; border:1px solid var(--border); padding:14px 16px; min-height:88px; animation:none; }
 .ld-desktop .tile b { font-size:1.625rem; font-weight:400; }
 .ld-desktop .tile span { color:var(--text-muted); font-size:.75rem; text-transform:none; letter-spacing:0; }
+/* Light theme: index.html forces white tile text (site live-tile style), so the tile itself must be a
+   solid identity fill — otherwise the text is white on the white --bg-card. Mirrors the brand site. */
+html[data-theme="light"] .ld-desktop .tile { background:var(--id-blue)!important; border-color:var(--id-blue); }
+html[data-theme="light"] .ld-desktop .tile:nth-child(2) { background:var(--id-teal)!important; border-color:var(--id-teal); }
+html[data-theme="light"] .ld-desktop .tile:nth-child(3) { background:var(--id-orange)!important; border-color:var(--id-orange); }
+html[data-theme="light"] .ld-desktop .tile:nth-child(4) { background:var(--id-green)!important; border-color:var(--id-green); }
+html[data-theme="light"] .ld-desktop .tile:nth-child(5) { background:var(--id-violet)!important; border-color:var(--id-violet); }
+html[data-theme="light"] .ld-desktop .tile span { color:rgba(255,255,255,.88); }
 .ld-desktop .hist-grid { grid-template-columns:180px minmax(0,1fr); gap:20px; }
 .ld-desktop .hist-grid>div { min-width:0; }
 .ld-desktop .cab-tbl { font-size:.8125rem; display:block; max-width:100%; overflow:auto; border:1px solid var(--border); }
@@ -206,6 +310,10 @@ html[data-ui="simple"] .ld-desktop #simpleVerdict { border-top:0; padding-top:14
 .ld-desktop #lpSet .lp-foot button,.ld-desktop #lpLic .lp-foot button { flex:0 1 auto; min-width:130px; }
 .ld-desktop input[type="checkbox"],.ld-desktop input[type="radio"] { accent-color:var(--cobalt); width:17px; height:17px; flex:none; }
 .ld-tool-page { flex:1; min-height:0; overflow:auto; padding:24px 28px 40px; }
+/* Client bug 3: the models screen needs a visible way to get the models. */
+.ld-models-cta { max-width:950px; margin:0 0 20px; padding:16px 18px; background:var(--bg-card); border:1px solid var(--border); border-left:4px solid var(--id-blue); display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.ld-models-cta p { margin:0; color:var(--text); font-size:.875rem; flex:1 1 260px; }
+.ld-models-cta .lp-btn { flex:none; }
 .ld-desktop .ld-tool-page.panel-left { display:block!important; width:auto; border:0; background:var(--bg); }
 .ld-desktop .ld-tool-page .adv { display:block!important; max-width:950px; }
 .ld-desktop .ld-tool-page>#packCard,.ld-desktop .ld-tool-page>div { max-width:950px; }

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import base64
 import hashlib
+import json
 import time
 
 import pytest
@@ -120,6 +121,7 @@ def test_corrupted_local_file_is_redownloaded(repo):
     run_job(m, raw)
     (config.data_dir() / "models/a/config.json").write_bytes(b'{"x":9}')  # same size, corrupted
     (config.data_dir() / "manifest.json").unlink()  # forces hash verification
+    (config.data_dir() / "models/a/config.json.ok").unlink(missing_ok=True)  # stale marker must not protect a corrupted file
     assert [f["path"] for f in updater.files_to_fetch(m)] == ["models/a/config.json"]
 
 
@@ -140,3 +142,64 @@ def test_is_complete_survives_os_errors(repo, monkeypatch):
 
     monkeypatch.setattr(type(config.data_dir()), "is_file", boom)
     assert updater.is_complete() is False  # no crash
+
+
+def test_ok_marker_skips_rehash_and_download_completes(repo, monkeypatch):
+    """A .ok marker with matching sha256+size lets files_to_fetch/_verify_staged skip re-hashing; download still completes."""
+    import http.server
+    import threading
+
+    payload = b"linda" * 20000  # 100 KB served by a local http.server
+    srv_root = repo.root / "extra"
+    (srv_root / "models/e").mkdir(parents=True, exist_ok=True)
+    (srv_root / "models/e/small.bin").write_bytes(payload)
+    digest = hashlib.sha256(payload).hexdigest()
+
+    class H(http.server.BaseHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def do_GET(self):
+            data = (srv_root / self.path.lstrip("/")).read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{srv.server_address[1]}"
+    monkeypatch.setenv("LINDA_DEV", "1")
+    try:
+        m = {"schema": 1, "version": "2.0.0", "files": [{"path": "models/e/small.bin", "size": len(payload), "sha256": digest}]}
+        raw = json.dumps(m).encode()
+        m["_signature"] = base64.b64encode(repo.key.sign(raw)).decode()
+        updater.verify_signature(raw, m["_signature"].encode())
+
+        root = config.models_root()
+        dest = root / "models/e/small.bin"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(payload)
+        (root / "models/e/small.bin.ok").write_text(f"{digest} {len(payload)}\n", encoding="ascii")
+
+        calls = []
+        orig = updater.sha256_file
+        monkeypatch.setattr(updater, "sha256_file", lambda pth: (calls.append(str(pth)), orig(pth))[1])
+        assert updater.files_to_fetch(m) == []  # marker trusted
+        assert calls == []  # no re-hash performed
+
+        # full download path through Job against the local server still completes
+        dest.unlink()
+        (root / "models/e/small.bin.ok").unlink()
+        job = updater.Job()
+        job.start(m, raw, root=root, base_url=base)
+        t0 = time.time()
+        while job.running() and time.time() - t0 < 30:
+            time.sleep(0.05)
+        st = job.snapshot()
+        assert st["phase"] == "done", st
+        assert dest.read_bytes() == payload
+        assert (root / "models/e/small.bin.ok").is_file()  # marker written after verified download
+    finally:
+        srv.shutdown()
+        srv.server_close()

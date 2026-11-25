@@ -74,8 +74,8 @@ def parse(filename, content):
     if len(content) > MAX_INPUT:
         raise ValueError('Document exceeds the supported input limit')
     ext = Path(filename).suffix.lower()
-    try:from .document_formats import EXTRA_EXTS, extract_extended
-    except ImportError:from document_formats import EXTRA_EXTS, extract_extended
+    try:from .document_formats import EXTRA_EXTS, extract_extended, extract_pdf_pages
+    except ImportError:from document_formats import EXTRA_EXTS, extract_extended, extract_pdf_pages
     if ext in EXTRA_EXTS:
         parts=[extract_extended(ext,content)]
     elif ext == '.docx':
@@ -90,7 +90,7 @@ def parse(filename, content):
         reader = pypdf.PdfReader(io.BytesIO(content))
         if len(reader.pages)>MAX_PAGES:
             raise ValueError('PDF exceeds the supported page limit')
-        parts = ((page.extract_text() or '').strip() for page in reader.pages)
+        parts = extract_pdf_pages(reader)
     else:
         raise ValueError('Unsupported document format')
     output, size = [], 0

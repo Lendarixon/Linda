@@ -41,6 +41,8 @@ def run(engine, det, text, mode, name):
         return result  # Stylometry has no calibrated sentence heatmap.
     spans = split_sentences_with_offsets(text)
     gran = engine.sentence_mode(len(text.split()))
+    if gran == 'segmenter':  # one selected voter cannot feed the segmenter: use the default mode
+        gran = engine.sentence_mode(len(text.split()), skip=('segmenter',))
     word_count = len(text.split())
     if gran in ('full','hybrid','context') and spans:
         if gran in ('full','hybrid'):
