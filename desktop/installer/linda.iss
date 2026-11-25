@@ -1,5 +1,5 @@
 ; Linda-Pro installer (Inno Setup 6). Per-user install: no administrator rights needed, installs to %LOCALAPPDATA%\Programs\Linda-Pro.
-; Build:  tools\InnoSetup\ISCC.exe installer\linda.iss   (after tools\build_app.py)
+; Build:  python tools\release_2506.py   (repacks Linda-Pro.exe through tools\repack_exe.py, then runs ISCC on installer\linda.iss)
 ; Silent update (used by the app itself):  Linda-Setup.exe /SILENT /SUPPRESSMSGBOXES /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS
 ; Corporate rollout (тихая установка по сети): Linda-Setup.exe /SILENT /SUPPRESSMSGBOXES /NORESTART /TASKS="" /DIR="C:\Program Files\Linda-Pro" [/MODELSET=lite|pro|both] [/PACKS=none|trace|lite|full|trace,humanizer-lite,humanizer-full] [/LICENSEKEY=ключ]
 ;   Silent без /MODELSET и /PACKS оставляет автовыбор: модель Loupe + пакеты по железу (WMI: VRAM>=8 ГБ -> Trace+Full, RAM>=8 ГБ -> Trace+Lite, иначе только детектор).

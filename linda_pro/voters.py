@@ -9,14 +9,25 @@ import json
 import math
 from pathlib import Path
 
+import unicodedata
+
 import numpy as np
 
 
-def clean_text(text: str) -> str:
-    """The same attack cleaning (homoglyphs, invisible characters, etc.) that was used during calibration."""
+def clean_text(text: str, lang: str | None = None) -> str:
+    """The same attack cleaning (homoglyphs, invisible characters, etc.) that was used during calibration.
+
+    lang selects the document script (ru -> CYRILLIC, en/pl -> LATIN, None -> auto).
+    Text is NFC-normalized first so composed/decomposed diacritics (PL from Word/macOS) behave the same.
+    """
     from ._vendor.aidetector.canonical import prepare_for_voter
 
-    return prepare_for_voter("compare", text, "en")
+    if text:
+        try:
+            text = unicodedata.normalize("NFC", text)
+        except Exception:  # noqa: BLE001 — normalization must never break scoring
+            pass
+    return prepare_for_voter("compare", text, lang)
 
 
 CANCEL = None  # callable -> bool: приложение ставит на время проверки; True = прервать между пакетами
@@ -31,16 +42,109 @@ def check_cancel() -> None:
         raise Cancelled()
 
 
-def load_token_head(model_dir):
-    """Load the small calibrated head without importing torch."""
-    with np.load(Path(model_dir) / "tok_head.npz", allow_pickle=False) as f:
+def token_head_calibration_file(model_dir):
+    """The optional sidecar that retunes an installed head without rewriting the npz.
+
+    Looked up next to the head (`tok_head_calibration.json`) and in the pack's own
+    `calibration/` directory (`token_heads_v2.json`, two levels up from models/<voice>),
+    so a pack can ship one table for every voice.
+    """
+    md = Path(model_dir)
+    for p in (md / "tok_head_calibration.json",
+              md.parent.parent / "calibration" / "token_heads_v2.json"):
+        if p.is_file():
+            return p
+    return None
+
+
+def _head_calibration(model_dir, voice=None, lang=None):
+    """(center, scale) from the sidecar for this voice/lang, or None.
+
+    Only calibrated values accepted: finite center, positive finite scale. A sidecar that
+    does not name the voice/lang leaves the head's own center/scale in force.
+    """
+    p = token_head_calibration_file(model_dir)
+    if p is None or not voice or not lang:
+        return None
+    try:
+        table = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    head = (table.get("heads") or {}).get(f"{voice}_{lang}")
+    if not isinstance(head, dict):
+        return None
+    try:
+        center, scale = float(head["center"]), float(head["scale"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if not (math.isfinite(center) and math.isfinite(scale)) or scale <= 0:
+        return None
+    return center, scale
+
+
+def load_token_head(model_dir, lang=None):
+    """Load the small calibrated head without importing torch.
+
+    The npz may carry `schema`, `voice` and `lang` keys (heads built after
+    2026-11-20 do). When it names its voice/lang, a calibration sidecar
+    (`tok_head_calibration.json` next to the head, or the pack's
+    `calibration/token_heads_v2.json`) overrides center/scale, so thresholds can be
+    retuned without rewriting the weights. Heads without those keys load exactly as
+    before.
+
+    night/pack15: voice dirs shared by several languages (essay_l14m50/multi_l14m50
+    serve pl AND ru) keep the per-language head in `tok_head_<lang>.npz`; `lang`
+    (the document's language) selects it, falling back to `tok_head.npz`."""
+    name = "tok_head.npz" if lang is None else f"tok_head_{lang}.npz"
+    if lang is not None and not (Path(model_dir) / name).is_file():
+        name = "tok_head.npz"
+    with np.load(Path(model_dir) / name, allow_pickle=False) as f:
         head = {k: f[k].astype(np.float32 if k in ("w", "b") else np.float64) for k in ("w", "b", "center", "scale")}
         head["conv"] = f["conv"].astype(np.float32) if "conv" in f else np.ones(1, np.float32)
+        head["schema"] = int(f["schema"]) if "schema" in f.files else 1
+        for key in ("voice", "lang"):
+            if key in f.files:
+                head[key] = str(f[key].item() if getattr(f[key], "shape", ()) == () else f[key].tolist()[0])
     if (head["w"].ndim != 1 or head["conv"].ndim != 1 or not len(head["conv"])
-            or len(head["conv"]) % 2 != 1 or any(not np.isfinite(v).all() for v in head.values())
+            or len(head["conv"]) % 2 != 1 or any(not np.isfinite(head[k]).all() for k in ("w", "b", "center", "scale", "conv"))
             or any(head[k].size != 1 for k in ("b", "center", "scale")) or float(head["scale"]) <= 0):
         raise ValueError("Invalid calibrated token head")
+    calibrated = _head_calibration(model_dir, head.get("voice"), head.get("lang"))
+    if calibrated is not None:
+        head["center"], head["scale"] = np.float64(calibrated[0]), np.float64(calibrated[1])
+        head["calibration_source"] = "sidecar"
+    else:
+        head["calibration_source"] = "npz"
+    # `calibrated` means a usable (center, scale) is in force — the validation above
+    # guarantees it on every successful load. It does not say which file won.
+    head["calibrated"] = True
     return head
+
+
+def token_head_info(model_dir, lang=None):
+    """Identity of the installed head, or None when the directory has none.
+
+    Everything the app needs to decide whether auto markup may use tokens for this
+    voice/language: the schema (v2 = the validated heads), the voice/lang the head was
+    trained for, and the calibrated center/scale actually in force (sidecar applied).
+    A head that cannot be read reports `schema: 1` so callers keep the legacy path.
+    night/pack15: `lang` selects `tok_head_<lang>.npz` in shared voice dirs.
+    """
+    name = "tok_head.npz" if lang is None else f"tok_head_{lang}.npz"
+    if lang is not None and not (Path(model_dir) / name).is_file():
+        name = "tok_head.npz"
+    if not (Path(model_dir) / name).is_file():
+        return None
+    try:
+        h = load_token_head(model_dir, lang=lang)
+    except (OSError, ValueError):
+        return {"schema": 1, "voice": None, "lang": None, "calibrated": False,
+                "calibration_source": None, "center": math.nan, "scale": math.nan,
+                "error": "unreadable"}
+    return {"schema": int(h.get("schema", 1)), "voice": h.get("voice"), "lang": h.get("lang"),
+            "calibrated": bool(h.get("calibrated")), "calibration_source": h.get("calibration_source"),
+            "center": float(h["center"]), "scale": float(h["scale"])}
+
 
 
 def apply_token_head(hidden, head):
@@ -52,8 +156,14 @@ def apply_token_head(hidden, head):
     return scores
 
 
-def pro_token_scores(voter, text, hidden_for_window):
-    """Whole-text coverage, 25% overlap; correlate real tokens per window."""
+def pro_token_scores(voter, text, hidden_for_window, hidden_for_windows=None):
+    """Whole-text coverage, 25% overlap; correlate real tokens per window.
+
+    `hidden_for_window(seq)` scores one window. When `hidden_for_windows(seqs)` is
+    given, all windows are planned first and inferred `voter.batch` at a time (one
+    forward per batch instead of one per window); scores are then scattered back by
+    the same offsets, so coverage and averaging stay identical.
+    """
     head = load_token_head(voter.model_dir)
     enc = voter.tok(text, add_special_tokens=False, return_offsets_mapping=True)
     ids, offsets = enc["input_ids"], enc["offset_mapping"]
@@ -61,21 +171,112 @@ def pro_token_scores(voter, text, hidden_for_window):
     if n < 1:
         raise ValueError("max_len must exceed 2")
     total, count = np.zeros(len(ids)), np.zeros(len(ids))
+    starts, real_idx = [], []
     start = 0
     while start < len(ids):
-        check_cancel()
         part = ids[start:start + n]
-        real = [i for i in range(len(part)) if offsets[start + i][1] > offsets[start + i][0]]
-        hidden = hidden_for_window([voter.tok.cls_token_id, *part, voter.tok.sep_token_id])
-        if real:
-            scores = apply_token_head(hidden[np.array(real) + 1], head)
-            idx = start + np.array(real)
-            total[idx] += scores
-            count[idx] += 1
+        starts.append(start)
+        real_idx.append([i for i in range(len(part)) if offsets[start + i][1] > offsets[start + i][0]])
         if start + n >= len(ids):
             break
         start += max(1, n * 3 // 4)
+
+    def accumulate(start, real, hidden):
+        if not real:
+            return
+        scores = apply_token_head(hidden[np.array(real) + 1], head)
+        idx = start + np.array(real)
+        total[idx] += scores
+        count[idx] += 1
+
+    if hidden_for_windows is None:
+        for start, real in zip(starts, real_idx):
+            check_cancel()
+            accumulate(start, real, hidden_for_window([voter.tok.cls_token_id, *ids[start:start + n], voter.tok.sep_token_id]))
+    else:
+        batch = max(1, int(getattr(voter, "batch", 1) or 1))
+        # Similar lengths in one batch: the last window is short, so keep it out
+        # of a batch of full windows rather than padding it up to max_len.
+        order = sorted(range(len(starts)), key=lambda j: -(len(ids[starts[j]:starts[j] + n])))
+        for b in range(0, len(order), batch):
+            check_cancel()
+            chunk = order[b:b + batch]
+            seqs = [[voter.tok.cls_token_id, *ids[starts[j]:starts[j] + n], voter.tok.sep_token_id] for j in chunk]
+            hiddens = hidden_for_windows(seqs)
+            for j, hidden in zip(chunk, hiddens):
+                accumulate(starts[j], real_idx[j], hidden)
     return [(a, b, float(total[i] / count[i])) for i, (a, b) in enumerate(offsets) if b > a and count[i]]
+
+
+class _BareTokenizer:
+    """HF-compatible facade over a bare `tokenizers.Tokenizer`.
+
+    AutoTokenizer imports every transformers model module and its Python wrapper adds
+    a BatchEncoding around each call; the Rust tokenizer produces the same ids and
+    offsets on its own (tested on EN/PL/RU). Loading it never requires transformers,
+    which the packaged app may not ship for tokenization-only work.
+    """
+
+    def __init__(self, tk):
+        self._tk = tk
+        self._tk.no_padding()  # tokenizer.json may carry training-time padding/truncation
+        self._tk.no_truncation()
+        self.cls_token_id = tk.token_to_id("[CLS]")
+        self.sep_token_id = tk.token_to_id("[SEP]")
+        self.pad_token_id = tk.token_to_id("[PAD]")
+        self.unk_token_id = tk.token_to_id("[UNK]")
+        self.mask_token_id = tk.token_to_id("[MASK]")
+
+    def _one(self, text, add_special_tokens):
+        return self._tk.encode(text, add_special_tokens=bool(add_special_tokens))
+
+    def __call__(self, text, add_special_tokens=False, return_offsets_mapping=False, **_kwargs):
+        if isinstance(text, str):
+            e = self._one(text, add_special_tokens)
+            out = {"input_ids": list(e.ids)}
+            if return_offsets_mapping:
+                out["offset_mapping"] = [tuple(o) for o in e.offsets]
+            return out
+        encs = [self._one(t, add_special_tokens) for t in text]
+        out = {"input_ids": [list(e.ids) for e in encs]}
+        if return_offsets_mapping:
+            out["offset_mapping"] = [[tuple(o) for o in e.offsets] for e in encs]
+        return out
+
+    def encode(self, text, add_special_tokens=False):
+        return self._one(text, add_special_tokens)
+
+    def pad(self, enc, return_tensors=None, pad_to_multiple_of=None, **_kwargs):
+        ids = enc["input_ids"]
+        if ids and not isinstance(ids[0], (list, tuple)):
+            ids = [ids]
+        width = max((len(x) for x in ids), default=0)
+        if pad_to_multiple_of:
+            width += -width % int(pad_to_multiple_of)
+        arr = np.full((len(ids), width), self.pad_token_id, dtype=np.int64)
+        mask = np.zeros((len(ids), width), dtype=np.int64)
+        for row, x in enumerate(ids):
+            arr[row, :len(x)] = x
+            mask[row, :len(x)] = 1
+        if return_tensors == "pt":
+            import torch
+
+            return {"input_ids": torch.from_numpy(arr), "attention_mask": torch.from_numpy(mask)}
+        return {"input_ids": arr.tolist(), "attention_mask": mask.tolist()}
+
+
+def load_bare_tokenizer(model_dir):
+    """`tokenizers.Tokenizer.from_file(model_dir/tokenizer.json)`, or None when unavailable."""
+    try:
+        from tokenizers import Tokenizer
+
+        path = Path(model_dir) / "tokenizer.json"
+        if not path.is_file():
+            return None
+        return _BareTokenizer(Tokenizer.from_file(str(path)))
+    except Exception:  # noqa: BLE001 — packaged app without the tokenizers lib: fall back to AutoTokenizer
+        return None
+
 
 
 class FastSeqCls:
@@ -95,11 +296,17 @@ class FastSeqCls:
         import inspect
 
         import torch
-        from transformers import AutoModelForSequenceClassification, AutoTokenizer
+        from transformers import AutoModelForSequenceClassification
 
         self.torch = torch
         self.device = self.device_pref or ("cuda" if torch.cuda.is_available() else "cpu")
-        self.tok = AutoTokenizer.from_pretrained(str(self.model_dir))
+        # Bare Rust tokenizer first: identical ids/offsets to AutoTokenizer (see
+        # tests/test_bare_tokenizer.py) without importing every model module.
+        self.tok = load_bare_tokenizer(self.model_dir)
+        if self.tok is None:
+            from transformers import AutoTokenizer
+
+            self.tok = AutoTokenizer.from_pretrained(str(self.model_dir))
         self.model = AutoModelForSequenceClassification.from_pretrained(str(self.model_dir)).to(self.device).eval()
         if self.device == "cpu" or self.force_fp32:  # downloads may be fp16; calibrated routes run FP32
             self.model = self.model.float()
@@ -137,14 +344,25 @@ class FastSeqCls:
         if self.model is None:
             self._load()
 
+        base = getattr(self.model, self.model.base_model_prefix)
+
         def hidden(seq):
             enc = self.tok.pad({"input_ids": [seq]}, return_tensors="pt", pad_to_multiple_of=32)
             enc = {k: v.to(self.device) for k, v in enc.items() if k in self.args}
             with self.torch.no_grad():
-                base = getattr(self.model, self.model.base_model_prefix)
                 return base(**enc).last_hidden_state[0].float().cpu().numpy()
 
-        return pro_token_scores(self, text, hidden)
+        def hidden_batch(seqs):
+            # One forward for the whole batch. DeBERTa v2 positions are relative
+            # (position_biased_input=false), so right padding never moves a real
+            # token; the mask keeps padding out of attention and pooling.
+            enc = self.tok.pad({"input_ids": seqs}, return_tensors="pt", pad_to_multiple_of=32)
+            enc = {k: v.to(self.device) for k, v in enc.items() if k in self.args}
+            with self.torch.no_grad():
+                out = base(**enc).last_hidden_state.float().cpu().numpy()
+            return [out[row, :len(seq)] for row, seq in enumerate(seqs)]
+
+        return pro_token_scores(self, text, hidden, hidden_batch)
 
     def _windows(self, ids: list[int]) -> list[list[int]]:
         n = self.max_len - 2
@@ -209,6 +427,45 @@ class SpeedOnnx:
     def __init__(self, model_dir: str | Path, threads: int | None = None, batch: int = 12):
         self.model_dir = Path(model_dir)
         self.threads, self.batch, self.sess = threads, batch, None
+        self.conformal = self.load_conformal()
+
+    def load_conformal(self) -> dict | None:
+        """Length-binned split-conformal thresholds from `speed_conformal.json` next to the speed model.
+
+        Returns None when the file is absent — conformal_verdict then falls back to the flat threshold.
+        """
+        p = self.model_dir / "speed_conformal.json"
+        if not p.is_file():
+            return None
+        try:
+            table = json.loads(p.read_text(encoding="utf-8"))
+            bins = [[float(lo), float(hi)] for lo, hi in table["bins"]]
+            thr = [float(v) for v in table["thresholds"]]
+            margin = float(table.get("abstain_margin", 0.05))
+        except (OSError, ValueError, KeyError, TypeError):
+            return None
+        if len(bins) != len(thr) or not bins or any(not (math.isfinite(v) and v >= 0) for v in thr):
+            return None
+        return {"bins": bins, "thresholds": thr, "abstain_margin": margin}
+
+    def conformal_verdict(self, z: float, nwords: int, flat_thr: float = -1.0) -> str:
+        """Binned conformal verdict: bin by word count; z > thr+margin -> 'ai';
+        thr < z <= thr+margin -> 'uncertain' (abstain); else 'human'.
+        Without a conformal table (None) or flat_thr < 0 the flat threshold decides."""
+        c = self.conformal
+        if c is None:
+            return "ai" if z > flat_thr else "human"
+        b = len(c["bins"]) - 1
+        for i, (lo, hi) in enumerate(c["bins"]):
+            if lo <= nwords < hi:
+                b = i
+                break
+        thr = c["thresholds"][b]
+        if z > thr + c["abstain_margin"]:
+            return "ai"
+        if z > thr:
+            return "uncertain"
+        return "human"
 
     def _load(self) -> None:
         import os
@@ -219,6 +476,7 @@ class SpeedOnnx:
         args = json.loads((self.model_dir / "speed_args.json").read_text(encoding="utf-8"))
         self.max_len = int(args.get("max_len", 256))
         self.max_slices = int(args.get("max_slices", 4))
+        self.special_ids = (args.get("bos_id"), args.get("eos_id"), args.get("pad_id"))  # mmBERT students: <s>/</s> are not bos/eos
         self.sliced = bool(args.get("sliced", False))  # students trained on the first max_len tokens only must not be fed the rest
         self.tok = Tokenizer.from_file(str(self.model_dir / "encoder" / "tokenizer.json"))
         self.tok.no_padding()  # tokenizer.json carries the training-time padding/truncation settings; slicing and padding are done in margins()
@@ -235,6 +493,11 @@ class SpeedOnnx:
         """Every text is cut into token slices of `max_len` that cover ALL its tokens (as the large models do); the score is the mean over the slices."""
         return self._margins(texts)[0]
 
+    def _special(self, cls_id, sep_id, pad_id):
+        """speed_args.json bos_id/eos_id/pad_id override the RoBERTa-style <s>/</s>/<pad> lookup (absent = old behaviour)."""
+        sb, se, sp = getattr(self, "special_ids", (None, None, None))
+        return (cls_id if sb is None else sb), (sep_id if se is None else se), (pad_id if sp is None else sp)
+
     def margins_with_token_scores(self, texts):
         """Keep the token head from the very same verdict inference calls."""
         return self._margins(texts, keep_tokens=True)
@@ -245,6 +508,7 @@ class SpeedOnnx:
         keep_tokens = keep_tokens and not self.sliced and self.has_token_scores
         n = self.max_len - 2
         cls_id, sep_id, pad_id = self.tok.token_to_id("<s>"), self.tok.token_to_id("</s>"), self.tok.token_to_id("<pad>")
+        cls_id, sep_id, pad_id = self._special(cls_id, sep_id, pad_id)
         seqs, owner = [], []
         encodings = self.tok.encode_batch(texts, add_special_tokens=False)
         known = [[] for _ in texts]
@@ -331,6 +595,7 @@ class SpeedOnnx:
         # uncovered runs to the longest chunk in an unrelated batch.
         chunks.sort(key=lambda span: span[1] - span[0])
         cls_id, sep_id, pad_id = (self.tok.token_to_id(t) for t in ("<s>", "</s>", "<pad>"))
+        cls_id, sep_id, pad_id = self._special(cls_id, sep_id, pad_id)
         for batch_start in range(0, len(chunks), self.batch):
             check_cancel()
             batch = chunks[batch_start:batch_start + self.batch]
@@ -378,6 +643,7 @@ class SpeedOnnx:
         cls_id = self.tok.token_to_id("<s>")
         sep_id = self.tok.token_to_id("</s>")
         pad_id = self.tok.token_to_id("<pad>")
+        cls_id, sep_id, pad_id = self._special(cls_id, sep_id, pad_id)
         total = np.zeros(len(enc.ids), dtype=np.float64)
         count = np.zeros(len(enc.ids), dtype=np.int64)
         for b in range(0, len(starts), self.batch):

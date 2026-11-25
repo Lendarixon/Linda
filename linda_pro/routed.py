@@ -19,6 +19,12 @@ COMPAT = {"essay": "linda_essay", "multi": "linda_multi_v2", "stylo": "stylo7c"}
 _PL_LETTERS = re.compile(r"[ąćęłńśźż]", re.I)
 _PL_WORDS = re.compile(r"\b(się|jest|nie|oraz|który|która|które|dla|jak|ale|czy|przez|tylko|może|tego|tym)\b", re.I)
 _EN_WORDS = re.compile(r"\b(the|and|of|to|is|that|with|for|are|this|which|have)\b", re.I)
+_UK_LETTERS = re.compile(r"[іїєґ]", re.I)
+_UK_WORDS = re.compile(r"\b(і|та|що|для|як|але|чи|це|його|їх|вона|вони|був|була|якщо|україн)\b", re.I)
+_DE_LETTERS = re.compile(r"[äöüß]", re.I)
+_DE_WORDS = re.compile(r"\b(der|die|das|und|ist|nicht|mit|von|f[üu]r|auf|eine|einer|einem|deutsch[a-z]*|sind|haben|wird)\b", re.I)
+_FR_LETTERS = re.compile(r"[àâçéèêëîïôûù]", re.I)
+_FR_WORDS = re.compile(r"\b(le|la|les|de|des|et|est|une|pour|avec|fran[cç]ais|fran[cç]aise|suis|sont)\b", re.I)
 
 
 def _map_window_tokens(text, window, cleaned, scores, words):
@@ -54,16 +60,44 @@ def _map_window_tokens(text, window, cleaned, scores, words):
 
 
 def detect_language(text: str) -> str:
-    """en / pl / ru без внешних библиотек: доля кириллицы; польские буквы и служебные слова против английских."""
+    """en / pl / ru / uk / other without external libraries.
+
+    uk = Ukrainian (cyrillic + іїєґ markers) — scored with the ru backend, but
+    reported separately so the UI can warn. other = clearly unsupported
+    (German/French markers or non-latin/non-cyrillic script) — scored as en,
+    result flagged unreliable. Plain latin without markers stays en (short
+    English texts must not flip to other).
+    """
     sample = text[:6000]
     letters = [c for c in sample if c.isalpha()]
     if not letters:
         return "en"
-    if sum(1 for c in letters if "Ѐ" <= c <= "ӿ") / len(letters) > 0.3:
+    n = len(letters)
+    cyr = sum(1 for c in letters if "Ѐ" <= c <= "ӿ") / n
+    if cyr > 0.3:
+        uk = len(_UK_LETTERS.findall(sample)) / n + len(_UK_WORDS.findall(sample)) / max(1, len(sample.split())) * 2.0
+        if uk > 0.02:
+            return "uk"
         return "ru"
-    pl = len(_PL_LETTERS.findall(sample)) / len(letters) * 100 + len(_PL_WORDS.findall(sample)) / max(1, len(sample.split())) * 40
-    en = len(_EN_WORDS.findall(sample)) / max(1, len(sample.split())) * 40
-    return "pl" if pl > 2.0 and pl > en * 0.5 else "en"
+    words = sample.split()
+    nw = max(1, len(words))
+    # Clearly unsupported latin languages first (they must not look like plain en).
+    de = len(_DE_LETTERS.findall(sample)) / n * 10.0 + len(_DE_WORDS.findall(sample)) / nw * 10.0
+    fr = len(_FR_LETTERS.findall(sample)) / n * 10.0 + len(_FR_WORDS.findall(sample)) / nw * 10.0
+    if de > 0.5 or fr > 0.5:
+        return "other"
+    pl = len(_PL_LETTERS.findall(sample)) / n * 100 + len(_PL_WORDS.findall(sample)) / nw * 40
+    en = len(_EN_WORDS.findall(sample)) / nw * 40
+    if pl > 2.0 and pl > en * 0.5:
+        return "pl"
+    if en > 0:
+        return "en"
+    # No en/pl markers: non-latin script (arabic/cjk/greek...) -> other;
+    # plain latin (short English) stays en so short texts keep working.
+    latin = sum(1 for c in letters if "A" <= c <= "Z" or "a" <= c <= "z" or "À" <= c <= "ſ") / n
+    if latin > 0.5:
+        return "en"
+    return "other"
 
 
 class ModelPool:
@@ -104,6 +138,21 @@ class ModelPool:
                 close()
         self.items, self.order = {}, []
 
+    def evict_for_tokens(self, keep_key: str) -> None:
+        """Evict other resident models before loading a token-markup session when VRAM budget is tight."""
+        need = self.size(keep_key)
+        if not need or sum(self.resident_size(k) for k in self.items) + need <= self.budget:
+            return
+        for old in [k for k in list(self.order) if k != keep_key]:
+            v = self.items.pop(old, None)
+            if old in self.order:
+                self.order.remove(old)
+            close = getattr(v, "close", None)
+            if callable(close):
+                close()
+        import gc
+        gc.collect()
+
 
 class RoutedLindaPro:
     routed = True
@@ -137,31 +186,32 @@ class RoutedLindaPro:
     @property
     def mean(self) -> dict:
         t = self.tier(self.cur_lang)
-        return self._compat_z(t, 0)
+        out = {COMPAT[k]: t["z"][t["heat"][k]["voter"]][0] for k in ("essay", "multi")}
+        sk = self._stylo_key(t)
+        if sk:
+            out[COMPAT["stylo"]] = t["z"][sk][0]
+        return out
 
     @property
     def std(self) -> dict:
         t = self.tier(self.cur_lang)
-        return self._compat_z(t, 1)
+        out = {COMPAT[k]: t["z"][t["heat"][k]["voter"]][1] for k in ("essay", "multi")}
+        sk = self._stylo_key(t)
+        if sk:
+            out[COMPAT["stylo"]] = t["z"][sk][1]
+        return out
 
     @staticmethod
     def _stylo_key(t: dict) -> str | None:
-        """Stylometry voice of the tier, or None: since routing 1.4.1 the PL/RU full tiers carry no stylo voter."""
+        """None when the tier has no stylometry voter (routing 1.4.1: PL/RU run essay+multi only)."""
         return next((v for v in t["voters"] if v.startswith("stylo")), None)
-
-    def _compat_z(self, t: dict, i: int) -> dict:
-        out = {COMPAT[k]: t["z"][t["heat"][k]["voter"]][i] for k in ("essay", "multi")}
-        ks = self._stylo_key(t)
-        if ks is not None:
-            out[COMPAT["stylo"]] = t["z"][ks][i]
-        return out
 
     def _factory(self, key: str):
         """linda_essay / linda_multi_v2 (имена 1.x) -> главный голос текущего языка для тепловой карты; настоящие имена голосов работают как есть."""
         t = self.tier(self.cur_lang)
         real = {"linda_essay": t["heat"]["essay"]["voter"], "linda_multi_v2": t["heat"]["multi"]["voter"], "stylo7c": self._stylo_key(t)}.get(key, key)
-        if real is None:
-            raise KeyError(f"tier for language {self.cur_lang!r} has no stylometry voter")
+        if real is None:  # stylo7c asked for on a tier without stylometry: fall back to the essay voice
+            real = t["heat"]["essay"]["voter"]
         return self.pool.get(real)
 
     # --- анализ ---------------------------------------------------------------------------------------
@@ -176,10 +226,10 @@ class RoutedLindaPro:
                 self.pool.clear()  # unload previous language voices/sessions before loading next (no simultaneous GPU)
             first = False
             idx = [i for i, x in enumerate(langs) if x == lang]
-            for i, r in zip(idx, self._detect_lang(lang, [texts[i] for i in idx])):
+            for i, r in zip(idx, self._detect_lang(lang, [texts[i] for i in idx], orig_lang=lang)):
                 out[i] = r
         if texts:
-            self.cur_lang = langs[-1]
+            self.cur_lang = langs[-1] if langs[-1] in self.table.get("languages", {}) else "en"
         return out  # type: ignore[return-value]
 
     def close(self) -> None:
@@ -189,9 +239,14 @@ class RoutedLindaPro:
         except Exception:  # noqa: BLE001
             pass
 
-    def _detect_lang(self, lang: str, texts: list[str]) -> list[dict]:
-        self.cur_lang = lang
-        t = self.tier(lang)
+    def _detect_lang(self, lang: str, texts: list[str], orig_lang: str | None = None) -> list[dict]:
+        orig = orig_lang or lang
+        # uk scores with the ru backend (same script), other with en; the
+        # reported language stays the original plus an explicit warning.
+        backend = orig if orig in self.table.get("languages", {}) else ("ru" if orig == "uk" else "en")
+        clean_lang = "ru" if orig == "uk" or backend == "ru" else ("pl" if backend == "pl" else "en")
+        self.cur_lang = backend
+        t = self.tier(backend)
         wins = [split_windows(x, WINDOW_WORDS, MAX_WINDOWS) for x in texts]
         raw: dict[str, list] = {}
         known = [[] for _ in texts]
@@ -206,9 +261,9 @@ class RoutedLindaPro:
             if cb:
                 cb(base, "scan")
             if key.startswith("stylo"):
-                raw[key] = [float(voter.margins([clean_text(x)])[0]) for x in texts]
+                raw[key] = [float(voter.margins([clean_text(x, clean_lang)])[0]) for x in texts]
             else:
-                flat = [clean_text(w[0]) for ws in wins for w in ws]
+                flat = [clean_text(w[0], clean_lang) for ws in wins for w in ws]
                 vals: list[float] = []
                 capture = self.tier_pref == "speed" and isinstance(voter, SpeedOnnx)
                 tokens = []
@@ -238,6 +293,9 @@ class RoutedLindaPro:
         res = []
         for i in range(len(texts)):
             agg = {k: (raw[k][i] if k.startswith("stylo") else top25(raw[k][i])) for k in t["voters"]}
+            voters = {COMPAT["essay"]: agg[ke], COMPAT["multi"]: agg[km]}
+            if ks:
+                voters[COMPAT["stylo"]] = agg[ks]
             wts = t.get("weights")  # merged-таблица: заморозка DEV с весами голосов; без поля — среднее z, как в 2.0
             if wts:
                 score = sum(float(wts.get(k, 0.0)) * (agg[k] - t["z"][k][0]) / t["z"][k][1] for k in t["voters"])
@@ -245,13 +303,25 @@ class RoutedLindaPro:
                 score = sum((agg[k] - t["z"][k][0]) / t["z"][k][1] for k in t["voters"]) / len(t["voters"])
             ai, hi = (t["thr_p03"], t["thr_sensitive"]) if self.mode == "precise" else (t["thr_sensitive"], t["thr_p5"])
             verdict = "ai" if score > ai else "uncertain" if score > hi else "human"
+            if self.tier_pref == "speed" and backend == "pl":
+                sp = self.pool.items.get(t["heat"]["essay"]["voter"])
+                if isinstance(sp, SpeedOnnx) and sp.conformal is not None:
+                    nwords = len(texts[i].split())
+                    verdict = sp.conformal_verdict(float(score), nwords, flat_thr=-1.0)
+                    if verdict == "ai" and score <= ai:
+                        verdict = "uncertain" if score > hi else "human"
             thr_w = t["heat"]["essay"]["win_thr_1"]
             wl = [{"first_word": a, "last_word": b, "essay": float(s), "multi": float(m), "flag": bool(s > thr_w)} for (_, a, b), s, m in zip(wins[i], raw[ke][i], raw[km][i])]
             tot = sum(w["last_word"] - w["first_word"] for w in wl) or 1
             share = sum(w["last_word"] - w["first_word"] for w in wl if w["flag"]) / tot
             res.append({"verdict": verdict, "mode": self.mode, "essay": float(agg[ke]), "ens_z": float(score), "score": float(score), "ai_share": float(share), "windows": wl,
-                        "voters": {COMPAT["essay"]: agg[ke], COMPAT["multi"]: agg[km]} | ({COMPAT["stylo"]: agg[ks]} if ks else {}), "n_windows": len(wl),
-                        "language": lang, "routing": {"voters": list(t["voters"]), "config": t.get("config", "")}})
+                        "voters": voters, "n_windows": len(wl),
+                        "language": orig, "routing": {"voters": list(t["voters"]), "config": t.get("config", ""), "backend": backend if backend != orig else None}})
+            if orig not in self.table.get("languages", {}):
+                if orig == "uk":
+                    res[-1]["language_warning"] = "ukrainian_unsupported_scored_as_ru"
+                else:
+                    res[-1]["language_warning"] = "unsupported_language_scored_as_en"
             if self.tier_pref == "speed":
                 res[-1]["_lite_token_scores"] = known[i]
         return res

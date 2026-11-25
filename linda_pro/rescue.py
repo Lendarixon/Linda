@@ -235,7 +235,7 @@ class RescueLindaPro:
         out = []
         for t in texts:
             wins = split_windows(t, base.window_words, base.max_windows)
-            margins = [float(x) for x in voter.margins([clean_text(w[0]) for w in wins])]
+            margins = [float(x) for x in voter.margins([clean_text(w[0], "en") for w in wins])]
             out.append((top25(margins), margins))
         return out
 
