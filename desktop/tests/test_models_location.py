@@ -165,6 +165,63 @@ def test_move_job_copies_then_switches(repo, tmp_path):
     assert job.state["done"] == job.state["total"] == 5002
 
 
+def _settings(**values):
+    (config.data_dir() / "settings.json").write_text(json.dumps(values), encoding="utf-8")
+
+
+def test_need_gb_pro_with_gpu_adds_the_onnx_cache(repo):
+    _settings(model_sets=["pro"], device="auto")
+    # 5.8 GB of pack 1.5.0 models + 1.8x FP32 ONNX cache on DirectML + 1.5 GB margin
+    assert models_location.need_gb() == pytest.approx(5.8 * 2.8 + 1.5, abs=0.1)
+
+
+def test_need_gb_pro_on_cpu_has_no_onnx_cache(repo):
+    _settings(model_sets=["pro"], device="cpu")
+    assert models_location.need_gb() == pytest.approx(5.8 + 1.5, abs=0.1)
+
+
+def test_need_gb_lite_only(repo):
+    _settings(model_sets=["lite"], device="auto")
+    assert models_location.need_gb() == pytest.approx(0.3 + 1.5, abs=0.1)
+
+
+def test_need_gb_uses_the_installed_manifest_sizes(repo):
+    _settings(model_sets=["pro"], device="cpu")
+    files = [{"path": "models/pro.bin", "size": 4 * 2**30, "set": "pro"},
+             {"path": "models/shared.bin", "size": 512 * 2**20, "set": "shared"}]
+    (config.models_root() / "manifest.json").write_text(
+        json.dumps({"schema": 1, "version": "1.5.0", "files": files}), encoding="utf-8")
+    assert models_location.need_gb() == pytest.approx(4 + 0.5 + 1.5, abs=0.1)
+
+
+def test_validate_refuses_a_folder_below_need_gb(repo, tmp_path, monkeypatch):
+    _settings(model_sets=["pro"], device="cpu")
+    need = models_location.need_gb()
+    monkeypatch.setattr(models_location, "free_gb", lambda _p: need - 0.1)
+    assert models_location.validate(str(tmp_path / "small")) == (False, "loc_space")
+    monkeypatch.setattr(models_location, "free_gb", lambda _p: need + 0.1)
+    ok, key = models_location.validate(str(tmp_path / "big"))
+    assert ok, key
+
+
+def test_gpu_cache_is_a_warning_not_a_refusal(repo, tmp_path, monkeypatch):
+    """A 10 GB folder fits Assay's 5.8 GB of models; the GPU cache may never appear (no DirectML card), so it is not a hard limit."""
+    _settings(model_sets=["pro"], device="auto")
+    assert models_location.need_gb(include_cache=False) == pytest.approx(5.8 + 1.5, abs=0.1)
+    monkeypatch.setattr(models_location, "free_gb", lambda _p: 10.0)
+    ok, key = models_location.validate(str(tmp_path / "ten_gb"))
+    assert ok, key
+    assert models_location.info()["need_gb"] > 10.0  # the page still warns that the cache may not fit
+
+
+def test_loc_space_message_formats_one_float():
+    root = Path(__file__).resolve().parents[1]
+    for lang in ("en", "pl", "ru"):
+        text = json.loads((root / f"web/i18n/{lang}.json").read_text(encoding="utf-8"))["loc_space"]
+        assert "%.1f" in text, (lang, text)
+        assert "16.2" in text % 16.2, (lang, text)
+
+
 def test_api_location_and_status(repo, tmp_path, monkeypatch):
     monkeypatch.setattr(updater, "is_complete", lambda: True)
     core = app_mod.Core()

@@ -39,18 +39,20 @@
   window.addEventListener('pagehide',()=>{for(const job of toolJobs.values())fetch('/api/detect/cancel',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify({job_id:job.id})}).catch(()=>{});});
   const COPY = {
     ru: {
-      work:'Работа с текстом', tools:'Другие инструменты', app:'Приложение',
+      pack_need_models:'Установите модели проверки, чтобы работать без интернета.', pack_dl_models:'Скачать модели', pro_tag:'Pro',
+      work:'Проверка', tools:'Анализ и стиль', app:'Система',
       check:'Проверить текст', check_desc:'Вставьте текст или откройте документ. Linda оценит признаки ИИ и подсветит фрагменты.',
       history:'История проверок', history_desc:'Сохранённые тексты и результаты. Откройте проверку, чтобы вернуться к ней.',
       batch:'Проверить файлы', batch_desc:'Добавьте документы или выберите папку. Linda проверит файлы по очереди.',
-      compare:'Сравнить документы', compare_desc:'Выберите две сохранённые проверки, чтобы увидеть совпадения и изменения.',
-      trace:'Сравнить стиль', trace_desc:'Linda Trace сравнивает тексты внутри выбранного набора. Это исследовательский инструмент, а не доказательство авторства.',
+      compare:'Сравнить два текста', compare_desc:'Поставьте два текста рядом и сравните их признаки ИИ и фрагменты.',
+      trace:'Анализ стиля (Trace)', trace_desc:'Linda Trace сравнивает тексты внутри выбранного набора. Это исследовательский инструмент, а не доказательство авторства.',
       humanize:'Переписать текст', humanize_desc:'Локальная переработка текста. Проверьте смысл и факты самостоятельно; результат детектора не гарантирует качество.',
       models:'Модели и пакеты', models_desc:'Установленные инструменты и параметры анализа. Для обычной проверки подходят автоматические настройки.',
       settings:'Настройки', settings_desc:'Внешний вид, язык, работа моделей и обновления. Изменения применяются кнопкой «Сохранить».',
       help:'Как пользоваться', help_desc:'Коротко о проверке текста, результатах и ограничениях Linda.',
       license:'Лицензия', license_desc:'Состояние лицензии и активация дополнительных возможностей.',
       audit:'Журнал действий', audit_desc:'Локальная история действий программы.',
+      about:'О программе', about_desc:'Версия приложения, наборы моделей, лицензия и ссылка на обновления.',
       back:'К проверке текста', local:'На вашем компьютере', privacy:'Тексты обрабатываются локально',
       language:'Язык интерфейса', editor:'Ваш текст', shortcut:'Ctrl + Enter — проверить',
       recommendation:'Для более надёжной оценки: от 300 слов связного текста.',
@@ -72,18 +74,20 @@
       basic:'Начать проверку', open_models:'Открыть модели и пакеты',
     },
     en: {
-      work:'Text workspace', tools:'Other tools', app:'Application',
+      pack_need_models:'Install the checking models to work offline.', pack_dl_models:'Download models', pro_tag:'Pro',
+      work:'Check', tools:'Analysis and style', app:'System',
       check:'Check text', check_desc:'Paste text or open a document. Linda estimates AI signals and highlights passages.',
       history:'Check history', history_desc:'Saved texts and results. Open a check to continue where you left off.',
       batch:'Check files', batch_desc:'Add documents or choose a folder. Linda checks the files one at a time.',
-      compare:'Compare documents', compare_desc:'Choose two saved checks to see matching passages and changes.',
-      trace:'Compare writing style', trace_desc:'Linda Trace compares texts within your selected collection. It is a research tool, not proof of authorship.',
+      compare:'Compare two texts', compare_desc:'Choose two saved checks to see matching passages and changes.',
+      trace:'Style analysis (Trace)', trace_desc:'Linda Trace compares texts within your selected collection. It is a research tool, not proof of authorship.',
       humanize:'Rewrite text', humanize_desc:'Local text rewriting. Review meaning and facts yourself; a detector score does not guarantee quality.',
       models:'Models and packages', models_desc:'Installed tools and analysis options. Automatic settings suit everyday checks.',
       settings:'Settings', settings_desc:'Appearance, language, model behaviour and updates. Apply changes with Save.',
       help:'How to use Linda', help_desc:'A short guide to checking text, reading results and understanding the limits.',
       license:'Licence', license_desc:'Licence status and activation of additional features.',
       audit:'Activity log', audit_desc:'A local record of application activity.',
+      about:'About Linda', about_desc:'App version, model sets, licence and a link to release notes.',
       back:'Back to checking', local:'On your computer', privacy:'Texts are processed locally',
       language:'Interface language', editor:'Your text', shortcut:'Ctrl + Enter to check',
       recommendation:'For a more reliable estimate, use at least 300 words of connected prose.',
@@ -105,18 +109,20 @@
       basic:'Start a check', open_models:'Open models and packages',
     },
     pl: {
-      work:'Praca z tekstem', tools:'Inne narzędzia', app:'Aplikacja',
+      pack_need_models:'Zainstaluj modele sprawdzające, aby pracować offline.', pack_dl_models:'Pobierz modele', pro_tag:'Pro',
+      work:'Sprawdzanie', tools:'Analiza i styl', app:'System',
       check:'Sprawdź tekst', check_desc:'Wklej tekst lub otwórz dokument. Linda oceni oznaki AI i zaznaczy fragmenty.',
       history:'Historia sprawdzeń', history_desc:'Zapisane teksty i wyniki. Otwórz sprawdzenie, aby do niego wrócić.',
       batch:'Sprawdź pliki', batch_desc:'Dodaj dokumenty lub wybierz folder. Linda sprawdzi pliki po kolei.',
-      compare:'Porównaj dokumenty', compare_desc:'Wybierz dwa zapisane sprawdzenia, aby zobaczyć podobieństwa i zmiany.',
-      trace:'Porównaj styl', trace_desc:'Linda Trace porównuje teksty w wybranym zbiorze. To narzędzie badawcze, a nie dowód autorstwa.',
+      compare:'Porównaj dwa teksty', compare_desc:'Wybierz dwa zapisane sprawdzenia, aby zobaczyć podobieństwa i zmiany.',
+      trace:'Analiza stylu (Trace)', trace_desc:'Linda Trace porównuje teksty w wybranym zbiorze. To narzędzie badawcze, a nie dowód autorstwa.',
       humanize:'Przeredaguj tekst', humanize_desc:'Lokalne przeredagowanie tekstu. Samodzielnie sprawdź sens i fakty; wynik detektora nie gwarantuje jakości.',
       models:'Modele i pakiety', models_desc:'Zainstalowane narzędzia i opcje analizy. Do zwykłego sprawdzania wystarczą ustawienia automatyczne.',
       settings:'Ustawienia', settings_desc:'Wygląd, język, działanie modeli i aktualizacje. Zastosuj zmiany przyciskiem Zapisz.',
       help:'Jak korzystać', help_desc:'Krótko o sprawdzaniu tekstu, wynikach i ograniczeniach Lindy.',
       license:'Licencja', license_desc:'Stan licencji i aktywacja dodatkowych funkcji.',
       audit:'Dziennik działań', audit_desc:'Lokalny zapis działań aplikacji.',
+      about:'O programie', about_desc:'Wersja aplikacji, zestawy modeli, licencja i odnośnik do informacji o wydaniach.',
       back:'Wróć do sprawdzania', local:'Na Twoim komputerze', privacy:'Teksty są przetwarzane lokalnie',
       language:'Język interfejsu', editor:'Twój tekst', shortcut:'Ctrl + Enter — sprawdź',
       recommendation:'Aby uzyskać bardziej wiarygodną ocenę, użyj co najmniej 300 słów ciągłego tekstu.',
@@ -139,9 +145,9 @@
     },
   };
   const LEGACY = {
-    ru:{ui_doc_title:'Linda — проверка текста',ui_paste:'Вставить из буфера',ui_attach:'Открыть файл',ui_analyze:'Проверить текст',ui_input_ph:'Вставьте текст сюда или перетащите документ…',ui_heat:'Подсветка текста',ui_models:'Модели для проверки',ui_advanced:'Ручной выбор моделей',ui_single:'Одна модель',ui_compare:'Сравнить модели',ui_ens:'Общая оценка',ui_threshold:'Режим проверки',ui_sensitive:'Чувствительный',ui_precise:'Осторожный',ui_export:'Сохранить результат',exp_title:'Отчёт и экспорт',cab_close:'К проверке текста',cab_batch:'Проверить файлы',cab_cmp:'Сравнить документы',cab_trace:'Сравнить стиль',cab_hum:'Переписать текст',h_empty:'Проверок пока нет. Результаты появятся здесь после первой проверки.',tr_hint:'Добавьте исследуемый текст и не менее трёх текстов для сравнения. Каждый текст — от 300 слов. Результат показывает различия внутри набора и не доказывает авторство.',hu_hint:'Перепишите текст локально. После переработки самостоятельно проверьте смысл, факты и формулировки. Снижение оценки ИИ не гарантирует качество.',style_loop:'Повторная переработка',ui_sw_simple:'Основное',ui_sw_expert:'Все подробности'},
-    en:{ui_doc_title:'Linda — text checking',ui_paste:'Paste from clipboard',ui_attach:'Open file',ui_analyze:'Check text',ui_input_ph:'Paste your text here or drag in a document…',ui_heat:'Text highlights',ui_models:'Checking models',ui_advanced:'Choose models manually',ui_single:'One model',ui_compare:'Compare models',ui_ens:'Combined estimate',ui_threshold:'Checking mode',ui_sensitive:'Sensitive',ui_precise:'Cautious',ui_export:'Save result',exp_title:'Report and export',cab_close:'Back to checking',cab_batch:'Check files',cab_cmp:'Compare documents',cab_trace:'Compare writing style',cab_hum:'Rewrite text',h_empty:'No checks yet. Your results will appear here after your first check.',tr_hint:'Add the text you are studying and at least three comparison texts. Each needs at least 300 words. The result describes differences within this collection and does not prove authorship.',hu_hint:'Rewrite text locally. Review meaning, facts and wording yourself afterwards. A lower AI estimate does not guarantee quality.',style_loop:'Rewrite again',ui_sw_simple:'Essentials',ui_sw_expert:'All details'},
-    pl:{ui_doc_title:'Linda — sprawdzanie tekstu',ui_paste:'Wklej ze schowka',ui_attach:'Otwórz plik',ui_analyze:'Sprawdź tekst',ui_input_ph:'Wklej tekst tutaj lub przeciągnij dokument…',ui_heat:'Zaznaczenia w tekście',ui_models:'Modele do sprawdzania',ui_advanced:'Ręczny wybór modeli',ui_single:'Jeden model',ui_compare:'Porównaj modele',ui_ens:'Ocena łączna',ui_threshold:'Tryb sprawdzania',ui_sensitive:'Czuły',ui_precise:'Ostrożny',ui_export:'Zapisz wynik',exp_title:'Raport i eksport',cab_close:'Wróć do sprawdzania',cab_batch:'Sprawdź pliki',cab_cmp:'Porównaj dokumenty',cab_trace:'Porównaj styl',cab_hum:'Przeredaguj tekst',h_empty:'Nie ma jeszcze sprawdzeń. Wyniki pojawią się tutaj po pierwszym sprawdzeniu.',tr_hint:'Dodaj badany tekst i co najmniej trzy teksty porównawcze. Każdy musi mieć co najmniej 300 słów. Wynik opisuje różnice w zbiorze i nie dowodzi autorstwa.',hu_hint:'Przeredaguj tekst lokalnie. Następnie samodzielnie sprawdź sens, fakty i sformułowania. Niższa ocena AI nie gwarantuje jakości.',style_loop:'Przeredaguj ponownie',ui_sw_simple:'Podstawowe',ui_sw_expert:'Wszystkie szczegóły'},
+    ru:{ui_doc_title:'Linda — проверка текста',ui_paste:'Вставить из буфера',ui_attach:'Открыть файл',ui_analyze:'Проверить текст',ui_input_ph:'Вставьте текст сюда или перетащите документ…',ui_heat:'Подсветка текста',ui_models:'Модели для проверки',ui_advanced:'Ручной выбор моделей',ui_single:'Одна модель',ui_compare:'Сравнить модели',ui_ens:'Общая оценка',ui_threshold:'Режим проверки',ui_sensitive:'Чувствительный',ui_precise:'Осторожный',ui_export:'Сохранить результат',exp_title:'Отчёт и экспорт',cab_close:'К проверке текста',cab_batch:'Проверить файлы',cab_cmp:'Сравнить два текста',cab_trace:'Анализ стиля (Trace)',cab_hum:'Переписать текст',h_empty:'Проверок пока нет. Результаты появятся здесь после первой проверки.',tr_hint:'Добавьте исследуемый текст и не менее трёх текстов для сравнения. Каждый текст — от 300 слов. Результат показывает различия внутри набора и не доказывает авторство.',hu_hint:'Перепишите текст локально. После переработки самостоятельно проверьте смысл, факты и формулировки. Снижение оценки ИИ не гарантирует качество.',style_loop:'Повторная переработка',ui_sw_simple:'Основное',ui_sw_expert:'Все подробности'},
+    en:{ui_doc_title:'Linda — text checking',ui_paste:'Paste from clipboard',ui_attach:'Open file',ui_analyze:'Check text',ui_input_ph:'Paste your text here or drag in a document…',ui_heat:'Text highlights',ui_models:'Checking models',ui_advanced:'Choose models manually',ui_single:'One model',ui_compare:'Compare models',ui_ens:'Combined estimate',ui_threshold:'Checking mode',ui_sensitive:'Sensitive',ui_precise:'Cautious',ui_export:'Save result',exp_title:'Report and export',cab_close:'Back to checking',cab_batch:'Check files',cab_cmp:'Compare two texts',cab_trace:'Style analysis (Trace)',cab_hum:'Rewrite text',h_empty:'No checks yet. Your results will appear here after your first check.',tr_hint:'Add the text you are studying and at least three comparison texts. Each needs at least 300 words. The result describes differences within this collection and does not prove authorship.',hu_hint:'Rewrite text locally. Review meaning, facts and wording yourself afterwards. A lower AI estimate does not guarantee quality.',style_loop:'Rewrite again',ui_sw_simple:'Essentials',ui_sw_expert:'All details'},
+    pl:{ui_doc_title:'Linda — sprawdzanie tekstu',ui_paste:'Wklej ze schowka',ui_attach:'Otwórz plik',ui_analyze:'Sprawdź tekst',ui_input_ph:'Wklej tekst tutaj lub przeciągnij dokument…',ui_heat:'Zaznaczenia w tekście',ui_models:'Modele do sprawdzania',ui_advanced:'Ręczny wybór modeli',ui_single:'Jeden model',ui_compare:'Porównaj modele',ui_ens:'Ocena łączna',ui_threshold:'Tryb sprawdzania',ui_sensitive:'Czuły',ui_precise:'Ostrożny',ui_export:'Zapisz wynik',exp_title:'Raport i eksport',cab_close:'Wróć do sprawdzania',cab_batch:'Sprawdź pliki',cab_cmp:'Porównaj dwa teksty',cab_trace:'Analiza stylu (Trace)',cab_hum:'Przeredaguj tekst',h_empty:'Nie ma jeszcze sprawdzeń. Wyniki pojawią się tutaj po pierwszym sprawdzeniu.',tr_hint:'Dodaj badany tekst i co najmniej trzy teksty porównawcze. Każdy musi mieć co najmniej 300 słów. Wynik opisuje różnice w zbiorze i nie dowodzi autorstwa.',hu_hint:'Przeredaguj tekst lokalnie. Następnie samodzielnie sprawdź sens, fakty i sformułowania. Niższa ocena AI nie gwarantuje jakości.',style_loop:'Przeredaguj ponownie',ui_sw_simple:'Podstawowe',ui_sw_expert:'Wszystkie szczegóły'},
   };
   for (const lang of Object.keys(LEGACY)) Object.assign((window.LINDA_I18N||{})[lang]||{},LEGACY[lang]);
   const T = key => (COPY[window.LINDA_LANG]||COPY.en)[key] || COPY.en[key] || key;
@@ -157,6 +163,7 @@
     help:'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5 M12 17v1',
     license:'M5 3h14v18l-7-3-7 3z M9 9l2 2 4-4',
     audit:'M5 3h14v18H5z M8 8h8 M8 12h8 M8 16h5',
+    about:'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 11v6 M12 8v.5',
   };
   const icon = key => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${iconPaths[key]||iconPaths.check}"/></svg>`;
   const node = (tag,cls,html) => { const el=document.createElement(tag);if(cls)el.className=cls;if(html)el.innerHTML=html;return el; };
@@ -173,22 +180,45 @@
     workspace.append(pagehead);shell.append(nav,workspace);header.after(shell);
     workspace.append(grid);
     const models=document.querySelector('.panel-left');models.classList.add('ld-tool-page');models.id='desktopModels';workspace.append(models);models.hidden=true;
+    /* Client bug 3: "Models and packages" was a dead end — every row read "not installed"
+       with nothing to press while the first-run download sheet stayed hidden. */
+    const modelsCta=node('section','ld-models-cta','<p data-ld-text="pack_need_models">Install the checking models to work offline.</p><button class="lp-btn" type="button" id="desktopModelsDl" data-ld-text="pack_dl_models">Download models</button>');
+    modelsCta.id='desktopModelsCta';models.prepend(modelsCta);
+    modelsCta.querySelector('#desktopModelsDl').addEventListener('click',()=>{
+      const setup=$('lpSetup');
+      if(setup){setup.classList.add('show');document.body.classList.add('lp-lock');const go=$('lpSetupGo');if(go)go.focus();}
+    });
+    // The CTA is a second entry point to the same download: it must read the job state, not start anything on its own.
+    window.LINDA_syncModelsCta=(busy)=>{const b=$('desktopModelsDl');if(b)b.disabled=!!busy;};
+    const modelsMissing=()=>document.documentElement.dataset.modelsReady!=='1';
     for(const id of ['cabView','cabViewer','lpSet','lpLic'])workspace.append($(id));
     for(const id of ['cabView','lpSet','lpLic']){ $(id).setAttribute('role','region');$(id).removeAttribute('aria-modal'); }
     const help=node('section','ld-tool-page');help.id='desktopHelp';help.hidden=true;
     help.innerHTML='<div class="ld-help-grid">'+['start','formats','result','local','reuse','settings'].map(key=>`<article class="ld-help-card"><h2 data-ld-text="help_${key}"></h2><p data-ld-text="help_${key}_text"></p></article>`).join('')+'</div><button class="lp-btn" id="desktopHelpStart" data-ld-text="basic" style="margin-top:20px"></button>';
     workspace.append(help);
+    // P0-4: an explicit About screen so the entry the audit found orphaned is reachable again.
+    const about=node('section','ld-tool-page');about.id='desktopAbout';about.hidden=true;
+    about.innerHTML='<div class="ld-help-grid">'
+      +'<article class="ld-help-card"><h2 data-ld-text="about"></h2><p id="desktopAboutVersion"></p><p data-ld-text="about_desc"></p></article>'
+      +'<article class="ld-help-card"><h2 data-ld-text="license"></h2><p id="desktopAboutLicence"></p></article>'
+      +'</div><button class="lp-btn" id="desktopAboutUpdates" data-ld-text="updates" style="margin-top:20px"></button>';
+    workspace.append(about);
     // Keep the full legal/limitations text in Help; the editor keeps a concise warning.
     let legal=$('footLic');
     if(legal){while(legal.parentElement&&legal.parentElement!==document.body)legal=legal.parentElement;legal.classList.add('ld-help-card','ld-legal');legal.style.cssText='';help.append(legal);}
-    const navButton = key => `<button class="ld-nav-button" data-route="${key}" type="button">${icon(key)}<span data-ld-text="${key}"></span></button>`;
-    nav.innerHTML='<div class="ld-nav-group" data-ld-text="work"></div>'+['check','history','batch','compare'].map(navButton).join('')+'<div class="ld-nav-group" data-ld-text="tools"></div>'+['trace','humanize'].map(navButton).join('')+'<div class="ld-nav-bottom"><div class="ld-nav-group" data-ld-text="app"></div>'+['models','settings','help','license'].map(navButton).join('')+'</div>';
+    /* C-08: the Pro tag marks the two licensed tools. */
+    const navButton = key => `<button class="ld-nav-button" data-route="${key}" type="button">${icon(key)}<span data-ld-text="${key}"></span>${key === 'trace' || key === 'humanize' ? '<span class="nav-tag">Pro</span>' : ''}</button>`;
+    /* C-08: nine items in three groups. About/Help are reference material, not daily work, so
+       they moved into the "Journal and details" screen; Licence stays on the rail badge. */
+    nav.innerHTML='<div class="ld-nav-group" data-ld-text="work"></div>'+['check','batch','history'].map(navButton).join('')+'<div class="ld-nav-group" data-ld-text="tools"></div>'+['compare','trace','humanize'].map(navButton).join('')+'<div class="ld-nav-bottom"><div class="ld-nav-group" data-ld-text="app"></div>'+['models','settings','audit'].map(navButton).join('')+'</div>';
     nav.querySelector('.ld-nav-bottom').append($('licBadge'));
     $('licBadge').tabIndex=0;$('licBadge').setAttribute('role','button');$('licBadge').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('licBadge').click();}});
     const oldTools=header.lastElementChild;
     const headerTools=node('div','ld-header-tools','<span class="ld-local-badge"><i class="ld-local-dot"></i><span data-ld-text="local"></span></span><select class="ld-language" id="desktopLanguage"><option value="ru">Русский</option><option value="en">English</option><option value="pl">Polski</option></select>');
     header.append(headerTools);oldTools.hidden=true;
-    const statusbar=node('footer','ld-statusbar','<span data-ld-text="privacy"></span><span id="desktopServiceStatus"></span><span>Linda 2.3.0.0</span>');
+    const statusbar=node('footer','ld-statusbar','<span data-ld-text="privacy"></span><span id="desktopServiceStatus"></span><span id="desktopAppVersion"></span>');
+    const appVer=(window.LINDA_BOOT&&window.LINDA_BOOT.version)||'';
+    statusbar.querySelector('#desktopAppVersion').textContent=appVer?'Linda '+appVer:'Linda';
     statusbar.querySelector('#desktopServiceStatus').append($('devInfo'));document.body.append(statusbar);
     // Labelled editor and guidance before the action, without a wall of text.
     const editor=$('textInput'), inputHead=node('div','ld-input-head','<label for="textInput" data-ld-text="editor"></label><span data-ld-text="shortcut"></span>');
@@ -230,9 +260,16 @@
     let route='check',generation=0,transition=false;
     const paneMap={history:'hist',batch:'batch',compare:'cmp',trace:'trace',humanize:'humanize',audit:'audit'};
     const routeForPane=pane=>Object.keys(paneMap).find(k=>paneMap[k]===pane)||'history';
+    // About screen content: version string comes from the boot payload, licence from the licence badge state.
+    function fillAbout(){
+      const ver=$('desktopAboutVersion'),lic=$('desktopAboutLicence');
+      if(ver)ver.textContent=$('desktopAppVersion')?$('desktopAppVersion').textContent:('Linda '+(((window.LINDA_BOOT||{}).version)||''));
+      if(lic)lic.textContent=$('licBadge')?$('licBadge').textContent.trim():'';
+    }
     function activate(next,focus=false){
       route=next;document.body.dataset.route=next;
-      grid.hidden=next!=='check';models.hidden=next!=='models';help.hidden=next!=='help';
+      grid.hidden=next!=='check';models.hidden=next!=='models';help.hidden=next!=='help';about.hidden=next!=='about';
+      const _cta=$('desktopModelsCta');if(_cta)_cta.hidden=!modelsMissing();
       // Existing legacy CSS uses !important; native hidden state wins explicitly.
       grid.style.setProperty('display',next==='check'?'grid':'none','important');
       models.style.setProperty('display',next==='models'?'block':'none','important');
@@ -240,6 +277,7 @@
       $('desktopBack').hidden=next==='check';
       nav.querySelectorAll('[data-route]').forEach(b=>{if(b.dataset.route===(next==='audit'?'history':next))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
       auditSwitch.hidden=!['history','audit'].includes(next);auditSwitch.textContent=T(next==='audit'?'history':'audit');
+      if(next==='about')fillAbout();
       if(focus)$('desktopPageTitle').focus({preventScroll:true});
       window.dispatchEvent(new CustomEvent('linda-route',{detail:{route:next}}));
     }
@@ -269,6 +307,10 @@
     }
     nav.addEventListener('click',e=>{const b=e.target.closest('.ld-nav-button[data-route]');if(b)navigate(b.dataset.route);});
     $('desktopBack').onclick=() => navigate('check');$('desktopHelpStart').onclick=()=>navigate('check');
+    // About → Settings › Updates and about (keeps one implementation of the update/about block).
+    $('desktopAboutUpdates').onclick=async()=>{await navigate('settings');setting('updates',true);};
+    // Settings › Updates and about links back to the About screen.
+    if($('lpOpenAbout'))$('lpOpenAbout').onclick=()=>navigate('about');
     // Rewrite entry next to the verdict; the command row carries the humanize button.
     async function openRewrite(){await navigate('humanize');if(route==='humanize')$('huTake').click();}
     const stylePanel=$('stylePanel');$('simpleVerdict').after(stylePanel);
@@ -350,7 +392,7 @@
     $('btnAnalyze').after(stop);
     const task=node('button');task.id='desktopTask';task.type='button';task.hidden=true;statusbar.insertBefore(task,statusbar.querySelector('#desktopServiceStatus'));
     const globalStop=node('button');globalStop.id='desktopGlobalStop';globalStop.type='button';globalStop.hidden=true;task.after(globalStop);
-    task.onclick=()=>navigate(window.LINDA_tools.active[0]?.route||(!$('bCancel').disabled?'batch':'check'));
+    task.onclick=async()=>{const job=window.LINDA_tools.active[0];const target=job?.route||(!$('bCancel').disabled?'batch':'check');await navigate(target);const el=job?.key==='style'?($('styleProg')||$('stylePanel')):target==='humanize'?($('huProg')||$('huInfo')):target==='trace'?($('trProg')||$('trInfo')):target==='batch'?($('bProg')||$('bCancel')):($('statusIndicator')||$('btnAnalyze'));if(el&&el.scrollIntoView)el.scrollIntoView({behavior:'smooth',block:'center'});};
     function syncStop(){const checking=$('btnAnalyze').classList.contains('loading'),batch=!$('bCancel').disabled,jobs=window.LINDA_tools.active,busy=checking||batch||jobs.length;stop.hidden=!checking;task.hidden=!busy;globalStop.hidden=!busy;globalStop.disabled=!!jobs.length&&jobs.every(j=>j.stopping)&&!checking&&!batch;globalStop.textContent=window.LINDA_T(globalStop.disabled?'task_stopping':'task_stop');task.textContent=jobs.length||batch?window.LINDA_T('task_show'):(taskCopy[window.LINDA_LANG]||taskCopy.en);stop.textContent=stopCopy[window.LINDA_LANG]||stopCopy.en;}
     globalStop.onclick=()=>{if($('btnAnalyze').classList.contains('loading'))stop.click();if(!$('bCancel').disabled)$('bCancel').click();window.LINDA_tools.cancel().catch(()=>{globalStop.textContent=window.LINDA_T('task_retry_stop');});};
     stop.onclick=()=>{cancelCheck();$('statusIndicator').textContent=stoppedCopy[window.LINDA_LANG]||stoppedCopy.en;};

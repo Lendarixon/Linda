@@ -11,6 +11,57 @@ _NUM=re.compile(r'\d+(?:[.,]\d+)?')
 _URL=re.compile(r'https?://\S+')
 _TERM=re.compile(r'[.!?…»"\')\]]\s*$')
 _PL=set('ąćęłńóśźżĄĆĘŁŃÓŚŹŻ')
+_RU_DEC_BAD=re.compile(r'\b\d+[.,]\d+\s+(?:процентов|рублей|годов|лет)\b',re.I)
+_RU_INT_UNIT=re.compile(r'\b(\d+)\s+(процент(?:а|ов)?|рубл(?:ь|я|ей))\b',re.I)
+_RU_GLUED=re.compile(r'\b[а-яё]{2,}[А-ЯЁ][а-яё]{2,}\b')
+
+
+def _ru_numeral_issues(src,cand):
+    """Detect Russian decimal/integer numeral agreement errors and glued CamelCase words not present in src."""
+    issues=[]
+    src_low=src.lower()
+    for m in _RU_DEC_BAD.finditer(cand):
+        if m.group(0).lower() not in src_low:
+            issues.append('numeral_agreement')
+            break
+    if 'numeral_agreement' not in issues:
+        for m in _RU_INT_UNIT.finditer(cand):
+            # skip if part of a decimal like 1,8 процента
+            if m.start()>0 and cand[m.start()-1] in '.,':
+                continue
+            n=int(m.group(1))
+            unit=m.group(2).lower()
+            n100,n10=n%100,n%10
+            if 11<=n100<=14 or n10==0 or n10>=5:
+                want='процентов' if unit.startswith('процент') else 'рублей'
+            elif n10==1:
+                want='процент' if unit.startswith('процент') else 'рубль'
+            else:
+                want='процента' if unit.startswith('процент') else 'рубля'
+            if unit!=want and m.group(0).lower() not in src_low:
+                issues.append('numeral_agreement')
+                break
+    for m in _RU_GLUED.finditer(cand):
+        if m.group(0) not in src:
+            issues.append('glued_word')
+            break
+    return issues
+
+
+def _last_sentence_cut(src,cand):
+    """Catch candidates that end with a period but silently truncated the final sentence(s) of a multi-sentence Russian chunk."""
+    s_sents=[x.strip() for x in re.split(r'[.!?…]+',src) if x.strip()]
+    c_sents=[x.strip() for x in re.split(r'[.!?…]+',cand) if x.strip()]
+    if len(s_sents)<3 or len(c_sents)>=len(s_sents)*0.65:
+        return False
+    s_last,c_last=s_sents[-1],c_sents[-1]
+    s_nums=set(_NUM.findall(s_last))
+    c_nums=set(_NUM.findall(c_last))
+    if s_nums and (s_nums & c_nums):
+        return False
+    s_stems={w[:4].lower() for w in re.findall(r'[а-яёa-z]{5,}',s_last,re.I)}
+    c_stems={w[:4].lower() for w in re.findall(r'[а-яёa-z]{5,}',c_last,re.I)}
+    return not (s_stems & c_stems)
 
 def lang_guess(text):
     letters=[c for c in text if c.isalpha()]
@@ -69,8 +120,10 @@ def candidate_problems(src,cand,similarity=MAX_SIMILARITY):
     if sorted(_NUM.findall(s))!=sorted(_NUM.findall(c)):bad.append('numbers_changed')
     if sorted(_URL.findall(s))!=sorted(_URL.findall(c)):bad.append('urls_changed')
     if _TERM.search(s) and not _TERM.search(c):bad.append('truncation_suspect')
+    elif lang_guess(s)=='ru' and _last_sentence_cut(s,c):bad.append('truncation_suspect')
     if '\n' in c and '\n' not in s:bad.append('layout_changed')
     if lang_guess(c)!=lang_guess(s):bad.append('language_changed')
+    if lang_guess(s)=='ru':bad.extend(_ru_numeral_issues(s,c))
     if not bad and difflib.SequenceMatcher(None,s,c).ratio()>similarity:bad.append('too_similar')
     return bad
 

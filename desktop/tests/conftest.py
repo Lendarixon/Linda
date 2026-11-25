@@ -73,11 +73,20 @@ class Repo:
         return m
 
 
+@pytest.fixture(autouse=True)
+def _isolate_linda_env(tmp_path, monkeypatch):
+    """Force per-test temp dirs so no test can ever touch a real LINDA_HOME or LINDA_MODELS_HOME."""
+    monkeypatch.setenv("LINDA_HOME", str(tmp_path / "_linda_home"))
+    monkeypatch.delenv("LINDA_MODELS_HOME", raising=False)
+    monkeypatch.delenv("LINDA_BASE_URL", raising=False)
+
+
 @pytest.fixture()
 def repo(tmp_path, monkeypatch):
     r = Repo(tmp_path / "repo")
     r.root.mkdir()
     monkeypatch.setenv("LINDA_HOME", str(tmp_path / "home"))
+    monkeypatch.delenv("LINDA_MODELS_HOME", raising=False)
     from linda_desktop import config
 
     monkeypatch.setattr(config, "BASE_URL", r.url)

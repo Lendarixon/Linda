@@ -1,0 +1,18 @@
+# -*- coding: utf-8 -*-
+"""2.0.4.1 -> 2.0.4.2: версия в коде и установщике, запись в CHANGELOG.json (корень + linda_desktop/data)."""
+import json, re, shutil
+from pathlib import Path
+R = Path(__file__).resolve().parents[1]
+p = R / "linda_desktop/__init__.py"; s = p.read_text(encoding="utf-8"); assert "2.0.4.1" in s; p.write_text(s.replace("2.0.4.1", "2.0.4.2"), encoding="utf-8")
+p = R / "installer/linda.iss"; s = p.read_text(encoding="utf-8"); s2 = re.sub(r'#define AppVersion "[0-9.]+"', '#define AppVersion "2.0.4.2"', s, count=1); assert s2 != s; p.write_text(s2, encoding="utf-8")
+cl = json.loads((R / "CHANGELOG.json").read_text(encoding="utf-8"))
+assert cl[0]["version"] == "2.0.4.1"
+cl.insert(0, {"version": "2.0.4.2", "date": "2026-10-10",
+ "title": {"ru": "Честнее вердикт и разметка предложений", "en": "A more honest verdict and sentence highlighting", "pl": "Uczciwszy werdykt i podświetlanie zdań"},
+ "notes": {
+  "ru": "• Linda-Pro Lite: исправлена разметка предложений. Раньше почти весь текст окрашивался как «возможно ИИ» — и у людей, и у ИИ-текстов, — а предложений «ИИ» не было вовсе. Теперь в ИИ-текстах около 9 из 10 слов отмечены «ИИ», у людей — 0–3%.\n• Вердикт больше не спорит с разметкой: если программа говорит «написан человеком», а заметная часть текста (от четверти слов) отмечена как ИИ, вердикт становится «неясно».\n• Linda-Pro Lite осторожнее: если модель Lite видит признаки ИИ выше своего порога, а общий балл ниже, вердикт «неясно», а не «человек» (так ИИ-текст с ручной правкой больше не выдаётся за человеческий). В режиме «Оба набора» это действует и на вердикт Lite.\n• Зона «возможно ИИ» в разметке Lite стала шире и начинается там же, где зона «неясно» у вердикта.",
+  "en": "• Linda-Pro Lite: sentence highlighting is fixed. Before, almost the whole text was coloured \"possibly AI\" for human and AI texts alike, and no sentence was ever marked \"AI\". Now about 9 in 10 words of AI texts are marked \"AI\", and 0-3% of words in human texts.\n• The verdict no longer contradicts the highlighting: if the app says \"written by a human\" while a noticeable part of the text (a quarter of the words or more) is marked AI, the verdict becomes \"unclear\".\n• Linda-Pro Lite is more careful: when the Lite model sees AI above its own threshold but the combined score is lower, the verdict is \"unclear\" instead of \"human\" (an AI text edited by hand is no longer passed off as human). In the \"Both sets\" mode this also applies to the Lite verdict.\n• The \"possibly AI\" band of Lite highlighting is wider and starts where the \"unclear\" zone of the verdict starts.",
+  "pl": "• Linda-Pro Lite: poprawione podświetlanie zdań. Wcześniej prawie cały tekst był oznaczany jako „możliwe AI” — zarówno u ludzi, jak i w tekstach AI — a żadne zdanie nie dostawało oznaczenia „AI”. Teraz w tekstach AI około 9 na 10 słów jest oznaczonych „AI”, u ludzi 0–3%.\n• Werdykt nie przeczy już podświetleniu: jeśli program mówi „napisany przez człowieka”, a znaczna część tekstu (co najmniej ćwierć słów) jest oznaczona jako AI, werdykt zmienia się na „niejasne”.\n• Linda-Pro Lite jest ostrożniejsza: gdy model Lite widzi AI powyżej własnego progu, a łączny wynik jest niższy, werdykt brzmi „niejasne”, a nie „człowiek” (tekst AI poprawiony ręcznie nie uchodzi już za ludzki). W trybie „Oba zestawy” dotyczy to też werdyktu Lite.\n• Pasmo „możliwe AI” w podświetleniu Lite jest szersze i zaczyna się tam, gdzie strefa „niejasne” werdyktu."}})
+txt = json.dumps(cl, ensure_ascii=False, indent=2)
+(R / "CHANGELOG.json").write_text(txt, encoding="utf-8"); shutil.copy2(R / "CHANGELOG.json", R / "linda_desktop/data/CHANGELOG.json")
+print("bumped to 2.0.4.2")

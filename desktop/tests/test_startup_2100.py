@@ -7,7 +7,7 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from linda_desktop import app, config, engine, i18n, updater
+from linda_desktop import __version__, app, config, engine, i18n, updater
 
 
 @pytest.mark.parametrize('system', ['en', 'ru', 'pl'])
@@ -43,7 +43,7 @@ def test_first_html_is_localized_and_does_not_trust_browser_storage(repo, monkey
     page = client.get('/').text
     encoded = re.search(r"atob\('([A-Za-z0-9+/=]+)'\)", page).group(1)
     boot = json.loads(base64.b64decode(encoded))
-    assert boot['language'] == 'pl' and boot['version'] == '2.3.0.0'
+    assert boot['language'] == 'pl' and boot['version'] == __version__
     assert 'id="lindaStartup"' in page
     assert 'localStorage.getItem(\'linda_lang\')' not in page
     assert '__LINDA_BOOT_B64__' not in page

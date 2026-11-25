@@ -11,6 +11,7 @@ from contextlib import contextmanager
 import hashlib
 import http.client
 import json
+import logging
 import os
 import shutil
 import tempfile
@@ -24,7 +25,42 @@ from pathlib import Path
 from . import config
 
 UA = {"User-Agent": f"Linda-Pro/{config.APP_VERSION}"}
-CHUNK = 1 << 20
+CHUNK = 1 << 20  # 1 MiB read/write chunk
+OK_SUFFIX = ".ok"  # marker beside a verified file: "<sha256> <size>" - skips re-hashing on later passes
+MAX_PARALLEL = 4  # concurrent file downloads in Job._run
+OPTIONAL_PATHS = ("calibration/routing.with_lite.json",)
+SKIPPED_OPTIONAL_FILE = "skipped_optional.json"
+_LOG = logging.getLogger("linda.updater")
+
+
+def _is_optional_entry(f: dict) -> bool:
+    if f.get("optional"):
+        return True
+    rel = Path(str(f.get("path") or "")).as_posix().casefold()
+    return rel in OPTIONAL_PATHS or rel.endswith("/routing.with_lite.json") or rel == "routing.with_lite.json"
+
+
+def _read_skipped_optional(root: Path) -> dict[str, str]:
+    p = root / SKIPPED_OPTIONAL_FILE
+    try:
+        data = json.loads(p.read_text(encoding="utf-8")) if p.is_file() else {}
+        return {str(k): str(v) for k, v in data.items()} if isinstance(data, dict) else {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def _write_skipped_optional(root: Path, skipped: dict[str, str]) -> None:
+    p = root / SKIPPED_OPTIONAL_FILE
+    if not skipped:
+        p.unlink(missing_ok=True)
+        return
+    tmp = p.with_name(p.name + ".new")
+    tmp.write_text(json.dumps(skipped, indent=2, sort_keys=True), encoding="utf-8")
+    os.replace(tmp, p)
+
+
+def _is_skipped_optional(f: dict, skipped_map: dict[str, str]) -> bool:
+    return _is_optional_entry(f) and skipped_map.get(f["path"]) == f["sha256"]
 
 
 class UpdateError(Exception):
@@ -140,15 +176,53 @@ def _valid_sets(value) -> list[str] | None:
     return None
 
 
+def _raw_installed_version() -> str | None:
+    p = config.models_root() / 'manifest.json'
+    try:
+        m = json.loads(p.read_text(encoding='utf-8')) if p.exists() else None
+        if isinstance(m, dict) and isinstance(m.get('version'), str):
+            return m['version']
+    except Exception:
+        pass
+    return None
+
+
+def _reused_sets(choice: dict) -> list[str] | None:
+    reuse = choice.get('reuse_models')
+    if not reuse:
+        return None
+    if isinstance(reuse, dict):
+        ver = reuse.get('version') or choice.get('reuse_version')
+        sets = _valid_sets(reuse.get('sets')) or _valid_sets(choice.get('reuse_sets')) or _valid_sets(choice.get('model_sets'))
+    else:
+        ver = choice.get('reuse_version')
+        sets = _valid_sets(choice.get('reuse_sets')) or _valid_sets(choice.get('model_sets'))
+    if not ver or not sets:
+        return None
+    if _raw_installed_version() == ver:
+        return sets
+    return None
+
+
 def selected_sets() -> list[str]:
-    """The sets this computer keeps: the user's choice (settings.json), else the installer's choice, else what is already on the disk, else Linda-Pro."""
-    for name, key in (('settings.json', 'model_sets'), ('installer_choice.json', 'model_sets')):
-        try:
-            got = _valid_sets(json.loads((config.data_dir() / name).read_text(encoding='utf-8')).get(key))
+    """The sets this computer keeps: the user's choice (settings.json), else the installer's choice (honoring reuse_models when versions match), else what is already on the disk, else Linda-Pro."""
+    try:
+        got = _valid_sets(json.loads((config.data_dir() / 'settings.json').read_text(encoding='utf-8')).get('model_sets'))
+        if got:
+            return got
+    except Exception:
+        pass
+    try:
+        choice = json.loads((config.data_dir() / 'installer_choice.json').read_text(encoding='utf-8'))
+        if isinstance(choice, dict):
+            reused = _reused_sets(choice)
+            if reused:
+                return reused
+            got = _valid_sets(choice.get('model_sets'))
             if got:
                 return got
-        except Exception:
-            pass
+    except Exception:
+        pass
     root = config.models_root() / 'models'
     present = []
     try:
@@ -214,6 +288,12 @@ def remove_unselected(root: Path | None = None) -> list[str]:
             t = _safe_path(root, f['path'])
             if t.is_file():
                 t.unlink()
+                # the .ok verification marker must go with the file, otherwise it
+                # survives as an orphan and the emptied set folder cannot be removed
+                try:
+                    t.with_name(t.name + OK_SUFFIX).unlink()
+                except OSError:
+                    pass
                 removed.append(f['path'])
                 dirs.add(t.parent)
         except (OSError, UpdateError):
@@ -250,28 +330,83 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
-def files_to_fetch(manifest: dict, root: Path | None = None) -> list[dict]:
-    """Entries that are missing or differ from the manifest. Files listed in the installed manifest with the same hash and size are trusted."""
+def files_to_fetch(manifest: dict, root: Path | None = None, verify: bool | None = None,
+                   progress=None) -> list[dict]:
+    """Entries that are missing or differ from the manifest.
+
+    Files listed in the installed manifest with the same hash and size are trusted — but only while the version has not moved
+    (verify=None decides that: a version change always re-hashes). A reused 1.3.4.1 install keeps the same paths and sizes with
+    older bytes, and its own manifest can even claim the new hashes; trusting that record shrank the update to a ~32 MB diff of
+    the new small files and applied it over the stale big ones. A successful hash is remembered in a .ok marker, so the
+    expensive pass happens once. progress(done_bytes, total_bytes) is called while verifying so the UI is not frozen."""
     root = root or config.models_root()
-    old = {f["path"]: f for f in (installed_manifest() or {}).get("files", [])}
+    inst = installed_manifest()
+    if verify is None:
+        verify = bool(inst) and str(inst.get("version")) != str(manifest.get("version"))
+    old = {f["path"]: f for f in (inst or {}).get("files", [])}
+    skipped = _read_skipped_optional(root) if inst and inst.get("version") == manifest.get("version") else {}
+    total = sum(int(f.get("size") or 0) for f in manifest["files"]) if verify else 0
+    seen = 0
     todo = []
     for f in manifest["files"]:
         p = _safe_path(root, f["path"])
         ok = p.is_file() and p.stat().st_size == f["size"]
-        if ok and not (f["path"] in old and old[f["path"]]["sha256"] == f["sha256"]):
-            ok = sha256_file(p) == f["sha256"]
+        if ok:
+            trusted = f["path"] in old and old[f["path"]]["sha256"] == f["sha256"]
+            if not trusted or verify:
+                if _ok_marker_matches(p, f):
+                    ok = True
+                elif sha256_file(p) == f["sha256"]:
+                    ok = True
+                    _write_ok_marker(p, f)  # remember it: the next check is a stat, not a re-hash
+                else:
+                    ok = False
+        if not ok and _is_skipped_optional(f, skipped):
+            ok = True
         if not ok:
             todo.append(f)
+        if verify and progress is not None:
+            seen += int(f.get("size") or 0)
+            try:
+                progress(seen, total)
+            except Exception:  # noqa: BLE001 — progress is cosmetic
+                pass
     return todo
 
 
+def _ok_marker_matches(path: Path, f: dict) -> bool:
+    """True when a .ok marker beside the file records this manifest's hash and size."""
+    try:
+        rec = path.with_name(path.name + OK_SUFFIX).read_text(encoding="ascii").split()
+        return len(rec) == 2 and rec[0] == f["sha256"] and rec[1] == str(f["size"])
+    except (OSError, ValueError):
+        return False
+
+
+def _write_ok_marker(path: Path, f: dict) -> None:
+    try:
+        path.with_name(path.name + OK_SUFFIX).write_text(f'{f["sha256"]} {f["size"]}\n', encoding="ascii")
+    except OSError:
+        pass
+
+
 def is_complete(manifest: dict | None = None, root: Path | None = None) -> bool:
+    """True when every file of the manifest sits on the disk with the right size. Size-only on purpose: this runs on every status poll,
+    so hashing gigabytes is not an option. Doubtful bytes (same size, different content) are caught by files_to_fetch(verify=True)."""
     m = manifest or installed_manifest()
     if not m:
         return False
     root = root or config.models_root()
+    skipped = _read_skipped_optional(root)
     try:
-        return all(_safe_path(root, f["path"]).is_file() and _safe_path(root, f["path"]).stat().st_size == f["size"] for f in m["files"])
+        for f in m["files"]:
+            p = _safe_path(root, f["path"])
+            if p.is_file() and p.stat().st_size == f["size"]:
+                continue
+            if _is_skipped_optional(f, skipped):
+                continue
+            return False
+        return True
     except (OSError, KeyError, TypeError, ValueError, UpdateError):  # unreadable or malformed state must not crash polling
         return False
 
@@ -323,21 +458,24 @@ def pending_status(root: Path | None = None) -> dict | None:
             "banner": "Перезапустите для обновления"}
 
 
-def _verify_staged(manifest: dict, staging: Path, root: Path) -> None:
+def _verify_staged(manifest: dict, staging: Path, root: Path, skipped: set[str] | None = None) -> None:
     """Повторная проверка хеша каждого файла: staged-копии или уже лежащие в data (неизменённые)."""
     validate_manifest(manifest)
     staged = {f["path"] for f in manifest["files"] if _safe_path(staging, f["path"]).is_file()}
     for f in manifest["files"]:
+        if skipped and f["path"] in skipped and _is_optional_entry(f):
+            continue
         src = _safe_path(staging if f["path"] in staged else root, f["path"])
         if not src.is_file() or src.stat().st_size != f["size"]:
             raise UpdateError(f"staged file missing: {f['path']}")
-        if sha256_file(src) != f["sha256"]:
+        if not _ok_marker_matches(src, f) and sha256_file(src) != f["sha256"]:
             raise UpdateError(f"checksum mismatch for {f['path']}")
 
 
 def _cleanup_files(manifest: dict, root: Path, backup: Path, done: list) -> None:
     """Удаление файлов старых версий внутри управляемых папок (models/, calibration/)."""
     keep = {Path(f["path"]).as_posix() for f in manifest["files"]}
+    keep |= {k + OK_SUFFIX for k in keep}  # keep the verification markers too
     for top in sorted({Path(f["path"]).parts[0] for f in manifest["files"]}):
         base = _safe_path(root, top)
         if not base.is_dir():
@@ -353,7 +491,8 @@ def _cleanup_files(manifest: dict, root: Path, backup: Path, done: list) -> None
                 done.append((p, bkp))
 
 
-def _apply_staged(manifest: dict, staging: Path, root: Path, raw: bytes | None = None) -> list[str]:
+def _apply_staged(manifest: dict, staging: Path, root: Path, raw: bytes | None = None,
+                  skipped: dict[str, str] | None = None) -> list[str]:
     """Атомарная замена файлов из staging в data с бэкапом для отката. Возвращает применённые пути."""
     backup = staging / "backup"
     applied: list[str] = []
@@ -365,7 +504,7 @@ def _apply_staged(manifest: dict, staging: Path, root: Path, raw: bytes | None =
             src = _safe_path(staging, f["path"])
             if not src.is_file():
                 continue  # неизменённый файл уже лежит в data
-            if sha256_file(src) != f["sha256"]:
+            if not _ok_marker_matches(src, f) and sha256_file(src) != f["sha256"]:
                 raise UpdateError(f"checksum mismatch for {f['path']}")
             dst = _safe_path(root, f["path"])
             dst.parent.mkdir(parents=True, exist_ok=True)
@@ -391,6 +530,11 @@ def _apply_staged(manifest: dict, staging: Path, root: Path, raw: bytes | None =
         tmp.write_bytes(raw if raw is not None else json.dumps(manifest).encode('utf-8'))
         os.replace(tmp, marker)
         done.append((marker, old_marker))
+        _write_skipped_optional(root, skipped or {})
+        for f in manifest["files"]:
+            dst = _safe_path(root, f["path"])
+            if dst.is_file():
+                _write_ok_marker(dst, f)
         return applied
     except Exception:
         # откат: восстанавливаем заменённые файлы из backup
@@ -493,11 +637,13 @@ class Job:
     def __init__(self):
         self.lock = threading.Lock()
         self._start_lock = threading.Lock()
-        self.state = {"phase": "idle", "file": "", "done": 0, "total": 0, "error": "", "speed": 0.0, "version": ""}
+        self.state = {"phase": "idle", "file": "", "done": 0, "total": 0, "error": "", "speed": 0.0, "version": "", "skipped_optional": [], "warning": ""}
         self._cancel = threading.Event()
         self._thread: threading.Thread | None = None
         self.on_done = None
         self.apply_lock = None
+        self._fetched = 0  # bytes of the current job written to staging, shared by the parallel workers
+        self._fetched_lock = threading.Lock()
 
     def snapshot(self) -> dict:
         with self.lock:
@@ -518,35 +664,62 @@ class Job:
             if self.running():
                 return False
             self._cancel.clear()
-            self._set(phase="checking", file="", done=0, total=0, error="", speed=0.0, version=manifest["version"])
+            with self._fetched_lock:
+                self._fetched = 0
+            self._set(phase="checking", file="", done=0, total=0, error="", speed=0.0, version=manifest["version"], skipped_optional=[], warning="")
             self._thread = threading.Thread(target=self._run, args=(manifest, raw, root or config.models_root(), (base_url or config.BASE_URL).rstrip("/")), daemon=True)
             self._thread.start()
             return True
 
+    def _add_fetched(self, n: int, t0: float) -> None:
+        """Progress counter shared by all workers: never below the reported total, never backwards."""
+        with self._fetched_lock:
+            self._fetched += n
+            got = self._fetched
+        el = max(time.time() - t0, 0.5)
+        with self.lock:
+            total = int(self.state.get("total") or 0)
+            got = min(got, total) if total else got
+            self.state.update(done=got, speed=got / el)
+
     def _run(self, manifest: dict, raw: bytes, root: Path, base: str) -> None:
         # Этап 1 — stage: фоновая загрузка только изменённых файлов в staging/<version>/ (таймауты, прогресс, отмена).
         # Этап 2 — проверка хеша каждого файла + флаг READY («Перезапустите для обновления»).
-        # Этап 3 — apply: атомарная замена в data с бэкапом (откат при сбое). Staging остаётся до перезапуска.
+        # Этап 3 — apply: атомарная замена в data с бэкапом (откат при сбое). Применённый staging удаляется сразу.
         try:
             validate_manifest(manifest)
-            todo = files_to_fetch(manifest, root)
+            # Reused 1.3.4.1 install: the previous manifest may claim the same paths/hashes while the bytes on disk differ, which
+            # shrank the job to a ~32 MB "diff" of new files. Recompute the hash instead of trusting that record.
+            self._set(phase="checking", file="", done=0, total=0)
+            verify_t0 = time.time()
+
+            def _verify_progress(done: int, total: int) -> None:
+                # Hashing 3 GB takes seconds: show it, otherwise the banner sits at 0% and looks frozen.
+                self._set(phase="checking", done=done, total=total, speed=(done / max(time.time() - verify_t0, 0.5)))
+
+            todo = files_to_fetch(manifest, root, verify=True, progress=_verify_progress)
             staging = staging_dir(manifest["version"], root)
             staging.mkdir(parents=True, exist_ok=True)
-            self._set(total=sum(f["size"] for f in todo), done=0, phase="downloading")
-            done_before = 0
+            total = sum(f["size"] for f in todo)
+            # Nothing to download (a reuse-only version bump): report 0/0 so the bar is not stuck at "0% of 3 GB" while verifying.
+            self._set(total=total, done=0, phase="downloading" if todo else "verifying")
             t0 = time.time()
-            for f in todo:
-                if self._cancel.is_set():
-                    raise _Cancelled()
-                self._set(file=f["path"])
-                self._download_to(f, staging, base, done_before, t0)
-                done_before += f["size"]
+            skipped: dict[str, str] = {}
+            if len(todo) > 1 and MAX_PARALLEL > 1:
+                self._download_parallel(todo, staging, base, t0, skipped)
+            else:
+                for f in todo:
+                    if self._cancel.is_set():
+                        raise _Cancelled()
+                    self._set(file=f["path"])
+                    if not self._download_to(f, staging, base, t0):
+                        skipped[f["path"]] = f["sha256"]
             self._set(phase="verifying", file="")
             (staging / "manifest.json").write_bytes(raw)  # манифест тоже кладём в staging
             signature = manifest.get('_signature', '').encode('ascii')
             verify_signature(raw, signature)
             (staging / 'manifest.json.sig').write_bytes(signature)
-            _verify_staged(manifest, staging, root)  # повторная проверка хеша каждого файла
+            _verify_staged(manifest, staging, root, skipped=set(skipped))  # повторная проверка хеша каждого файла
             (staging / READY_NAME).write_text(json.dumps({"version": manifest["version"], "ts": time.time()}), encoding="utf-8")
             self._set(phase="applying", file="")
             if getattr(self, "before_apply", None):
@@ -555,11 +728,20 @@ class Job:
                 except Exception:  # noqa: BLE001
                     pass
             with _apply_guard(self.apply_lock, self._cancel):
-                _apply_staged(manifest, staging, root, raw)
-            (staging / READY_NAME).unlink(missing_ok=True)
+                _apply_staged(manifest, staging, root, raw, skipped=skipped)
+            try:
+                shutil.rmtree(staging, ignore_errors=True)  # применённый staging удаляем сразу: иначе дубль ~3 ГБ
+            except OSError:
+                pass
             prune_stale(root)
             self._set(phase="finishing", file="")
-            self._set(phase="done", done=self.state["total"], file="")
+            skipped_list = sorted(skipped)
+            warn = f"skipped missing optional file(s): {', '.join(skipped_list)}" if skipped_list else ""
+            # Never report a finished job when files are still missing: the button would come back with no explanation.
+            if not is_complete(manifest, root):
+                left = files_to_fetch(manifest, root)
+                raise UpdateError("model files are still incomplete after the update: %d file(s) missing" % len(left))
+            self._set(phase="done", done=self.state["total"], file="", skipped_optional=skipped_list, warning=warn)
             if self.on_done:
                 self.on_done(manifest)
         except _Cancelled:
@@ -567,18 +749,49 @@ class Job:
         except Exception as e:  # noqa: BLE001
             self._set(phase="error", file="", error=str(e) if isinstance(e, UpdateError) else f"{type(e).__name__}: {e}")
 
-    def _download_to(self, f: dict, staging: Path, base: str, done_before: int, t0: float) -> None:
-        """Скачивание одного файла в staging (докачка через .part, таймаут 30 с, проверка отмены между чанками)."""
+    def _download_parallel(self, todo: list, staging: Path, base: str, t0: float,
+                           skipped: dict[str, str] | None = None) -> None:
+        """Download several files concurrently (bounded by MAX_PARALLEL); progress is aggregated by _add_fetched,
+        so concurrent workers can never push the bar backwards or leave it at 0 while bytes are arriving."""
+        import concurrent.futures
+
+        def one(f: dict) -> None:
+            if self._cancel.is_set():
+                raise _Cancelled()
+            self._set(file=f["path"])
+            # _download_to adds every byte it writes to the shared counter, so nothing is added here.
+            if not self._download_to(f, staging, base, t0) and skipped is not None:
+                skipped[f["path"]] = f["sha256"]
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_PARALLEL) as ex:
+            futures = [ex.submit(one, f) for f in todo]
+            err = None
+            for fut in concurrent.futures.as_completed(futures):
+                try:
+                    fut.result()
+                except Exception as e:  # noqa: BLE001
+                    err = err or e
+                    self._cancel.set()
+            if err:
+                raise err
+
+    def _download_to(self, f: dict, staging: Path, base: str, t0: float) -> bool:
+        """Скачивание одного файла в staging (докачка через .part, таймаут 30 с, проверка отмены между чанками). Возвращает False, если пропущен необязательный 404."""
         dest = staging / f["path"]
         dest.parent.mkdir(parents=True, exist_ok=True)
         part = dest.with_name(dest.name + ".part")
         url = f"{base}/{urllib.parse.quote(f['path'])}"
+        counted = 0  # bytes of this file already added to the job progress (survives retries without double counting)
         for attempt in range(4):
             try:
                 have = part.stat().st_size if part.exists() else 0
                 if have > f["size"]:
                     part.unlink()
                     have = 0
+                if have and attempt == 0 and not counted:
+                    # Bytes left over from an earlier run (resumable .part) were never counted in this job's counter.
+                    counted = have
+                    self._add_fetched(have, t0)
                 h = hashlib.sha256()
                 if have:
                     with open(part, "rb") as pf:
@@ -589,6 +802,9 @@ class Job:
                     with r:
                         if have and getattr(r, "status", 200) != 206:  # server ignored Range: restart this file
                             have, h = 0, hashlib.sha256()
+                            if counted:
+                                self._add_fetched(-counted, t0)
+                                counted = 0
                         with open(part, "ab" if have else "wb") as out:
                             got = have
                             while True:
@@ -602,8 +818,7 @@ class Job:
                                 got += len(chunk)
                                 if got > f['size']:
                                     raise UpdateError('download is larger than announced')
-                                el = max(time.time() - t0, 0.5)
-                                self._set(done=done_before + got, speed=(done_before + got) / el)
+                                self._add_fetched(len(chunk), t0)
                 if self._cancel.is_set():
                     raise _Cancelled()
                 if part.stat().st_size != f["size"]:
@@ -612,18 +827,24 @@ class Job:
                     part.unlink(missing_ok=True)
                     raise UpdateError(f"checksum mismatch for {f['path']}")
                 os.replace(part, dest)
-                return
+                _write_ok_marker(dest, f)
+                return True
             except (urllib.error.URLError, OSError, ConnectionError, http.client.HTTPException) as e:
+                if isinstance(e, urllib.error.HTTPError) and e.code == 404 and _is_optional_entry(f):
+                    _LOG.warning("optional file missing on server (HTTP 404), skipping: %s", f["path"])
+                    part.unlink(missing_ok=True)
+                    return False
                 if isinstance(e, urllib.error.HTTPError) and e.code in (401, 403, 404):
                     raise UpdateError(f"server refused {f['path']} (HTTP {e.code})") from e
                 if attempt == 3:
                     raise UpdateError(f"network error while downloading {f['path']}: {e}") from e
                 if self._cancel.wait(2 + attempt * 3):
                     raise _Cancelled()
+        return True
 
-    def _download(self, f: dict, root: Path, base: str, done_before: int, t0: float) -> None:
+    def _download(self, f: dict, root: Path, base: str, t0: float = 0.0) -> None:
         """Совместимость: прямое скачивание в data (теперь идёт через staging-папку версии)."""
-        return self._download_to(f, staging_dir(self.state.get("version", ""), root), base, done_before, t0)
+        return self._download_to(f, staging_dir(self.state.get("version", ""), root), base, t0 or time.time())
 
     @staticmethod
     def _cleanup(manifest: dict, root: Path) -> None:
@@ -708,8 +929,18 @@ def update_status(manifest: dict) -> dict:
         out["app_new"] = True
         out["installer"] = {"version": ins["version"], "size": ins.get("size", 0)}
     if out["weights_update"] or out["weights_missing"]:
-        out["bytes_to_download"] = sum(f["size"] for f in files_to_fetch(manifest))
+        out["bytes_to_download"], out["files_to_download"] = _estimate_download(manifest)
     return out
+
+
+def _estimate_download(manifest: dict) -> tuple[int, int]:
+    """What this update is known to need, without hashing gigabytes on the status call.
+
+    This is a floor, not a promise: when the version moved, the job re-hashes files the installed manifest merely claims are
+    identical and downloads the ones that are not. Showing only the small diff here ("32 MB") is honest; the job's own total
+    grows to the real figure as it verifies."""
+    todo = files_to_fetch(manifest, verify=False)
+    return sum(f["size"] for f in todo), len(todo)
 
 
 def staged_installer(root: Path | None = None) -> dict | None:

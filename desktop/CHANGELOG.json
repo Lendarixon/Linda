@@ -1,5 +1,89 @@
 [
   {
+    "version": "2.5.0.6",
+    "date": "2026-11-25",
+    "title": {
+      "en": "Models folder space check from the real model pack size",
+      "ru": "Проверка места для папки моделей по реальному размеру пакета",
+      "pl": "Sprawdzanie miejsca na folder modeli według rzeczywistego rozmiaru pakietu"
+    },
+    "notes": {
+      "en": "Models folder space check uses the real model pack size (about 5.8 GB for Assay plus the GPU model cache, up to about 16 GB) instead of a fixed 6 GB; the installer shows the same estimate. Model pack 1.5.0 unchanged.",
+      "ru": "Проверка места для папки моделей использует реальный размер пакета моделей (около 5,8 ГБ для Assay плюс кэш моделей на GPU, до примерно 16 ГБ) вместо фиксированных 6 ГБ; установщик показывает ту же оценку. Пакет моделей 1.5.0 без изменений.",
+      "pl": "Sprawdzanie miejsca na folder modeli korzysta z rzeczywistego rozmiaru pakietu modeli (około 5,8 GB dla Assay plus pamięć podręczna modeli na GPU, do około 16 GB) zamiast stałych 6 GB; instalator pokazuje ten sam szacunek. Pakiet modeli 1.5.0 bez zmian."
+    }
+  },
+  {
+    "version": "2.5.0.5",
+    "date": "2026-11-24",
+    "title": {
+      "en": "Universal hybrid GPU+CPU offload for Humanizer-Full 4B and automatic detector VRAM release",
+      "ru": "Универсальный гибридный режим GPU+CPU для Humanizer-Full 4B и автовыгрузка детектора из VRAM",
+      "pl": "Uniwersalny tryb hybrydowy GPU+CPU dla Humanizer-Full 4B i automatyczne zwalnianie VRAM detektora"
+    },
+    "notes": {
+      "en": "Single-pass humanization now unloads the detector and clears the CUDA allocator cache before loading Humanizer-Full 4B. Added automatic hybrid GPU+CPU offload via accelerate for 4–8.9 GB VRAM NVIDIA GPUs (such as RTX 5060 8 GB) so Humanizer-Full 4B runs without falling back to Lite.",
+      "ru": "Однопроходная гуманизация теперь выгружает детектор и очищает кэш CUDA перед загрузкой Humanizer-Full 4B. Добавлено автоматическое гибридное размещение GPU+CPU через accelerate для видеокарт NVIDIA с 4–8.9 ГБ VRAM (включая RTX 5060 8 ГБ), благодаря чему полная модель 4B запускается без отката в Lite.",
+      "pl": "Jednoprzebiegowa humanizacja zwalnia teraz detektor i czyści pamięć podręczną CUDA przed załadowaniem Humanizer-Full 4B. Dodano automatyczne hybrydowe rozmieszczenie GPU+CPU przez accelerate dla kart NVIDIA z 4–8.9 GB VRAM (np. RTX 5060 8 GB), dzięki czemu model 4B działa bez powrotu do Lite."
+    }
+  },
+  {
+    "version": "2.5.0.4",
+    "date": "2026-11-23",
+    "title": {
+      "en": "DirectML VRAM stability, Russian humanizer token budget & numeral guard, and NVIDIA CUDA 4B runtime",
+      "ru": "Стабильность DirectML по VRAM, токенный бюджет и грамматика числительных для русского гуманайзера, CUDA-ускоритель для Full 4B",
+      "pl": "Stabilność DirectML VRAM, budżet tokenów i poprawki liczebników oraz obsługa NVIDIA CUDA dla Humanizer-Full 4B"
+    },
+    "notes": {
+      "en": "Fixed DirectML out-of-memory and GPU reset crashes on 4 GB and 8 GB graphics cards (adaptive VRAM budget, model eviction before token-markup loading, and cp1251 Windows error decoding instead of masked UnicodeDecodeError). Fixed Russian humanizer truncation on CPU by computing max_new_tokens from actual chunk tokens (cap 420) and adding Russian completeness, numeral-agreement, and glued-word guards. Added on-demand PyTorch cu128 CUDA runtime installation for 8+ GB NVIDIA GPUs running Humanizer-Full 4B, and hid the multi-GPU hint when only one graphics card is present.",
+      "ru": "Исправлены падения DirectML (нехватка VRAM и сброс драйвера на 4 ГБ и 8 ГБ видеокартах) за счёт адаптивного бюджета памяти, выгрузки моделей перед токенной разметкой и корректной расшифровки ошибок Windows cp1251. Исправлена обрезка русских текстов в гуманайзере на CPU (расчёт max_new_tokens по реальным токенам до 420) и добавлены фильтры полноты, согласования числительных и склеенных слов. Добавлена автоматическая установка CUDA-рантайма PyTorch (cu128) для NVIDIA с 8+ ГБ VRAM при выборе Humanizer-Full 4B; скрыта лишняя подсказка выбора карты при одной видеокарте.",
+      "pl": "Naprawiono błędy braku pamięci DirectML i resetu GPU na kartach 4 GB i 8 GB dzięki adaptacyjnemu budżetowi VRAM, zwalnianiu modeli przed analizą tokenów oraz dekodowaniu błędów Windows cp1251. Poprawiono ucinanie rosyjskich tekstów w humanizerze na CPU (budżet max_new_tokens liczony z rzeczywistych tokenów do 420) i dodano filtry kompletności, odmiany liczebników oraz sklejonych słów. Dodano instalację środowiska PyTorch CUDA (cu128) dla kart NVIDIA 8+ GB w trybie Humanizer-Full 4B oraz ukryto wskazówkę wyboru GPU przy jednej karcie."
+    }
+  },
+  {
+    "version": "2.4.0.0",
+    "date": "2026-11-20",
+    "title": {
+      "en": "Trace UI, PDF import fix, pack fixes and synchronised translations",
+      "ru": "Trace UI, исправленный импорт PDF, правки пакетов и синхронизированные переводы",
+      "pl": "Trace UI, poprawiony import PDF, poprawki pakietów i zsynchronizowane tłumaczenia"
+    },
+    "notes": {
+      "en": "Trace gained a full interface: three reading modes plus an MDS map view that places a text among the compared ones, SVG charts, a compare-with-corpus view and a corpus builder, so the stylometric analysis is no longer a raw number dump. Importing documents is fixed: some slide-exported PDFs emitted every word twice, which inflated word counts and skewed the score, and layer/XObject content is now deduplicated. Licensed pack handling was corrected: pack detection and repeated installs are idempotent instead of downloading or staging the same pack again, the pack status button shows what is actually installed, and the version is displayed in the window title. All interface text is synchronised across English, Polish and Russian (748 keys per language, the built-in dictionary is byte-identical to the language files). The short-text warning stays below the input field as before. The styliser is not bundled in this build. Detector models, thresholds and prices are unchanged; the model pack remains 1.3.4.1.",
+      "ru": "В Trace появился полноценный интерфейс: три режима разбора плюс карта MDS, которая показывает место текста среди сравниваемых, графики SVG, сравнение с корпусом и конструктор корпусов — стилометрический разбор больше не набор голых чисел. Импорт документов исправлен: некоторые PDF из слайдов выдавали каждое слово дважды, из-за чего счётчик слов завышался и оценка искажалась; содержимое слоёв и XObject теперь дедуплицируется. Исправлена работа с лицензионными пакетами: определение и повторная установка пакета идемпотентны, пакет не скачивается и не раскладывается заново, кнопка статуса показывает реально установленное, версия видна в заголовке окна. Весь текст интерфейса синхронизирован для английского, польского и русского (748 ключей на язык, встроенный словарь побайтово совпадает с файлами языков). Предупреждение о коротком тексте осталось под полем ввода. Стилизатор в сборку не входит. Модели детектора, пороги и цены не менялись; пакет моделей остаётся 1.3.4.1.",
+      "pl": "Trace zyskał pełny interfejs: trzy tryby analizy oraz mapa MDS pokazująca miejsce tekstu wśród porównywanych, wykresy SVG, porównanie z korpusem i kreator korpusów — analiza stylometryczna nie jest już zbiorem samych liczb. Naprawiono import dokumentów: niektóre pliki PDF eksportowane ze slajdów podawały każde słowo dwukrotnie, przez co licznik słów był zawyżony, a ocena zniekształcona; zawartość warstw i XObject jest teraz deduplikowana. Poprawiono obsługę pakietów licencyjnych: wykrywanie i ponowna instalacja pakietu są idempotentne, pakiet nie jest pobierany ani rozpakowywany drugi raz, przycisk statusu pokazuje to, co jest naprawdę zainstalowane, a wersja jest widoczna w tytule okna. Cały tekst interfejsu jest zsynchronizowany w języku angielskim, polskim i rosyjskim (748 kluczy na język, wbudowany słownik jest bajtowo identyczny z plikami języków). Ostrzeżenie o krótkim tekście pozostało pod polem wprowadzania. Stylizator nie jest dołączony do tej kompilacji. Modele wykrywacza, progi i ceny bez zmian; pakiet modeli pozostaje 1.3.4.1."
+    }
+  },
+  {
+    "version": "2.3.0.2",
+    "date": "2026-10-30",
+    "title": {
+      "en": "Corrected licence agreement text, no feature changes",
+      "ru": "Исправлен текст лицензионного соглашения, без изменений функций",
+      "pl": "Poprawiony tekst umowy licencyjnej, bez zmian funkcji"
+    },
+    "notes": {
+      "en": "Only the licence agreement text was corrected (the same text already published in the repository). No features, detector models, thresholds or prices changed; model pack 1.3.4.1 unchanged.",
+      "ru": "Исправлен только текст лицензионного соглашения (тот же текст, что уже опубликован в репозитории). Функции, модели детектора, пороги и цены не менялись; пакет моделей 1.3.4.1 без изменений.",
+      "pl": "Poprawiono wyłącznie tekst umowy licencyjnej (ten sam tekst, który opublikowano już w repozytorium). Funkcje, modele wykrywacza, progi i ceny bez zmian; pakiet modeli 1.3.4.1 bez zmian."
+    }
+  },
+  {
+    "version": "2.3.0.1",
+    "date": "2026-10-26",
+    "title": {
+      "en": "Humanizer reliability: honest downloads, no crashes, word counter and log export",
+      "ru": "Надёжность гуманайзера: честная загрузка, без падений, счётчик слов и экспорт лога",
+      "pl": "Niezawodność humanizera: uczciwe pobieranie, brak awarii, licznik słów i eksport dziennika"
+    },
+    "notes": {
+      "en": "Licensed packs now download with a live byte bar (downloaded of total) instead of a frozen \"Downloading...\" label, plus a one-click \"whole humanizer (Lite + Full)\" button; previously the \"download everything\" choice covered only the detector. Applied detector updates no longer leave a ~3 GB staging duplicate behind, so used space stops growing after each update. Auto mode now reports which tier it picked and why. Out-of-memory or missing-GPU situations end with a clear message (pick Lite) instead of a crash. A one-sentence rewrite no longer hangs the PC: the full 4B model is blocked on GPU-less machines, short inputs are capped, and refinement shows live progress. The humanizer panes gained what the detector already had: a word counter, a below-300-words warning, and a log export (Markdown) with device memory, chosen tier and result. Detector models and scoring thresholds are unchanged.",
+      "ru": "Лицензионные пакеты теперь качаются с живым прогрессом в байтах (загружено из всего), а не с зависшим «Скачивание…», плюс появилась кнопка «весь гуманайзер (Lite + Full)»; раньше выбор «скачать всё» ставил только детектор. Применённые обновления детектора больше не оставляют дубль staging (~3 ГБ), занятое место перестаёт расти после каждого обновления. Режим «Авто» теперь показывает, какой вариант выбран и почему. Нехватка памяти или отсутствие видеокарты заканчиваются понятным сообщением (возьмите Lite), а не падением. Переписывание одного предложения больше не вешает компьютер: полная модель 4B запрещена без GPU, короткие входы ограничены, доводка показывает живой прогресс. В гуманайзере появилось то, что уже было в детекторе: счётчик слов, предупреждение о тексте короче 300 слов и экспорт лога (Markdown) с памятью устройства, выбранным вариантом и результатом. Модели детектора и пороги не менялись.",
+      "pl": "Pakiety licencyjne pobierają się teraz z żywym paskiem bajtów (pobrano z całości), a nie z zawieszonym napisem o pobieraniu; dodano też przycisk „cały humanizer (Lite + Full)”; wcześniej opcja pobrania wszystkiego obejmowała tylko wykrywacz. Zastosowane aktualizacje wykrywacza nie zostawiają już duplikatu staging (~3 GB), więc zajęte miejsce przestaje rosnąć po każdej aktualizacji. Tryb Auto pokazuje teraz, który wariant wybrano i dlaczego. Brak pamięci lub karty graficznej kończy się zrozumiałym komunikatem (wybierz Lite), a nie awarią. Przepisanie jednego zdania nie zawiesza już komputera: pełny model 4B jest zablokowany bez GPU, krótkie teksty są ograniczone, a dopracowanie pokazuje żywy postęp. Humanizer zyskał to, co wykrywacz miał już wcześniej: licznik słów, ostrzeżenie o tekście krótszym niż 300 słów oraz eksport dziennika (Markdown) z pamięcią urządzenia, wybranym wariantem i wynikiem. Modele wykrywacza i progi bez zmian."
+    }
+  },
+  {
     "version": "2.3.0.0",
     "date": "2026-10-24",
     "title": {
