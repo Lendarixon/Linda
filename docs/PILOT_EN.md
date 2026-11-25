@@ -4,7 +4,7 @@
 
 **Problem.** Editors, schools and teams need to review possible AI assistance without sending confidential documents to an external detector. Linda helps prioritize a human review; it cannot prove authorship.
 
-**What you try.** Windows 10/11, 64-bit; app 2.0.6.0 and model pack 1.3.4. Linda Loupe runs on CPU with a small model download; Linda Assay uses a larger ensemble, with 8 GB DirectX 12 GPU memory recommended. English, Polish and Russian; document checks, local highlighting and report exports. 4 GB Assay GPU compatibility is unvalidated.
+**What you try.** Windows 10/11, 64-bit; app 2.5.0.6 and model pack 1.5.0. Linda Loupe runs on CPU with a small model download (about 0.3 GB); Linda Assay uses a larger ensemble (about 5.8 GB download), with 8 GB DirectX 12 GPU memory recommended. English, Polish and Russian; document checks, local highlighting and report exports. 4 GB cards get a smaller model budget since 2.5.0.4 but are not measured by us.
 
 **Privacy.** Install the desktop app for local inference. Texts are not uploaded; optional history is stored on your machine and can be disabled/deleted. Updates and licence services use network connections. Hosted demos send text to a server and are outside this confidential pilot. Share only aggregate results unless separately authorized.
 

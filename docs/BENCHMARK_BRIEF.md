@@ -1,6 +1,6 @@
 # Linda — benchmark brief
 
-Evidence cut-off: 11 October 2026. Current app 2.0.6.0, package 1.3.4. Historical full-tier weights/routing were introduced as 1.3.1; Lite/Loupe measurements below were published for the packaged 1.3.3 student pipeline. **The following table is historical developer evidence, not a fresh complete 2.0.6.0 evaluation.** Token/markup changes and the FP32 route require separate interpretation. No independent audit or overall accuracy percentage is claimed.
+Evidence cut-off of this brief: 11 October 2026 (historical). Current release: app 2.5.0.6, model package 1.5.0; measured 1.5.0 numbers are on the [results page](https://lendarixon.github.io/Linda/detector-results.html). Historical full-tier weights/routing were introduced as 1.3.1; Lite/Loupe measurements below were published for the packaged 1.3.3 student pipeline. **The following table is historical developer evidence, not a fresh complete 2.0.6.0 evaluation.** Token/markup changes and the FP32 route require separate interpretation. No independent audit or overall accuracy percentage is claimed.
 
 ## Definitions
 

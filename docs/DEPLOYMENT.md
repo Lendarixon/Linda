@@ -1,4 +1,4 @@
-# Linda-Pro 1.3.1 — deployment guide (on-premises; English, Polish, Russian)
+# Linda-Pro 1.5.0 — deployment guide (on-premises; English, Polish, Russian)
 
 Everything runs inside your infrastructure. No network calls at inference time, no telemetry, no accounts.
 
@@ -9,8 +9,8 @@ Everything runs inside your infrastructure. No network calls at inference time, 
 | CPU | 8 cores, x86-64 | any modern desktop CPU |
 | RAM | 16 GB | 32 GB |
 | GPU | none (see note on CPU below) | AMD Radeon RX 9070 XT, 16 GB (ROCm PyTorch) |
-| GPU memory | - | about 1.6 GB resident (the two merged networks, half precision) |
-| Disk | 4 GB | package 2.9 GB (Essay-M 1.7 GB, Multi-M 1.1 GB, stylometry < 0.1 GB) |
+| GPU memory | - | about 1.4 GB of weights for one language's two networks in half precision (English or Polish/Russian; the pool keeps one language's pair resident, budget 2.6 GB) |
+| Disk | 7 GB | full set 5.8 GB (English Essay-M 1.75 GB + Multi-M 1.14 GB; Polish/Russian Essay 1.75 GB + Multi 1.14 GB; stylometry < 0.1 GB); Lite only 0.3 GB |
 | Python | 3.10+ | 3.13 |
 
 NVIDIA CUDA GPUs use the same code path (`device="cuda"`); we have measured only the AMD card above.
@@ -36,6 +36,7 @@ Single-process, sequential; scale horizontally by running more processes/machine
 python -m venv .venv
 .venv\Scripts\activate            # Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt   # for AMD GPUs install the ROCm build of torch first
+python download_models.py         # full set, ~5.8 GB (--set lite: Lite only, ~0.3 GB; --set both)
 python -m pytest tests -q         # optional self-test
 python -m linda_pro essay.txt --windows
 ```
@@ -50,17 +51,17 @@ Verify integrity of the package against the shipped checksums (`CHECKSUMS.sha256
 
 **Python:**
 ```python
-from linda_pro import LindaPro
-det = LindaPro(mode="sensitive")      # or "precise" for schools/universities (fewer false accusations)
+from linda_pro import load_detector
+det = load_detector("sensitive")      # or "precise" for schools/universities; tier="full" | "lite" (default: best installed)
 r = det.detect(["text one", "text two"])[0]
 r["verdict"], r["ai_share"], r["windows"]   # verdict: ai | uncertain | human; per-window scores
 ```
 
-**Command line:** `python -m linda_pro file.txt [--mode precise] [--windows] [--json]`
+**Command line:** `python -m linda_pro file.txt [--mode precise] [--lite | --tier full] [--windows] [--json]`
 
 **Local HTTP service** (for embedding into your platform or an LTI gateway; models stay in memory between requests):
 ```
-python -m linda_pro.server --port 8080 --token <secret> [--mode precise] [--device cuda]
+python -m linda_pro.server --port 8080 --token <secret> [--mode precise] [--tier full|lite] [--device cuda]
 curl -H "Authorization: Bearer <secret>" -d "{\"texts\":[\"...\"]}" http://127.0.0.1:8080/v1/detect
 ```
 Listens on 127.0.0.1 by default (it refuses to start on another address without `--token`). If you expose it beyond the host, put it behind your own TLS reverse proxy and network controls;
@@ -69,8 +70,10 @@ Requests are processed one at a time.
 
 ## 5. Choosing the mode
 
-* `sensitive` — flags a text as AI if the Essay voter **or** the ensemble is above the 0.5 % false-positive threshold.
-* `precise` — flags AI only if two independent signals agree (Essay above the 1 % threshold **and** stylometry above the 5 % threshold). Recommended when a false accusation is costly. Catches noticeably fewer AI texts (see `EVIDENCE_PACK.md`).
+The language is detected first; each language has its own voters, weights and thresholds in `calibration/routing.json`. The document score is the weighted mean of the voters' standardized scores (English: Essay 0.8 + stylometry 0.2; Polish and Russian: Essay 0.5 + Multi 0.5, no stylometry).
+
+* `sensitive` — `ai` above the language's sensitive threshold (about 1 % false flags on that language's held-out human texts), `uncertain` above the 5 % threshold, otherwise `human`.
+* `precise` — `ai` only above the 0.3 % threshold, `uncertain` above the sensitive threshold. Recommended when a false accusation is costly; catches noticeably fewer AI texts.
 
 Thresholds come from held-out human texts (`calibration/`). Domain shift (non-native English, unusual genres) changes the false-positive rate:
 see the ESL/TOEFL rows in `EVIDENCE_PACK.md`. If your texts differ from the calibration domains, recalibrate on your own human texts.

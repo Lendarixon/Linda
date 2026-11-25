@@ -8,7 +8,7 @@ Linda is one product that you can get in two ways. The rules are the same for bo
 |---|---|---|
 | **Windows app** | installer with a window, colour map, automatic model updates | `Linda-Setup.exe` on [GitHub Releases](https://github.com/Lendarixon/Linda/releases/latest) |
 | **Command line / Python** | the `linda_pro` package and tools (`python -m linda_pro`, `evaluate.py`) | [GitHub](https://github.com/Lendarixon/Linda) |
-| **Models and calibration** | the neural networks and thresholds (about 2.9 GB) | [Hugging Face](https://huggingface.co/Lindarixon/Linda-Pro); the app downloads them for you |
+| **Models and calibration** | the neural networks and thresholds (about 5.8 GB for Assay, 0.3 GB for Loupe) | [Hugging Face](https://huggingface.co/Lindarixon/Linda-Pro); the app downloads them for you |
 
 ## 1. Free: personal, non-commercial use
 

@@ -8,3 +8,4 @@ sentencepiece
 tiktoken
 protobuf
 huggingface_hub
+onnxruntime

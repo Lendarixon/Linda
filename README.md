@@ -7,7 +7,21 @@ Weights live on Hugging Face: [Lindarixon/Linda-Pro](https://huggingface.co/Lind
 [Lindarixon/Linda-Stylo-Clean](https://huggingface.co/Lindarixon/Linda-Stylo-Clean) (CPU only, strictly clean data lineage).
 
 <!-- release-2300:start -->
-## Latest Windows update: 2.5.0.5
+## Latest Windows update: 2.5.0.6
+
+[Download the Windows release](https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.6) · [Release notes](https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.6) · **[Try the online demo](https://ninjagovlad--linda-pro-demo-web.modal.run/)**
+
+App **2.5.0.6** with model pack **1.5.0** (models folder space check from the real pack size, GPU cache warning):
+- **Models folder space from the real pack size:** Assay with pack 1.5.0 is about 5.8 GB, so the app now needs the size of your selected models plus a 1.5 GB margin (about 7 GB for Assay, about 2 GB for Loupe) and shows the exact figure if the folder is too small.
+- **GPU model cache shown as a warning:** on a DirectX 12 card the app saves a GPU copy of each Assay network the first time it is used (up to about 10 GB); the models page warns when the folder may not hold it (about 17 GB in total) but does not refuse the folder.
+- **Installer estimate:** the models page of the installer shows about 16 GB for Assay with cache instead of 8.7 GB.
+- **All 2.5.0.5 fixes included:** detector VRAM release before humanization, hybrid GPU+CPU offload for Humanizer-Full 4B, adaptive DirectML VRAM budget, on-demand CUDA runtime, Russian Humanizer guards.
+
+Prefer at least 300 words of continuous prose; results do not prove authorship.
+<!-- release-2300:end -->
+
+<!-- release-2505:start -->
+## Previous update: 2.5.0.5
 
 [Download the Windows release](https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.5) · [Release notes](https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.5) · **[Try the online demo](https://ninjagovlad--linda-pro-demo-web.modal.run/)**
 
@@ -17,24 +31,14 @@ App **2.5.0.5** with model pack **1.5.0** (token-level markup, automatic install
 - **Russian Humanizer quality:** token-based CPU generation budget (cap 420) to prevent mid-paragraph truncation, plus completeness, numeral-agreement, and glued-word guards.
 
 Prefer at least 300 words of continuous prose; results do not prove authorship.
-<!-- release-2300:end -->
-
-<!-- release-2062:start -->
-## Previous update: 2.0.6.2
-
-[Download the Windows release](https://github.com/Lendarixon/Linda/releases/tag/v2.0.6.2) · [Release notes](desktop/RELEASE_NOTES_2.0.6.2.md) · **[Try the online demo](https://ninjagovlad--linda-pro-demo-web.modal.run/)**
-
-Clear warnings before analysis, safer uploads and model-folder moves, improved cancellation and diagnostic metadata. Model pack 1.3.4, tokenizers and thresholds are unchanged. Prefer at least 300 words of continuous prose; lists, forms and slide text may be unsuitable. Results do not prove authorship and small AI inserts can be missed.
-
-The online demo processes your text on Modal servers; do not submit confidential material. It provides 12 successful checks, with a shared-network daily limit; up to 6,000 characters, TXT/MD/DOCX. The desktop app processes text locally and has no demo quota.
-<!-- release-2062:end -->
+<!-- release-2505:end -->
 
 ## Also from this project
 
 [Linda Probe](https://lendarixon.github.io/Linda/probe.html?utm_source=github) is a Windows app that searches file names and the text inside documents on your own PC. Pro adds OCR for scanned PDFs and search by meaning.
 
 ## Windows app (no Python needed)
-Get it from the [Microsoft Store](https://apps.microsoft.com/detail/9NP66G69BQPN), or download **Linda-Setup.exe** from the [releases page](https://github.com/Lendarixon/Linda/releases/latest), install it and start it: the app downloads the models once (about 2.9 GB), then works offline, highlights the AI-looking passages and updates its models by itself. Free for personal non-commercial use; a commercial licence key ($10 person, $30 team of 10, $500 per year organization) covers the app, the command line and the models together ([how licensing works](LICENSING.md)). Source of the app: [desktop/](desktop).
+Get it from the [Microsoft Store](https://apps.microsoft.com/detail/9NP66G69BQPN), or download **Linda-Setup.exe** from the [releases page](https://github.com/Lendarixon/Linda/releases/latest), install it and start it: the app downloads the models once (about 5.8 GB for Linda Assay, 0.3 GB for Linda Loupe), then works offline, highlights the AI-looking passages and updates its models by itself. Free for personal non-commercial use; a commercial licence key ($10 person, $30 team of 10, $500 per year organization) covers the app, the command line and the models together ([how licensing works](LICENSING.md)). Source of the app: [desktop/](desktop).
 
 <!-- lite:start -->
 ## Two versions: Linda Assay and Linda Loupe
@@ -53,7 +57,7 @@ Not sure? Take Lite: it runs everywhere, and Linda Assay can be added later.
 | False alarms, non-native exam essays (TOEFL) | 5.5% | 2.2% |
 | False alarms, human texts of a mixed set (MAGE) | 2.0% | 0.4% |
 | Full-check runtime (different control lengths; see note) | 2.0.6.0: 22.14 s for a 10,594-word local control on RX 9070 XT; other hardware and text lengths vary | about 3 s for a full check with highlighting on a Ryzen 7 7800X3D (about 12 s on an office Ryzen 5 PRO 2400GE, estimate) |
-| Download | about 2.9 GB | about 0.3 GB |
+| Download | about 5.8 GB (English 2.9 GB + Polish/Russian 2.9 GB) | about 0.3 GB |
 | Graphics card | recommended | not needed |
 
 Recommended computer:
@@ -63,11 +67,11 @@ Recommended computer:
 | System | Windows 10 / 11, 64-bit | Windows 10 / 11, 64-bit |
 | Processor | any 4-core processor from about 2017 | 4 cores or more |
 | Memory (RAM) | 4 GB (8 GB is comfortable) | 8 GB (16 GB recommended) |
-| Graphics card | not needed | DirectX 12 GPU with 8 GB recommended; FP32 uses more memory, 4 GB is not validated for 2.0.6.0; CPU fallback is slower |
-| Free disk space | 2 GB | 6 GB (an SSD is better) |
+| Graphics card | not needed | DirectX 12 GPU, 8 GB recommended. The app keeps only one language's models on the card and sizes its model budget to the card (about 2 GB on 4 GB cards, 3.2 GB on 6-8 GB, 5.2 GB on 12 GB+); measured peak 3.9 GB on an RX 9070 XT 16 GB; 4 GB cards are supported since 2.5.0.4 but not measured by us. Without a card it runs on the CPU, slower |
+| Free disk space | 2 GB | 8 GB on CPU; with a graphics card up to about 16 GB, because the app saves a GPU copy of each model the first time it is used (up to about 10 GB if you check all three languages with highlighting). An SSD is better |
 
 Our own measurements on public test sets (English, Polish, Russian), not an independent audit; one calibration rule for both versions. The full Linda Assay needed 226 s for a 3,800-word text on an office Ryzen 5 PRO 2400GE; Lite is expected to take a few seconds there (not measured on that processor yet).
-Lite weights have their own repository: [Lindarixon/Linda-Pro-Lite](https://huggingface.co/Lindarixon/Linda-Pro-Lite). From Python: `python download_models.py --set lite`, then `python -m linda_pro file.txt --lite`.
+Lite weights have their own repository: [Lindarixon/Linda-Pro-Lite](https://huggingface.co/Lindarixon/Linda-Pro-Lite). From Python: `python download_models.py --set lite` (or `--set both`), then `python -m linda_pro file.txt --lite` (`--tier full|lite|auto` picks explicitly; `auto` uses the full set when it is installed).
 
 The online demo also has a **Stylize** button (rewrite a whole text, the AI-looking sentences, or your selection; it does not hide authorship). Its adapters are public: [Lindarixon/Linda-Stylizer](https://huggingface.co/Lindarixon/Linda-Stylizer) (CC BY-NC-4.0, same terms as the detectors; meaning is not verified automatically).
 <!-- lite:end -->
@@ -83,25 +87,25 @@ The whole ensemble on one text, measured on one machine (AMD Ryzen 7 7800X3D, 6 
 | 1,000 words | 0.25 s | 2.7 s | 5.7 s |
 | 3,000 words | 0.76 s | 8.4 s | 20 s |
 
-Earlier timings and the 1.6 GB GPU estimate describe the previous precision route; they are not validated requirements for Assay FP32 in app 2.0.6.0. 8 GB VRAM is recommended; 4 GB is unvalidated.
+Earlier timings and the 1.6 GB GPU estimate describe the previous precision route (FP16); the app now runs Assay in FP32, see the requirements table above for current memory figures.
 
 ## Test it on YOUR texts (nothing leaves your machine)
 The weights are public on Hugging Face: [Lindarixon/Linda-Pro](https://huggingface.co/Lindarixon/Linda-Pro) (no login needed).
 ```bash
 pip install -r requirements.txt
-python download_models.py                              # downloads the 1.3.1 weights (~2.9 GB) from Hugging Face into ./models
+python download_models.py                              # full set (~5.8 GB: English + Polish/Russian voices) into ./models; --set lite for Lite (~0.3 GB)
 python -m linda_pro my_text.txt --windows               # verdict + per-window scores (mixed authorship); language is detected automatically
 python evaluate.py --human my_human_texts/ --ai my_ai_texts/ --mode precise   # accuracy on your own labelled samples
 ```
 `evaluate.py` takes two folders of `.txt` files (or a JSONL with `text` and `label` fields), prints AUROC, true/false positive rates for the `ai` verdict
 and for `ai or uncertain`, and writes `evaluation_report.csv`. Use **at least 100 texts per class, preferably 300+ words each**; texts by non-native writers are a good stress test.
-From Python: `from linda_pro import load_detector; load_detector("sensitive").detect([text])`.
+From Python: `from linda_pro import load_detector; load_detector("sensitive").detect([text])` (add `tier="lite"` or `tier="full"` to choose; a tier that is not installed raises `FileNotFoundError`).
 
 ## No GPU? Google Colab
 Open `colab/Linda_Pro_demo.ipynb` in Colab (free T4 is enough), run all cells, paste or upload your texts.
 
 ## What it is
-Historical full-tier weights introduced in 1.3.1 (current app 2.5.0.5; model package 1.5.0). Three voters: stylometry (CPU) and two transformers, Linda-Essay-M (DeBERTa-v3-large) and Linda-Multi-M (mDeBERTa-v3-base), each a weight-interpolated "merge" of three fine-tuned checkpoints; one decision rule per language (English, Polish, Russian). The language is detected automatically. Version 1.3.1 was retrained **without any text generated by Llama 3.x models**; earlier versions (1.1, 1.3.0) used some, see [DATA_BOM.md](docs/DATA_BOM.md).
+Current: app 2.5.0.6, model package 1.5.0. English uses the full-tier weights introduced in 1.3.1; since 1.4.1 Polish and Russian have their own pair of networks (`essay_l14m50`, `multi_l14m50`, no stylometry voter); 1.5.0 added token-level markup heads. English voters: stylometry (CPU) and two transformers, Linda-Essay-M (DeBERTa-v3-large) and Linda-Multi-M (mDeBERTa-v3-base), each a weight-interpolated "merge" of three fine-tuned checkpoints; one decision rule per language (English, Polish, Russian). The language is detected automatically. Version 1.3.1 was retrained **without any text generated by Llama 3.x models**; earlier versions (1.1, 1.3.0) used some, see [DATA_BOM.md](docs/DATA_BOM.md).
 Text is cut into ~300-word windows; verdict `ai` / `uncertain` / `human`, `ai_share` (rough share of AI-looking text) and per-window scores. Modes: `sensitive` (default) and `precise` (fewer false accusations for schools/universities).
 Results, limits and data provenance: [EVIDENCE_PACK.md](docs/EVIDENCE_PACK.md), [DATA_BOM.md](docs/DATA_BOM.md), [MODEL_CARD.md](docs/MODEL_CARD.md).
 
@@ -131,11 +135,11 @@ If you use Linda Assay or Linda Loupe, please cite the technical report for vers
 }
 ```
 
-Application 2.5.0.5: [release notes](https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.5). Model pack 1.5.0.
+Application 2.5.0.6: [release notes](https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.6). Model pack 1.5.0.
 
 ## Current trust and evaluation documents
 
-App 2.5.0.5 / model pack 1.5.0. [Trust statement](docs/TRUST.md), [benchmark brief](docs/BENCHMARK_BRIEF.md), [free organization pilot](docs/PILOT_EN.md). Historical benchmark percentages are not a fresh full evaluation of app 2.5.0.5.
+App 2.5.0.6 / model pack 1.5.0. [Trust statement](docs/TRUST.md), [benchmark brief](docs/BENCHMARK_BRIEF.md), [free organization pilot](docs/PILOT_EN.md). Historical benchmark percentages are not a fresh full evaluation of app 2.5.0.6.
 
 ## Free 14-day commercial evaluation
 

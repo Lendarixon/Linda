@@ -4,7 +4,7 @@
 
 **Problem.** Redakcje, szkoły i zespoły potrzebują wsparcia przy ocenie możliwego użycia AI bez wysyłania poufnych dokumentów do zewnętrznego detektora. Linda pomaga wskazać teksty do sprawdzenia przez człowieka; nie dowodzi autorstwa.
 
-**Co sprawdzasz.** Windows 10/11, 64-bit; aplikacja 2.0.6.0 i modele 1.3.4. Linda Loupe działa na CPU z małym pakietem; Linda Assay korzysta z większego zespołu modeli, zalecana karta DirectX 12 z 8 GB VRAM. Angielski, polski i rosyjski; analiza dokumentów, lokalne oznaczenia i eksport raportów. Zgodność Assay z 4 GB VRAM nie została potwierdzona.
+**Co sprawdzasz.** Windows 10/11, 64-bit; aplikacja 2.5.0.6 i modele 1.5.0. Linda Loupe działa na CPU z małym pakietem (około 0,3 GB); Linda Assay korzysta z większego zespołu modeli (około 5,8 GB do pobrania), zalecana karta DirectX 12 z 8 GB VRAM. Angielski, polski i rosyjski; analiza dokumentów, lokalne oznaczenia i eksport raportów. Karty 4 GB dostają mniejszy budżet modeli od wersji 2.5.0.4, ale nie zostały przez nas zmierzone.
 
 **Prywatność.** Używaj zainstalowanej aplikacji: teksty nie są wysyłane do analizy. Opcjonalna historia jest lokalna i można ją wyłączyć/usunąć. Aktualizacje i obsługa licencji korzystają z sieci. Demo w chmurze wysyła tekst na serwer i nie jest częścią poufnego pilotażu. Przekazuj tylko zbiorcze wyniki, chyba że osobno uzgodniono inaczej.
 
