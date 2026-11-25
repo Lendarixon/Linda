@@ -12,7 +12,7 @@ from huggingface_hub import snapshot_download
 
 PRO_REPO, LITE_REPO = "Lindarixon/Linda-Pro", "Lindarixon/Linda-Pro-Lite"
 # routing.json: full tiers only; routing.with_lite.json: the same full tiers plus the Lite ("speed") tiers.
-TABLES = ["calibration/routing.json", "calibration/routing.with_lite.json"]
+TABLES = ["calibration/routing.json", "calibration/routing.with_lite.json", "calibration/token_heads_v2.json"]  # token_heads_v2: 1.5.0 token-markup calibration
 PRO_MODELS = ["models/essay_dhi_131_*/*", "models/multi_dhi_131_*/*", "models/essay_l14m50/*", "models/multi_l14m50/*", "models/stylo_d/*"]
 LITE_MODELS = ["models/linda_speed_131/*", "models/linda_speed_131/**/*", "models/stylo_l/*", "models/stylo_d/*"]
 
