@@ -1,5 +1,20 @@
 [
  {
+  "date": "2026-11-25",
+  "title": "Linda 2.5.0.6 — models folder space from the real pack size",
+  "text": "• The models folder check now uses the real size of the model pack instead of a fixed 6 GB: the app needs the size of your selected models plus a 1.5 GB margin (about 7 GB for Assay, about 2 GB for Loupe) and shows the exact figure if the folder is too small.\n• On a DirectX 12 card the app saves a GPU copy of each Assay network the first time it is used (up to about 10 GB); the models page warns when the folder may not hold it (about 17 GB in total) but does not refuse the folder.\n• The models page of the installer shows about 16 GB for Assay with cache instead of 8.7 GB.\n• Includes all 2.5.0.1–2.5.0.5 fixes. Model pack 1.5.0 is unchanged.",
+  "title_i18n": {
+   "ru": "Linda 2.5.0.6 — место для папки моделей по реальному размеру пакета",
+   "en": "Linda 2.5.0.6 — models folder space from the real pack size",
+   "pl": "Linda 2.5.0.6 — miejsce na folder modeli według rzeczywistego rozmiaru pakietu"
+  },
+  "text_i18n": {
+   "ru": "• Проверка папки моделей теперь использует реальный размер пакета моделей вместо фиксированных 6 ГБ: приложению нужно место под выбранные модели плюс запас 1,5 ГБ (около 7 ГБ для Assay, около 2 ГБ для Loupe), а при нехватке показывается точная цифра.\n• На карте DirectX 12 приложение сохраняет GPU-копию каждой сети Assay при первом использовании (до 10 ГБ); страница моделей предупреждает, если папка может её не вместить (около 17 ГБ всего), но не запрещает папку.\n• Страница моделей в установщике показывает около 16 ГБ для Assay с кэшем вместо 8,7 ГБ.\n• Включает все исправления 2.5.0.1–2.5.0.5. Пакет моделей 1.5.0 не изменился.",
+   "en": "• The models folder check now uses the real size of the model pack instead of a fixed 6 GB: the app needs the size of your selected models plus a 1.5 GB margin (about 7 GB for Assay, about 2 GB for Loupe) and shows the exact figure if the folder is too small.\n• On a DirectX 12 card the app saves a GPU copy of each Assay network the first time it is used (up to about 10 GB); the models page warns when the folder may not hold it (about 17 GB in total) but does not refuse the folder.\n• The models page of the installer shows about 16 GB for Assay with cache instead of 8.7 GB.\n• Includes all 2.5.0.1–2.5.0.5 fixes. Model pack 1.5.0 is unchanged.",
+   "pl": "• Sprawdzenie folderu modeli korzysta teraz z rzeczywistego rozmiaru pakietu modeli zamiast stałych 6 GB: aplikacja potrzebuje miejsca na wybrane modele plus 1,5 GB zapasu (około 7 GB dla Assay, około 2 GB dla Loupe) i pokazuje dokładną liczbę, gdy folder jest za mały.\n• Na karcie DirectX 12 aplikacja zapisuje kopię GPU każdej sieci Assay przy pierwszym użyciu (do około 10 GB); strona modeli ostrzega, gdy folder może jej nie pomieścić (około 17 GB łącznie), ale nie odrzuca folderu.\n• Strona modeli w instalatorze pokazuje około 16 GB dla Assay z pamięcią podręczną zamiast 8,7 GB.\n• Zawiera wszystkie poprawki 2.5.0.1–2.5.0.5. Pakiet modeli 1.5.0 bez zmian."
+  }
+ },
+ {
   "date": "2026-11-24",
   "title": "Linda 2.5.0.5 — Humanizer-Full on 8 GB NVIDIA cards",
   "text": "• Humanizer-Full 4B no longer falls back to Lite on 8 GB NVIDIA cards such as the RTX 5060: the detector is unloaded and GPU memory released before the humanizer starts.\n• Cards with 4–8.9 GB of free memory split the 4B humanizer between the graphics card and system memory automatically; with 9 GB or more it stays fully on the card.\n• Includes all 2.5.0.1–2.5.0.4 fixes. Model pack 1.5.0 is unchanged.",
