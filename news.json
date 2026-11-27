@@ -1,5 +1,20 @@
 [
  {
+  "date": "2026-11-28",
+  "title": "Linda 2.6.0.0 + models 1.5.1 — Fluent 2.0 UI, one-pass Segmenter v3, 64-entry LRU cache",
+  "text": "• Fluent 2.0 interface overhaul: dark, light and high-contrast themes, Ctrl+K Command Palette, quick EN/PL/RU sample bar, Segmenter v3 / Cached badges, and word-level diff toggle in Humanizer.\n• Model pack 1.5.1: one-pass ONNX span segmenter seg_v3 (563 MB, Sentence F1@0.5 0.9538 across EN/PL/RU, DP pure-human FPR 4.55%, ~183 ms/doc on CPU) plus token_heads_v2.\n• Engine optimizations: automatic routing to seg_v3 in Pro auto mode and a thread-safe 64-entry LRU check cache.\n• Humanizer quality guards (meta-prefix stripping, markdown-injection guard, EN/PL/RU glued-word guards) and updater prune_stale() fix preserving manifest-owned onnx/fp32_stable_v1 directories.",
+  "title_i18n": {
+   "en": "Linda 2.6.0.0 + models 1.5.1 — Fluent 2.0 UI, one-pass Segmenter v3, 64-entry LRU cache",
+   "ru": "Linda 2.6.0.0 + модели 1.5.1 — интерфейс Fluent 2.0, Segmenter v3 и LRU-кэш",
+   "pl": "Linda 2.6.0.0 + modele 1.5.1 — interfejs Fluent 2.0, Segmenter v3 i pamięć LRU"
+  },
+  "text_i18n": {
+   "en": "• Fluent 2.0 interface overhaul: dark, light and high-contrast themes, Ctrl+K Command Palette, quick EN/PL/RU sample bar, Segmenter v3 / Cached badges, and word-level diff toggle in Humanizer.\n• Model pack 1.5.1: one-pass ONNX span segmenter seg_v3 (563 MB, Sentence F1@0.5 0.9538 across EN/PL/RU, DP pure-human FPR 4.55%, ~183 ms/doc on CPU) plus token_heads_v2.\n• Engine optimizations: automatic routing to seg_v3 in Pro auto mode and a thread-safe 64-entry LRU check cache.\n• Humanizer quality guards (meta-prefix stripping, markdown-injection guard, EN/PL/RU glued-word guards) and updater prune_stale() fix preserving manifest-owned onnx/fp32_stable_v1 directories.",
+   "ru": "• Обновление интерфейса в стиле Fluent 2.0: тёмная, светлая и контрастная темы, палитра команд Ctrl+K, быстрые примеры EN/PL/RU, плашки Segmenter v3 / Cached и режим word-diff в гуманайзере.\n• Пакет моделей 1.5.1: однопроходный ONNX-сегментатор seg_v3 (563 МБ, Sentence F1@0.5 0,9538 по EN/PL/RU, FPR на чистых текстах людей 4,55%, ~183 мс/док на CPU) и token_heads_v2.\n• Оптимизация движка: автовыбор seg_v3 в режиме Pro auto и потокобезопасный LRU-кэш проверок на 64 записи.\n• Гварды качества гуманайзера (очистка мета-префиксов, защита от markdown-инъекций и склеенных слов EN/PL/RU) и исправление prune_stale(), сохраняющее каталоги onnx/fp32_stable_v1 при обновлении моделей.",
+   "pl": "• Odświeżony interfejs Fluent 2.0: motywy ciemny, jasny i wysokiego kontrastu, paleta poleceń Ctrl+K, szybkie przykłady EN/PL/RU, etykiety Segmenter v3 / Cached oraz podgląd różnic słów w humanizatorze.\n• Pakiet modeli 1.5.1: jednoprzebiegowy segmenter ONNX seg_v3 (563 MB, Sentence F1@0.5 0,9538 dla EN/PL/RU, FPR na tekstach ludzkich 4,55%, ~183 ms/dok na CPU) oraz token_heads_v2.\n• Optymalizacje silnika: automatyczne kierowanie do seg_v3 w trybie Pro auto i pamięć podręczna LRU na 64 sprawdzenia.\n• Strażniki jakości humanizatora (usuwanie metaprefiksów, ochrona przed wstrzykiwaniem markdown i sklejonymi słowami EN/PL/RU) oraz poprawka prune_stale() chroniąca katalogi onnx/fp32_stable_v1 podczas aktualizacji."
+  }
+ },
+ {
   "date": "2026-11-25",
   "title": "Linda Probe 2.0.0 — Modern Fluent 2.0 UI, Command Palette and Export",
   "text": "• Redesigned Modern Fluent 2.0 interface in dark and light themes.\n• Added Command Palette (Ctrl+K), live filename suggestions as you type, result export (CSV, Markdown, JSON), and 1-click Copy Citation.\n• Redesigned Pro storefront with 7-day offline Pro trial, system diagnostics, and updated third-party license notices.",
