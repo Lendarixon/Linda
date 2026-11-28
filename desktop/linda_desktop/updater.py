@@ -616,6 +616,19 @@ def prune_stale(root: Path | None = None) -> list[str]:
     root = Path(root or config.models_root())
     removed: list[str] = []
     try:
+        owned_onnx_top: set[str] = set()
+        owned_onnx_sub: set[tuple[str, str]] = set()
+        try:
+            m = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+            for f in m.get("files", []):
+                parts = Path(str(f.get("path") or "")).parts
+                if len(parts) >= 3 and parts[0].casefold() == "onnx":
+                    owned_onnx_top.add(parts[1])
+                if len(parts) >= 4 and parts[0].casefold() == "onnx":
+                    owned_onnx_sub.add((parts[1], parts[2]))
+        except Exception:  # noqa: BLE001
+            pass
+
         models, onnx = root / "models", root / "onnx"
         if models.is_dir():
             for d in sorted(models.iterdir()):
@@ -623,7 +636,14 @@ def prune_stale(root: Path | None = None) -> list[str]:
                     d.rmdir()
         if onnx.is_dir():
             for d in sorted(onnx.iterdir()):
-                if d.is_dir() and not (models / d.name).is_dir():
+                if not d.is_dir():
+                    continue
+                if d.name in owned_onnx_top:
+                    for sub in sorted(d.iterdir()):
+                        if sub.is_dir() and not (models / sub.name).is_dir() and (d.name, sub.name) not in owned_onnx_sub:
+                            shutil.rmtree(sub, ignore_errors=True)
+                            removed.append(f"onnx/{d.name}/{sub.name}")
+                elif not (models / d.name).is_dir():
                     shutil.rmtree(d, ignore_errors=True)
                     removed.append(f"onnx/{d.name}")
     except Exception:  # noqa: BLE001

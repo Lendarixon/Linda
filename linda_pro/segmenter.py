@@ -269,6 +269,11 @@ class Segmenter:
                 raise FileNotFoundError("segmenter model is not installed: %s" % self.model_dir)
             self._load()
 
+    def close(self) -> None:
+        """Release ONNX session and tokenizer memory."""
+        self.sess = None
+        self.tok = None
+
     # ------------------------------------------------------------ inference
     def _windows(self, n_tokens: int) -> list[tuple[int, int]]:
         n = max(1, self.max_len - 2)

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__version__ = "2.5.0.6"
+__version__ = "2.6.0.0"
 
 
 def _bootstrap_cuda_lib() -> None:

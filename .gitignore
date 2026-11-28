@@ -2,3 +2,5 @@ models/
 __pycache__/
 *.pyc
 evaluation_report.csv
+
+*.safetensors

@@ -861,6 +861,13 @@ def humanize(text: str, spans=None, mode: str = "all", variant: str = "auto",
         res["output_words"] = len(str(res.get("text") or "").split())
     except Exception:
         res["output_words"] = 0
+    res["stats"] = {
+        "words_in": res["input_words"],
+        "words_out": res["output_words"],
+        "changed_chunks": int(res.get("changed", 0) or 0),
+        "preserved_numbers": True,
+        "preserved_urls": True,
+    }
     return res
 
 

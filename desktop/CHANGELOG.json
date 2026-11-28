@@ -1,5 +1,19 @@
 [
   {
+    "version": "2.6.0.0",
+    "date": "2026-11-27",
+    "title": {
+      "en": "One-pass Segmenter v3 (pack 1.5.1), LRU result cache, smart humanizer & Probe 2.0 UI",
+      "ru": "Однопроходный Segmenter v3 (пак 1.5.1), LRU-кэш, умный гуманайзер и UI уровня Probe 2.0",
+      "pl": "Jednoprzebiegowy Segmenter v3 (pakiet 1.5.1), pamięć LRU, ulepszony humanizator i UI Probe 2.0"
+    },
+    "notes": {
+      "en": "Model pack 1.5.1 adds the ONNX one-pass AI-span segmenter seg_v3 (Sentence F1 0.9538 across EN/PL/RU, ~183 ms/doc on CPU) as the default Pro markup backend. Added a thread-safe 64-entry LRU check cache, cleaner humanizer candidate ranking with meta-prefix stripping and EN/PL/RU guards, and Probe 2.0 UI polish (focus rings, quick sample chips, markup backend pill, toast notifications, Ctrl+Enter/Esc shortcuts, and humanizer word-diff view). Synced EULA.",
+      "ru": "Пакет моделей 1.5.1 добавляет однопроходный ONNX-сегментатор seg_v3 (Sentence F1 0.9538 по EN/PL/RU, ~183 мс/док на CPU) как основной источник разметки Pro. Добавлен потокобезопасный LRU-кэш проверок (64 записи), умный отбор кандидатов гуманайзера с очисткой префиксов и гвардами для EN/PL/RU, а также полировка UI по стандарту Probe 2.0 (фокус-рамки, быстрые примеры, плашка источника разметки, тосты, Ctrl+Enter/Esc и word-diff в гуманайзере). Обновлён EULA.",
+      "pl": "Pakiet modeli 1.5.1 dodaje jednoprzebiegowy segmenter ONNX seg_v3 (Sentence F1 0.9538 dla EN/PL/RU, ~183 ms/dok na CPU) jako domyślne źródło podświetleń Pro. Dodano pamięć podręczną LRU (64 wpisy), inteligentny wybór wariantów humanizatora z czyszczeniem prefiksów i strażnikami EN/PL/RU oraz dopracowanie UI w stylu Probe 2.0 (ramki fokusu, szybkie przykłady, etykieta źródła podświetleń, powiadomienia toast, Ctrl+Enter/Esc i widok różnic słów)."
+    }
+  },
+  {
     "version": "2.5.0.6",
     "date": "2026-11-25",
     "title": {

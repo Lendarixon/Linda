@@ -7,28 +7,28 @@ Weights live on Hugging Face: [Lindarixon/Linda-Pro](https://huggingface.co/Lind
 [Lindarixon/Linda-Stylo-Clean](https://huggingface.co/Lindarixon/Linda-Stylo-Clean) (CPU only, strictly clean data lineage).
 
 <!-- release-2300:start -->
-## Latest Windows update: 2.5.0.6
+## Latest Windows update: 2.6.0.0
 
-[Download the Windows release](https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.6) · [Release notes](https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.6) · **[Try the online demo](https://ninjagovlad--linda-pro-demo-web.modal.run/)**
+[Download the Windows release](https://github.com/Lendarixon/Linda/releases/tag/v2.6.0.0) · [Release notes](https://github.com/Lendarixon/Linda/releases/tag/v2.6.0.0) · **[Try the online demo](https://ninjagovlad--linda-pro-demo-web.modal.run/)**
 
-App **2.5.0.6** with model pack **1.5.0** (models folder space check from the real pack size, GPU cache warning):
-- **Models folder space from the real pack size:** Assay with pack 1.5.0 is about 5.8 GB, so the app now needs the size of your selected models plus a 1.5 GB margin (about 7 GB for Assay, about 2 GB for Loupe) and shows the exact figure if the folder is too small.
-- **GPU model cache shown as a warning:** on a DirectX 12 card the app saves a GPU copy of each Assay network the first time it is used (up to about 10 GB); the models page warns when the folder may not hold it (about 17 GB in total) but does not refuse the folder.
-- **Installer estimate:** the models page of the installer shows about 16 GB for Assay with cache instead of 8.7 GB.
-- **All 2.5.0.5 fixes included:** detector VRAM release before humanization, hybrid GPU+CPU offload for Humanizer-Full 4B, adaptive DirectML VRAM budget, on-demand CUDA runtime, Russian Humanizer guards.
+App **2.6.0.0** with model pack **1.5.1** (Fluent 2.0 interface overhaul, one-pass ONNX span segmenter `seg_v3`, 64-entry LRU detection cache, humanizer quality guards, updater fixes):
+- **Fluent 2.0 interface overhaul:** updated dark, light, and high-contrast themes, `Ctrl+K` Command Palette, quick EN/PL/RU sample bar, `Segmenter v3` / `Cached` badges, and word-level diff toggle in Humanizer.
+- **Model pack 1.5.1 (`seg_v3` + `token_heads_v2`):** one-pass ONNX span segmenter (`563 MB`, opset 17). On the 60-document dev evaluation (20 EN, 20 PL, 20 RU, CPU 4 threads): Sentence F1@0.5 `0.9538` (EN `0.8702`, PL `0.9396`, RU `0.9946`), DP Pure-Human FPR `4.55%` (1/22), `183 ms/doc`.
+- **Engine optimizations:** automatic routing to `seg_v3` in Pro `auto` mode, thread-safe 64-entry LRU detection cache (`sha256` key, `no_cache` bypass, `cached` indicator), and segmenter resource cleanup on `unload()`.
+- **Humanizer & updater fixes:** meta-wrapper stripping, markdown-injection & glued-word guards, natural edit-distance candidate selection, and fixed `updater.prune_stale()` preserving manifest-owned `onnx/<bucket>/<model>` directories.
 
 Prefer at least 300 words of continuous prose; results do not prove authorship.
 <!-- release-2300:end -->
 
 <!-- release-2505:start -->
-## Previous update: 2.5.0.5
+## Previous update: 2.5.0.6
 
-[Download the Windows release](https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.5) · [Release notes](https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.5) · **[Try the online demo](https://ninjagovlad--linda-pro-demo-web.modal.run/)**
+[Download the Windows release](https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.6) · [Release notes](https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.6) · **[Try the online demo](https://ninjagovlad--linda-pro-demo-web.modal.run/)**
 
-App **2.5.0.5** with model pack **1.5.0** (token-level markup, automatic installer-selected licensed packs):
-- **DirectML stability:** adaptive VRAM budget for 4 GB and 8 GB GPUs, model eviction before token-markup loading, and Windows cp1251 error decoding instead of masked `UnicodeDecodeError`.
-- **Humanizer-Full 4B on NVIDIA:** automatic detector VRAM release, on-demand PyTorch `cu128` CUDA runtime installation, and universal hybrid GPU+CPU offload via `accelerate` for 4–8.9 GB VRAM cards (including RTX 5060 8 GB).
-- **Russian Humanizer quality:** token-based CPU generation budget (cap 420) to prevent mid-paragraph truncation, plus completeness, numeral-agreement, and glued-word guards.
+App **2.5.0.6** with model pack **1.5.0** (models folder space check from the real pack size, GPU cache warning):
+- **Models folder space from the real pack size:** Assay with pack 1.5.0 is about 5.8 GB, so the app checks for the selected models plus a 1.5 GB margin and shows the exact figure if the folder is too small.
+- **GPU model cache shown as a warning:** warns when the folder may not hold the DirectX 12 GPU cache (~17 GB total) without refusing the folder.
+- **All 2.5.0.5 fixes included:** detector VRAM release before humanization, hybrid GPU+CPU offload for Humanizer-Full 4B, adaptive DirectML VRAM budget, on-demand CUDA runtime, Russian Humanizer guards.
 
 Prefer at least 300 words of continuous prose; results do not prove authorship.
 <!-- release-2505:end -->
@@ -135,11 +135,11 @@ If you use Linda Assay or Linda Loupe, please cite the technical report for vers
 }
 ```
 
-Application 2.5.0.6: [release notes](https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.6). Model pack 1.5.0.
+Application 2.6.0.0: [release notes](https://github.com/Lendarixon/Linda/releases/tag/v2.6.0.0). Model pack 1.5.1.
 
 ## Current trust and evaluation documents
 
-App 2.5.0.6 / model pack 1.5.0. [Trust statement](docs/TRUST.md), [benchmark brief](docs/BENCHMARK_BRIEF.md), [free organization pilot](docs/PILOT_EN.md). Historical benchmark percentages are not a fresh full evaluation of app 2.5.0.6.
+App 2.6.0.0 / model pack 1.5.1. [Trust statement](docs/TRUST.md), [benchmark brief](docs/BENCHMARK_BRIEF.md), [free organization pilot](docs/PILOT_EN.md). Historical benchmark percentages are not a fresh full evaluation of app 2.6.0.0.
 
 ## Free 14-day commercial evaluation
 

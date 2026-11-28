@@ -14,6 +14,24 @@ _PL=set('ąćęłńóśźżĄĆĘŁŃÓŚŹŻ')
 _RU_DEC_BAD=re.compile(r'\b\d+[.,]\d+\s+(?:процентов|рублей|годов|лет)\b',re.I)
 _RU_INT_UNIT=re.compile(r'\b(\d+)\s+(процент(?:а|ов)?|рубл(?:ь|я|ей))\b',re.I)
 _RU_GLUED=re.compile(r'\b[а-яё]{2,}[А-ЯЁ][а-яё]{2,}\b')
+_LATIN_GLUED=re.compile(r'\b[a-z]{3,}[A-Z][a-z]{3,}\b')
+_META_PREFIX_RE=re.compile(
+    r'^(?:here\s+is\s+(?:the\s+)?(?:rewritten|edited|revised)\s+text\s*[:\-–]\s*|'
+    r'rewritten\s+text\s*[:\-–]\s*|'
+    r'вот\s+(?:переписанный|отредактированный|измен[ёе]нный)\s+текст\s*[:\-–]\s*|'
+    r'oto\s+(?:przeredagowany|poprawiony)\s+tekst\s*[:\-–]\s*)',
+    re.I,
+)
+_MD_INJECT_RE=re.compile(r'(?:\*\*[^*]+\*\*|^#{1,4}\s+)',re.M)
+
+
+def strip_meta_wrapper(cand: str) -> str:
+    """Strip stray <text>...</text> wrappers and common LLM preamble lines."""
+    c = (cand or '').strip()
+    if c.startswith('<text>') and c.endswith('</text>'):
+        c = c[6:-7].strip()
+    c = _META_PREFIX_RE.sub('', c).strip()
+    return c
 
 
 def _ru_numeral_issues(src,cand):
@@ -112,7 +130,8 @@ def split_all(text,chunk_words=CHUNK_WORDS):
     return out[:MAX_SPANS]
 
 def candidate_problems(src,cand,similarity=MAX_SIMILARITY):
-    s,c=src.strip(),cand.strip()
+    s=src.strip()
+    c=strip_meta_wrapper(cand)
     if not c:return ['empty']
     bad=[]
     if re.sub(r'\W+','',s.lower())==re.sub(r'\W+','',c.lower()):bad.append('identical')
@@ -122,20 +141,33 @@ def candidate_problems(src,cand,similarity=MAX_SIMILARITY):
     if _TERM.search(s) and not _TERM.search(c):bad.append('truncation_suspect')
     elif lang_guess(s)=='ru' and _last_sentence_cut(s,c):bad.append('truncation_suspect')
     if '\n' in c and '\n' not in s:bad.append('layout_changed')
-    if lang_guess(c)!=lang_guess(s):bad.append('language_changed')
-    if lang_guess(s)=='ru':bad.extend(_ru_numeral_issues(s,c))
+    if _MD_INJECT_RE.search(c) and not _MD_INJECT_RE.search(s):bad.append('markdown_injected')
+    lg=lang_guess(s)
+    if lang_guess(c)!=lg:bad.append('language_changed')
+    if lg=='ru':bad.extend(_ru_numeral_issues(s,c))
+    else:
+        for m in _LATIN_GLUED.finditer(c):
+            if m.group(0) not in s:
+                bad.append('glued_word')
+                break
     if not bad and difflib.SequenceMatcher(None,s,c).ratio()>similarity:bad.append('too_similar')
     return bad
 
-def pick(src,candidates):
-    """Лучший из годных (ближайший по длине к исходнику) или None и причины отказа."""
+def pick_best_candidate(src,candidates):
+    """Лучший из годных: сперва валидация без обёрток, затем естественная степень переработки (~0.68 similarity) и баланс длины."""
+    s=src.strip()
     good=[];why=set()
-    for c in candidates:
-        p=candidate_problems(src,c)
+    for raw in candidates:
+        c=strip_meta_wrapper(raw)
+        p=candidate_problems(s,c)
         if p:why.update(p)
-        else:good.append(c.strip())
+        else:good.append(c)
     if not good:return None,sorted(why)
-    return min(good,key=lambda c:abs(len(c)-len(src.strip()))),[]
+    return min(good,key=lambda c:abs(difflib.SequenceMatcher(None,s,c).ratio()-0.68)+0.15*abs(len(c)-len(s))/max(1,len(s))),[]
+
+def pick(src,candidates):
+    """Совместимая обёртка над pick_best_candidate."""
+    return pick_best_candidate(src,candidates)
 
 def stylize_text(text,spans,generate,n=4):
     """generate(list[str],n)->list[list[str]]. Фрагмент без годного варианта остаётся исходным."""

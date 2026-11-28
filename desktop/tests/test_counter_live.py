@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Живой счётчик слов/символов (web/index.html лежит в дереве и попадает в exe при сборке tools/release_2506.py / tools/repack_exe.py).
+"""Живой счётчик слов/символов (web/index.html собирается из tools/make_web.py).
 
 Регрессия: render() опрашивает /api/status каждые 0.8-3 с и каждый раз зовёт
 LINDA_applyI18n(), которая перерисовывала #charCounter из замороженных

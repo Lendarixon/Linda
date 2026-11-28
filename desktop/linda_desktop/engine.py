@@ -332,6 +332,15 @@ class Engine:
     def unload(self) -> None:
         with self.lock:
             self._close_dets(self.dets)
+            if self._seg is not None:
+                try:
+                    self._seg.close()
+                except Exception:  # noqa: BLE001
+                    pass
+                self._seg = None
+            cache = getattr(self, "_result_cache", None)
+            if cache is not None:
+                cache.clear()
             self.dets = None
             self._backend = None
             self._routed_lang = None
@@ -747,7 +756,8 @@ class Engine:
     CPU_SMOOTH_MAX_WORDS = 700  # automatic mode on a CPU: sliding windows up to this length (about 10 s), longer texts use the fast block colouring
     SMOOTH_WINDOW, SMOOTH_MIN_STEP, SMOOTH_MAX_WINDOWS = 300, 75, 16
 
-    SEGMENTER_DIR = "seg_l14"  # qa_models/models/seg_l14: one-pass token segmenter (opt-in mode)
+    SEGMENTER_DIRS = ("seg_v3", "seg_l14")  # models/seg_v3 (1.5.1) or models/seg_l14 (1.4.x)
+    SEGMENTER_DIR = "seg_v3"
     _seg = None
     doc_lang = None  # language reported for the document being analysed (never the backend)
 
@@ -804,10 +814,15 @@ class Engine:
         return voter, info
 
     def segmenter_dir(self) -> Path:
-        return Path(config.models_root()) / "models" / self.SEGMENTER_DIR
+        base = Path(config.models_root()) / "models"
+        for name in self.SEGMENTER_DIRS:
+            d = base / name
+            if (d / "onnx" / "model.onnx").is_file() and (d / "tokenizer.json").is_file():
+                return d
+        return base / self.SEGMENTER_DIR
 
     def segmenter_available(self) -> bool:
-        """The opt-in segmenter is offered only when its files are installed."""
+        """The one-pass segmenter is available when seg_v3 or seg_l14 files are installed."""
         try:
             d = self.segmenter_dir()
             return (d / "onnx" / "model.onnx").is_file() and (d / "tokenizer.json").is_file()
@@ -867,6 +882,11 @@ class Engine:
                 pass  # capability probing may fail too; preserve legacy fallback
         if s == "tokens":
             s = "auto"
+        # 2.6.0.0: in Pro auto mode, prefer the one-pass seg_v3 segmenter when installed
+        # (F1 0.954 across EN/PL/RU vs 0.425 for v2 token heads, 183 ms/doc CPU).
+        if s == "auto" and allow_tokens and "segmenter" not in skip and getattr(self, "tier", "full") != "speed":
+            if self.segmenter_available():
+                return "segmenter"
         # Pro, auto, a validated v2 head installed for this voice/language: the token
         # path is the more accurate markup source (see the docstring numbers). The head
         # must match the *reported* document language (res), never the routed backend.
@@ -902,8 +922,25 @@ class Engine:
                     n += 1
         return n
 
-    def run(self, text: str, mode: str = "sensitive", models: list | None = None, cancellable: bool = False, cancel: threading.Event | None = None, progress=None) -> dict:
+    def _cache_key(self, text: str, mode: str, models: list | None) -> tuple:
+        import hashlib
+
+        s = load_settings()
+        return (
+            id(self.dets),
+            hashlib.sha256(text.encode("utf-8", errors="replace")).hexdigest(),
+            mode,
+            tuple(models or ()),
+            getattr(self, "tier", None),
+            s.get("sentences", "auto"),
+            s.get("device", "auto"),
+            bool(getattr(self, "both", False)),
+        )
+
+    def run(self, text: str, mode: str = "sensitive", models: list | None = None, cancellable: bool = False, cancel: threading.Event | None = None, progress=None, no_cache: bool = False) -> dict:
         """Одна проверка за раз. cancellable=True: её можно прервать (новый текст в окне одной проверки); пакетные проверки не отменяются."""
+        import copy
+        from collections import OrderedDict
         from linda_pro import voters as _voters
 
         job = {"cancel": cancel if cancel is not None else threading.Event(), "cancellable": cancellable}
@@ -913,11 +950,30 @@ class Engine:
             with self.lock:
                 if job["cancel"].is_set():
                     raise _voters.Cancelled()
+                cache = getattr(self, "_result_cache", None)
+                if cache is None:
+                    cache = OrderedDict()
+                    self._result_cache = cache
+                ckey = None if no_cache else self._cache_key(text, mode, models)
+                if ckey is not None and ckey in cache:
+                    cache.move_to_end(ckey)
+                    hit = copy.deepcopy(cache[ckey])
+                    hit["cached"] = True
+                    self._progress_cb = progress
+                    try:
+                        self._emit(100, "done")
+                    finally:
+                        self._progress_cb = None
+                    return hit
                 _voters.CANCEL = job["cancel"].is_set
                 self._progress_cb = progress
                 try:
                     result = self._run_locked(text, mode, models)
                     _voters.check_cancel()
+                    if ckey is not None and isinstance(result, dict) and not result.get("error"):
+                        cache[ckey] = copy.deepcopy(result)
+                        while len(cache) > 64:
+                            cache.popitem(last=False)
                     self._emit(100, "done")
                     return result
                 finally:
@@ -1272,6 +1328,14 @@ class Engine:
             res["sentence_stats"] = {"total": len(sentences), **cnt, "ai_pct": round(cnt["ai"] / len(sentences) * 100) if sentences else 0,
                                      "granularity": {"tokens": "tokens", "hybrid": "hybrid", "full": "sentence", "context": "context", "smooth": "smooth", "windows": "window", "segmenter": "segment"}[gran],
                                      "thresholds": {"ai": thr_ai, "uncertain": thr_unc}}
+            res["markup_backend"] = (
+                "segmenter_v3" if seg_mode else
+                "lite_tokens" if lite_reuse else
+                "tokens" if (token_rows is not None and gran == "tokens") else
+                "windows" if gran == "windows" else
+                gran
+            )
+            res["markup_source"] = res["markup_backend"]
             res["sentence_stats"]["sources"] = ["ensemble"] if getattr(self, "tier", "full") == "speed" else ["ensemble", "essay", "multi"]
             if models and len(models) < 3:
                 # NOTE: len(models)==1 never reaches here — it returns early

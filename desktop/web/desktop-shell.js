@@ -72,6 +72,12 @@
       help_reuse:'Несколько документов', help_reuse_text:'«Проверить файлы» запускает последовательную проверку документов. Результаты доступны в «Истории проверок». «Сравнить документы» показывает изменения между двумя сохранёнными проверками.',
       help_settings:'Если что-то не работает', help_settings_text:'Проверьте наличие моделей в разделе «Модели и пакеты». Обновления и сохранение диагностики находятся в настройках. Если файл не читается, предыдущий текст сохраняется; выберите другой файл или вставьте текст вручную.',
       basic:'Начать проверку', open_models:'Открыть модели и пакеты',
+      sample_label:'Быстрый пример:', sample_en:'EN эссе', sample_pl:'PL проза', sample_ru:'RU статья',
+      markup_segmenter_v3:'Segmenter v3 (один проход)', markup_tokens:'Токен-голова v2', markup_windows:'Оконная разметка', markup_lite_tokens:'Lite токены',
+      cached_hit:'Из кэша', hu_diff_toggle:'Показать отличия (Diff)', hu_diff_hide:'Скрыть отличия', hu_preserved:'Числа и URL сохранены',
+      toast_copied:'Скопировано в буфер',
+      cmd_palette:'Команды', cmd_ph:'Введите команду или раздел…', cmd_nav:'Навигация', cmd_actions:'Действия', cmd_empty:'Ничего не найдено',
+      cmd_analyze:'Запустить проверку текста', cmd_new_tab:'Новая вкладка', cmd_theme_dark:'Тема: Тёмная (Fluent 2.0)', cmd_theme_light:'Тема: Светлая', cmd_theme_contrast:'Тема: Контрастная',
     },
     en: {
       pack_need_models:'Install the checking models to work offline.', pack_dl_models:'Download models', pro_tag:'Pro',
@@ -107,6 +113,12 @@
       help_reuse:'Working with documents', help_reuse_text:'Check files processes documents one at a time. Find the results in Check history. Compare documents shows changes between two saved checks.',
       help_settings:'If something goes wrong', help_settings_text:'Check installed models in Models and packages. Find updates and diagnostics in Settings. If a file cannot be read, your previous text stays in place; choose another file or paste the text.',
       basic:'Start a check', open_models:'Open models and packages',
+      sample_label:'Quick sample:', sample_en:'EN essay', sample_pl:'PL prose', sample_ru:'RU article',
+      markup_segmenter_v3:'Segmenter v3 (one-pass)', markup_tokens:'Token Head v2', markup_windows:'Window Reuse', markup_lite_tokens:'Lite Tokens',
+      cached_hit:'Cached', hu_diff_toggle:'Show diff', hu_diff_hide:'Hide diff', hu_preserved:'Numbers & URLs preserved',
+      toast_copied:'Copied to clipboard',
+      cmd_palette:'Commands', cmd_ph:'Type a command or section…', cmd_nav:'Navigation', cmd_actions:'Actions', cmd_empty:'No matching commands',
+      cmd_analyze:'Run text check', cmd_new_tab:'New tab', cmd_theme_dark:'Theme: Dark (Fluent 2.0)', cmd_theme_light:'Theme: Light', cmd_theme_contrast:'Theme: Contrast',
     },
     pl: {
       pack_need_models:'Zainstaluj modele sprawdzające, aby pracować offline.', pack_dl_models:'Pobierz modele', pro_tag:'Pro',
@@ -142,6 +154,12 @@
       help_reuse:'Wiele dokumentów', help_reuse_text:'Sprawdź pliki analizuje dokumenty po kolei. Wyniki znajdziesz w Historii sprawdzeń. Porównaj dokumenty pokazuje zmiany między dwoma zapisanymi sprawdzeniami.',
       help_settings:'Gdy coś nie działa', help_settings_text:'Sprawdź zainstalowane modele w sekcji Modele i pakiety. Aktualizacje i zapis diagnostyki znajdziesz w Ustawieniach. Jeśli nie uda się odczytać pliku, poprzedni tekst pozostaje na miejscu; wybierz inny plik lub wklej tekst.',
       basic:'Rozpocznij sprawdzanie', open_models:'Otwórz modele i pakiety',
+      sample_label:'Szybki przykład:', sample_en:'EN esej', sample_pl:'PL proza', sample_ru:'RU artykuł',
+      markup_segmenter_v3:'Segmenter v3 (jeden przebieg)', markup_tokens:'Głowa tokenów v2', markup_windows:'Okna tekstu', markup_lite_tokens:'Lite tokeny',
+      cached_hit:'Z pamięci', hu_diff_toggle:'Pokaż różnice (Diff)', hu_diff_hide:'Ukryj różnice', hu_preserved:'Liczby i URL zachowane',
+      toast_copied:'Skopiowano do schowka',
+      cmd_palette:'Polecenia', cmd_ph:'Wpisz polecenie lub sekcję…', cmd_nav:'Nawigacja', cmd_actions:'Akcje', cmd_empty:'Brak pasujących poleceń',
+      cmd_analyze:'Sprawdź tekst', cmd_new_tab:'Nowa karta', cmd_theme_dark:'Motyw: Ciemny (Fluent 2.0)', cmd_theme_light:'Motyw: Jasny', cmd_theme_contrast:'Motyw: Kontrastowy',
     },
   };
   const LEGACY = {
@@ -214,7 +232,7 @@
     nav.querySelector('.ld-nav-bottom').append($('licBadge'));
     $('licBadge').tabIndex=0;$('licBadge').setAttribute('role','button');$('licBadge').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('licBadge').click();}});
     const oldTools=header.lastElementChild;
-    const headerTools=node('div','ld-header-tools','<span class="ld-local-badge"><i class="ld-local-dot"></i><span data-ld-text="local"></span></span><select class="ld-language" id="desktopLanguage"><option value="ru">Русский</option><option value="en">English</option><option value="pl">Polski</option></select>');
+    const headerTools=node('div','ld-header-tools','<button type="button" class="ld-cmd-btn" id="ldCmdBtn"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><span data-ld-text="cmd_palette"></span><kbd class="ld-kbd">Ctrl K</kbd></button><span class="ld-local-badge"><i class="ld-local-dot"></i><span data-ld-text="local"></span></span><select class="ld-language" id="desktopLanguage"><option value="ru">Русский</option><option value="en">English</option><option value="pl">Polski</option></select>');
     header.append(headerTools);oldTools.hidden=true;
     const statusbar=node('footer','ld-statusbar','<span data-ld-text="privacy"></span><span id="desktopServiceStatus"></span><span id="desktopAppVersion"></span>');
     const appVer=(window.LINDA_BOOT&&window.LINDA_BOOT.version)||'';
@@ -275,7 +293,9 @@
       models.style.setProperty('display',next==='models'?'block':'none','important');
       $('desktopPageTitle').textContent=T(next);$('desktopPageDescription').textContent=T(next+'_desc');
       $('desktopBack').hidden=next==='check';
-      nav.querySelectorAll('[data-route]').forEach(b=>{if(b.dataset.route===(next==='audit'?'history':next))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
+      workspace.setAttribute('aria-label',T(next));
+      $('cabView').setAttribute('aria-label',T(next));
+      nav.querySelectorAll('[data-route]').forEach(b=>{if(next!=='license'&&b.dataset.route===(next==='audit'?'history':next))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
       auditSwitch.hidden=!['history','audit'].includes(next);auditSwitch.textContent=T(next==='audit'?'history':'audit');
       if(next==='about')fillAbout();
       if(focus)$('desktopPageTitle').focus({preventScroll:true});
@@ -367,7 +387,9 @@
       $('desktopLanguage').value=window.LINDA_LANG||'en';$('desktopLanguage').setAttribute('aria-label',T('language'));
       nav.setAttribute('aria-label',T('work'));
       $('lpSet').setAttribute('aria-label',T('settings'));$('lpLic').setAttribute('aria-label',T('license'));$('cabView').setAttribute('aria-label',T(route));
+      if($('lpKey'))$('lpKey').setAttribute('aria-label',T('license'));
       activate(route);
+      setTimeout(()=>{if(route==='about')fillAbout();},0);
     }
     $('desktopLanguage').addEventListener('change',e=>document.querySelector(`#langSw button[data-l="${e.target.value}"]`).click());
     document.addEventListener('linda-i18n',translate);
@@ -416,6 +438,181 @@
     }
     new MutationObserver(setupFocusState).observe($('lpSetup'),{attributes:true,attributeFilter:['class']});setupFocusState();
     $('lpSetup').addEventListener('keydown',e=>{if(e.key!=='Tab'||!setupWasOpen)return;const controls=setupControls();if(!controls.length){e.preventDefault();setupCard.focus();return;}const first=controls[0],last=controls[controls.length-1];if(e.shiftKey&&(document.activeElement===first||document.activeElement===setupCard)){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}});
+    // ---- Linda Probe 2.0 (2.6.0.0) UX: Toast, a11y, shortcuts, sample chips, markup pill, humanizer diff ----
+    const toastEl=node('div','ld-toast');toastEl.id='ldToast';toastEl.setAttribute('role','status');toastEl.setAttribute('aria-live','polite');
+    document.body.append(toastEl);
+    let toastTimer=0;
+    window.LINDA_toast=(msg,isError=false)=>{
+      toastEl.textContent=String(msg||'');
+      toastEl.classList.toggle('error',!!isError);
+      toastEl.classList.add('show');
+      if(toastTimer)clearTimeout(toastTimer);
+      toastTimer=setTimeout(()=>toastEl.classList.remove('show'),3200);
+    };
+    window.LD_a11y=window.LD_a11y||{
+      last:null,
+      save(){try{this.last=document.activeElement||null;}catch(e){this.last=null;}},
+      restore(fb){try{if(this.last&&document.contains(this.last)&&this.last.focus){this.last.focus();this.last=null;return true;}}catch(e){}try{const f=document.querySelector(fb||'#textInput');if(f&&f.focus){f.focus();this.last=null;return true;}}catch(e2){}return false;},
+    };
+    editor.addEventListener('keydown',e=>{
+      if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();if(!$('btnAnalyze').disabled)$('btnAnalyze').click();}
+    });
+    document.addEventListener('keydown',e=>{
+      if(e.key==='Escape'){
+        if($('lpSet').classList.contains('show'))$('lpSetClose').click();
+        else if($('lpLic').classList.contains('show'))$('lpLicClose').click();
+      }
+    });
+    const SAMPLES={
+      en:'In recent years, artificial intelligence tools have transformed how organizations draft, review, and publish written documents. While automated systems accelerate routine editing, human judgment remains essential for verifying factual accuracy, preserving nuance, and ensuring accountability.',
+      pl:'W ostatnich latach narzędzia sztucznej inteligencji zmieniły sposób przygotowywania i redagowania dokumentów. Choć automatyzacja przyspiesza codzienną pracę, ocena faktów, kontekstu oraz odpowiedzialność za treść wciąż należą do człowieka.',
+      ru:'В последние годы инструменты искусственного интеллекта заметно изменили подход к подготовке и проверке текстов. Хотя автоматизация ускоряет базовую редактуру, проверка фактов, смысловой точности и контекста по-прежнему остаётся задачей человека.'
+    };
+    const sampleBar=node('div','ld-sample-bar','<span data-ld-text="sample_label"></span>'
+      +'<button type="button" class="ld-sample-chip" data-sample="en" data-ld-text="sample_en"></button>'
+      +'<button type="button" class="ld-sample-chip" data-sample="pl" data-ld-text="sample_pl"></button>'
+      +'<button type="button" class="ld-sample-chip" data-sample="ru" data-ld-text="sample_ru"></button>');
+    sampleBar.id='ldSampleBar';
+    preflight.after(sampleBar);
+    const syncSampleBar=()=>{sampleBar.hidden=editor.value.trim().length>0;};
+    editor.addEventListener('input',syncSampleBar);
+    if($('tabsBar')){
+      new MutationObserver(()=>setTimeout(syncSampleBar,0)).observe($('tabsBar'),{childList:true,subtree:true,attributes:true});
+      $('tabsBar').addEventListener('click',()=>setTimeout(syncSampleBar,0));
+    }
+    sampleBar.addEventListener('click',e=>{
+      const b=e.target.closest('[data-sample]');if(!b)return;
+      editor.value=SAMPLES[b.dataset.sample]||SAMPLES.en;
+      editor.dispatchEvent(new Event('input',{bubbles:true}));
+      editor.focus();
+    });
+    syncSampleBar();
+    const hmHead=document.querySelector('#heatmapCard .heatmap-header');
+    const markupMeta=node('span','ld-markup-meta');markupMeta.id='ldMarkupMeta';
+    if(hmHead)hmHead.querySelector('.heatmap-title').append(markupMeta);
+    const prevExtras=window.LINDA_renderLocalExtras;
+    window.LINDA_renderLocalExtras=local=>{
+      if(typeof prevExtras==='function')prevExtras(local);
+      if(!markupMeta)return;
+      markupMeta.innerHTML='';
+      const src=(local&&local.markup_backend)||(window.lastResult&&window.lastResult.markup_backend);
+      if(src){
+        const p=node('span','ld-markup-pill'+(src==='segmenter_v3'?' seg':''));
+        p.textContent=T('markup_'+src)||src;
+        markupMeta.append(p);
+      }
+      if(local&&local.cached){
+        const c=node('span','ld-markup-pill cached');c.textContent=T('cached_hit');
+        markupMeta.append(c);
+      }
+    };
+    const wordDiff=(a,b)=>{
+      const wa=a.trim().split(/\s+/).filter(Boolean),wb=b.trim().split(/\s+/).filter(Boolean);
+      const m=wa.length,n=wb.length;
+      if(m*n>90000)return null;
+      const dp=Array.from({length:m+1},()=>new Uint16Array(n+1));
+      for(let i=m-1;i>=0;i--)for(let j=n-1;j>=0;j--)dp[i][j]=wa[i]===wb[j]?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
+      const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+      const out=[];let i=0,j=0;
+      while(i<m&&j<n){
+        if(wa[i]===wb[j]){out.push(esc(wa[i]));i++;j++;}
+        else if(dp[i+1][j]>=dp[i][j+1]){out.push(`<del class="ld-diff-del">${esc(wa[i++])}</del>`);}
+        else{out.push(`<ins class="ld-diff-ins">${esc(wb[j++])}</ins>`);}
+      }
+      while(i<m)out.push(`<del class="ld-diff-del">${esc(wa[i++])}</del>`);
+      while(j<n)out.push(`<ins class="ld-diff-ins">${esc(wb[j++])}</ins>`);
+      return out.join(' ');
+    };
+    function mountHumanizerDiff(){
+      for(const selId of ['bMode','aAction','cA','cB','mScope','trLoadCorpusSel','trCmpCorpusSel','trBldLang','huVariant']){
+        const el=$(selId);if(el&&!el.getAttribute('aria-label'))el.setAttribute('aria-label',selId);
+      }
+      const huOut=$('huOut'),huText=$('huText'),huCopy=$('huCopy');
+      if(!huOut||!huText||huOut.dataset.ldDiffMounted==='1')return;
+      huOut.dataset.ldDiffMounted='1';
+      const huStats=node('div','ld-hu-stats-bar');huStats.id='huStatsBar';huStats.hidden=true;
+      const huDiffBtn=node('button','cab-btn sec');huDiffBtn.id='huDiffBtn';huDiffBtn.type='button';huDiffBtn.dataset.ldText='hu_diff_toggle';
+      const huPres=node('span','ld-hu-badge');huPres.dataset.ldText='hu_preserved';huPres.textContent=T('hu_preserved');
+      huStats.append(huDiffBtn,huPres);
+      const huDiffBox=node('div','ld-hu-diff-box');huDiffBox.id='huDiffBox';huDiffBox.hidden=true;
+      huOut.after(huStats,huDiffBox);
+      let showDiff=false;
+      const renderHuDiff=()=>{
+        const hasOut=huOut.value.trim().length>0;
+        huStats.hidden=!hasOut;
+        if(!hasOut){huDiffBox.hidden=true;showDiff=false;huOut.hidden=false;return;}
+        huDiffBtn.textContent=T(showDiff?'hu_diff_hide':'hu_diff_toggle');
+        if(showDiff){
+          const html=wordDiff(huText.value,huOut.value);
+          huDiffBox.innerHTML=html||huOut.value;
+          huDiffBox.hidden=false;huOut.hidden=true;
+        }else{huDiffBox.hidden=true;huOut.hidden=false;}
+      };
+      huDiffBtn.onclick=()=>{showDiff=!showDiff;renderHuDiff();};
+      setInterval(()=>{if(route==='humanize'&&huOut.isConnected)renderHuDiff();},450);
+      const huGo=$('huGo');
+      if(huGo)huGo.addEventListener('click',()=>setTimeout(renderHuDiff,400));
+      if(huCopy)huCopy.addEventListener('click',()=>{if(huOut.value.trim())window.LINDA_toast(T('toast_copied'));});
+      renderHuDiff();
+    }
+    new MutationObserver(mountHumanizerDiff).observe($('cabView'),{childList:true,subtree:true});
+    document.addEventListener('linda-route',e=>{if(e.detail&&e.detail.route==='humanize')setTimeout(mountHumanizerDiff,50);});
+    mountHumanizerDiff();
+
+    // ---- Probe 2.0 Command Palette (Ctrl+K) ----
+    const palWrap=node('div','ld-pal-backdrop');palWrap.id='ldPalBackdrop';palWrap.hidden=true;
+    palWrap.innerHTML='<div class="ld-pal" role="dialog" aria-modal="true"><div class="ld-pal-head"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><input class="ld-pal-input" id="ldPalInput" type="search" autocomplete="off"><kbd class="ld-kbd">Esc</kbd></div><div class="ld-pal-list" id="ldPalList"></div><div class="ld-pal-foot"><span>↑↓</span><span>↵</span><span>Esc</span></div></div>';
+    document.body.append(palWrap);
+    const palInput=$('ldPalInput'),palList=$('ldPalList');
+    let palIdx=0,palItems=[];
+    const buildCommands=()=>[
+      ...['check','batch','history','compare','trace','humanize','models','settings','audit','help','about'].map(r=>({group:T('cmd_nav'),label:T(r),hint:r,icon:r,run:()=>navigate(r)})),
+      {group:T('cmd_actions'),label:T('cmd_analyze'),hint:'Ctrl+Enter',icon:'check',run:()=>{navigate('check');if(!$('btnAnalyze').disabled)$('btnAnalyze').click();}},
+      {group:T('cmd_actions'),label:T('cmd_new_tab'),hint:'Ctrl+T',icon:'check',run:()=>{navigate('check');const b=document.querySelector('.tab-new');if(b)b.click();}},
+      {group:T('cmd_actions'),label:T('cmd_theme_dark'),hint:'dark',icon:'settings',run:()=>{const b=document.querySelector('[data-theme-pick="dark"], #setTheme option[value="dark"]');if(b&&b.parentElement){b.parentElement.value='dark';b.parentElement.dispatchEvent(new Event('change',{bubbles:true}));}document.documentElement.dataset.theme='dark';}},
+      {group:T('cmd_actions'),label:T('cmd_theme_light'),hint:'light',icon:'settings',run:()=>{const b=document.querySelector('#setTheme');if(b){b.value='light';b.dispatchEvent(new Event('change',{bubbles:true}));}document.documentElement.dataset.theme='light';}},
+      {group:T('cmd_actions'),label:T('cmd_theme_contrast'),hint:'contrast',icon:'settings',run:()=>{const b=document.querySelector('#setTheme');if(b){b.value='contrast';b.dispatchEvent(new Event('change',{bubbles:true}));}document.documentElement.dataset.theme='contrast';}},
+    ];
+    const renderPal=()=>{
+      const q=palInput.value.trim().toLowerCase();
+      const all=buildCommands();
+      palItems=q?all.filter(c=>c.label.toLowerCase().includes(q)||c.hint.toLowerCase().includes(q)):all;
+      palIdx=Math.min(palIdx,Math.max(0,palItems.length-1));
+      if(!palItems.length){palList.innerHTML=`<div class="ld-pal-empty">${T('cmd_empty')}</div>`;return;}
+      let html='',lastG='';
+      palItems.forEach((c,i)=>{
+        if(c.group!==lastG){lastG=c.group;html+=`<div class="ld-pal-group">${c.group}</div>`;}
+        html+=`<button type="button" class="ld-pal-item${i===palIdx?' active':''}" data-pidx="${i}">${icon(c.icon)}<span class="ld-pal-label">${c.label}</span><span class="ld-pal-hint">${c.hint}</span></button>`;
+      });
+      palList.innerHTML=html;
+    };
+    const openPal=()=>{window.LD_a11y.save();palInput.placeholder=T('cmd_ph');palInput.value='';palIdx=0;palWrap.hidden=false;renderPal();palInput.focus();};
+    const closePal=()=>{if(palWrap.hidden)return;palWrap.hidden=true;window.LD_a11y.restore('#textInput');};
+    $('ldCmdBtn').onclick=openPal;
+    palWrap.addEventListener('click',e=>{
+      if(e.target===palWrap)return closePal();
+      const b=e.target.closest('[data-pidx]');
+      if(b){const item=palItems[+b.dataset.pidx];closePal();if(item)item.run();}
+    });
+    palInput.addEventListener('input',()=>{palIdx=0;renderPal();});
+    palInput.addEventListener('keydown',e=>{
+      if(e.key==='ArrowDown'){e.preventDefault();palIdx=(palIdx+1)%Math.max(1,palItems.length);renderPal();}
+      else if(e.key==='ArrowUp'){e.preventDefault();palIdx=(palIdx-1+Math.max(1,palItems.length))%Math.max(1,palItems.length);renderPal();}
+      else if(e.key==='Enter'){e.preventDefault();const item=palItems[palIdx];closePal();if(item)item.run();}
+      else if(e.key==='Escape'){e.preventDefault();closePal();}
+    });
+    document.addEventListener('keydown',e=>{
+      if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.altKey&&e.key.toLowerCase()==='k'){e.preventDefault();if(palWrap.hidden)openPal();else closePal();}
+      else if(!palWrap.hidden){
+        if(e.key==='Escape'){e.preventDefault();closePal();}
+        else if(document.activeElement!==palInput){
+          if(e.key==='ArrowDown'){e.preventDefault();palIdx=(palIdx+1)%Math.max(1,palItems.length);renderPal();}
+          else if(e.key==='ArrowUp'){e.preventDefault();palIdx=(palIdx-1+Math.max(1,palItems.length))%Math.max(1,palItems.length);renderPal();}
+          else if(e.key==='Enter'){e.preventDefault();const item=palItems[palIdx];closePal();if(item)item.run();}
+        }
+        const act=palList.querySelector('.ld-pal-item.active');if(act)act.scrollIntoView({block:'nearest'});
+      }
+    });
     window.LINDA_applyI18n();translate();activate('check');
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
