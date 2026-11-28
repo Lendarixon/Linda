@@ -1,6 +1,6 @@
 # Model card — Linda Assay and Linda Loupe
 
-Current distribution: model package 1.5.0 (21 November 2026); Windows app 2.5.0.6 (25 November 2026). Old names: Linda-Pro and Linda-Pro Lite. Repository identifiers remain unchanged.
+Current distribution: model package 1.5.0 (21 November 2026); Windows app 2.6.0.0 (25 November 2026). Old names: Linda-Pro and Linda-Pro Lite. Repository identifiers remain unchanged.
 
 Assay, English: merged Essay-M (DeBERTa-v3-large), Multi-M (mDeBERTa-v3-base) and Stylo-D (LightGBM/ngrams); weights 0.8 Essay / 0 Multi / 0.2 style. Assay, Polish and Russian (since 1.4.1): a separate pair of the same architectures, `essay_l14m50` and `multi_l14m50`, weights 0.5 / 0.5, no stylometry voter. Document windows about 300 words, top25 aggregation. Multi can still provide independent local evidence for EN. Loupe: distilled ONNX student plus stylometry; EN 0.8 student / 0.2 style, RU/PL 0.8 student / 0.1 Stylo-D / 0.1 language-specific style. Decision rules are frozen in routing.json.
 

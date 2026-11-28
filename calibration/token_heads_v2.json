@@ -1,0 +1,34 @@
+{
+ "schema": 2,
+ "source": "tmp/tokenhead_20261120/train_head.py (Platt on dev, neg-FPR@0.20 = 5%)",
+ "threshold": {
+  "full": 0.2,
+  "speed": 0.815
+ },
+ "heads": {
+  "essay_en": {
+   "center": 3.030364878735923,
+   "scale": 1.6106627623295735,
+   "dev_auc": 0.7652,
+   "schema": 2
+  },
+  "multi_en": {
+   "center": 3.4091476246778813,
+   "scale": 1.3639732533561866,
+   "dev_auc": 0.7294,
+   "schema": 2
+  },
+  "essay_pl": {
+   "center": 3.6447754014899543,
+   "scale": 1.612558443373923,
+   "dev_auc": 0.744,
+   "schema": 2
+  },
+  "multi_pl": {
+   "center": 3.6177128131237692,
+   "scale": 1.7481613078364493,
+   "dev_auc": 0.7058,
+   "schema": 2
+  }
+ }
+}

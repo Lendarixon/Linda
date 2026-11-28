@@ -42,8 +42,8 @@ def engine_result(text, detector):
         if start < match.end():
             sentences.append({"start": start, "end": match.end(),
                               "text": text[start:match.end()], "p_ai": 0.25, "label": "human"})
-    return dict(detector_id=detector, app_version="2.0.6.2", model_version="1.3.4",
-                model_pack_version="1.3.4", markup_version="2.0.6.2", text=text,
+    return dict(detector_id=detector, app_version="2.5.0.6", model_version="1.5.0",
+                model_pack_version="1.5.0", markup_version="1.5.0", text=text,
                 status="human", ai_share=0.0, sentences=sentences)
 
 
@@ -198,8 +198,10 @@ def test_health_and_https_session(demo):
     data = response.json()
     assert data["status"] == "ok"
     assert data["detectors"] == ["loupe", "assay"]
-    assert data["app_version"] == data["markup_version"] == "2.0.6.2"
-    assert data["model_version"] == data["model_pack_version"] == "1.3.4"
+    assert data["app_version"] == "2.5.0.6"
+    assert data["markup_version"] == "1.5.0"
+    assert data["model_version"] == data["model_pack_version"] == "1.5.0"
+    assert data["demo_revision"] == "public-2506-20261125"
     assert (data["max_chars"], data["max_uses"], data["access_code_required"]) == (6000, 12, False)
     assert data["supported_formats"] == ["txt", "md", "docx"]
     assert data["recommended_words"] == 300
@@ -209,7 +211,7 @@ def test_health_and_https_session(demo):
     assert response.json()["min_words"] == 20
     assert response.json()["max_chars"] == 6000
     assert "signed browser cookie" in response.json()["quota_identity"]
-    assert all(flag in response.headers["set-cookie"].lower() for flag in ("secure", "httponly", "samesite=lax"))
+    assert all(flag in response.headers["set-cookie"].lower() for flag in ("secure", "httponly", "samesite=none", "partitioned"))
     token = client.cookies.get(api_module.COOKIE)
     assert re.fullmatch(r"[0-9a-f]{32}\.[0-9a-f]{64}", token)
     assert remaining(client) == 12

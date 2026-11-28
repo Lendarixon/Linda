@@ -2,8 +2,10 @@
 import asyncio,hashlib,hmac,json,re,secrets,time,io,os
 from pathlib import Path
 from fastapi import FastAPI,Request,File,UploadFile
-from fastapi.responses import HTMLResponse,JSONResponse
+from fastapi.responses import HTMLResponse,JSONResponse,RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 from demo_quota import MAX_USES
+from stylize_core import validate_spans
 
 MAX_CHARS=6000
 MIN_WORDS=20
@@ -12,6 +14,8 @@ MAX_REQUEST_BYTES=32_000
 COOKIE='linda_demo_visitor'
 SUPPORTED_FORMATS=['txt','md','docx']
 RECOMMENDED_WORDS=300
+SITE_ORIGIN='https://lendarixon.github.io'  # интерфейс демо живёт на сайте проекта, здесь только API
+TOKEN_HEADER='x-linda-token'
 
 def docx_parts(container):
     """Yield body paragraphs and table cells in order without merged-cell duplicates."""
@@ -32,11 +36,12 @@ def docx_parts(container):
                         seen.add(cell._tc)
                         yield from docx_parts(cell)
 
-def create_api(page,quota_call,run_call,secret):
+def create_api(page,quota_call,run_call,secret,stylize_call=None,redirect_to=None):
     if len(secret)<32:raise RuntimeError('Demo session signing secret is missing')
     api=FastAPI(docs_url=None,redoc_url=None,openapi_url=None)
     def identity(request):
-        token=request.cookies.get(COOKIE,'')
+        # токен посетителя: заголовок с сайта (работает без сторонних cookie) или cookie прямого входа
+        token=request.headers.get(TOKEN_HEADER,'') or request.cookies.get(COOKIE,'')
         visitor,sep,signature=token.partition('.')
         valid=bool(re.fullmatch('[0-9a-f]{32}',visitor) and sep and re.fullmatch('[0-9a-f]{64}',signature) and hmac.compare_digest(signature,hmac.new(secret.encode(),('visitor:'+visitor).encode(),hashlib.sha256).hexdigest()))
         if not valid:visitor=secrets.token_hex(16)
@@ -47,7 +52,9 @@ def create_api(page,quota_call,run_call,secret):
         return visitor,network,signed
     def response(payload,status,token):
         out=JSONResponse(payload,status_code=status)
-        out.set_cookie(COOKIE,token,max_age=365*86400,httponly=True,secure=True,samesite='lax',path='/')
+        out.set_cookie(COOKIE,token,max_age=365*86400,httponly=True,secure=True,samesite='none',path='/')
+        # Partitioned (CHIPS): cookie работает во фрейме на сайте проекта и остаётся раздельным по сайтам
+        out.raw_headers=[(k,v+b'; Partitioned' if k==b'set-cookie' else v) for k,v in out.raw_headers]
         out.headers['Cache-Control']='no-store'
         out.headers['X-Content-Type-Options']='nosniff'
         return out
@@ -59,7 +66,9 @@ def create_api(page,quota_call,run_call,secret):
         return None
     def origin_allowed(request):
         origin=request.headers.get('origin')
-        return not origin or origin in ('https://ninjagovlad--linda-pro-demo-web.modal.run',str(request.base_url).rstrip('/'))
+        return not origin or origin in ('https://ninjagovlad--linda-pro-demo-web.modal.run',SITE_ORIGIN,str(request.base_url).rstrip('/'))
+
+    api.add_middleware(CORSMiddleware,allow_origins=[SITE_ORIGIN],allow_methods=['GET','POST','OPTIONS'],allow_headers=['Content-Type','X-Linda-Token'],allow_credentials=False,max_age=600)
 
     @api.middleware('http')
     async def upload_size_guard(request,call_next):
@@ -71,18 +80,23 @@ def create_api(page,quota_call,run_call,secret):
 
     @api.get('/',response_class=HTMLResponse)
     def index():
-        return HTMLResponse(page,headers={'Cache-Control':'no-cache','X-Content-Type-Options':'nosniff','Referrer-Policy':'strict-origin-when-cross-origin','Content-Security-Policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'"})
+        if redirect_to:return RedirectResponse(redirect_to,status_code=302,headers={'Cache-Control':'no-store'})
+        return HTMLResponse(page,headers={'Cache-Control':'no-cache','X-Content-Type-Options':'nosniff','Referrer-Policy':'strict-origin-when-cross-origin','Content-Security-Policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors https://lendarixon.github.io"})
 
     @api.get('/health')
     def health():
-        return {'status':'ok','app_version':'2.0.6.2','model_version':'1.3.4','model_pack_version':'1.3.4','markup_version':'2.0.6.2','demo_revision':'public-release-2062-20261017','detectors':['loupe','assay'],'max_chars':MAX_CHARS,'max_uses':MAX_USES,'recommended_words':RECOMMENDED_WORDS,'supported_formats':SUPPORTED_FORMATS,'access_code_required':False}
+        return {'status':'ok','app_version':'2.5.0.6','model_version':'1.5.0','model_pack_version':'1.5.0','markup_version':'1.5.0','demo_revision':'public-2506-20261125','detectors':['loupe','assay'],'max_chars':MAX_CHARS,'max_uses':MAX_USES,'recommended_words':RECOMMENDED_WORDS,'supported_formats':SUPPORTED_FORMATS,'access_code_required':False,'stylize':stylize_call is not None}
 
     @api.get('/api/session')
     async def session(request:Request):
         visitor,network,token=identity(request)
         try:state=await quota_call('status',visitor,network,None)
         except Exception:return response({'detail':'Demo counter unavailable; try again shortly.'},503,token)
-        return response({**state,'max_chars':MAX_CHARS,'min_words':MIN_WORDS,'max_uses':MAX_USES,'recommended_words':RECOMMENDED_WORDS,'supported_formats':SUPPORTED_FORMATS,'app_version':'2.0.6.2','model_pack_version':'1.3.4','markup_version':'2.0.6.2','quota_identity':'signed browser cookie with shared-network daily protection'},200,token)
+        sty=None
+        if stylize_call is not None:
+            try:sty=(await quota_call('status',visitor+'s',network+'s',None))['remaining']
+            except Exception:sty=None
+        return response({**state,'visitor_token':token,'stylize_remaining':sty,'max_chars':MAX_CHARS,'min_words':MIN_WORDS,'max_uses':MAX_USES,'recommended_words':RECOMMENDED_WORDS,'supported_formats':SUPPORTED_FORMATS,'app_version':'2.5.0.6','model_pack_version':'1.5.0','markup_version':'1.5.0','quota_identity':'signed browser cookie with shared-network daily protection'},200,token)
 
     @api.post('/api/detect')
     async def detect(request:Request):
@@ -139,6 +153,58 @@ def create_api(page,quota_call,run_call,secret):
             return response({'detail':'Could not finalize the demo counter. Try again shortly.','remaining':state.get('remaining',reservation['remaining'])},503,token)
         if not state.get('ok'):return response({'detail':'Demo reservation expired; try again shortly.','remaining':state['remaining']},503,token)
         return response({'status':'ok','result':result,'remaining':state['remaining'],'check_id':rid},200,token)
+
+    @api.post('/api/stylize')
+    async def stylize(request:Request):
+        visitor,network,token=identity(request)
+        sv,sn=visitor+'s',network+'s'  # отдельный счётчик: стилизация не тратит проверки детектора
+        if stylize_call is None:return response({'detail':'Stylization unavailable.'},503,token)
+        if not origin_allowed(request):return response({'detail':'Use the demo from its own page.'},403,token)
+        if request.headers.get('content-type','').split(';')[0]!='application/json':return response({'detail':'Expected JSON.'},415,token)
+        length=request.headers.get('content-length')
+        if length and (not length.isdigit() or int(length)>MAX_REQUEST_BYTES):return response({'detail':'This demo request is too large.'},413,token)
+        chunks=[];size=0
+        async for chunk in request.stream():
+            size+=len(chunk)
+            if size>MAX_REQUEST_BYTES:return response({'detail':'This demo request is too large.'},413,token)
+            chunks.append(chunk)
+        try:
+            body=json.loads(b''.join(chunks))
+            if not isinstance(body,dict):raise ValueError
+            text=body.get('text');spans=validate_spans(normalize(text),body.get('spans')) if isinstance(text,str) else None
+            if not isinstance(text,str):raise ValueError
+            detector=body.get('detector','assay')
+            if detector not in ('assay','loupe'):raise ValueError
+        except (ValueError,TypeError,UnicodeError):return response({'detail':'Invalid stylization request.'},400,token)
+        text=normalize(text)
+        if len(text)>MAX_CHARS:return response({'detail':'This free demo allows at most 6,000 characters.'},400,token)
+        if spans is None:
+            if len(text.split())<MIN_WORDS:return response({'detail':'Add at least 20 words.'},400,token)
+        elif sum(len(text[a:b].split()) for a,b in spans)<4:return response({'detail':'Select at least 4 words to rewrite.'},400,token)
+        rid=secrets.token_hex(16)
+        try:reservation=await quota_call('reserve',sv,sn,rid)
+        except Exception:return response({'detail':'Demo counter unavailable; try again shortly.'},503,token)
+        if not reservation['ok']:
+            msg=f'The {MAX_USES} free stylizations for this browser or shared network have been used.' if reservation['reason']=='visitor_limit' else 'The free demo has reached its shared daily capacity. Please try tomorrow.'
+            return response({'detail':msg,'remaining':reservation['remaining']},429,token)
+        try:
+            result=await stylize_call(text,[list(x) for x in spans] if spans is not None else None,detector)
+            if not isinstance(result,dict) or not isinstance(result.get('text'),str):raise RuntimeError('Bad stylization result')
+        except asyncio.CancelledError:
+            try:await asyncio.shield(quota_call('refund',sv,sn,rid))
+            except Exception:pass
+            raise
+        except Exception:
+            try:state=await quota_call('refund',sv,sn,rid)
+            except Exception:state={}
+            return response({'detail':'Stylizer unavailable; try again shortly.','remaining':state.get('remaining',reservation['remaining'])},503,token)
+        try:state=await quota_call('finish',sv,sn,rid)
+        except Exception:
+            try:state=await quota_call('refund',sv,sn,rid)
+            except Exception:state={}
+            return response({'detail':'Could not finalize the demo counter. Try again shortly.','remaining':state.get('remaining',reservation['remaining'])},503,token)
+        if not state.get('ok'):return response({'detail':'Demo reservation expired; try again shortly.','remaining':state['remaining']},503,token)
+        return response({'status':'ok','result':result,'remaining':state['remaining']},200,token)
 
     @api.post('/api/upload')
     async def upload(request:Request,file:UploadFile=File(...)):

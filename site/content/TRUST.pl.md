@@ -1,6 +1,6 @@
 # Linda — prywatność i zaufanie
 
-Zaktualizowano 25 listopada 2026. Aplikacja 2.5.0.6; pakiet modeli 1.5.0. Oświadczenie techniczne autora, bez niezależnego certyfikatu bezpieczeństwa. Historyczne wyniki testów z 11 października 2026 (wersja 2.0.6.0) pozostają historyczne.
+Zaktualizowano 25 listopada 2026. Aplikacja 2.6.0.0; pakiet modeli 1.5.0. Oświadczenie techniczne autora, bez niezależnego certyfikatu bezpieczeństwa. Historyczne wyniki testów z 11 października 2026 (wersja 2.0.6.0) pozostają historyczne.
 
 ## Teksty i połączenia
 
@@ -16,7 +16,7 @@ Assay używa stabilnego FP32 DirectML; Loupe działa na CPU. Assay pobiera okoł
 
 ## Integralność i kontakt
 
-Oficjalne wydanie 2.5.0.6 (25 listopada 2026): https://github.com/Lendarixon/Linda/releases/tag/v2.5.0.6. Instalator `Linda-Setup.exe`: 509299108 bajtów, SHA-256 `5cf7807cef544ddde806414d437ee53ce81017721230d26432aad0a5839d687d`. (Historyczne wyniki dla 2.0.6.0 z 11 października 2026: SHA-256 `23a3d3afdcebb59e0bb48271392ba470d75b1a2b6a66cf41016d8fa1b73510ad`, rozmiar 286 398 840 bajtów — pozostają historyczne, nie są nowym testem 2.5.) Manifest modeli zawiera sumy SHA-256 i podpis Ed25519, sprawdzany przez aktualizator. 25 listopada 2026 podpis Ed25519 aktualnego manifestu (pakiet modeli 1.5.0) zweryfikowano kodem aktualizacji samej aplikacji.
+Oficjalne wydanie 2.6.0.0 (25 listopada 2026): https://github.com/Lendarixon/Linda/releases/tag/v2.6.0.0. Instalator `Linda-Setup.exe`: 509299108 bajtów, SHA-256 `5cf7807cef544ddde806414d437ee53ce81017721230d26432aad0a5839d687d`. (Historyczne wyniki dla 2.0.6.0 z 11 października 2026: SHA-256 `23a3d3afdcebb59e0bb48271392ba470d75b1a2b6a66cf41016d8fa1b73510ad`, rozmiar 286 398 840 bajtów — pozostają historyczne, nie są nowym testem 2.5.) Manifest modeli zawiera sumy SHA-256 i podpis Ed25519, sprawdzany przez aktualizator. 25 listopada 2026 podpis Ed25519 aktualnego manifestu (pakiet modeli 1.5.0) zweryfikowano kodem aktualizacji samej aplikacji.
 
 Zgłoszenia bezpieczeństwa: lindapro.support@proton.me. Podaj wersję i minimalny przykład; nie wysyłaj kluczy ani poufnych tekstów. Szczegółowe oświadczenie: [English trust statement](https://lendarixon.github.io/Linda/trust.html).
 

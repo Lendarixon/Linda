@@ -1,6 +1,6 @@
 # Linda desktop app (Windows)
 
-Linda Detector 2.5.0.6 is a local Windows workspace with Assay and Loupe AI-text detection, plus optional Humanizer and Linda Trace writing-style tools. Model package: 1.5.0. Download the [latest installer](https://github.com/Lendarixon/Linda/releases/latest).
+Linda Detector 2.6.0.0 is a local Windows workspace with Assay and Loupe AI-text detection, plus optional Humanizer and Linda Trace writing-style tools. Model package: 1.5.0. Download the [latest installer](https://github.com/Lendarixon/Linda/releases/latest).
 
 Model files are downloaded when needed (about 5.8 GB for Assay or 0.3 GB for Loupe). Text processing runs on your computer. Downloads, update checks and licence activation/periodic validation use internet connections without uploading checked texts. Any paid Detector key also unlocks Humanizer and Trace for personal use; they are not separate app purchases. Linda Probe is a separate app and key. See [licensing](https://github.com/Lendarixon/Linda/blob/main/LICENSING.md).
 GPU acceleration on any DirectX 12 card (AMD Radeon, NVIDIA GeForce, Intel Arc) through ONNX Runtime DirectML (`onnx_gpu.py`: the models are exported to ONNX once on the user's PC), colour map of the text, sensitive / precise modes, CPU or GPU, licence key dialog, update check (signed manifest) for models and for the app itself.
@@ -19,9 +19,9 @@ and every file hash is checked. The signing key is not part of this repository.
 
 Licence of the code: see the repository `LICENSE` (free for non-commercial use; commercial use needs a key).
 
-## 2.5.0.6 (2026-11-25)
+## 2.6.0.0 (2026-11-25)
 
-See [full release notes](RELEASE_NOTES_2.5.0.6.md). The models folder space check uses the real size of the model pack instead of a fixed 6 GB, and the app and the installer say how much room the GPU model cache can take. Earlier notes: [2.5.0.5](RELEASE_NOTES_2.5.0.5.md), [2.5.0.4](RELEASE_NOTES_2.5.0.4.md), [2.5.0.3](RELEASE_NOTES_2.5.0.3.md), [2.5.0.2](RELEASE_NOTES_2.5.0.2.md), [2.5.0.1](RELEASE_NOTES_2.5.0.1.md).
+See [full release notes](RELEASE_NOTES_2.6.0.0.md). The models folder space check uses the real size of the model pack instead of a fixed 6 GB, and the app and the installer say how much room the GPU model cache can take. Earlier notes: [2.6.0.0](RELEASE_NOTES_2.6.0.0.md), [2.5.0.4](RELEASE_NOTES_2.5.0.4.md), [2.5.0.3](RELEASE_NOTES_2.5.0.3.md), [2.5.0.2](RELEASE_NOTES_2.5.0.2.md), [2.5.0.1](RELEASE_NOTES_2.5.0.1.md).
 
 ## 1.2.1 (2026-10-03)
 

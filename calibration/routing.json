@@ -1,11 +1,14 @@
 {
- "version": "merged-dhi-131-20261008",
+ "version": "merged-dhi-151-routed-20261127",
  "kind": "merged",
- "note": "score = sum_k w_k * (agg_k - mu_k) / sd_k; agg = top25 of window margins (stylo: whole text); sensitive: ai > thr_sensitive (DEV rule, EN: same DEV false-positive budget as 1.3; PL/RU: 0.995 DEV-human quantile); uncertain > thr_p5; precise: ai > thr_p03, uncertain > thr_sensitive",
+ "note": "score = sum_k w_k * (agg_k - mu_k) / sd_k; agg = top25 of window margins (stylo: whole text). Per-language voter sets: en = 1.3.1 essay_dhi_131 + multi_dhi_131 + stylo_d, w .8/0/.2, thresholds frozen from routing_131b; pl/ru = essay_l14m50 + multi_l14m50, w .5/.5, stylo_d REMOVED (English stylometry on Polish/Russian text), standardised on DEV AI rows, thr_sensitive = 1.3 DEV-human budget then capped at 0.5 % FPR on calibration humans; uncertain > thr_p5; precise: ai > thr_p03, uncertain > thr_sensitive",
  "voice_dirs": {
   "essay_m": "essay_dhi_131_20261008",
   "multi_m": "multi_dhi_131_20261008",
-  "stylo_d": "stylo_d"
+  "stylo_d": "stylo_d",
+  "essay_l14": "essay_l14m50",
+  "multi_l14": "multi_l14m50",
+  "segmenter": "seg_v3"
  },
  "size_mb_fp16": {
   "essay": 870,
@@ -15,6 +18,7 @@
  "languages": {
   "en": {
    "n_dev_human": 1330,
+   "source": "frozen: identical tier to routing_131b.json languages.en.tiers.full",
    "tiers": {
     "full": {
      "config": "w0.8-0.0-0.2",
@@ -68,110 +72,102 @@
    }
   },
   "pl": {
-   "n_dev_human": 1013,
+   "n_dev_human": 490,
+   "n_dev_ai": 720,
+   "n_dev": 1210,
    "tiers": {
     "full": {
-     "config": "equal-weight mean (essay/multi/style = 1/3)",
+     "config": "w0.5-0.5 (essay_l14m50 + multi_l14m50, stylo dropped)",
      "voters": [
-      "essay_m",
-      "multi_m",
-      "stylo_d"
+      "essay_l14",
+      "multi_l14"
      ],
      "mode": "top25",
      "z": {
-      "essay_m": [
-       9.74241541236577,
-       3.0129780653621685
+      "essay_l14": [
+       10.352846498424537,
+       2.1328558732139222
       ],
-      "multi_m": [
-       9.959123828116574,
-       1.0482515154314327
-      ],
-      "stylo_d": [
-       1.800263685417283,
-       1.6875031372328095
+      "multi_l14": [
+       9.45906310292512,
+       0.9071389394333386
       ]
      },
      "weights": {
-      "essay_m": 0.3333333333333333,
-      "multi_m": 0.3333333333333333,
-      "stylo_d": 0.3333333333333333
+      "essay_l14": 0.5,
+      "multi_l14": 0.5
      },
-     "thr_sensitive": -0.7763205323240688,
-     "thr_p5": -1.8460552059202193,
-     "thr_p1": -1.1148438551781317,
-     "thr_p03": -0.588665452865009,
+     "thr_sensitive": -1.8707962263887152,
+     "thr_p5": -3.7193998608597507,
+     "thr_p1": -2.0010301267363277,
+     "thr_p03": -1.2637164633425586,
      "heat": {
       "essay": {
-       "voter": "essay_m",
-       "thr_5": 3.0248046875,
-       "thr_05": 6.926914062499999,
-       "thr_1": 5.889960937499999,
-       "win_thr_1": 5.819291992187504
+       "voter": "essay_l14",
+       "thr_5": 3.52095730304718,
+       "thr_05": 6.693829114437105,
+       "thr_1": 6.148931350708011,
+       "win_thr_1": 6.148931350708011
       },
       "multi": {
-       "voter": "multi_m",
-       "thr_5": 7.850390625,
-       "thr_05": 9.291210937499999,
-       "thr_1": 9.03671875,
-       "win_thr_1": 9.028710937500001
+       "voter": "multi_l14",
+       "thr_5": 7.126056933403011,
+       "thr_05": 8.606120948791506,
+       "thr_1": 8.366175193786622,
+       "win_thr_1": 8.366175193786622
       }
      },
-     "dev_fpr_at_sensitive": 0.005923000987166831
+     "dev_fpr_at_sensitive": 0.006122448979591836
     }
    }
   },
   "ru": {
-   "n_dev_human": 611,
+   "n_dev_human": 200,
+   "n_dev_ai": 241,
+   "n_dev": 441,
    "tiers": {
     "full": {
-     "config": "equal-weight mean (essay/multi/style = 1/3)",
+     "config": "w0.5-0.5 (essay_l14m50 + multi_l14m50, stylo dropped)",
      "voters": [
-      "essay_m",
-      "multi_m",
-      "stylo_d"
+      "essay_l14",
+      "multi_l14"
      ],
      "mode": "top25",
      "z": {
-      "essay_m": [
-       8.232048023273082,
-       3.507779031847483
+      "essay_l14": [
+       10.094957888134616,
+       2.1748014053113094
       ],
-      "multi_m": [
-       9.75351160571273,
-       1.382761064178663
-      ],
-      "stylo_d": [
-       4.105892831703303,
-       1.5814351258019885
+      "multi_l14": [
+       9.557126974705014,
+       1.0868091505055621
       ]
      },
      "weights": {
-      "essay_m": 0.3333333333333333,
-      "multi_m": 0.3333333333333333,
-      "stylo_d": 0.3333333333333333
+      "essay_l14": 0.5,
+      "multi_l14": 0.5
      },
-     "thr_sensitive": -0.8471144600717825,
-     "thr_p5": -2.0852666782810796,
-     "thr_p1": -1.0530845845370371,
-     "thr_p03": -0.6347245076673595,
+     "thr_sensitive": -1.381530006511941,
+     "thr_p5": -4.158854338662233,
+     "thr_p1": -1.4361053410939026,
+     "thr_p03": -1.1342639860781225,
      "heat": {
       "essay": {
-       "voter": "essay_m",
-       "thr_5": 1.0114542643229167,
-       "thr_05": 3.8891113281250007,
-       "thr_1": 3.6693359374999983,
-       "win_thr_1": 3.401123046874995
+       "voter": "essay_l14",
+       "thr_5": 1.439044720431151,
+       "thr_05": 7.023946220874776,
+       "thr_1": 4.224425568580602,
+       "win_thr_1": 4.224425568580602
       },
       "multi": {
-       "voter": "multi_m",
-       "thr_5": 5.967447916666666,
-       "thr_05": 8.700000000000006,
-       "thr_1": 8.466406249999999,
-       "win_thr_1": 8.096874999999992
+       "voter": "multi_l14",
+       "thr_5": 5.869347353776294,
+       "thr_05": 9.352103376388548,
+       "thr_1": 8.112767827510822,
+       "win_thr_1": 8.112767827510822
       }
      },
-     "dev_fpr_at_sensitive": 0.006546644844517185
+     "dev_fpr_at_sensitive": 0.01
     }
    }
   }

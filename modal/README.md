@@ -2,7 +2,7 @@
 
 Live demo: https://ninjagovlad--linda-pro-demo-web.modal.run/
 
-The free hosted demo offers Linda Loupe (compact CPU detector) and Linda Assay (full ensemble on an L4 GPU). It uses the desktop Engine 2.0.6.2 with unchanged scoring and the signed public model pack 1.3.4. Both detectors use the current automatic markup path; document verdict and local sentence labels are distinct signals.
+The free hosted demo offers Linda Loupe (compact CPU detector) and Linda Assay (full ensemble on an L4 GPU). It runs the desktop Engine 2.5.0.6 with the signed public model pack 1.5.0 (English voices plus the Polish/Russian l14m50 voices) and that pack's token markup: schema-2 per-language token heads, `calibration/token_heads_v2.json`, document-steered thresholds and the Lite token reuse. Both detectors therefore report `markup_version` 1.5.0 and `sentence_stats.granularity` `tokens`. Document verdict and local sentence labels are distinct signals.
 
 Demo restrictions: 12 successful checks for the signed browser cookie and 12 checks per shared network per UTC day, across both detectors. A shared global limit of 300 successful or pending checks per UTC day bounds cloud capacity. Each check accepts up to 6,000 Unicode code points and requires at least 20 words; 300 words is a recommendation for more reliable results. Uploads accept TXT, MD and DOCX files up to 2,000,000 bytes. PPT, PPTX and PDF are unsupported. Invalid, malformed, unsupported, too-short and overlong input does not reserve a check. DOCX text extraction includes paragraphs and table cells. Model failures attempt to refund a pending reservation; if refund cannot be confirmed, the pending lease expires after ten minutes. If finalization returns an ambiguous error, the computed result is withheld because the durable charge may already have succeeded.
 
@@ -12,10 +12,16 @@ These technical caps apply only to the free hosted demo. The desktop application
 
 ## Deployment
 
-Deploy from this repository's root with `modal deploy modal_app.py`. The `linda-models-131` volume must contain every file listed in `modal/model_manifest.json`, including the current `/calibration/routing.json`. Cold starts verify their sizes and SHA-256 hashes before loading a detector. Model weights are not committed to this repository. The application must not fall back to the older embedded routing table.
+Deploy from this repository's root with `modal deploy modal_app.py`. The `linda-models-150` volume must contain every file listed in `modal/model_manifest.json` (61 files of pack 1.5.0). Fill it with `modal run modal/populate_models.py`, which downloads the pack from Hugging Face inside Modal and verifies every size and SHA-256 before committing. Cold starts verify the same hashes again before loading a detector. Model weights are not committed to this repository. The application must not fall back to the older embedded routing table.
+
+Pack 1.5.0 ships `calibration/routing.json` with the full tiers only and `calibration/routing.with_lite.json` with the full and Lite tiers. The demo sets `LINDA_ROUTING` to the combined table, because Loupe needs the Lite tiers; the signed files are left untouched so the manifest check stays valid. `modal run modal/check_pack_150.py` loads the pack on CPU (no GPU) and checks one English, one Polish and one Russian text through the routed loader and through the demo engine. `python modal/check_engine_2506.py --root . --models <models_home> --home <scratch>` runs the same engine locally on CPU with 300+ word texts and prints verdict, language and markup counts; `python modal/check_live_2506.py` repeats the six checks against the deployed endpoint.
 
 Configure the named Modal secret `linda-public-demo-session` with a stable random `SESSION_SECRET` of at least 32 characters. Keep it private and preserve it across deploys so existing signed cookies remain valid. The former `linda-demo-access` secret is no longer used. The persistent `linda-public-demo-quota` volume is created automatically; one writer commits each quota transaction before returning.
 
 `GET /health` reports the app, model pack, markup version, available detectors, supported upload formats and demo limits. `GET /api/session` obtains a signed visitor cookie and remaining count. `POST /api/detect` accepts JSON with `text`, `mode` (`sensitive` or `precise`) and `detector` (`loupe` or `assay`). It is intended for the demo page, not a supported batch API. The UI is self-contained, responsive, uses Metro styling, and supports English, Polish and Russian.
 
 Local API and quota tests use synthetic results, without loading models or using a GPU: `python -m pytest tests/test_public_demo.py -q`.
+
+## Стилизация (тестовое приложение linda-stylize-test, 18.10.2026)
+
+`POST /api/stylize` {text, spans|null}: переписывает весь текст, выбранные или помеченные как ИИ фрагменты (Qwen3-4B-Instruct-2507 + адаптер `stylizer_adapter`, L4). Детектор в отборе не участвует; фильтры: числа, ссылки, длина, обрыв, язык, сходство. Смысл автоматически НЕ проверяется. Отдельный счётчик 12 на браузер (visitor+'s'). Тесты: `tests/test_stylize.py`. Живой адрес теста: https://ninjagovlad--linda-stylize-test-web.us-east.modal.run ; в публичное демо (`linda-pro-demo`) не перенесено, пока владелец не решит.

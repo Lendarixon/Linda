@@ -378,7 +378,7 @@
   "qa16_a": "Tak, wszystko. Instalator zapyta, co zainstalować; później w ustawieniach można zaznaczyć lub odznaczyć każdą wersję. Program działa tylko z Linda Loupe, tylko z Linda Assay lub z obiema (wtedy sam wybiera odpowiednią i pozwala przełączać).",
   "cmp_size_pro": "≈ 2,7 GB",
   "cmp_size_lite": "≈ 0,3 GB",
-  "ver_current": "Aktualne wersje: aplikacja 2.5.0.6 · pakiet modeli 1.5.0. Assay FP32 stable / Loupe CPU; krótkie wstawki AI mogą pozostać niewykryte.",
+  "ver_current": "Aktualne wersje: aplikacja 2.6.0.0 · pakiet modeli 1.5.0. Assay FP32 stable / Loupe CPU; krótkie wstawki AI mogą pozostać niewykryte.",
   "dl_store_note": "W Microsoft Store aktualizacje pojawiają się zwykle około tygodnia później niż na GitHubie. Potrzebujesz najnowszej wersji od razu? Pobierz instalator z GitHuba.",
   "theme_label": "Motyw",
   "trust_title": "Zaufanie i prywatność"

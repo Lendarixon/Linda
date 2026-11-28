@@ -1,0 +1,323 @@
+{
+ "version": "merged-dhi-151-routed-20261127",
+ "kind": "merged",
+ "note": "score = sum_k w_k * (agg_k - mu_k) / sd_k; agg = top25 of window margins (stylo: whole text). Per-language voter sets: en = 1.3.1 essay_dhi_131 + multi_dhi_131 + stylo_d, w .8/0/.2, thresholds frozen from routing_131b; pl/ru = essay_l14m50 + multi_l14m50, w .5/.5, stylo_d REMOVED (English stylometry on Polish/Russian text), standardised on DEV AI rows, thr_sensitive = 1.3 DEV-human budget then capped at 0.5 % FPR on calibration humans; uncertain > thr_p5; precise: ai > thr_p03, uncertain > thr_sensitive | Stage C pack 1.4-beta: voice_dirs rewritten for the pack layout; lite tiers copied verbatim from 1.3.4.1 (lite131+stylo_d+stylo_l, all languages; no per-language student switch in the product loader).",
+ "voice_dirs": {
+  "essay_m": "essay_dhi_131_20261008",
+  "multi_m": "multi_dhi_131_20261008",
+  "essay_l14": "essay_l14m50",
+  "multi_l14": "multi_l14m50",
+  "stylo_d": "stylo_d",
+  "stylo_l_pl": "stylo_l",
+  "stylo_l_ru": "stylo_l",
+  "speed_s": "linda_speed_131",
+  "segmenter": "seg_v3"
+ },
+ "size_mb_fp16": {
+  "essay": 870,
+  "multi": 560,
+  "stylo": 0
+ },
+ "languages": {
+  "en": {
+   "n_dev_human": 1330,
+   "source": "frozen: identical tier to routing_131b.json languages.en.tiers.full",
+   "tiers": {
+    "full": {
+     "config": "w0.8-0.0-0.2",
+     "voters": [
+      "essay_m",
+      "multi_m",
+      "stylo_d"
+     ],
+     "mode": "top25",
+     "z": {
+      "essay_m": [
+       6.286199137077285,
+       8.399245265762746
+      ],
+      "multi_m": [
+       6.38054484852865,
+       6.046926869181623
+      ],
+      "stylo_d": [
+       2.0593982780241165,
+       3.741482574685331
+      ]
+     },
+     "weights": {
+      "essay_m": 0.8,
+      "multi_m": 0.0,
+      "stylo_d": 0.2
+     },
+     "thr_sensitive": -0.10919344747632685,
+     "thr_p5": -0.43132098621026665,
+     "thr_p1": -0.07005406602936866,
+     "thr_p03": 0.09849438212124588,
+     "heat": {
+      "essay": {
+       "voter": "essay_m",
+       "thr_5": 3.1999023437499994,
+       "thr_05": 7.255957031250011,
+       "thr_1": 6.443632812500002,
+       "win_thr_1": 6.411093750000002
+      },
+      "multi": {
+       "voter": "multi_m",
+       "thr_5": 7.903320312499997,
+       "thr_05": 9.422265625000001,
+       "thr_1": 9.17099609375,
+       "win_thr_1": 9.1662109375
+      }
+     },
+     "dev_fpr_at_sensitive": 0.012781954887218045
+    },
+    "speed": {
+     "config": "Linda-Speed: distilled student + stylometry (w 0.8/0.2)",
+     "voters": [
+      "speed_s",
+      "stylo_d"
+     ],
+     "mode": "top25",
+     "z": {
+      "speed_s": [
+       0.25877945382650014,
+       0.862023981024601
+      ],
+      "stylo_d": [
+       2.099520111843944,
+       3.7605675406690735
+      ]
+     },
+     "weights": {
+      "speed_s": 0.8,
+      "stylo_d": 0.2
+     },
+     "thr_sensitive": 0.42083515305681474,
+     "thr_p5": 0.26627122839503403,
+     "thr_p1": 0.4275349251534427,
+     "thr_p03": 0.5486576383600785,
+     "heat": {
+      "essay": {
+       "voter": "speed_s",
+       "thr_5": 0.676817214488983,
+       "thr_05": 0.798631306886673,
+       "thr_1": 0.7875373065471651,
+       "win_thr_1": 0.7860060715675354
+      },
+      "multi": {
+       "voter": "speed_s",
+       "thr_5": 0.676817214488983,
+       "thr_05": 0.798631306886673,
+       "thr_1": 0.7875373065471651,
+       "win_thr_1": 0.7860060715675354
+      }
+     },
+     "dev_fpr_at_sensitive": 0.01328125,
+     "dev_tpr_at_sensitive": 0.8420221169036335
+    }
+   }
+  },
+  "pl": {
+   "n_dev_human": 490,
+   "n_dev_ai": 720,
+   "n_dev": 1210,
+   "tiers": {
+    "full": {
+     "config": "w0.5-0.5 (essay_l14m50 + multi_l14m50, stylo dropped)",
+     "voters": [
+      "essay_l14",
+      "multi_l14"
+     ],
+     "mode": "top25",
+     "z": {
+      "essay_l14": [
+       10.352846498424537,
+       2.1328558732139222
+      ],
+      "multi_l14": [
+       9.45906310292512,
+       0.9071389394333386
+      ]
+     },
+     "weights": {
+      "essay_l14": 0.5,
+      "multi_l14": 0.5
+     },
+     "thr_sensitive": -1.8707962263887152,
+     "thr_p5": -3.7193998608597507,
+     "thr_p1": -2.0010301267363277,
+     "thr_p03": -1.2637164633425586,
+     "heat": {
+      "essay": {
+       "voter": "essay_l14",
+       "thr_5": 3.52095730304718,
+       "thr_05": 6.693829114437105,
+       "thr_1": 6.148931350708011,
+       "win_thr_1": 6.148931350708011
+      },
+      "multi": {
+       "voter": "multi_l14",
+       "thr_5": 7.126056933403011,
+       "thr_05": 8.606120948791506,
+       "thr_1": 8.366175193786622,
+       "win_thr_1": 8.366175193786622
+      }
+     },
+     "dev_fpr_at_sensitive": 0.006122448979591836
+    },
+    "speed": {
+     "config": "Linda-Speed: distilled student + stylometry (w 0.8/0.1/0.1)",
+     "voters": [
+      "speed_s",
+      "stylo_d",
+      "stylo_l_pl"
+     ],
+     "mode": "top25",
+     "z": {
+      "speed_s": [
+       -2.3974518238118017,
+       3.261620349308795
+      ],
+      "stylo_d": [
+       0.8632693163991627,
+       1.8226428002898107
+      ],
+      "stylo_l_pl": [
+       -0.7054906318263249,
+       3.036443530883691
+      ]
+     },
+     "weights": {
+      "speed_s": 0.8,
+      "stylo_d": 0.1,
+      "stylo_l_pl": 0.1
+     },
+     "thr_sensitive": 0.6575804543289056,
+     "thr_p5": 0.45511645131332723,
+     "thr_p1": 0.6575804543289056,
+     "thr_p03": 0.7646335026126713,
+     "heat": {
+      "essay": {
+       "voter": "speed_s",
+       "thr_5": -0.42724777460098273,
+       "thr_05": 0.2094879060983655,
+       "thr_1": 0.0543329132348296,
+       "win_thr_1": 0.027062838282437947
+      },
+      "multi": {
+       "voter": "speed_s",
+       "thr_5": -0.42724777460098273,
+       "thr_05": 0.2094879060983655,
+       "thr_1": 0.0543329132348296,
+       "win_thr_1": 0.027062838282437947
+      }
+     },
+     "dev_fpr_at_sensitive": 0.01085883514313919,
+     "dev_tpr_at_sensitive": 0.8033126293995859
+    }
+   }
+  },
+  "ru": {
+   "n_dev_human": 200,
+   "n_dev_ai": 241,
+   "n_dev": 441,
+   "tiers": {
+    "full": {
+     "config": "w0.5-0.5 (essay_l14m50 + multi_l14m50, stylo dropped)",
+     "voters": [
+      "essay_l14",
+      "multi_l14"
+     ],
+     "mode": "top25",
+     "z": {
+      "essay_l14": [
+       10.094957888134616,
+       2.1748014053113094
+      ],
+      "multi_l14": [
+       9.557126974705014,
+       1.0868091505055621
+      ]
+     },
+     "weights": {
+      "essay_l14": 0.5,
+      "multi_l14": 0.5
+     },
+     "thr_sensitive": -1.381530006511941,
+     "thr_p5": -4.158854338662233,
+     "thr_p1": -1.4361053410939026,
+     "thr_p03": -1.1342639860781225,
+     "heat": {
+      "essay": {
+       "voter": "essay_l14",
+       "thr_5": 1.439044720431151,
+       "thr_05": 7.023946220874776,
+       "thr_1": 4.224425568580602,
+       "win_thr_1": 4.224425568580602
+      },
+      "multi": {
+       "voter": "multi_l14",
+       "thr_5": 5.869347353776294,
+       "thr_05": 9.352103376388548,
+       "thr_1": 8.112767827510822,
+       "win_thr_1": 8.112767827510822
+      }
+     },
+     "dev_fpr_at_sensitive": 0.01
+    },
+    "speed": {
+     "config": "Linda-Speed: distilled student + stylometry (w 0.8/0.1/0.1)",
+     "voters": [
+      "speed_s",
+      "stylo_d",
+      "stylo_l_ru"
+     ],
+     "mode": "top25",
+     "z": {
+      "speed_s": [
+       -2.7745369476622845,
+       3.1218791070717917
+      ],
+      "stylo_d": [
+       3.3300929972264846,
+       1.5292242947987058
+      ],
+      "stylo_l_ru": [
+       -0.040542324068582346,
+       4.44342114439072
+      ]
+     },
+     "weights": {
+      "speed_s": 0.8,
+      "stylo_d": 0.1,
+      "stylo_l_ru": 0.1
+     },
+     "thr_sensitive": 0.6012531699780395,
+     "thr_p5": 0.35153480421765937,
+     "thr_p1": 0.6012531699780395,
+     "thr_p03": 0.7815395393817005,
+     "heat": {
+      "essay": {
+       "voter": "speed_s",
+       "thr_5": -1.043053388595581,
+       "thr_05": 0.24787618033589287,
+       "thr_1": -0.07850463986396848,
+       "win_thr_1": -0.26695474982262335
+      },
+      "multi": {
+       "voter": "speed_s",
+       "thr_5": -1.043053388595581,
+       "thr_05": 0.24787618033589287,
+       "thr_1": -0.07850463986396848,
+       "win_thr_1": -0.26695474982262335
+      }
+     },
+     "dev_fpr_at_sensitive": 0.011456628477905073,
+     "dev_tpr_at_sensitive": 0.8757637474541752
+    }
+   }
+  }
+ },
+ "pack": "1.4.0-beta.1"
+}
